@@ -1,0 +1,93 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  name: servicebindings.kubebindapi.kubectl-bind.io
+spec:
+  group: kubebindapi.kubectl-bind.io
+  names:
+    kind: ServiceBinding
+    listKind: ServiceBindingList
+    plural: servicebindings
+    shortNames:
+    - sb
+    singular: servicebinding
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ServiceBinding is the object that represents the ServiceBinding.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          serviceBindingSpec:
+            description: ServiceBindingSpec represents the data in the newly created
+              ServiceBinding.
+            properties:
+              kubeconfigSecretName:
+                description: KubeconfigSecretName is the name of the secret that contains
+                  the kubeconfig of the service cluster.
+                type: string
+              serviceBindingRequestName:
+                description: ServiceBindingRequestName represents the name of the
+                  service binding request in order to access the any needed field
+                  or property for service binding.
+                type: string
+              serviceProviderSpec:
+                description: ServiceProviderSpec contains all the data and information
+                  about the service which has been bound to the service binding request.
+                  The service providers decide what they need and what to configure
+                  based on what then include in this field, such as service region,
+                  type, tiers, etc...
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+            required:
+            - kubeconfigSecretName
+            - serviceBindingRequestName
+            - serviceProviderSpec
+            type: object
+          status:
+            description: Status contains reconciliation information for the service
+              binding.
+            properties:
+              errorMessage:
+                description: ErrorMessage contains a default error message in case
+                  the controller encountered an error. Will be reset if the error
+                  was resolved.
+                type: string
+              errorReason:
+                description: ErrorReason contains a error reason in case the controller
+                  encountered an error. Will be reset if the error was resolved.
+                type: string
+              lastUpdated:
+                format: date-time
+                type: string
+              phase:
+                description: Phase represents the phase of the service binding.
+                enum:
+                - Connected
+                - Pending
+                - Expired
+                type: string
+            type: object
+        required:
+        - serviceBindingSpec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

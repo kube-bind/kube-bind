@@ -18,11 +18,13 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 //+genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource:shortName=sbr
+// +kubebuilder:subresource:status
 
 // ServiceBindingRequest is the object that represents the ServiceBindingRequest.
 type ServiceBindingRequest struct {
@@ -31,6 +33,9 @@ type ServiceBindingRequest struct {
 
 	// ServiceBindingRequestSpec represents the service binding requestSpec spec
 	ServiceBindingRequestSpec ServiceBindingRequestSpec `json:"serviceBindingRequestSpec"`
+
+	// Status contains reconciliation information for the service binding request.
+	Status ServiceBindingRequestStatus `json:"status,omitempty"`
 }
 
 // ServiceBindingRequestSpec represents the data in the newly created ServiceBindingRequest
@@ -45,8 +50,6 @@ type ServiceBindingRequestSpec struct {
 	// UserEmail is the email address that is used by the user to register at the service provider. This is acquired and
 	// saved after the request has been made and probably approved.
 	UserEmail string `json:"userEmail"`
-	// Approved represents the status of the request, whether it has been approved or not.
-	Approved bool `json:"approved"`
 	// OIDCRequestSpec contains the request data of the OIDC request needed to establish the connection to the authorization.
 	// We might not need this I am just adding it for better clarity of how the api should work.
 	// Could br also abstracted into a new type.
@@ -54,6 +57,11 @@ type ServiceBindingRequestSpec struct {
 	// OIDCResponseSpec contains the response of the OIDC request which has the all needed data/credentials to access the
 	// authorization server to get all the user related data.
 	OIDCResponseSpec *OIDCResponseSpec `json:"oidcResponseSpec,omitempty"`
+	// UserAccountSpec contains all the user spec such as privileges that the user has at the service provider. Each service provider
+	// can specify the format and the degree of those specs based on their needs.
+	UserAccountSpec runtime.RawExtension `json:"userAccountSpec,omitempty"`
+	// ServiceProviderClaims contains the resources that the service provider requires for a successful api binding.
+	ServiceProviderClaims []string `json:"serviceProviderClaims"`
 }
 
 // OIDCRequestSpec contains the request data of the OIDC request needed to establish the connection to the authorization.
@@ -70,6 +78,26 @@ type OIDCResponseSpec struct {
 	AccessToken  string `json:"accessToken,omitempty"`
 	RefreshToken string `json:"refreshToken,omitempty"`
 	Claims       string `json:"claims,omitempty"`
+}
+
+// ServiceBindingRequestStatus stores status information about a service binding request.
+type ServiceBindingRequestStatus struct {
+
+	// +optional
+	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
+
+	// Approved represents the status of the request, whether it has been approved or not.
+	//  +optional
+	Approved bool `json:"approved"`
+
+	// ErrorMessage contains a default error message in case the controller encountered an error.
+	// Will be reset if the error was resolved.
+	// +optional
+	ErrorMessage *string `json:"errorMessage,omitempty"`
+
+	// ErrorReason contains a error reason in case the controller encountered an error. Will be reset if the error was resolved.
+	// +optional
+	ErrorReason string `json:"errorReason,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

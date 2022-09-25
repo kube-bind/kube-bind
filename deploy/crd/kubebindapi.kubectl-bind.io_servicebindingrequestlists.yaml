@@ -31,10 +31,6 @@ spec:
               description: ServiceBindingRequestSpec represents the data in the newly
                 created ServiceBindingRequest
               properties:
-                approved:
-                  description: Approved represents the status of the request, whether
-                    it has been approved or not.
-                  type: boolean
                 authenticatedClientURL:
                   description: 'AuthenticatedClientURL is the service provider url
                     where the service binding request is made, e.g: www.mangodb.com/kubernetes.'
@@ -71,12 +67,25 @@ spec:
                     tokenID:
                       type: string
                   type: object
+                serviceProviderClaims:
+                  description: ServiceProviderClaims contains the resources that the
+                    service provider requires for a successful api binding.
+                  items:
+                    type: string
+                  type: array
                 sessionID:
                   description: SessionID is a unique value of each session made to
                     the backend server. In general, this value should be the state
                     in the oauth request as well. One example could be the terminal(command
                     line) session opened.
                   type: string
+                userAccountSpec:
+                  description: UserAccountSpec contains all the user spec such as
+                    privileges that the user has at the service provider. Each service
+                    provider can specify the format and the degree of those specs
+                    based on their needs.
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 userEmail:
                   description: UserEmail is the email address that is used by the
                     user to register at the service provider. This is acquired and
@@ -87,8 +96,8 @@ spec:
                     convenient value for better computations.
                   type: string
               required:
-              - approved
               - authenticatedClientURL
+              - serviceProviderClaims
               - sessionID
               - userEmail
               - userID

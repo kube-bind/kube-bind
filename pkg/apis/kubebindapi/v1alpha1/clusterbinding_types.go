@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	conditionsv1alpha1 "github.com/kube-bind/kube-bind-api/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -26,23 +28,28 @@ import (
 // +kubebuilder:resource:shortName=sb
 // +kubebuilder:subresource:status
 
-// ServiceBinding is the object that represents the ServiceBinding.
-type ServiceBinding struct {
+// ClusterBinding is the object that represents the ClusterBinding.
+type ClusterBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// ServiceBindingSpec represents the data in the newly created ServiceBinding.
-	ServiceBindingSpec ServiceBindingSpec `json:"serviceBindingSpec"`
+	// Spec represents the data in the newly created ClusterBinding.
+	Spec ClusterBindingSpec `json:"spec"`
 
 	// Status contains reconciliation information for the service binding.
-	Status ServiceBindingStatus `json:"status,omitempty"`
+	Status ClusterBindingStatus `json:"status,omitempty"`
 }
 
-// ServiceBindingSpec represents the data in the newly created ServiceBinding.
-type ServiceBindingSpec struct {
-	// ServiceBindingRequestName represents the name of the service binding request in order to access the any needed
-	// field or property for service binding.
-	ServiceBindingRequestName string `json:"serviceBindingRequestName"`
+func (in *ClusterBinding) GetConditions() conditionsv1alpha1.Conditions {
+	return in.Status.Conditions
+}
+
+func (in *ClusterBinding) SetConditions(conditions conditionsv1alpha1.Conditions) {
+	in.Status.Conditions = conditions
+}
+
+// ClusterBindingSpec represents the data in the newly created ClusterBinding.
+type ClusterBindingSpec struct {
 	// KubeconfigSecretName is the name of the secret that contains the kubeconfig of the service cluster.
 	KubeconfigSecretName string `json:"kubeconfigSecretName"`
 	// ServiceProviderSpec contains all the data and information about the service which has been bound to the service
@@ -61,8 +68,8 @@ const (
 	ServiceExpired                       = "Expired"
 )
 
-// ServiceBindingStatus stores status information about a service binding.
-type ServiceBindingStatus struct {
+// ClusterBindingStatus stores status information about a service binding.
+type ClusterBindingStatus struct {
 	// +optional
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 
@@ -70,22 +77,18 @@ type ServiceBindingStatus struct {
 	//  +optional
 	Phase ServiceBindingPhase `json:"phase"`
 
-	// ErrorMessage contains a default error message in case the controller encountered an error.
-	// Will be reset if the error was resolved.
+	// conditions is a list of conditions that apply to the APIBinding.
+	//
 	// +optional
-	ErrorMessage *string `json:"errorMessage,omitempty"`
-
-	// ErrorReason contains a error reason in case the controller encountered an error. Will be reset if the error was resolved.
-	// +optional
-	ErrorReason string `json:"errorReason,omitempty"`
+	Conditions conditionsv1alpha1.Conditions `json:"conditions,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ServiceBindingList is the objects list that represents the ServiceBinding.
-type ServiceBindingList struct {
+// ClusterBindingList is the objects list that represents the ClusterBinding.
+type ClusterBindingList struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Items []ServiceBinding `json:"items"`
+	Items []ClusterBinding `json:"items"`
 }

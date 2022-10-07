@@ -17,7 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	conditionsv1alpha1 "github.com/kube-bind/kube-bind-api/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+	conditionsapi "github.com/kube-bind/kube-bind-api/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,7 +26,7 @@ import (
 
 //+genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:shortName=sb
+// +kubebuilder:resource:shortName=cb
 // +kubebuilder:subresource:status
 
 // ClusterBinding is the object that represents the ClusterBinding.
@@ -40,22 +41,15 @@ type ClusterBinding struct {
 	Status ClusterBindingStatus `json:"status,omitempty"`
 }
 
-func (in *ClusterBinding) GetConditions() conditionsv1alpha1.Conditions {
-	return in.Status.Conditions
-}
-
-func (in *ClusterBinding) SetConditions(conditions conditionsv1alpha1.Conditions) {
-	in.Status.Conditions = conditions
-}
-
 // ClusterBindingSpec represents the data in the newly created ClusterBinding.
 type ClusterBindingSpec struct {
-	// KubeconfigSecretName is the name of the secret that contains the kubeconfig of the service cluster.
-	KubeconfigSecretName string `json:"kubeconfigSecretName"`
+	// KubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
+	KubeconfigSecretRef v1.SecretKeySelector `json:"KubeconfigSecretRef"`
 	// ServiceProviderSpec contains all the data and information about the service which has been bound to the service
 	// binding request. The service providers decide what they need and what to configure based on what then include in
 	// this field, such as service region, type, tiers, etc...
-	ServiceProviderSpec runtime.RawExtension `json:"serviceProviderSpec"`
+	// +optional
+	ServiceProviderSpec runtime.RawExtension `json:"serviceProviderSpec,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Connected;Pending;Expired
@@ -77,10 +71,10 @@ type ClusterBindingStatus struct {
 	//  +optional
 	Phase ServiceBindingPhase `json:"phase"`
 
-	// conditions is a list of conditions that apply to the APIBinding.
+	// conditions is a list of conditions that apply to the ClusterBinding.
 	//
 	// +optional
-	Conditions conditionsv1alpha1.Conditions `json:"conditions,omitempty"`
+	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

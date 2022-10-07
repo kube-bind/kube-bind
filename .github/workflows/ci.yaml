@@ -22,32 +22,32 @@ on:
 # NOTE!!!
 
 jobs:
-  e2e:
-    name: e2e
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: v1.19
-      - run: go build ./...
-
-      # Install kind with a local registry
-      - uses: container-tools/kind-action@v1
-        name: Kubernetes KinD Cluster w/local registry
-
-      - run: |-
-          go install github.com/google/ko@latest
-
-      - run: |-
-          LOG_DIR=/tmp/e2e/artifacts ARTIFACT_DIR=/tmp/e2e COUNT=2 \
-          echo "e2e not implemented yet"  
-
-      - uses: cytopia/upload-artifact-retry-action@v0.1.2
-        if: ${{ always() }}
-        with:
-          name: e2e
-          path: /tmp/e2e/artifacts/
+#  e2e:
+#    name: e2e
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v3
+#      - uses: actions/setup-go@v3
+#        with:
+#          go-version: v1.19
+#      - run: go build ./...
+#
+#      # Install kind with a local registry
+#      - uses: container-tools/kind-action@v1
+#        name: Kubernetes KinD Cluster w/local registry
+#
+#      - run: |-
+#          go install github.com/google/ko@latest
+#
+#      - run: |-
+#          LOG_DIR=/tmp/e2e/artifacts ARTIFACT_DIR=/tmp/e2e COUNT=2 \
+#          echo "e2e not implemented yet"
+#
+#      - uses: cytopia/upload-artifact-retry-action@v0.1.2
+#        if: ${{ always() }}
+#        with:
+#          name: e2e
+#          path: /tmp/e2e/artifacts/
 
   go-test:
     name: go-test

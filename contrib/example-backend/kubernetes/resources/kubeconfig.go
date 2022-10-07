@@ -30,63 +30,54 @@ import (
 
 func GenerateKubeconfig(ctx context.Context,
 	client kubernetes.Interface,
-	host, clusterName, saName, ns string,
+	host, clusterName, secretName, ns string,
 ) (*corev1.Secret, error) {
 	kfg, err := client.CoreV1().Secrets(ns).Get(ctx, "cluster-admin-kubeconfig", v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			sa, err := client.CoreV1().ServiceAccounts(ns).Get(ctx, saName, v1.GetOptions{})
+			secret, err := client.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
 			if err != nil {
 				return nil, err
 			}
 
-			if len(sa.Secrets) >= 1 {
-				secret, err := client.CoreV1().Secrets(ns).Get(ctx, sa.Secrets[0].Name, v1.GetOptions{})
-				if err != nil {
-					return nil, err
-				}
-
-				cfg := api.Config{}
-				cfg.Clusters = map[string]*api.Cluster{
-					"": {
-						Server:                   host,
-						CertificateAuthorityData: secret.Data["ca.crt"],
-					},
-				}
-
-				cfg.Contexts = map[string]*api.Context{
-					"default": {
-						Cluster:   clusterName,
-						Namespace: ns,
-						AuthInfo:  "default",
-					},
-				}
-				cfg.CurrentContext = "default"
-				cfg.AuthInfos = map[string]*api.AuthInfo{
-					"default": {
-						Token: string(secret.Data["token"]),
-					},
-				}
-
-				kubeconfig, err := clientcmd.Write(cfg)
-				if err != nil {
-					return nil, fmt.Errorf("failed to encode kubeconfig: %w", err)
-				}
-
-				kfg = &corev1.Secret{
-					ObjectMeta: v1.ObjectMeta{
-						Name:      "cluster-admin-kubeconfig",
-						Namespace: ns,
-					},
-				}
-
-				kfg.Data = map[string][]byte{}
-				kfg.Data["kubeconfig"] = kubeconfig
-
-				return client.CoreV1().Secrets(ns).Create(ctx, kfg, v1.CreateOptions{})
+			cfg := api.Config{}
+			cfg.Clusters = map[string]*api.Cluster{
+				"": {
+					Server:                   host,
+					CertificateAuthorityData: secret.Data["ca.crt"],
+				},
 			}
 
-			return nil, fmt.Errorf("failed to find any secrets belong to service name %q", saName)
+			cfg.Contexts = map[string]*api.Context{
+				"default": {
+					Cluster:   clusterName,
+					Namespace: ns,
+					AuthInfo:  "default",
+				},
+			}
+			cfg.CurrentContext = "default"
+			cfg.AuthInfos = map[string]*api.AuthInfo{
+				"default": {
+					Token: string(secret.Data["token"]),
+				},
+			}
+
+			kubeconfig, err := clientcmd.Write(cfg)
+			if err != nil {
+				return nil, fmt.Errorf("failed to encode kubeconfig: %w", err)
+			}
+
+			kfg = &corev1.Secret{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "cluster-admin-kubeconfig",
+					Namespace: ns,
+				},
+			}
+
+			kfg.Data = map[string][]byte{}
+			kfg.Data["kubeconfig"] = kubeconfig
+
+			return client.CoreV1().Secrets(ns).Create(ctx, kfg, v1.CreateOptions{})
 		}
 
 		return nil, err

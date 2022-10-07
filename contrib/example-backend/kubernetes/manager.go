@@ -60,6 +60,11 @@ func (m *Manager) HandleResources(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
+	saSecret, err := kuberesources.CreateSASecret(ctx, m.kubeClient, m.namespace)
+	if err != nil {
+		return nil, err
+	}
+
 	sa, err := kuberesources.CreateServiceAccount(ctx, m.kubeClient, m.namespace)
 	if err != nil {
 		return nil, err
@@ -69,7 +74,7 @@ func (m *Manager) HandleResources(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig.Host, m.clusterName, sa.Name, sa.Namespace)
+	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig.Host, m.clusterName, saSecret.Name, sa.Namespace)
 	if err != nil {
 		return nil, err
 	}

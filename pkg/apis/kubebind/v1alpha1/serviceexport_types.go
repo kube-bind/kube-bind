@@ -110,8 +110,8 @@ type GroupResource struct {
 
 // ServiceExportList is the objects list that represents the ServiceExport.
 type ServiceExportList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
 
 	Items []ServiceExport `json:"items"`
 }

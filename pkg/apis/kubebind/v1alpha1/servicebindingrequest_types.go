@@ -103,8 +103,8 @@ type ServiceBindingRequestStatus struct {
 
 // ServiceBindingRequestList is the objects list that represents the ServiceBindingRequest.
 type ServiceBindingRequestList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
 
 	Items []ServiceBindingRequest `json:"items"`
 }

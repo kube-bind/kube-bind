@@ -18,9 +18,11 @@ package kubernetes
 
 import (
 	"context"
-	resources2 "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
+
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	resources2 "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 )
 
 type Manager struct {

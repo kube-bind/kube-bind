@@ -20,7 +20,6 @@ import (
 	"context"
 
 	oidc "github.com/coreos/go-oidc"
-
 	"golang.org/x/oauth2"
 )
 

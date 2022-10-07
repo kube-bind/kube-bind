@@ -19,7 +19,6 @@ set -euo pipefail
 cd $(dirname $0)/..
 source hack/lib.sh
 
-CONTAINERIZE_IMAGE=golang:1.19.1 containerize ./hack/update-crds-openapi.sh
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
 
 echodate "Creating vendor directory"
@@ -32,5 +31,5 @@ echodate "Generating OpenAPI 3 schema for CRDs"
 go run sigs.k8s.io/controller-tools/cmd/controller-gen \
   crd \
   object:headerFile="hack/header.txt" \
-  paths=./pkg/crd/... \
+  paths=./pkg/apis/... \
   output:crd:artifacts:config=./deploy/crd

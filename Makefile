@@ -205,7 +205,7 @@ modules: ## Run go mod tidy to ensure modules are up to date
 	cd pkg/apis; go mod tidy
 
 .PHONY: verify-modules
-verify-modules: modules  ## Verify go modules are up to date
+verify-modules: modules  # Verify go modules are up to date
 	@if !(git diff --quiet HEAD -- go.sum go.mod pkg/apis/go.mod pkg/apis/go.sum); then \
 		git diff; \
 		echo "go module files are out of date"; exit 1; \

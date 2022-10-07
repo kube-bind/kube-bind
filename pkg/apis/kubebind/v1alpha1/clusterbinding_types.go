@@ -52,26 +52,43 @@ type ClusterBindingSpec struct {
 	ServiceProviderSpec runtime.RawExtension `json:"serviceProviderSpec,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Connected;Pending;Expired
-
-type ServiceBindingPhase string
+// ClusterBindingPhase stores the phase of a cluster binding.
+//
+// +kubebuilder:validation:Enum=Connected;Pending;Timeout
+type ClusterBindingPhase string
 
 const (
-	ServiceConnected ServiceBindingPhase = "Connected"
-	ServicePending   ServiceBindingPhase = "Pending"
-	ServiceExpired   ServiceBindingPhase = "Expired"
+	// ClusterConnected means the service is connected and has sent a heartbeat recently.
+	ClusterConnected ClusterBindingPhase = "Connected"
+	// ClusterPending is the phase before the konnector has sent a heartbeat the first time.
+	ClusterPending ClusterBindingPhase = "Pending"
+	// ClusterTimeout is the phase when the konnector has not sent a heartbeat for a long time
+	// and the service considers this cluster as unhealthy.
+	ClusterTimeout ClusterBindingPhase = "Timeout"
 )
 
-// ClusterBindingStatus stores status information about a service binding.
+// ClusterBindingStatus stores status information about a service binding. It is
+// updated by both the konnector and the service provider.
 type ClusterBindingStatus struct {
+	// lastHeartbeatTime is the last time the konnector updated the status.
 	// +optional
-	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
+	LastHeartbeatTime metav1.Time `json:"lastHeartbeatTime,omitempty"`
 
-	// phase represents the phase of the service binding.
-	//  +optional
-	Phase ServiceBindingPhase `json:"phase"`
+	// heartbeatInterval is the maximal interval between heartbeats that the
+	// konnector promises to send. The service provider can assume that the
+	// konnector is not unhealthy if it does not receive a heartbeat within
+	// this time.
+	HeartbeatInterval metav1.Duration `json:"heartbeatInterval,omitempty"`
 
-	// conditions is a list of conditions that apply to the ClusterBinding.
+	// phase represents the phase of the service binding. It is set by the
+	// service provider.
+	//
+	// +optional
+	// +kubebuilder:default=Pending
+	Phase ClusterBindingPhase `json:"phase"`
+
+	// conditions is a list of conditions that apply to the ClusterBinding. It is
+	// updated by the konnector and the service provider.
 	//
 	// +optional
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`

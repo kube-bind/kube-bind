@@ -20,11 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kube-bind/kube-bind/contrib/kubernetes"
 	"net/http"
 
 	echo2 "github.com/labstack/echo/v4"
-
-	"github.com/kube-bind/kube-bind/pkg/kubernetes"
 )
 
 type handler struct {

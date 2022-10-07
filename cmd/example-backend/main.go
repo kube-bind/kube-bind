@@ -19,6 +19,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	http2 "github.com/kube-bind/kube-bind/contrib/http"
+	"github.com/kube-bind/kube-bind/contrib/kubernetes"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,8 +32,6 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/pkg/apis/kubebindapi/v1alpha1"
-	"github.com/kube-bind/kube-bind/pkg/http"
-	"github.com/kube-bind/kube-bind/pkg/kubernetes"
 )
 
 type backendOpts struct {
@@ -78,7 +78,7 @@ func main() {
 	opts := newBackendOptions()
 	oidcRedirect := fmt.Sprintf("http://%s:%v/callback", opts.listenIP, opts.listenPort)
 
-	oidcProvider, err := http.NewOIDCServiceProvider(opts.oidcIssuerClientID,
+	oidcProvider, err := http2.NewOIDCServiceProvider(opts.oidcIssuerClientID,
 		opts.oidcIssuerClientSecret,
 		oidcRedirect,
 		opts.oidcIssuerURL)
@@ -101,11 +101,11 @@ func main() {
 		klog.Fatalf("error building kubernetes manager: %v", err)
 	}
 
-	handler, err := http.NewHandler(oidcProvider, mgr)
+	handler, err := http2.NewHandler(oidcProvider, mgr)
 	if err != nil {
 	}
 
-	server, err := http.NewServer(opts.listenIP, opts.listenPort, handler)
+	server, err := http2.NewServer(opts.listenIP, opts.listenPort, handler)
 	if err != nil {
 		klog.Fatalf("failed to start the server: %v", err)
 	}

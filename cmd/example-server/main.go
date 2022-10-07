@@ -30,8 +30,8 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/pkg/apis/kubebindapi/v1alpha1"
-	"github.com/kube-bind/kube-bind/pkg/http"
-	"github.com/kube-bind/kube-bind/pkg/kubernetes"
+	"github.com/kube-bind/kube-bind/pkg/example-server/http"
+	"github.com/kube-bind/kube-bind/pkg/example-server/kubernetes"
 )
 
 type backendOpts struct {

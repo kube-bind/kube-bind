@@ -18,7 +18,7 @@ package kubernetes
 
 import (
 	"context"
-	"github.com/kube-bind/kube-bind/pkg/kubernetes/resources"
+	"github.com/kube-bind/kube-bind/pkg/example-server/kubernetes/resources"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )

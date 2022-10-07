@@ -22,7 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	conditionsapi "github.com/kube-bind/kube-bind-api/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 // Patch defines a list of operations to change a list of conditions into another.

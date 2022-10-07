@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	conditionsapi "github.com/kube-bind/kube-bind-api/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 // mergeOptions allows to set strategies for merging a set of conditions into a single condition,

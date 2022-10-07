@@ -19,9 +19,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/kube-bind/kube-bind-api/pkg/apis/kubebindapi/v1alpha1"
-	"github.com/kube-bind/kube-bind-api/pkg/http"
-	"github.com/kube-bind/kube-bind-api/pkg/kubernetes"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -30,6 +28,10 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+
+	"github.com/kube-bind/kube-bind/pkg/apis/kubebindapi/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/http"
+	"github.com/kube-bind/kube-bind/pkg/kubernetes"
 )
 
 type backendOpts struct {

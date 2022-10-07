@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	conditionsapi "github.com/kube-bind/kube-bind-api/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 func TestNewPatch(t *testing.T) {

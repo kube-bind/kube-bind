@@ -23,7 +23,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	conditionsapi "github.com/kube-bind/kube-bind-api/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 func TestNewConditionsGroup(t *testing.T) {

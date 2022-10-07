@@ -49,7 +49,7 @@ jobs:
           name: e2e
           path: /tmp/e2e/artifacts/
 
-  go test:
+  go-test:
     name: go-test
     runs-on: ubuntu-latest
     steps:

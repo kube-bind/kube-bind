@@ -1,0 +1,10 @@
+*.log
+coverage.*
+.vscode
+.idea/
+*.iml
+.DS_Store
+.env
+/tools
+/build
+/dex

@@ -14,8 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +groupName=kubebindapi.kubectl-bind.io
+// Package v1alpha1 defines the v1alpha1 version of the Kube Bind API
+//
+// +groupName=kube-bind.io
+// +groupGoName=KubeBind
 // +k8s:deepcopy-gen=package,register
-
-// Package v1alpha1 defines the v1alpha1 version of the OSM API
 package v1alpha1

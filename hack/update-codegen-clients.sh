@@ -26,7 +26,7 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; go list -f '{{.Dir}}' -m k8s.i
 
 bash "${CODEGEN_PKG}"/generate-groups.sh "deepcopy,client,informer,lister" \
   github.com/kube-bind/kube-bind/pkg/client github.com/kube-bind/kube-bind/pkg/apis \
-  "kubebindapi.kubectl-bind.io:v1alpha1" \
+  "kubebind:v1alpha1" \
   --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate/boilerplate.generatego.txt \
   --output-base "${SCRIPT_ROOT}" \
   --trim-path-prefix github.com/kube-bind/kube-bind

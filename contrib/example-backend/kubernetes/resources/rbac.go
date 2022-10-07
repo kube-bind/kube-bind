@@ -26,17 +26,13 @@ import (
 	kubeclient "k8s.io/client-go/kubernetes"
 )
 
-const (
-	clusterAdminName = "kubebind-cluster-admin"
-)
-
 func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns string) (*corev1.ServiceAccount, error) {
-	sa, err := client.CoreV1().ServiceAccounts(ns).Get(ctx, clusterAdminName, metav1.GetOptions{})
+	sa, err := client.CoreV1().ServiceAccounts(ns).Get(ctx, ClusterAdminName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			sa = &corev1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      clusterAdminName,
+					Name:      ClusterAdminName,
 					Namespace: ns,
 				},
 			}
@@ -49,7 +45,7 @@ func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns s
 }
 
 func CreateAdminClusterRoleBinding(ctx context.Context, client kubeclient.Interface, ns string) error {
-	if _, err := client.RbacV1().ClusterRoleBindings().Get(ctx, clusterAdminName, metav1.GetOptions{}); err != nil && !errors.IsNotFound(err) {
+	if _, err := client.RbacV1().ClusterRoleBindings().Get(ctx, ClusterAdminName, metav1.GetOptions{}); err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if err == nil {
 		return nil
@@ -57,12 +53,12 @@ func CreateAdminClusterRoleBinding(ctx context.Context, client kubeclient.Interf
 
 	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: clusterAdminName,
+			Name: ClusterAdminName,
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      clusterAdminName,
+				Name:      ClusterAdminName,
 				Namespace: ns,
 			},
 		},

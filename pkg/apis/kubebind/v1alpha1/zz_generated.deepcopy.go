@@ -59,7 +59,7 @@ func (in *ClusterBinding) DeepCopyObject() runtime.Object {
 func (in *ClusterBindingList) DeepCopyInto(out *ClusterBindingList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ClusterBinding, len(*in))
@@ -248,7 +248,7 @@ func (in *ServiceBindingRequest) DeepCopyObject() runtime.Object {
 func (in *ServiceBindingRequestList) DeepCopyInto(out *ServiceBindingRequestList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ServiceBindingRequest, len(*in))
@@ -358,7 +358,7 @@ func (in *ServiceExport) DeepCopyObject() runtime.Object {
 func (in *ServiceExportList) DeepCopyInto(out *ServiceExportList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ServiceExport, len(*in))

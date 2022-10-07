@@ -28,9 +28,6 @@ import (
 
 func CreateClusterBinding(ctx context.Context, client bindclient.Interface, name, ns string) error {
 	clusterBinding := &kubebindv1alpha1.ClusterBinding{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1alpha1",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: ns,

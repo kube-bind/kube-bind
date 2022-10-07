@@ -21,7 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 
-	"github.com/kube-bind/kube-bind-api/pkg/apis/kubebindapi/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/apis/kubebindapi/v1alpha1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

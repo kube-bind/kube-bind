@@ -24,7 +24,7 @@ import (
 
 	echo2 "github.com/labstack/echo/v4"
 
-	"github.com/kube-bind/kube-bind-api/pkg/kubernetes"
+	"github.com/kube-bind/kube-bind/pkg/kubernetes"
 )
 
 type handler struct {

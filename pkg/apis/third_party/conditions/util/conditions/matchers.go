@@ -22,7 +22,7 @@ import (
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 
-	conditionsapi "github.com/kube-bind/kube-bind-api/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 // HaveSameStateOf matches a condition to have the same state of another.

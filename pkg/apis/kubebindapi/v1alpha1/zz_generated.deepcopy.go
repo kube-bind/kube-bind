@@ -22,7 +22,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	conditionsv1alpha1 "github.com/kube-bind/kube-bind-api/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+	conditionsv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 

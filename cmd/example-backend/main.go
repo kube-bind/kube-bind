@@ -19,8 +19,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	http2 "github.com/kube-bind/kube-bind/contrib/http"
-	"github.com/kube-bind/kube-bind/contrib/kubernetes"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -31,6 +29,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
+	http2 "github.com/kube-bind/kube-bind/contrib/example-backend/http"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	"github.com/kube-bind/kube-bind/pkg/apis/kubebindapi/v1alpha1"
 )
 

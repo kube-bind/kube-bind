@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -34,18 +34,18 @@ type ClusterBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// Spec represents the data in the newly created ClusterBinding.
+	// spec represents the data in the newly created ClusterBinding.
 	Spec ClusterBindingSpec `json:"spec"`
 
-	// Status contains reconciliation information for the service binding.
+	// status contains reconciliation information for the service binding.
 	Status ClusterBindingStatus `json:"status,omitempty"`
 }
 
 // ClusterBindingSpec represents the data in the newly created ClusterBinding.
 type ClusterBindingSpec struct {
-	// KubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
-	KubeconfigSecretRef v1.SecretKeySelector `json:"KubeconfigSecretRef"`
-	// ServiceProviderSpec contains all the data and information about the service which has been bound to the service
+	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
+	KubeconfigSecretRef corev1.SecretKeySelector `json:"kubeconfigSecretRef"`
+	// serviceProviderSpec contains all the data and information about the service which has been bound to the service
 	// binding request. The service providers decide what they need and what to configure based on what then include in
 	// this field, such as service region, type, tiers, etc...
 	// +optional
@@ -67,7 +67,7 @@ type ClusterBindingStatus struct {
 	// +optional
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 
-	// Phase represents the phase of the service binding.
+	// phase represents the phase of the service binding.
 	//  +optional
 	Phase ServiceBindingPhase `json:"phase"`
 

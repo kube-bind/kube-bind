@@ -32,10 +32,10 @@ type ServiceExport struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// ServiceExportSepc represents the data in the newly created service binding export.
+	// spec represents the data in the newly created service binding export.
 	Spec ServiceExportSepc `json:"spec"`
 
-	// Status contains reconciliation information for the service binding export.
+	// status contains reconciliation information for the service binding export.
 	Status ServiceBindingExportStatus `json:"status,omitempty"`
 }
 
@@ -67,7 +67,7 @@ type ServiceBindingExportStatus struct {
 type PermissionClaim struct {
 	GroupResource `json:","`
 
-	// This is the identity for a given ServiceExport that the APIResourceSchema belongs to.
+	// identityHash is the identity for a given ServiceExport that the APIResourceSchema belongs to.
 	// The hash can be found on ServiceExport and APIResourceSchema's status.
 	// It will be empty for core types.
 	// Note that one must look this up for a particular KCP instance.

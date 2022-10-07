@@ -103,6 +103,7 @@ func main() {
 
 	handler, err := http2.NewHandler(oidcProvider, mgr)
 	if err != nil {
+		klog.Fatalf("error building the http handler: %v", err)
 	}
 
 	server, err := http2.NewServer(opts.listenIP, opts.listenPort, handler)

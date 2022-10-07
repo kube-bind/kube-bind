@@ -49,34 +49,32 @@ func CreateServiceAccount(ctx context.Context, client *k8s.Clientset, ns string)
 }
 
 func CreateAdminClusterRoleBinding(ctx context.Context, client *k8s.Clientset, ns string) error {
-	clusterRoleBinding, err := client.RbacV1().ClusterRoleBindings().Get(ctx, clusterAdminName, metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			clusterRoleBinding = &rbacv1.ClusterRoleBinding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: clusterAdminName,
-				},
-				Subjects: []rbacv1.Subject{
-					{
-						Kind:      "ServiceAccount",
-						Name:      clusterAdminName,
-						Namespace: ns,
-					},
-				},
-				RoleRef: rbacv1.RoleRef{
-					APIGroup: "rbac.authorization.k8s.io",
-					Kind:     "ClusterRole",
-					Name:     "cluster-admin",
-				},
-			}
-
-			if _, err := client.RbacV1().ClusterRoleBindings().Create(ctx, clusterRoleBinding, metav1.CreateOptions{}); err != nil {
-				return err
-			}
-
-			return nil
-		}
+	if _, err := client.RbacV1().ClusterRoleBindings().Get(ctx, clusterAdminName, metav1.GetOptions{}); err != nil && !errors.IsNotFound(err) {
+		return err
+	} else if err == nil {
+		return nil
 	}
 
-	return err
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: clusterAdminName,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      clusterAdminName,
+				Namespace: ns,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "cluster-admin",
+		},
+	}
+	if _, err := client.RbacV1().ClusterRoleBindings().Create(ctx, clusterRoleBinding, metav1.CreateOptions{}); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-
-# Copyright 2021 The Operating System Manager contributors.
+# Copyright YEAR The Kubectl Bind contributors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,22 +12,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -euo pipefail
-
-cd $(dirname $0)/..
-source hack/lib.sh
-
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE}")
-
-echodate "Creating vendor directory"
-go mod vendor
-
-echodate "Running go generate"
-go generate ./pkg/...
-
-echodate "Generating OpenAPI 3 schema for CRDs"
-go run sigs.k8s.io/controller-tools/cmd/controller-gen \
-  crd \
-  object:headerFile="hack/header.txt" \
-  paths=./pkg/apis/... \
-  output:crd:artifacts:config=./deploy/crd

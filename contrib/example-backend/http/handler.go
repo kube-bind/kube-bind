@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kubectl Bind API contributors.
+Copyright 2022 The Kubectl Bind contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,10 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	"net/http"
 
 	echo2 "github.com/labstack/echo/v4"
+
+	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 )
 
 type handler struct {

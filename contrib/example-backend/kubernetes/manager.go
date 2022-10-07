@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kubectl Bind API contributors.
+Copyright 2022 The Kubectl Bind contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@ package kubernetes
 
 import (
 	"context"
-	resources2 "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
+
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	resources2 "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 )
 
 type Manager struct {

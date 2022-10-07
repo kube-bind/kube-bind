@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kubectl Bind API contributors.
+Copyright 2022 The Kubectl Bind contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -103,6 +103,7 @@ func main() {
 
 	handler, err := http2.NewHandler(oidcProvider, mgr)
 	if err != nil {
+		klog.Fatalf("error building the http handler: %v", err)
 	}
 
 	server, err := http2.NewServer(opts.listenIP, opts.listenPort, handler)

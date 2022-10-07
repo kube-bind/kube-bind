@@ -20,10 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/client-go/kubernetes"
 	"net/http"
 
 	echo2 "github.com/labstack/echo/v4"
+
+	"github.com/kube-bind/kube-bind-api/pkg/kubernetes"
 )
 
 type handler struct {
@@ -31,14 +32,14 @@ type handler struct {
 
 	client *http.Client
 
-	clientSet *kubernetes.Clientset
+	kubeManager *kubernetes.Manager
 }
 
-func NewHandler(provider *oidcServiceProvider, clientSet *kubernetes.Clientset) (*handler, error) {
+func NewHandler(provider *oidcServiceProvider, mgr *kubernetes.Manager) (*handler, error) {
 	return &handler{
-		oidc:      provider,
-		client:    http.DefaultClient,
-		clientSet: clientSet,
+		oidc:        provider,
+		client:      http.DefaultClient,
+		kubeManager: mgr,
 	}, nil
 }
 
@@ -63,12 +64,17 @@ func (h *handler) handleCallback(c echo2.Context) error {
 		http.Error(c.Response(), fmt.Sprintf("expected state %q got %q", "hello-kube-bind", state), http.StatusBadRequest)
 		return nil
 	}
-	token, err := h.oidc.OIDCProviderConfig(nil).Exchange(context.TODO(), code)
+	_, err := h.oidc.OIDCProviderConfig(nil).Exchange(context.TODO(), code)
 	if err != nil {
 		http.Error(c.Response(), fmt.Sprintf("failed to get token: %v", err), http.StatusInternalServerError)
 		return err
 	}
 
-	fmt.Fprintf(c.Response().Writer, "<h1>Access Token: </h1> <p />%q", token.AccessToken)
-	return nil
+	kfg, err := h.kubeManager.HandleResources(context.TODO())
+	if err != nil {
+		c.Logger().Error(err)
+	}
+
+	_, err = c.Response().Writer.Write(kfg)
+	return err
 }

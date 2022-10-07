@@ -86,7 +86,7 @@ build-all:
 	GOOS=$(OS) GOARCH=$(ARCH) $(MAKE) build WHAT=./cmd/...
 
 install: WHAT ?= ./cmd/...
-install:
+install: ## install binaries to GOBIN
 	GOOS=$(OS) GOARCH=$(ARCH) go install -ldflags="$(LDFLAGS)" $(WHAT)
 .PHONY: install
 
@@ -99,7 +99,7 @@ $(STATICCHECK):
 $(LOGCHECK):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) sigs.k8s.io/logtools/logcheck $(LOGCHECK_BIN) $(LOGCHECK_VER)
 
-lint: $(GOLANGCI_LINT) $(STATICCHECK) $(LOGCHECK)
+lint: $(GOLANGCI_LINT) $(STATICCHECK) $(LOGCHECK) ## Run linters
 	$(GOLANGCI_LINT) run --timeout=10m --skip-dirs pkg/client ./...
 	$(STATICCHECK) -checks ST1019,ST1005 ./...
 .PHONY: lint
@@ -178,7 +178,7 @@ test-e2e: $(GOTESTSUM)
 endif
 test-e2e: TEST_ARGS ?=
 test-e2e: WHAT ?= ./test/e2e...
-test-e2e: build-all
+test-e2e: build-all ## run e2e tests
 	NO_GORUN=1 GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) $(WHAT) $(TEST_ARGS)
 
 .PHONY: test
@@ -187,7 +187,7 @@ test: $(GOTESTSUM)
 endif
 test: WHAT ?= ./...
 # We will need to move into the sub package, of pkg/apis to run those tests.
-test:
+test:  ## run unit tests
 	$(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $$(go list "$(WHAT)" | grep -v ./test/e2e/)
 	cd pkg/apis && $(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $(WHAT)
 
@@ -212,7 +212,7 @@ verify-modules: modules  ## Verify go modules are up to date
 	fi
 
 .PHONY: verify
-verify: verify-modules verify-go-versions verify-imports verify-codegen
+verify: verify-modules verify-go-versions verify-imports verify-codegen ## verify formal properties of the code
 
 .PHONY: help
 help: ## Show this help.

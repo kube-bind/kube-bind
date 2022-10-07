@@ -18,7 +18,7 @@ package kubernetes
 
 import (
 	"context"
-	"github.com/kube-bind/kube-bind/pkg/kubernetes/resources"
+	resources2 "github.com/kube-bind/kube-bind/contrib/kubernetes/resources"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -45,26 +45,26 @@ func NewKubernetesManager(config *rest.Config, clusterName, ns string) (*Manager
 }
 
 func (m *Manager) HandleResources(ctx context.Context) ([]byte, error) {
-	err := resources.CreateNamespace(ctx, m.namespace, m.client)
+	err := resources2.CreateNamespace(ctx, m.namespace, m.client)
 	if err != nil {
 		return nil, err
 	}
 
-	sa, err := resources.CreateServiceAccount(ctx, m.client, m.namespace)
+	sa, err := resources2.CreateServiceAccount(ctx, m.client, m.namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := resources.CreateAdminClusterRoleBinding(ctx, m.client, m.namespace); err != nil {
+	if err := resources2.CreateAdminClusterRoleBinding(ctx, m.client, m.namespace); err != nil {
 		return nil, err
 	}
 
-	kfgSecret, err := resources.GenerateKubeconfig(ctx, m.client, m.clusterConfig.Host, m.clusterName, sa.Name, sa.Namespace)
+	kfgSecret, err := resources2.GenerateKubeconfig(ctx, m.client, m.clusterConfig.Host, m.clusterName, sa.Name, sa.Namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := resources.CreateClusterBinding(ctx, m.clusterConfig, sa.Name, m.namespace); err != nil {
+	if err := resources2.CreateClusterBinding(ctx, m.clusterConfig, sa.Name, m.namespace); err != nil {
 		return nil, err
 	}
 

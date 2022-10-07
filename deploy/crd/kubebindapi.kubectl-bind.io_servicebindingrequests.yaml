@@ -34,7 +34,7 @@ spec:
             type: string
           metadata:
             type: object
-          serviceBindingRequestSpec:
+          spec:
             description: ServiceBindingRequestSpec represents the service binding
               requestSpec spec
             properties:
@@ -73,25 +73,19 @@ spec:
                   tokenID:
                     type: string
                 type: object
-              serviceProviderClaims:
-                description: ServiceProviderClaims contains the resources that the
-                  service provider requires for a successful api binding.
-                items:
-                  type: string
-                type: array
+              serviceProviderSpecSpec:
+                description: ServiceProviderSpec contains all the data the service
+                  provider needs to conduct the chosen service by the user. An exmaple
+                  of those specs could be the resources that the user has chosen to
+                  use.
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               sessionID:
                 description: SessionID is a unique value of each session made to the
                   backend server. In general, this value should be the state in the
                   oauth request as well. One example could be the terminal(command
                   line) session opened.
                 type: string
-              userAccountSpec:
-                description: UserAccountSpec contains all the user spec such as privileges
-                  that the user has at the service provider. Each service provider
-                  can specify the format and the degree of those specs based on their
-                  needs.
-                type: object
-                x-kubernetes-preserve-unknown-fields: true
               userEmail:
                 description: UserEmail is the email address that is used by the user
                   to register at the service provider. This is acquired and saved
@@ -103,7 +97,6 @@ spec:
                 type: string
             required:
             - authenticatedClientURL
-            - serviceProviderClaims
             - sessionID
             - userEmail
             - userID
@@ -117,9 +110,9 @@ spec:
                   it has been approved or not.
                 type: boolean
               errorMessage:
-                description: ErrorMessage contains a default error message in case
-                  the controller encountered an error. Will be reset if the error
-                  was resolved.
+                description: 'TODO: use conditions instead of Error messages.https://github.com/kcp-dev/kcp/blob/main/pkg/apis/third_party/conditions/apis/conditions/v1alpha1/types.go
+                  ErrorMessage contains a default error message in case the controller
+                  encountered an error. Will be reset if the error was resolved.'
                 type: string
               errorReason:
                 description: ErrorReason contains a error reason in case the controller
@@ -130,7 +123,7 @@ spec:
                 type: string
             type: object
         required:
-        - serviceBindingRequestSpec
+        - spec
         type: object
     served: true
     storage: true

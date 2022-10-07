@@ -28,79 +28,116 @@ spec:
             type: string
           items:
             items:
-              description: ServiceBindingRequestSpec represents the data in the newly
-                created ServiceBindingRequest
+              description: ServiceBindingRequest is the object that represents the
+                ServiceBindingRequest.
               properties:
-                authenticatedClientURL:
-                  description: 'AuthenticatedClientURL is the service provider url
-                    where the service binding request is made, e.g: www.mangodb.com/kubernetes.'
+                apiVersion:
+                  description: 'APIVersion defines the versioned schema of this representation
+                    of an object. Servers should convert recognized schemas to the
+                    latest internal value, and may reject unrecognized values. More
+                    info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
                   type: string
-                oidcRequestSpec:
-                  description: OIDCRequestSpec contains the request data of the OIDC
-                    request needed to establish the connection to the authorization.
-                    We might not need this I am just adding it for better clarity
-                    of how the api should work. Could br also abstracted into a new
-                    type.
+                kind:
+                  description: 'Kind is a string value representing the REST resource
+                    this object represents. Servers may infer this from the endpoint
+                    the client submits requests to. Cannot be updated. In CamelCase.
+                    More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                  type: string
+                metadata:
+                  type: object
+                spec:
+                  description: ServiceBindingRequestSpec represents the service binding
+                    requestSpec spec
                   properties:
-                    connectorID:
+                    authenticatedClientURL:
+                      description: 'AuthenticatedClientURL is the service provider
+                        url where the service binding request is made, e.g: www.mangodb.com/kubernetes.'
                       type: string
-                    issuerURL:
+                    oidcRequestSpec:
+                      description: OIDCRequestSpec contains the request data of the
+                        OIDC request needed to establish the connection to the authorization.
+                        We might not need this I am just adding it for better clarity
+                        of how the api should work. Could br also abstracted into
+                        a new type.
+                      properties:
+                        connectorID:
+                          type: string
+                        issuerURL:
+                          type: string
+                        scopes:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - issuerURL
+                      type: object
+                    oidcResponseSpec:
+                      description: OIDCResponseSpec contains the response of the OIDC
+                        request which has the all needed data/credentials to access
+                        the authorization server to get all the user related data.
+                      properties:
+                        accessToken:
+                          type: string
+                        claims:
+                          type: string
+                        refreshToken:
+                          type: string
+                        tokenID:
+                          type: string
+                      type: object
+                    serviceProviderSpecSpec:
+                      description: ServiceProviderSpec contains all the data the service
+                        provider needs to conduct the chosen service by the user.
+                        An exmaple of those specs could be the resources that the
+                        user has chosen to use.
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                    sessionID:
+                      description: SessionID is a unique value of each session made
+                        to the backend server. In general, this value should be the
+                        state in the oauth request as well. One example could be the
+                        terminal(command line) session opened.
                       type: string
-                    scopes:
-                      items:
-                        type: string
-                      type: array
+                    userEmail:
+                      description: UserEmail is the email address that is used by
+                        the user to register at the service provider. This is acquired
+                        and saved after the request has been made and probably approved.
+                      type: string
+                    userID:
+                      description: UserID Probably we don't need however it could
+                        be a convenient value for better computations.
+                      type: string
                   required:
-                  - issuerURL
+                  - authenticatedClientURL
+                  - sessionID
+                  - userEmail
+                  - userID
                   type: object
-                oidcResponseSpec:
-                  description: OIDCResponseSpec contains the response of the OIDC
-                    request which has the all needed data/credentials to access the
-                    authorization server to get all the user related data.
+                status:
+                  description: Status contains reconciliation information for the
+                    service binding request.
                   properties:
-                    accessToken:
+                    approved:
+                      description: Approved represents the status of the request,
+                        whether it has been approved or not.
+                      type: boolean
+                    errorMessage:
+                      description: 'TODO: use conditions instead of Error messages.https://github.com/kcp-dev/kcp/blob/main/pkg/apis/third_party/conditions/apis/conditions/v1alpha1/types.go
+                        ErrorMessage contains a default error message in case the
+                        controller encountered an error. Will be reset if the error
+                        was resolved.'
                       type: string
-                    claims:
+                    errorReason:
+                      description: ErrorReason contains a error reason in case the
+                        controller encountered an error. Will be reset if the error
+                        was resolved.
                       type: string
-                    refreshToken:
-                      type: string
-                    tokenID:
+                    lastUpdated:
+                      format: date-time
                       type: string
                   type: object
-                serviceProviderClaims:
-                  description: ServiceProviderClaims contains the resources that the
-                    service provider requires for a successful api binding.
-                  items:
-                    type: string
-                  type: array
-                sessionID:
-                  description: SessionID is a unique value of each session made to
-                    the backend server. In general, this value should be the state
-                    in the oauth request as well. One example could be the terminal(command
-                    line) session opened.
-                  type: string
-                userAccountSpec:
-                  description: UserAccountSpec contains all the user spec such as
-                    privileges that the user has at the service provider. Each service
-                    provider can specify the format and the degree of those specs
-                    based on their needs.
-                  type: object
-                  x-kubernetes-preserve-unknown-fields: true
-                userEmail:
-                  description: UserEmail is the email address that is used by the
-                    user to register at the service provider. This is acquired and
-                    saved after the request has been made and probably approved.
-                  type: string
-                userID:
-                  description: UserID Probably we don't need however it could be a
-                    convenient value for better computations.
-                  type: string
               required:
-              - authenticatedClientURL
-              - serviceProviderClaims
-              - sessionID
-              - userEmail
-              - userID
+              - spec
               type: object
             type: array
           kind:

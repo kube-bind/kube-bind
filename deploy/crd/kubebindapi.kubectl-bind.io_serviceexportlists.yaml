@@ -1,0 +1,114 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  name: serviceexportlists.kubebindapi.kubectl-bind.io
+spec:
+  group: kubebindapi.kubectl-bind.io
+  names:
+    kind: ServiceExportList
+    listKind: ServiceExportListList
+    plural: serviceexportlists
+    singular: serviceexportlist
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ServiceExportList is the objects list that represents the ServiceExport.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          items:
+            items:
+              description: ServiceExport is the object that represents the ClusterBinding.
+              properties:
+                apiVersion:
+                  description: 'APIVersion defines the versioned schema of this representation
+                    of an object. Servers should convert recognized schemas to the
+                    latest internal value, and may reject unrecognized values. More
+                    info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                  type: string
+                kind:
+                  description: 'Kind is a string value representing the REST resource
+                    this object represents. Servers may infer this from the endpoint
+                    the client submits requests to. Cannot be updated. In CamelCase.
+                    More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                  type: string
+                metadata:
+                  type: object
+                spec:
+                  description: ServiceExportSepc represents the data in the newly
+                    created service binding export.
+                  properties:
+                    permissionClaims:
+                      description: "permissionClaims make resources available in the
+                        ServiceExport virtual workspace that are not part of the actual
+                        APIExport resources. \n PermissionClaims are optional and
+                        should be the least access necessary to complete the functions
+                        that the service provider needs. Access is asked for on a
+                        GroupResource + identity basis. \n PermissionClaims must be
+                        accepted by the user's explicit acknowledgement. Hence, when
+                        claims change, the respecting objects are not visible immediately.
+                        \n PermissionClaims overlapping with the ServiceExport resources
+                        are ignored."
+                      items:
+                        description: PermissionClaim identifies an object by GR and
+                          identity hash. Its purpose is to determine the added permissions
+                          that a service provider may request and that a consumer
+                          may accept and allow the service provider access to.
+                        properties:
+                          group:
+                            description: group is the name of an API group. For core
+                              groups this is the empty string '""'.
+                            pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
+                            type: string
+                          identityHash:
+                            description: This is the identity for a given ServiceExport
+                              that the APIResourceSchema belongs to. The hash can
+                              be found on ServiceExport and APIResourceSchema's status.
+                              It will be empty for core types. Note that one must
+                              look this up for a particular KCP instance.
+                            type: string
+                          resource:
+                            description: 'resource is the name of the resource. Note:
+                              it is worth noting that you can not ask for permissions
+                              for resource provided by a CRD not provided by an service
+                              binding export.'
+                            pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                            type: string
+                        required:
+                        - resource
+                        type: object
+                      type: array
+                      x-kubernetes-list-map-keys:
+                      - group
+                      - resource
+                      x-kubernetes-list-type: map
+                  type: object
+                status:
+                  description: Status contains reconciliation information for the
+                    service binding export.
+                  type: object
+              required:
+              - spec
+              type: object
+            type: array
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+        required:
+        - items
+        type: object
+    served: true
+    storage: true

@@ -29,9 +29,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
-	http2 "github.com/kube-bind/kube-bind/contrib/example-backend/http"
-	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
-	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
+	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
 type backendOpts struct {
@@ -55,7 +55,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(kubebindv1alpha1.AddToScheme(scheme))
 }
 
 func newBackendOptions() *backendOpts {
@@ -78,7 +78,7 @@ func main() {
 	opts := newBackendOptions()
 	oidcRedirect := fmt.Sprintf("http://%s:%v/callback", opts.listenIP, opts.listenPort)
 
-	oidcProvider, err := http2.NewOIDCServiceProvider(opts.oidcIssuerClientID,
+	oidcProvider, err := examplehttp.NewOIDCServiceProvider(opts.oidcIssuerClientID,
 		opts.oidcIssuerClientSecret,
 		oidcRedirect,
 		opts.oidcIssuerURL)
@@ -91,22 +91,22 @@ func main() {
 	if err != nil {
 		klog.Fatalf("error building kubeconfig: %v", err)
 	}
-	cfg.ContentConfig.GroupVersion = &schema.GroupVersion{Group: v1alpha1.GroupName, Version: v1alpha1.GroupVersion}
+	cfg.ContentConfig.GroupVersion = &schema.GroupVersion{Group: kubebindv1alpha1.GroupName, Version: kubebindv1alpha1.GroupVersion}
 	cfg.APIPath = "/apis"
 	cfg.NegotiatedSerializer = serializer.NewCodecFactory(scheme)
 	cfg.UserAgent = rest.DefaultKubernetesUserAgent()
 
-	mgr, err := kubernetes.NewKubernetesManager(cfg, opts.clusterName, opts.namespace)
+	mgr, err := examplekube.NewKubernetesManager(cfg, opts.clusterName, opts.namespace)
 	if err != nil {
 		klog.Fatalf("error building kubernetes manager: %v", err)
 	}
 
-	handler, err := http2.NewHandler(oidcProvider, mgr)
+	handler, err := examplehttp.NewHandler(oidcProvider, mgr)
 	if err != nil {
 		klog.Fatalf("error building the http handler: %v", err)
 	}
 
-	server, err := http2.NewServer(opts.listenIP, opts.listenPort, handler)
+	server, err := examplehttp.NewServer(opts.listenIP, opts.listenPort, handler)
 	if err != nil {
 		klog.Fatalf("failed to start the server: %v", err)
 	}

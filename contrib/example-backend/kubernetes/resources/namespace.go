@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateNamespace(ctx context.Context, ns string, client *kubernetes.Clientset) error {
+func CreateNamespace(ctx context.Context, ns string, client kubernetes.Interface) error {
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ns,

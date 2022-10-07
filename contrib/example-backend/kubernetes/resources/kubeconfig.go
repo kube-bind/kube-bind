@@ -29,8 +29,9 @@ import (
 )
 
 func GenerateKubeconfig(ctx context.Context,
-	client *kubernetes.Clientset,
-	host, clusterName, saName, ns string) (*corev1.Secret, error) {
+	client kubernetes.Interface,
+	host, clusterName, saName, ns string,
+) (*corev1.Secret, error) {
 	kfg, err := client.CoreV1().Secrets(ns).Get(ctx, "cluster-admin-kubeconfig", v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {

@@ -23,14 +23,14 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8s "k8s.io/client-go/kubernetes"
+	kubeclient "k8s.io/client-go/kubernetes"
 )
 
 const (
 	clusterAdminName = "kubebind-cluster-admin"
 )
 
-func CreateServiceAccount(ctx context.Context, client *k8s.Clientset, ns string) (*corev1.ServiceAccount, error) {
+func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns string) (*corev1.ServiceAccount, error) {
 	sa, err := client.CoreV1().ServiceAccounts(ns).Get(ctx, clusterAdminName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -48,7 +48,7 @@ func CreateServiceAccount(ctx context.Context, client *k8s.Clientset, ns string)
 	return sa, err
 }
 
-func CreateAdminClusterRoleBinding(ctx context.Context, client *k8s.Clientset, ns string) error {
+func CreateAdminClusterRoleBinding(ctx context.Context, client kubeclient.Interface, ns string) error {
 	if _, err := client.RbacV1().ClusterRoleBindings().Get(ctx, clusterAdminName, metav1.GetOptions{}); err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if err == nil {

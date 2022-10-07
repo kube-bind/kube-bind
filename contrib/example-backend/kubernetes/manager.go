@@ -19,27 +19,35 @@ package kubernetes
 import (
 	"context"
 
-	k8s "k8s.io/client-go/kubernetes"
+	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	resources2 "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
+	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
+	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 )
 
 type Manager struct {
 	clusterConfig *rest.Config
-	client        *k8s.Clientset
+	kubeClient    kubeclient.Interface
+	bindClient    bindclient.Interface
 	namespace     string
 	clusterName   string
 }
 
 func NewKubernetesManager(config *rest.Config, clusterName, ns string) (*Manager, error) {
-	client, err := k8s.NewForConfig(config)
+	kubeClient, err := kubeclient.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	bindClient, err := bindclient.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Manager{
-		client:        client,
+		kubeClient:    kubeClient,
+		bindClient:    bindClient,
 		clusterConfig: config,
 		namespace:     ns,
 		clusterName:   clusterName,
@@ -47,26 +55,26 @@ func NewKubernetesManager(config *rest.Config, clusterName, ns string) (*Manager
 }
 
 func (m *Manager) HandleResources(ctx context.Context) ([]byte, error) {
-	err := resources2.CreateNamespace(ctx, m.namespace, m.client)
+	err := kuberesources.CreateNamespace(ctx, m.namespace, m.kubeClient)
 	if err != nil {
 		return nil, err
 	}
 
-	sa, err := resources2.CreateServiceAccount(ctx, m.client, m.namespace)
+	sa, err := kuberesources.CreateServiceAccount(ctx, m.kubeClient, m.namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := resources2.CreateAdminClusterRoleBinding(ctx, m.client, m.namespace); err != nil {
+	if err := kuberesources.CreateAdminClusterRoleBinding(ctx, m.kubeClient, m.namespace); err != nil {
 		return nil, err
 	}
 
-	kfgSecret, err := resources2.GenerateKubeconfig(ctx, m.client, m.clusterConfig.Host, m.clusterName, sa.Name, sa.Namespace)
+	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig.Host, m.clusterName, sa.Name, sa.Namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := resources2.CreateClusterBinding(ctx, m.clusterConfig, sa.Name, m.namespace); err != nil {
+	if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, sa.Name, m.namespace); err != nil {
 		return nil, err
 	}
 

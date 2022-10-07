@@ -35,10 +35,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: Spec represents the data in the newly created ClusterBinding.
+            description: spec represents the data in the newly created ClusterBinding.
             properties:
-              KubeconfigSecretRef:
-                description: KubeconfigSecretName is the secret ref that contains
+              kubeconfigSecretRef:
+                description: kubeconfigSecretName is the secret ref that contains
                   the kubeconfig of the service cluster.
                 properties:
                   key:
@@ -57,7 +57,7 @@ spec:
                 type: object
                 x-kubernetes-map-type: atomic
               serviceProviderSpec:
-                description: ServiceProviderSpec contains all the data and information
+                description: serviceProviderSpec contains all the data and information
                   about the service which has been bound to the service binding request.
                   The service providers decide what they need and what to configure
                   based on what then include in this field, such as service region,
@@ -65,10 +65,10 @@ spec:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
             required:
-            - KubeconfigSecretRef
+            - kubeconfigSecretRef
             type: object
           status:
-            description: Status contains reconciliation information for the service
+            description: status contains reconciliation information for the service
               binding.
             properties:
               conditions:
@@ -121,7 +121,7 @@ spec:
                 format: date-time
                 type: string
               phase:
-                description: Phase represents the phase of the service binding.
+                description: phase represents the phase of the service binding.
                 enum:
                 - Connected
                 - Pending

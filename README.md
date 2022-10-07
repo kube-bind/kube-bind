@@ -32,7 +32,7 @@ the oauth2 workflow.
 
 We use dex to manage OIDC, following the steps below you can run a local OIDC issuer using dex:
 * First, clone the dex repo: `git clone https://github.com/dexidp/dex.git`
-* Build the dex binary `make build`
+* `cd dex` and then build the dex binary `make build`
 * The binary will be created in `bin/dex`
 * Adjust the config file(`examples/config-dev.yaml`) for dex by specifying the server callback method:
 ```yaml
@@ -52,12 +52,12 @@ and that you have at least one k8s cluster. Take a look at the backend option in
 Once you have the dex server in place and the kubernetes cluster as well, follow the steps below:
 * Make sure to send the flags to the backend binary before running the backend:
 ```shell
-go build -o backend ./cmd/main.go
-
-./backend --kubeconfig=[path-to-k8s-cluster]
---namespace=[whatever-namespace|default kube-system]
---oidc-issuer-client-secret=[ZXhhbXBsZS1hcHAtc2VjcmV0 | should match the one in dec config yaml file] 
---oidc-issuer-client-id=kube-bind
---oidc-issuer-url=http://127.0.0.1:5556/dex
---cluster-name=[k8s-clustername]
+$ make build
+$ bin/example-backend --kubeconfig=${BACKEND_KUBECONFIG} \
+  --namespace=[whatever-namespace|default kube-system] \
+  --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
+  --oidc-issuer-client-id=kube-bind \
+  --oidc-issuer-url=http://127.0.0.1:5556/dex \
+  --cluster-name=[k8s-clustername]
 ```
+where `ZXhhbXBsZS1hcHAtc2VjcmV0` matches the value of the dex config file.

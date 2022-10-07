@@ -78,7 +78,7 @@ require-%:
 
 build: WHAT ?= ./cmd/...
 build: require-jq require-go require-git verify-go-versions ## Build the project
-	GOOS=$(OS) GOARCH=$(ARCH) go build $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o bin $(WHAT)
+	GOOS=$(OS) GOARCH=$(ARCH) go build $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o bin/ $(WHAT)
 .PHONY: build
 
 .PHONY: build-all

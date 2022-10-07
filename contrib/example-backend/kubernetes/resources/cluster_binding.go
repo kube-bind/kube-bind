@@ -21,13 +21,13 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 
-	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 )
 
-func CreateClusterBinding(ctx context.Context, config *rest.Config, name, ns string) error {
-	clusterBinding := &v1alpha1.ClusterBinding{
+func CreateClusterBinding(ctx context.Context, client bindclient.Interface, name, ns string) error {
+	clusterBinding := &kubebindv1alpha1.ClusterBinding{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1alpha1",
 		},
@@ -35,7 +35,7 @@ func CreateClusterBinding(ctx context.Context, config *rest.Config, name, ns str
 			Name:      name,
 			Namespace: ns,
 		},
-		Spec: v1alpha1.ClusterBindingSpec{
+		Spec: kubebindv1alpha1.ClusterBindingSpec{
 			KubeconfigSecretRef: corev1.SecretKeySelector{
 				LocalObjectReference: corev1.LocalObjectReference{
 					Name: name,
@@ -45,15 +45,6 @@ func CreateClusterBinding(ctx context.Context, config *rest.Config, name, ns str
 		},
 	}
 
-	restClient, err := rest.RESTClientFor(config)
-	if err != nil {
-		return err
-	}
-
-	return restClient.
-		Post().
-		Namespace(ns).
-		Resource("clusterbindings").
-		Body(clusterBinding).
-		Do(ctx).Error()
+	_, err := client.KubeBindV1alpha1().ClusterBindings(ns).Create(ctx, clusterBinding, metav1.CreateOptions{})
+	return err
 }

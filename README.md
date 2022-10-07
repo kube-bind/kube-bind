@@ -1,3 +1,5 @@
+<img alt="Logo" width="196px" style="margin-right: 30px;" align="left" src="./docs/images/logo.svg"></img>
+
 # kube-bind
 
 kube-bind is a prototype project with the goal to establish a new extension model for Kubernetes clusters:

@@ -31,21 +31,21 @@ type ServiceBindingRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// ServiceBindingRequestSpec represents the service binding requestSpec spec
+	// spec represents the service binding requestSpec spec
 	ServiceBindingRequestSpec ServiceBindingRequestSpec `json:"spec"`
 
-	// Status contains reconciliation information for the service binding request.
+	// status contains reconciliation information for the service binding request.
 	Status ServiceBindingRequestStatus `json:"status,omitempty"`
 }
 
 // ServiceBindingRequestSpec represents the data in the newly created ServiceBindingRequest
 type ServiceBindingRequestSpec struct {
-	// AuthenticatedClientURL is the service provider url where the service binding request is made, e.g: www.mangodb.com/kubernetes.
+	// authenticatedClientURL is the service provider url where the service binding request is made, e.g: www.mangodb.com/kubernetes.
 	AuthenticatedClientURL string `json:"authenticatedClientURL"`
-	// SessionID is a unique value of each session made to the backend server. In general, this value should be the state
+	// sessionID is a unique value of each session made to the backend server. In general, this value should be the state
 	// in the oauth request as well. One example could be the terminal(command line) session opened.
 	SessionID string `json:"sessionID"`
-	// UserID Probably we don't need however it could be a convenient value for better computations.
+	// userID Probably we don't need however it could be a convenient value for better computations.
 	UserID string `json:"userID"`
 	// UserEmail is the email address that is used by the user to register at the service provider. This is acquired and
 	// saved after the request has been made and probably approved.
@@ -57,7 +57,7 @@ type ServiceBindingRequestSpec struct {
 	// OIDCResponseSpec contains the response of the OIDC request which has the all needed data/credentials to access the
 	// authorization server to get all the user related data.
 	OIDCResponseSpec *OIDCResponseSpec `json:"oidcResponseSpec,omitempty"`
-	// ServiceProviderSpec contains all the data the service provider needs to conduct the chosen service by the user.
+	// serviceProviderSpec contains all the data the service provider needs to conduct the chosen service by the user.
 	//An exmaple of those specs could be the resources that the user has chosen to use.
 	ServiceProviderSpec runtime.RawExtension `json:"serviceProviderSpecSpec,omitempty"`
 }
@@ -80,21 +80,20 @@ type OIDCResponseSpec struct {
 
 // ServiceBindingRequestStatus stores status information about a service binding request.
 type ServiceBindingRequestStatus struct {
-
 	// +optional
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 
-	// Approved represents the status of the request, whether it has been approved or not.
+	// approved represents the status of the request, whether it has been approved or not.
 	//  +optional
 	Approved bool `json:"approved"`
 
 	// TODO: use conditions instead of Error messages.https://github.com/kcp-dev/kcp/blob/main/pkg/apis/third_party/conditions/apis/conditions/v1alpha1/types.go
-	// ErrorMessage contains a default error message in case the controller encountered an error.
+	// errorMessage contains a default error message in case the controller encountered an error.
 	// Will be reset if the error was resolved.
 	// +optional
 	ErrorMessage *string `json:"errorMessage,omitempty"`
 
-	// ErrorReason contains a error reason in case the controller encountered an error. Will be reset if the error was resolved.
+	// errorReason contains a error reason in case the controller encountered an error. Will be reset if the error was resolved.
 	// +optional
 	ErrorReason string `json:"errorReason,omitempty"`
 }

@@ -35,8 +35,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: ServiceExportSepc represents the data in the newly created
-              service binding export.
+            description: spec represents the data in the newly created service binding
+              export.
             properties:
               permissionClaims:
                 description: "permissionClaims make resources available in the ServiceExport
@@ -60,7 +60,7 @@ spec:
                       pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
                       type: string
                     identityHash:
-                      description: This is the identity for a given ServiceExport
+                      description: identityHash is the identity for a given ServiceExport
                         that the APIResourceSchema belongs to. The hash can be found
                         on ServiceExport and APIResourceSchema's status. It will be
                         empty for core types. Note that one must look this up for
@@ -82,7 +82,7 @@ spec:
                 x-kubernetes-list-type: map
             type: object
           status:
-            description: Status contains reconciliation information for the service
+            description: status contains reconciliation information for the service
               binding export.
             type: object
         required:

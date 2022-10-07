@@ -81,8 +81,8 @@ type ClusterBindingStatus struct {
 
 // ClusterBindingList is the objects list that represents the ClusterBinding.
 type ClusterBindingList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
 
 	Items []ClusterBinding `json:"items"`
 }

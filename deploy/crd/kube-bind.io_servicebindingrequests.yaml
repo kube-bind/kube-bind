@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: servicebindingrequests.kubebindapi.kubectl-bind.io
+  name: servicebindingrequests.kube-bind.io
 spec:
-  group: kubebindapi.kubectl-bind.io
+  group: kube-bind.io
   names:
     kind: ServiceBindingRequest
     listKind: ServiceBindingRequestList

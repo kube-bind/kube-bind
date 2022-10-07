@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kube-bind/kube-bind/contrib/kubernetes"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	"net/http"
 
 	echo2 "github.com/labstack/echo/v4"

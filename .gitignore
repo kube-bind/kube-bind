@@ -5,6 +5,7 @@ coverage.*
 *.iml
 .DS_Store
 .env
-/tools
+/hack/tools
 /build
 /dex
+/bin

@@ -34,6 +34,7 @@ krews:
   index:
     owner: kube-bind
     name: krew-index
+    token: "{{ .Env.KREW_GITHUB_TOKEN }}"
   homepage: "https://kubectl-bind.io/"
   description: |
     Binds API services and other remote types into the current cluster. API services

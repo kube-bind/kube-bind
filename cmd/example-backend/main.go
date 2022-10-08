@@ -70,12 +70,17 @@ func newBackendOptions() *backendOpts {
 	flag.StringVar(&opts.namespace, "namespace", "kube-system", "the namespace where the biding resources are created at.")
 	flag.StringVar(&opts.clusterName, "cluster-name", "", "the name of the cluster where kube-bind apis will run.")
 
+	klog.InitFlags(nil)
+	flag.Set("v", "2") // nolint:errcheck
+
 	flag.Parse()
 
 	return opts
 }
 
 func main() {
+	defer klog.Flush()
+
 	opts := newBackendOptions()
 	oidcRedirect := fmt.Sprintf("http://%s:%v/callback", opts.listenIP, opts.listenPort)
 

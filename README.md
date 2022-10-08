@@ -54,7 +54,7 @@ and that you have at least one k8s cluster. Take a look at the backend option in
 * start the backend binary with the right flags:
 ```shell
 $ make build
-$ bin/example-backend --kubeconfig=${BACKEND_KUBECONFIG} \
+$ bin/example-backend \
   --namespace=[whatever-namespace|default kube-system] \
   --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
   --oidc-issuer-client-id=kube-bind \

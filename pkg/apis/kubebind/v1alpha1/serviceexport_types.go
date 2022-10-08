@@ -37,7 +37,7 @@ type ServiceExport struct {
 	Spec ServiceExportSepc `json:"spec"`
 
 	// status contains reconciliation information for the service binding export.
-	Status ServiceBindingExportStatus `json:"status,omitempty"`
+	Status ServiceExportStatus `json:"status,omitempty"`
 }
 
 type ServiceExportSepc struct {
@@ -57,7 +57,7 @@ type ServiceExportSepc struct {
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
-type ServiceBindingExportStatus struct {
+type ServiceExportStatus struct {
 }
 
 // PermissionClaim identifies an object by GR and identity hash.

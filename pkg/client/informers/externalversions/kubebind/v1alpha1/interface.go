@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// ClusterBindings returns a ClusterBindingInformer.
 	ClusterBindings() ClusterBindingInformer
+	// ServiceBindings returns a ServiceBindingInformer.
+	ServiceBindings() ServiceBindingInformer
 	// ServiceBindingRequests returns a ServiceBindingRequestInformer.
 	ServiceBindingRequests() ServiceBindingRequestInformer
 	// ServiceExports returns a ServiceExportInformer.
@@ -48,6 +50,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // ClusterBindings returns a ClusterBindingInformer.
 func (v *version) ClusterBindings() ClusterBindingInformer {
 	return &clusterBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceBindings returns a ServiceBindingInformer.
+func (v *version) ServiceBindings() ServiceBindingInformer {
+	return &serviceBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // ServiceBindingRequests returns a ServiceBindingRequestInformer.

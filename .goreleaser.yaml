@@ -18,7 +18,7 @@ builds:
   - goos: windows
     goarch: ppc64le
 archives:
-- id: kubectl-bind-plugin
+- id: kubectl-bind
   builds:
   - kubectl-bind
   name_template: "kubectl-bind_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
@@ -26,3 +26,18 @@ release:
   draft: true
   prerelease: auto
   mode: keep-existing
+
+krews:
+- name: kubectl-bind
+  ids:
+  - kubectl-bind
+  index:
+    owner: kube-bind
+    name: krew-index
+  homepage: "https://kubectl-bind.io/"
+  description: |
+    Binds API services and other remote types into the current cluster. API services
+    are CRDs that are operated by a service provider without anything by that service
+    provider running in the local cluster. Real SaaS for Kubernetes.
+  short_description: "Bind API services and other remote types into the current cluster."
+  skip_upload: auto

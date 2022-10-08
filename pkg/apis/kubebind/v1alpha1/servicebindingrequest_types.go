@@ -21,12 +21,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-//+genclient
+// ServiceBindingRequest is the object that represents the ServiceBindingRequest.
+//
+// +crd
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource:shortName=sbr
 // +kubebuilder:subresource:status
-
-// ServiceBindingRequest is the object that represents the ServiceBindingRequest.
 type ServiceBindingRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -98,9 +99,9 @@ type ServiceBindingRequestStatus struct {
 	ErrorReason string `json:"errorReason,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // ServiceBindingRequestList is the objects list that represents the ServiceBindingRequest.
+//
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ServiceBindingRequestList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`

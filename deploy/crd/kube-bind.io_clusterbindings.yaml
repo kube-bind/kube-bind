@@ -1,4 +1,3 @@
----
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -12,15 +11,14 @@ spec:
     kind: ClusterBinding
     listKind: ClusterBindingList
     plural: clusterbindings
-    shortNames:
-    - cb
     singular: clusterbinding
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ClusterBinding is the object that represents the ClusterBinding.
+        description: ClusterBinding represents a bound consumer class. It lives in
+          a service provider cluster and is a singleton named "cluster".
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,6 +31,12 @@ spec:
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
+            properties:
+              name:
+                default: cluster
+                enum:
+                - cluster
+                type: string
             type: object
           spec:
             description: spec represents the data in the newly created ClusterBinding.
@@ -46,16 +50,11 @@ spec:
                       valid secret key.
                     type: string
                   name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    description: Name of the referent.
                     type: string
-                  optional:
-                    description: Specify whether the Secret or its key must be defined
-                    type: boolean
                 required:
                 - key
                 type: object
-                x-kubernetes-map-type: atomic
               serviceProviderSpec:
                 description: serviceProviderSpec contains all the data and information
                   about the service which has been bound to the service binding request.

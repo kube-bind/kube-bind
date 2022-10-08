@@ -17,35 +17,38 @@ limitations under the License.
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
-// ClusterBinding is the object that represents the ClusterBinding.
+// ClusterBinding represents a bound consumer class. It lives in a service provider cluster
+// and is a singleton named "cluster".
 //
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:shortName=cb
+// +kubebuilder:resource:scope=Namespaced
 // +kubebuilder:subresource:status
 type ClusterBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec represents the data in the newly created ClusterBinding.
+	// +required
 	Spec ClusterBindingSpec `json:"spec"`
 
 	// status contains reconciliation information for the service binding.
+	// +optional
 	Status ClusterBindingStatus `json:"status,omitempty"`
 }
 
 // ClusterBindingSpec represents the data in the newly created ClusterBinding.
 type ClusterBindingSpec struct {
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
-	KubeconfigSecretRef corev1.SecretKeySelector `json:"kubeconfigSecretRef"`
+	// +required
+	KubeconfigSecretRef LocalSecretKeyRef `json:"kubeconfigSecretRef"`
 	// serviceProviderSpec contains all the data and information about the service which has been bound to the service
 	// binding request. The service providers decide what they need and what to configure based on what then include in
 	// this field, such as service region, type, tiers, etc...
@@ -79,6 +82,8 @@ type ClusterBindingStatus struct {
 	// konnector promises to send. The service provider can assume that the
 	// konnector is not unhealthy if it does not receive a heartbeat within
 	// this time.
+	//
+	// +optional
 	HeartbeatInterval metav1.Duration `json:"heartbeatInterval,omitempty"`
 
 	// phase represents the phase of the service binding. It is set by the

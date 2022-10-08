@@ -19,7 +19,6 @@ package resources
 import (
 	"context"
 
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
@@ -33,11 +32,9 @@ func CreateClusterBinding(ctx context.Context, client bindclient.Interface, name
 			Namespace: ns,
 		},
 		Spec: kubebindv1alpha1.ClusterBindingSpec{
-			KubeconfigSecretRef: corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: name,
-				},
-				Key: "kubeconfig",
+			KubeconfigSecretRef: kubebindv1alpha1.LocalSecretKeyRef{
+				Name: name,
+				Key:  "kubeconfig",
 			},
 		},
 	}

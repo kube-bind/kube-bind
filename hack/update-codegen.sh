@@ -36,7 +36,7 @@ cd pkg/apis
     output:crd:artifacts:config=../../deploy/crd
 cd -
 
-for CRD in ./config/crds/*.yaml; do
+for CRD in ./deploy/crd/*.yaml; do
     if [ -f "${CRD}-patch" ]; then
         echo "Applying ${CRD}"
         ${YAML_PATCH} -o "${CRD}-patch" < "${CRD}" > "${CRD}.patched"

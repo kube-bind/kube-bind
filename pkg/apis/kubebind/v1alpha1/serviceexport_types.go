@@ -53,9 +53,7 @@ type ServiceExportSepc struct {
 	// PermissionClaims overlapping with the ServiceExport resources are ignored.
 	//
 	// +optional
-	// +listType=map
-	// +listMapKey=group
-	// +listMapKey=resource
+	// +listType=atomic
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 

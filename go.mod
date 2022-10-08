@@ -7,7 +7,6 @@ require (
 	github.com/google/go-cmp v0.5.8
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/onsi/gomega v1.20.1
-	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
@@ -20,6 +19,7 @@ require (
 	k8s.io/component-base v0.25.2
 	k8s.io/klog/v2 v2.70.1
 	sigs.k8s.io/controller-tools v0.10.0
+	sigs.k8s.io/yaml v1.3.0
 )
 
 replace cloud.google.com/go => cloud.google.com/go v0.100.2
@@ -124,5 +124,4 @@ require (
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
-	sigs.k8s.io/yaml v1.3.0 // indirect
 )

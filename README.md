@@ -44,16 +44,17 @@ staticClients:
 ```
 * Run dex: `./bin/dex serve examples/config-dev.yaml`
 
-Next you should be able to run the backend.
+Next you should be able to run the backend. For it you need a kubernetes cluster (e.g. kind)
+accessible.
 
 ***Note: make sure before running the backend that you have the dex server up and running as mentioned above
 and that you have at least one k8s cluster. Take a look at the backend option in the cmd/main.go file***
 
-Once you have the dex server in place and the kubernetes cluster as well, follow the steps below:
+* apply the CRDs: `kubectl apply -f deploy/crd`
 * start the backend binary with the right flags:
 ```shell
 $ make build
-$ bin/example-backend --kubeconfig=${BACKEND_KUBECONFIG} \
+$ bin/example-backend \
   --namespace=[whatever-namespace|default kube-system] \
   --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
   --oidc-issuer-client-id=kube-bind \

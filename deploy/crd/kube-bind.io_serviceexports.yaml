@@ -76,10 +76,7 @@ spec:
                   - resource
                   type: object
                 type: array
-                x-kubernetes-list-map-keys:
-                - group
-                - resource
-                x-kubernetes-list-type: map
+                x-kubernetes-list-type: atomic
             type: object
           status:
             description: status contains reconciliation information for the service

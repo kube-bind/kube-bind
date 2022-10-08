@@ -4,17 +4,6 @@ on:
   push:
     tags:
     - 'v*'
-    branches:
-    - main
-    - 'release-*'
-  pull_request:
-    branches:
-    - main
-    - 'release-*'
-    paths-ignore:
-    - "docs/**"
-    - "**/*.md"
-    - ".github/ISSUE_TEMPLATE/*"
 
 permissions:
   contents: write

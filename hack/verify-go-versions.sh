@@ -21,6 +21,7 @@ VERSION=$(grep "go 1." go.mod | sed 's/go //')
 
 grep "FROM golang:" Dockerfile | { ! grep -v "${VERSION}"; } || { echo "Wrong go version in Dockerfile, expected ${VERSION}"; exit 1; }
 grep "go-version:" .github/workflows/*.yaml | { ! grep -v "go-version: v${VERSION}"; } || { echo "Wrong go version in .github/workflows/*.yaml, expected ${VERSION}"; exit 1; }
+grep "golang:" .ko.yaml | { ! grep -v "golang:${VERSION}"; } || { echo "Wrong go version in .ko.yaml, expected ${VERSION}"; exit 1; }
 # Note CONTRIBUTING.md isn't copied in the Dockerfile
 if [ -z "${IGNORE_GO_VERSION}" ]; then
   go version | { ! grep -v go${VERSION}; } || { echo "Unexpected go version installed, expected ${VERSION}. Use IGNORE_GO_VERSION=1 to skip this check."; exit 1; }

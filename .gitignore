@@ -5,6 +5,7 @@ coverage.*
 *.iml
 .DS_Store
 .env
+*.kubeconfig
 /hack/tools
 /build
 /dex

@@ -23,8 +23,6 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	kubeinformers "k8s.io/client-go/informers"
@@ -105,9 +103,6 @@ func main() {
 	if err != nil {
 		klog.Fatalf("error building kubeconfig: %v", err)
 	}
-	cfg.ContentConfig.GroupVersion = &schema.GroupVersion{Group: kubebindv1alpha1.GroupName, Version: kubebindv1alpha1.GroupVersion}
-	cfg.APIPath = "/apis"
-	cfg.NegotiatedSerializer = serializer.NewCodecFactory(scheme)
 	cfg.UserAgent = rest.DefaultKubernetesUserAgent()
 
 	mgr, err := examplekube.NewKubernetesManager(cfg, opts.clusterName, opts.namespace)

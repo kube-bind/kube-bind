@@ -1,0 +1,28 @@
+builds:
+- id: "kubectl-bind"
+  main: ./cmd/kubectl-bind
+  binary: bin/kubectl-bind
+  ldflags:
+  - "{{ .Env.LDFLAGS }}"
+  goos:
+  - linux
+  - darwin
+  - windows
+  goarch:
+  - amd64
+  - arm64
+  - ppc64le
+  ignore:
+  - goos: darwin
+    goarch: ppc64le
+  - goos: windows
+    goarch: ppc64le
+archives:
+- id: kubectl-bind-plugin
+  builds:
+  - kubectl-bind
+  name_template: "kubectl-bind_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+release:
+  draft: true
+  prerelease: auto
+  mode: keep-existing

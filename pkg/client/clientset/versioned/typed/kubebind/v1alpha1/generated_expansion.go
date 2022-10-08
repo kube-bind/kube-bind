@@ -23,3 +23,5 @@ type ClusterBindingExpansion interface{}
 type ServiceBindingRequestExpansion interface{}
 
 type ServiceExportExpansion interface{}
+
+type ServiceNamespaceExpansion interface{}

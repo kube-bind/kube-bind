@@ -30,6 +30,8 @@ type Interface interface {
 	ServiceBindingRequests() ServiceBindingRequestInformer
 	// ServiceExports returns a ServiceExportInformer.
 	ServiceExports() ServiceExportInformer
+	// ServiceNamespaces returns a ServiceNamespaceInformer.
+	ServiceNamespaces() ServiceNamespaceInformer
 }
 
 type version struct {
@@ -56,4 +58,9 @@ func (v *version) ServiceBindingRequests() ServiceBindingRequestInformer {
 // ServiceExports returns a ServiceExportInformer.
 func (v *version) ServiceExports() ServiceExportInformer {
 	return &serviceExportInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceNamespaces returns a ServiceNamespaceInformer.
+func (v *version) ServiceNamespaces() ServiceNamespaceInformer {
+	return &serviceNamespaceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

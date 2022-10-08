@@ -41,6 +41,10 @@ func (c *FakeKubeBindV1alpha1) ServiceExports(namespace string) v1alpha1.Service
 	return &FakeServiceExports{c, namespace}
 }
 
+func (c *FakeKubeBindV1alpha1) ServiceNamespaces(namespace string) v1alpha1.ServiceNamespaceInterface {
+	return &FakeServiceNamespaces{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeKubeBindV1alpha1) RESTClient() rest.Interface {

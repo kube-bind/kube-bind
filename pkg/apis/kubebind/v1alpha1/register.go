@@ -48,6 +48,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&ServiceExport{},
 		&ServiceExportList{},
+		&ServiceNamespace{},
+		&ServiceNamespaceList{},
 		&ClusterBinding{},
 		&ClusterBindingList{},
 	)

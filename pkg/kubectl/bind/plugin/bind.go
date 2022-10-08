@@ -23,11 +23,15 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/spf13/cobra"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"sigs.k8s.io/yaml"
 
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
 )
 
@@ -91,14 +95,38 @@ func (b *BindOptions) Run(ctx context.Context) error {
 
 	resp, err := http.Get(url.String())
 	if err != nil {
-		return fmt.Errorf("failed to get %q: %w", url, err)
+		return fmt.Errorf("failed to get %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read body: %w", err)
+		return fmt.Errorf("failed to read body from %s: %w", url, err)
 	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to get %s (%d): %s", url, resp.StatusCode, string(body[:256]))
+	}
+
+	var obj metav1.PartialObjectMetadata
+	if err := yaml.Unmarshal(body, &obj); err != nil {
+		return fmt.Errorf("failed to unmashal response from %s (%q): %w", url, strings.ReplaceAll(string(body[:40]), "\n", "\\n"), err)
+	}
+
+	// TODO: generalize this, with scheme, and potentially forking into kubectl-bind-<lower(kind)>
+	if obj.APIVersion != "kube-bind.io/v1alpha1" {
+		return fmt.Errorf("expected apiVersion kube-bind.io/v1alpha1, got %q", obj.APIVersion)
+	}
+
+	if obj.Kind != "APIService" {
+		return fmt.Errorf("expected kind APIService, got %q", obj.Kind)
+	}
+
+	var apiService kubebindv1alpha1.APIService
+	if err := yaml.Unmarshal(body, &apiService); err != nil {
+		return fmt.Errorf("failed to unmashal response from %s as APIService: %w", url, err)
+	}
+
 	fmt.Fprint(b.Out, string(body))
 
 	return nil

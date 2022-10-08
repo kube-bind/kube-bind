@@ -65,7 +65,26 @@ export LOGCHECK # so hack scripts can use it
 ARCH := $(shell go env GOARCH)
 OS := $(shell go env GOOS)
 
-LDFLAGS :=
+KUBE_MAJOR_VERSION := 1
+KUBE_MINOR_VERSION := $(shell go mod edit -json | jq '.Require[] | select(.Path == "k8s.io/client-go") | .Version' --raw-output | sed "s/v[0-9]*\.\([0-9]*\).*/\1/")
+GIT_COMMIT := $(shell git rev-parse --short HEAD || echo 'local')
+GIT_DIRTY := $(shell git diff --quiet && echo 'clean' || echo 'dirty')
+GIT_VERSION := $(shell go mod edit -json | jq '.Require[] | select(.Path == "k8s.io/client-go") | .Version' --raw-output | sed 's/v0/v1/')+kubectl-bind-$(shell git describe --tags --match='v*' --abbrev=14 "$(GIT_COMMIT)^{commit}" 2>/dev/null || echo v0.0.0-$(GIT_COMMIT))
+BUILD_DATE := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
+LDFLAGS := \
+	-X k8s.io/client-go/pkg/version.gitCommit=${GIT_COMMIT} \
+	-X k8s.io/client-go/pkg/version.gitTreeState=${GIT_DIRTY} \
+	-X k8s.io/client-go/pkg/version.gitVersion=${GIT_VERSION} \
+	-X k8s.io/client-go/pkg/version.gitMajor=${KUBE_MAJOR_VERSION} \
+	-X k8s.io/client-go/pkg/version.gitMinor=${KUBE_MINOR_VERSION} \
+	-X k8s.io/client-go/pkg/version.buildDate=${BUILD_DATE} \
+	\
+	-X k8s.io/component-base/version.gitCommit=${GIT_COMMIT} \
+	-X k8s.io/component-base/version.gitTreeState=${GIT_DIRTY} \
+	-X k8s.io/component-base/version.gitVersion=${GIT_VERSION} \
+	-X k8s.io/component-base/version.gitMajor=${KUBE_MAJOR_VERSION} \
+	-X k8s.io/component-base/version.gitMinor=${KUBE_MINOR_VERSION} \
+	-X k8s.io/component-base/version.buildDate=${BUILD_DATE}
 all: build
 .PHONY: all
 

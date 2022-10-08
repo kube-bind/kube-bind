@@ -37,13 +37,13 @@ type ServiceBinding struct {
 
 	// spec specifies how an API service from a service provider should be bound in the
 	// local consumer cluster.
-	Spec ServiceBindingSepc `json:"spec"`
+	Spec ServiceBindingSpec `json:"spec"`
 
 	// status contains reconciliation information for a service binding.
 	Status ServiceBindingStatus `json:"status,omitempty"`
 }
 
-type ServiceBindingSepc struct {
+type ServiceBindingSpec struct {
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
 	KubeconfigSecretRef ClusterSecretKeyRef `json:"kubeconfigSecretRef"`
 }

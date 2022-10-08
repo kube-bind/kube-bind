@@ -20,6 +20,10 @@ package v1alpha1
 
 type ClusterBindingExpansion interface{}
 
+type ServiceBindingExpansion interface{}
+
 type ServiceBindingRequestExpansion interface{}
 
 type ServiceExportExpansion interface{}
+
+type ServiceNamespaceExpansion interface{}

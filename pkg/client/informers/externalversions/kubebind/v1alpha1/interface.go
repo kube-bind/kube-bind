@@ -26,10 +26,14 @@ import (
 type Interface interface {
 	// ClusterBindings returns a ClusterBindingInformer.
 	ClusterBindings() ClusterBindingInformer
+	// ServiceBindings returns a ServiceBindingInformer.
+	ServiceBindings() ServiceBindingInformer
 	// ServiceBindingRequests returns a ServiceBindingRequestInformer.
 	ServiceBindingRequests() ServiceBindingRequestInformer
 	// ServiceExports returns a ServiceExportInformer.
 	ServiceExports() ServiceExportInformer
+	// ServiceNamespaces returns a ServiceNamespaceInformer.
+	ServiceNamespaces() ServiceNamespaceInformer
 }
 
 type version struct {
@@ -48,6 +52,11 @@ func (v *version) ClusterBindings() ClusterBindingInformer {
 	return &clusterBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
+// ServiceBindings returns a ServiceBindingInformer.
+func (v *version) ServiceBindings() ServiceBindingInformer {
+	return &serviceBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // ServiceBindingRequests returns a ServiceBindingRequestInformer.
 func (v *version) ServiceBindingRequests() ServiceBindingRequestInformer {
 	return &serviceBindingRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
@@ -56,4 +65,9 @@ func (v *version) ServiceBindingRequests() ServiceBindingRequestInformer {
 // ServiceExports returns a ServiceExportInformer.
 func (v *version) ServiceExports() ServiceExportInformer {
 	return &serviceExportInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceNamespaces returns a ServiceNamespaceInformer.
+func (v *version) ServiceNamespaces() ServiceNamespaceInformer {
+	return &serviceNamespaceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

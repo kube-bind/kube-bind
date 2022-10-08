@@ -20,24 +20,31 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
-// ServiceExport is the object that represents the ClusterBinding.
+// ServiceExport specifies an API service to exported to a consumer cluster. The
+// consumer cluster is defined by the ClusterBinding singleton in the same namespace.
 //
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:shortName=sb
+// +kubebuilder:resource:scope=Namespaced
 // +kubebuilder:subresource:status
 type ServiceExport struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec represents the data in the newly created service binding export.
+	//
+	// +required
 	Spec ServiceExportSepc `json:"spec"`
 
 	// status contains reconciliation information for the service binding export.
-	Status ServiceBindingExportStatus `json:"status,omitempty"`
+	//
+	// +optional
+	Status ServiceExportStatus `json:"status,omitempty"`
 }
 
 type ServiceExportSepc struct {
@@ -57,7 +64,11 @@ type ServiceExportSepc struct {
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
-type ServiceBindingExportStatus struct {
+type ServiceExportStatus struct {
+	// conditions is a list of conditions that apply to the ServiceExport.
+	//
+	// +optional
+	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
 // PermissionClaim identifies an object by GR and identity hash.

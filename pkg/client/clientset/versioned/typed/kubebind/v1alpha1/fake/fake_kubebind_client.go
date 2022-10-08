@@ -33,12 +33,20 @@ func (c *FakeKubeBindV1alpha1) ClusterBindings(namespace string) v1alpha1.Cluste
 	return &FakeClusterBindings{c, namespace}
 }
 
+func (c *FakeKubeBindV1alpha1) ServiceBindings(namespace string) v1alpha1.ServiceBindingInterface {
+	return &FakeServiceBindings{c, namespace}
+}
+
 func (c *FakeKubeBindV1alpha1) ServiceBindingRequests(namespace string) v1alpha1.ServiceBindingRequestInterface {
 	return &FakeServiceBindingRequests{c, namespace}
 }
 
 func (c *FakeKubeBindV1alpha1) ServiceExports(namespace string) v1alpha1.ServiceExportInterface {
 	return &FakeServiceExports{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha1) ServiceNamespaces(namespace string) v1alpha1.ServiceNamespaceInterface {
+	return &FakeServiceNamespaces{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

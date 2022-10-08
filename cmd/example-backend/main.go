@@ -20,19 +20,26 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	genericapiserver "k8s.io/apiserver/pkg/server"
+	kubeinformers "k8s.io/client-go/informers"
+	kubernetesclient "k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicenamespace"
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
+	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions"
 )
 
 type backendOpts struct {
@@ -79,6 +86,7 @@ func newBackendOptions() *backendOpts {
 }
 
 func main() {
+	ctx := genericapiserver.SetupSignalContext()
 	defer klog.Flush()
 
 	opts := newBackendOptions()
@@ -117,5 +125,36 @@ func main() {
 		klog.Fatalf("failed to start the server: %v", err)
 	}
 
+	// construct informer factories
+	bindClient, err := bindclient.NewForConfig(cfg)
+	if err != nil {
+		klog.Fatalf("error building bind client: %v", err)
+	}
+	kubeClient, err := kubernetesclient.NewForConfig(cfg)
+	if err != nil {
+		klog.Fatalf("error building kubernetes client: %v", err)
+	}
+	kubeInformers := kubeinformers.NewSharedInformerFactory(kubeClient, time.Minute*30)
+	bindInformers := bindinformers.NewSharedInformerFactory(bindClient, time.Minute*30)
+
+	// construct controllers
+	servicenamespaceCtrl, err := servicenamespace.NewController(cfg, bindInformers.KubeBind().V1alpha1().ServiceNamespaces(), kubeInformers.Core().V1().Namespaces())
+	if err != nil {
+		klog.Fatalf("error building the service namespace controller: %v", err)
+	}
+
+	// start informer factories
+	go kubeInformers.Start(ctx.Done())
+	go bindInformers.Start(ctx.Done())
+	kubeInformers.WaitForCacheSync(ctx.Done())
+	bindInformers.WaitForCacheSync(ctx.Done())
+
+	// start controllers
+	go servicenamespaceCtrl.Start(ctx, 1)
+
+	go func() {
+		<-ctx.Done()
+		os.Exit(1)
+	}()
 	server.Start()
 }

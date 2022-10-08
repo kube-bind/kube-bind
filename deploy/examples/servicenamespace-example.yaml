@@ -1,0 +1,5 @@
+apiVersion: kube-bind.io/v1alpha1
+kind: ServiceNamespace
+metadata:
+  name: example
+spec: {}

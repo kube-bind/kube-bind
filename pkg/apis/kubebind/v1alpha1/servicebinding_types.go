@@ -29,7 +29,7 @@ import (
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Custer
+// +kubebuilder:resource:scope=Cluster
 // +kubebuilder:subresource:status
 type ServiceBinding struct {
 	metav1.TypeMeta   `json:",inline"`

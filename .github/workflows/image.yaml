@@ -1,0 +1,46 @@
+name: image
+
+on:
+  push:
+    tags:
+    - 'v*'
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v3
+      with:
+        go-version: v1.19
+        check-latest: true
+    - uses: sigstore/cosign-installer@v2.7.0
+    - name: Install ko
+      run: go install github.com/google/ko@latest
+
+    - name: Set LDFLAGS
+      run: echo LDFLAGS="$(make ldflags)" >> $GITHUB_ENV
+
+    - name: Build
+      run: |
+        go build ./cmd/konnector
+
+    # Build ko from HEAD, build and push an image tagged with the commit SHA,
+    # then keylessly sign it with cosign.
+    - name: Publish and sign image
+      env:
+        KO_DOCKER_REPO: ghcr.io/${{ github.repository }}
+        COSIGN_EXPERIMENTAL: 'true'
+      run: |
+        echo "${{ github.token }}" | ko login ghcr.io --username "${{ github.actor }}" --password-stdin
+        img=$(ko build --bare --platform=all -t latest -t ${{ github.sha }} ./cmd/konnector)
+        echo "built ${img}"
+        cosign sign ${img} \
+            -a sha=${{ github.sha }} \
+            -a run_id=${{ github.run_id }} \
+            -a run_attempt=${{ github.run_attempt }}

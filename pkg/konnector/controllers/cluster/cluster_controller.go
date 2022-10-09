@@ -184,8 +184,8 @@ func (c *controller) Start(ctx context.Context) {
 			c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.ServiceBinding) {
 				conditions.MarkFalse(
 					binding,
-					kubebindv1alpha1.ServiceBindingConditionAvailableInformersSyncer,
-					"",
+					kubebindv1alpha1.ServiceBindingConditionInformersSynced,
+					"InformerSyncTimeout",
 					conditionsapi.ConditionSeverityError,
 					"Informers did not sync within %s",
 					heartbeatInterval/2,
@@ -202,7 +202,7 @@ func (c *controller) Start(ctx context.Context) {
 	}
 
 	c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.ServiceBinding) {
-		conditions.MarkTrue(binding, kubebindv1alpha1.ServiceBindingConditionAvailableInformersSyncer)
+		conditions.MarkTrue(binding, kubebindv1alpha1.ServiceBindingConditionInformersSynced)
 	})
 
 	go c.clusterbindingCtrl.Start(ctx, 2)

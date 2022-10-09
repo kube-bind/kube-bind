@@ -23,14 +23,11 @@ import (
 )
 
 const (
-	// ServiceBindingConditionAvailable is set when the binding is healthy.
-	ServiceBindingConditionAvailable = "Available"
-
 	// ServiceBindingConditionSecretValid is set when the secret is valid.
 	ServiceBindingConditionSecretValid = "SecretValid"
 
-	// ServiceBindingConditionAvailableInformersSynced is set when the informers can sync..
-	ServiceBindingConditionAvailableInformersSyncer = "AvailableInformersSynced"
+	// ServiceBindingConditionInformersSynced is set when the informers can sync.
+	ServiceBindingConditionInformersSynced = "InformersSynced"
 )
 
 // ServiceBinding binds an API service represented by a ServiceExport

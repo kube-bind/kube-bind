@@ -24,9 +24,6 @@ import (
 )
 
 const (
-	// ClusterBindingConditionAvailable is set when the binding is healthy.
-	ClusterBindingConditionAvailable = "Available"
-
 	// ClusterBindingConditionSecretValid is set when the secret is valid.
 	ClusterBindingConditionSecretValid = "SecretValid"
 )

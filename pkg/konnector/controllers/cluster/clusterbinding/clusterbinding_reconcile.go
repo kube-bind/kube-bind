@@ -46,63 +46,45 @@ type reconciler struct {
 
 func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
 	var errs []error
-	available := true
 
-	if secretAvailable, err := r.ensureSecret(ctx, binding); err != nil {
+	if err := r.ensureConsumerSecret(ctx, binding); err != nil {
 		errs = append(errs, err)
-	} else {
-		available = available && secretAvailable
 	}
 
-	if secretAvailable, err := r.ensureHeartbeat(ctx, binding); err != nil {
+	if err := r.ensureHeartbeat(ctx, binding); err != nil {
 		errs = append(errs, err)
-	} else {
-		available = available && secretAvailable
 	}
 
-	if available {
-		conditions.MarkTrue(
-			binding,
-			kubebindv1alpha1.ClusterBindingConditionAvailable,
-		)
-	} else {
-		conditions.MarkFalse(
-			binding,
-			kubebindv1alpha1.ClusterBindingConditionAvailable,
-			"ClusterBindingNotAvailable",
-			conditionsapi.ConditionSeverityError,
-			"Some other condition is not True", // TODO: do better aggregation
-		)
-	}
+	conditions.SetSummary(binding)
 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureHeartbeat(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) (bool, error) {
+func (r *reconciler) ensureHeartbeat(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
 	binding.Status.HeartbeatInterval.Duration = r.heartbeatInterval
 	if now := time.Now(); binding.Status.LastHeartbeatTime.IsZero() || now.After(binding.Status.LastHeartbeatTime.Add(r.heartbeatInterval/2)) {
 		binding.Status.LastHeartbeatTime.Time = now
 	}
 
-	return true, nil
+	return nil
 }
 
-func (r *reconciler) ensureSecret(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) (bool, error) {
+func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
 	logger := klog.FromContext(ctx)
 
 	providerSecret, err := r.getProviderSecret()
 	if err != nil && !errors.IsNotFound(err) {
-		return false, err
+		return err
 	} else if errors.IsNotFound(err) {
 		conditions.MarkFalse(
 			binding,
 			kubebindv1alpha1.ClusterBindingConditionSecretValid,
 			"ProviderSecretNotFound",
-			conditionsapi.ConditionSeverityError,
+			conditionsapi.ConditionSeverityWarning,
 			"Provider secret %s/%s not found",
 			binding.Namespace, binding.Spec.KubeconfigSecretRef.Name,
 		)
-		return false, nil
+		return nil
 	}
 
 	if _, found := providerSecret.StringData[binding.Spec.KubeconfigSecretRef.Key]; !found {
@@ -110,24 +92,24 @@ func (r *reconciler) ensureSecret(ctx context.Context, binding *kubebindv1alpha1
 			binding,
 			kubebindv1alpha1.ClusterBindingConditionSecretValid,
 			"ProviderSecretInvalid",
-			conditionsapi.ConditionSeverityError,
+			conditionsapi.ConditionSeverityWarning,
 			"Provider secret %s/%s is missing %q string key.",
 			r.providerNamespace,
 			binding.Spec.KubeconfigSecretRef.Name,
 			binding.Spec.KubeconfigSecretRef.Key,
 		)
-		return false, nil
+		return nil
 	}
 
 	consumerSecret, err := r.getConsumerSecret()
 	if err != nil || !errors.IsNotFound(err) {
-		return false, err
+		return err
 	}
 
 	if consumerSecret == nil {
 		ns, name, err := cache.SplitMetaNamespaceKey(r.consumerSecretRefKey)
 		if err != nil {
-			return false, err
+			return err
 		}
 		consumerSecret := corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -140,7 +122,7 @@ func (r *reconciler) ensureSecret(ctx context.Context, binding *kubebindv1alpha1
 		}
 		logger.V(2).Info("Creating consumer secret", "namespace", ns, "name", name)
 		if _, err := r.createConsumerSecret(ctx, &consumerSecret); err != nil {
-			return false, err
+			return err
 		}
 	} else {
 		consumerSecret.Data = providerSecret.Data
@@ -149,7 +131,7 @@ func (r *reconciler) ensureSecret(ctx context.Context, binding *kubebindv1alpha1
 
 		logger.V(2).Info("Updating consumer secret", "namespace", consumerSecret.Namespace, "name", consumerSecret.Name)
 		if _, err := r.updateConsumerSecret(ctx, consumerSecret); err != nil {
-			return false, err
+			return err
 		}
 
 		// TODO: create events
@@ -160,5 +142,5 @@ func (r *reconciler) ensureSecret(ctx context.Context, binding *kubebindv1alpha1
 		kubebindv1alpha1.ClusterBindingConditionSecretValid,
 	)
 
-	return true, nil
+	return nil
 }

@@ -37,36 +37,20 @@ type reconciler struct {
 
 func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
 	var errs []error
-	available := true
 
-	if secretAvailable, err := r.ensureValidKubeconfigSecret(ctx, binding); err != nil {
+	if err := r.ensureValidKubeconfigSecret(ctx, binding); err != nil {
 		errs = append(errs, err)
-	} else {
-		available = available && secretAvailable
 	}
 
-	if available {
-		conditions.MarkTrue(
-			binding,
-			kubebindv1alpha1.ServiceBindingConditionAvailable,
-		)
-	} else {
-		conditions.MarkFalse(
-			binding,
-			kubebindv1alpha1.ServiceBindingConditionAvailable,
-			"ServiceBindingNotAvailable",
-			conditionsapi.ConditionSeverityError,
-			"Some other condition is not True", // TODO: do better aggregation
-		)
-	}
+	conditions.SetSummary(binding)
 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) (bool, error) {
+func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
 	secret, err := r.getConsumerSecret(binding.Spec.KubeconfigSecretRef.Namespace, binding.Spec.KubeconfigSecretRef.Name)
 	if err != nil && !errors.IsNotFound(err) {
-		return false, err
+		return err
 	} else if errors.IsNotFound(err) {
 		conditions.MarkFalse(
 			binding,
@@ -76,7 +60,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			"Kubeconfig secret %s/%s not found. Rerun kubectl bind for repair.",
 			binding.Namespace, binding.Spec.KubeconfigSecretRef.Name,
 		)
-		return false, nil
+		return nil
 	}
 
 	kubeconfig, found := secret.StringData[binding.Spec.KubeconfigSecretRef.Key]
@@ -91,7 +75,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			binding.Spec.KubeconfigSecretRef.Name,
 			binding.Spec.KubeconfigSecretRef.Key,
 		)
-		return false, nil
+		return nil
 	}
 
 	var cfg clientcmdapi.Config
@@ -106,7 +90,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			binding.Spec.KubeconfigSecretRef.Name,
 			kubeconfig,
 		)
-		return false, nil
+		return nil
 	}
 	kubeContext, found := cfg.Contexts[cfg.CurrentContext]
 	if !found {
@@ -120,7 +104,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			binding.Spec.KubeconfigSecretRef.Name,
 			cfg.CurrentContext,
 		)
-		return false, nil
+		return nil
 	}
 	if kubeContext.Namespace == "" {
 		conditions.MarkFalse(
@@ -133,7 +117,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			binding.Spec.KubeconfigSecretRef.Name,
 			cfg.CurrentContext,
 		)
-		return false, nil
+		return nil
 	}
 	if _, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig)); err != nil {
 		conditions.MarkFalse(
@@ -146,7 +130,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			binding.Spec.KubeconfigSecretRef.Name,
 			err,
 		)
-		return false, nil
+		return nil
 	}
 
 	conditions.MarkTrue(
@@ -154,5 +138,5 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 		kubebindv1alpha1.ServiceBindingConditionSecretValid,
 	)
 
-	return true, nil
+	return nil
 }

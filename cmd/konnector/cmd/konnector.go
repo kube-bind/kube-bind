@@ -76,6 +76,7 @@ func New() *cobra.Command {
 				cfg,
 				bindInformers.KubeBind().V1alpha1().ServiceBindings(),
 				kubeInformers.Core().V1().Secrets(), // TODO(sttts): watch indiviual secrets for security and memory consumption
+				kubeInformers.Core().V1().Namespaces(),
 			)
 			if err != nil {
 				return err

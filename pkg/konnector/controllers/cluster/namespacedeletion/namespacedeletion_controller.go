@@ -49,6 +49,7 @@ func NewController(
 	config *rest.Config,
 	serviceNamespaceInformer bindinformers.ServiceNamespaceInformer,
 	namespaceInformer coreinformers.NamespaceInformer,
+	namespaceLister corelisters.NamespaceLister, // intentional lister and informer here to protect against race
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -75,10 +76,8 @@ func NewController(
 		serviceNamespaceLister:  serviceNamespaceInformer.Lister(),
 		serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
 
-		namespaceLister:  namespaceInformer.Lister(),
-		namespaceIndexer: namespaceInformer.Informer().GetIndexer(),
-
-		getNamespace: namespaceInformer.Lister().Get,
+		namespaceLister: namespaceLister,
+		getNamespace:    namespaceLister.Get,
 
 		getServiceNamespace: func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error) {
 			return serviceNamespaceInformer.Lister().ServiceNamespaces(ns).Get(name)
@@ -124,7 +123,7 @@ type controller struct {
 	kubeClient kubernetesclient.Interface
 
 	namespaceLister  corelisters.NamespaceLister
-	namespaceIndexer cache.Indexer
+	namespaceIndexer cache.Indexer // nolint:unused
 
 	serviceNamespaceLister  bindlisters.ServiceNamespaceLister
 	serviceNamespaceIndexer cache.Indexer

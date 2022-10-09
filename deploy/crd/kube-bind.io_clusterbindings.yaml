@@ -57,14 +57,15 @@ spec:
                     type: string
                 required:
                 - key
+                - name
                 type: object
                 x-kubernetes-validations:
                 - message: kubeconfigSecretRef is immutable
                   rule: self == oldSelf
               providerPrettyName:
-                default: unknown
                 description: providerPrettyName is the pretty name of the service
                   provider cluster. This can be shared among different ServiceBindings.
+                minLength: 1
                 type: string
               scope:
                 description: "scope is the scope of the ClusterBinding. It can be
@@ -88,6 +89,8 @@ spec:
                 x-kubernetes-preserve-unknown-fields: true
             required:
             - kubeconfigSecretRef
+            - providerPrettyName
+            - scope
             type: object
           status:
             description: status contains reconciliation information for the service

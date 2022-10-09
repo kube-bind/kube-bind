@@ -51,6 +51,7 @@ type ServiceBindingSpec struct {
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
 	//
 	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="kubeconfigSecretRef is immutable"
 	KubeconfigSecretRef ClusterSecretKeyRef `json:"kubeconfigSecretRef"`
 }
@@ -61,8 +62,6 @@ type ServiceBindingStatus struct {
 	ProviderPrettyName string `json:"providerPrettyName,omitempty"`
 
 	// conditions is a list of conditions that apply to the ServiceBinding.
-	//
-	// +optional
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
@@ -78,13 +77,16 @@ type ServiceBindingList struct {
 
 type LocalSecretKeyRef struct {
 	// Name of the referent.
+	//
 	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	// The key of the secret to select from.  Must be "kubeconfig".
 	//
 	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=kubeconfig
 	Key string `json:"key"`
 }
@@ -93,7 +95,9 @@ type ClusterSecretKeyRef struct {
 	LocalSecretKeyRef `json:",inline"`
 
 	// Namespace of the referent.
+	//
 	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	Namespace string `json:"namespace,omitempty"`
+	Namespace string `json:"namespace"`
 }

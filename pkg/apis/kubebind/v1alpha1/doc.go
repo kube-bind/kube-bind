@@ -19,4 +19,5 @@ limitations under the License.
 // +groupName=kube-bind.io
 // +groupGoName=KubeBind
 // +k8s:deepcopy-gen=package,register
+// +kubebuilder:validation:Optional
 package v1alpha1

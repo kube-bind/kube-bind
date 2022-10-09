@@ -59,7 +59,7 @@ type ServiceBindingRequestSpec struct {
 	// authorization server to get all the user related data.
 	OIDCResponseSpec *OIDCResponseSpec `json:"oidcResponseSpec,omitempty"`
 	// serviceProviderSpec contains all the data the service provider needs to conduct the chosen service by the user.
-	//An exmaple of those specs could be the resources that the user has chosen to use.
+	// An example of those specs could be the resources that the user has chosen to use.
 	ServiceProviderSpec runtime.RawExtension `json:"serviceProviderSpecSpec,omitempty"`
 }
 
@@ -81,21 +81,17 @@ type OIDCResponseSpec struct {
 
 // ServiceBindingRequestStatus stores status information about a service binding request.
 type ServiceBindingRequestStatus struct {
-	// +optional
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 
 	// approved represents the status of the request, whether it has been approved or not.
-	//  +optional
 	Approved bool `json:"approved"`
 
 	// TODO: use conditions instead of Error messages.https://github.com/kcp-dev/kcp/blob/main/pkg/apis/third_party/conditions/apis/conditions/v1alpha1/types.go
 	// errorMessage contains a default error message in case the controller encountered an error.
 	// Will be reset if the error was resolved.
-	// +optional
 	ErrorMessage *string `json:"errorMessage,omitempty"`
 
 	// errorReason contains a error reason in case the controller encountered an error. Will be reset if the error was resolved.
-	// +optional
 	ErrorReason string `json:"errorReason,omitempty"`
 }
 

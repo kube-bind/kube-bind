@@ -79,6 +79,9 @@ spec:
                 - Cluster
                 - Namespaced
                 type: string
+                x-kubernetes-validations:
+                - message: Cluster scope not yet supported
+                  rule: self == "Cluster"
               serviceProviderSpec:
                 description: serviceProviderSpec contains all the data and information
                   about the service which has been bound to the service binding request.

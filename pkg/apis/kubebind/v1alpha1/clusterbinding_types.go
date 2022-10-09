@@ -92,6 +92,7 @@ type ClusterBindingSpec struct {
 	//
 	// +required
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:rule="self == \"Cluster\"",message="Cluster scope not yet supported"
 	Scope Scope `json:"scope"`
 
 	// serviceProviderSpec contains all the data and information about the service which has been bound to the service

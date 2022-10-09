@@ -9,9 +9,13 @@ metadata:
 spec:
   group: kube-bind.io
   names:
+    categories:
+    - kube-bindings
     kind: ServiceBinding
     listKind: ServiceBindingList
     plural: servicebindings
+    shortNames:
+    - sb
     singular: servicebinding
   scope: Cluster
   versions:
@@ -31,6 +35,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: ServiceBinding binds an API service represented by a ServiceExport
+          in a service provider cluster into a consumer cluster. This object lives
+          in the consumer cluster.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -53,21 +60,24 @@ spec:
                   the kubeconfig of the service cluster.
                 properties:
                   key:
-                    description: The key of the secret to select from.  Must be a
-                      valid secret key.
+                    description: The key of the secret to select from.  Must be "kubeconfig".
+                    enum:
+                    - kubeconfig
                     type: string
                   name:
                     description: Name of the referent.
+                    minLength: 1
                     type: string
                   namespace:
                     description: Namespace of the referent.
+                    minLength: 1
                     type: string
                 required:
                 - key
                 type: object
                 x-kubernetes-validations:
                 - message: kubeconfigSecretRef is immutable
-                  rule: ="self == oldSelf"
+                  rule: self == oldSelf
             required:
             - kubeconfigSecretRef
             type: object

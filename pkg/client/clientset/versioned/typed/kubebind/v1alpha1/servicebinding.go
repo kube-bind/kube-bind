@@ -34,7 +34,7 @@ import (
 // ServiceBindingsGetter has a method to return a ServiceBindingInterface.
 // A group's client should implement this interface.
 type ServiceBindingsGetter interface {
-	ServiceBindings(namespace string) ServiceBindingInterface
+	ServiceBindings() ServiceBindingInterface
 }
 
 // ServiceBindingInterface has methods to work with ServiceBinding resources.
@@ -54,14 +54,12 @@ type ServiceBindingInterface interface {
 // serviceBindings implements ServiceBindingInterface
 type serviceBindings struct {
 	client rest.Interface
-	ns     string
 }
 
 // newServiceBindings returns a ServiceBindings
-func newServiceBindings(c *KubeBindV1alpha1Client, namespace string) *serviceBindings {
+func newServiceBindings(c *KubeBindV1alpha1Client) *serviceBindings {
 	return &serviceBindings{
 		client: c.RESTClient(),
-		ns:     namespace,
 	}
 }
 
@@ -69,7 +67,6 @@ func newServiceBindings(c *KubeBindV1alpha1Client, namespace string) *serviceBin
 func (c *serviceBindings) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ServiceBinding, err error) {
 	result = &v1alpha1.ServiceBinding{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("servicebindings").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -86,7 +83,6 @@ func (c *serviceBindings) List(ctx context.Context, opts v1.ListOptions) (result
 	}
 	result = &v1alpha1.ServiceBindingList{}
 	err = c.client.Get().
-		Namespace(c.ns).
 		Resource("servicebindings").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -103,7 +99,6 @@ func (c *serviceBindings) Watch(ctx context.Context, opts v1.ListOptions) (watch
 	}
 	opts.Watch = true
 	return c.client.Get().
-		Namespace(c.ns).
 		Resource("servicebindings").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -114,7 +109,6 @@ func (c *serviceBindings) Watch(ctx context.Context, opts v1.ListOptions) (watch
 func (c *serviceBindings) Create(ctx context.Context, serviceBinding *v1alpha1.ServiceBinding, opts v1.CreateOptions) (result *v1alpha1.ServiceBinding, err error) {
 	result = &v1alpha1.ServiceBinding{}
 	err = c.client.Post().
-		Namespace(c.ns).
 		Resource("servicebindings").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(serviceBinding).
@@ -127,7 +121,6 @@ func (c *serviceBindings) Create(ctx context.Context, serviceBinding *v1alpha1.S
 func (c *serviceBindings) Update(ctx context.Context, serviceBinding *v1alpha1.ServiceBinding, opts v1.UpdateOptions) (result *v1alpha1.ServiceBinding, err error) {
 	result = &v1alpha1.ServiceBinding{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("servicebindings").
 		Name(serviceBinding.Name).
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -142,7 +135,6 @@ func (c *serviceBindings) Update(ctx context.Context, serviceBinding *v1alpha1.S
 func (c *serviceBindings) UpdateStatus(ctx context.Context, serviceBinding *v1alpha1.ServiceBinding, opts v1.UpdateOptions) (result *v1alpha1.ServiceBinding, err error) {
 	result = &v1alpha1.ServiceBinding{}
 	err = c.client.Put().
-		Namespace(c.ns).
 		Resource("servicebindings").
 		Name(serviceBinding.Name).
 		SubResource("status").
@@ -156,7 +148,6 @@ func (c *serviceBindings) UpdateStatus(ctx context.Context, serviceBinding *v1al
 // Delete takes name of the serviceBinding and deletes it. Returns an error if one occurs.
 func (c *serviceBindings) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("servicebindings").
 		Name(name).
 		Body(&opts).
@@ -171,7 +162,6 @@ func (c *serviceBindings) DeleteCollection(ctx context.Context, opts v1.DeleteOp
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
-		Namespace(c.ns).
 		Resource("servicebindings").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -184,7 +174,6 @@ func (c *serviceBindings) DeleteCollection(ctx context.Context, opts v1.DeleteOp
 func (c *serviceBindings) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ServiceBinding, err error) {
 	result = &v1alpha1.ServiceBinding{}
 	err = c.client.Patch(pt).
-		Namespace(c.ns).
 		Resource("servicebindings").
 		Name(name).
 		SubResource(subresources...).

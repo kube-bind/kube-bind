@@ -30,7 +30,7 @@ import (
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:shortName=sb,scope=Namespaced
+// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
 // +kubebuilder:subresource:status
 type ServiceNamespace struct {
 	metav1.TypeMeta   `json:",inline"`

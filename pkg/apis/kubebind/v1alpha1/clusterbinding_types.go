@@ -29,7 +29,7 @@ import (
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Namespaced
+// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
 // +kubebuilder:subresource:status
 type ClusterBinding struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -48,7 +48,7 @@ type ClusterBinding struct {
 type ClusterBindingSpec struct {
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
 	// +required
-	// +kubebuilder:validation:XValidation:rule=="self == oldSelf",message="kubeconfigSecretRef is immutable"
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="kubeconfigSecretRef is immutable"
 	KubeconfigSecretRef LocalSecretKeyRef `json:"kubeconfigSecretRef"`
 
 	// providerPrettyName is the pretty name of the service provider cluster. This

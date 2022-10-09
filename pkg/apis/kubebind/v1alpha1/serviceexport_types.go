@@ -28,7 +28,7 @@ import (
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Namespaced
+// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
 // +kubebuilder:subresource:status
 type ServiceExport struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -72,6 +72,7 @@ type GroupResource struct {
 	//
 	// +kubebuilder:validation:Pattern=`^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$`
 	// +optional
+	// +kubebuilder:default=""
 	Group string `json:"group,omitempty"`
 
 	// resource is the name of the resource.

@@ -8,6 +8,8 @@ metadata:
 spec:
   group: kube-bind.io
   names:
+    categories:
+    - kube-bindings
     kind: ClusterBinding
     listKind: ClusterBindingList
     plural: clusterbindings
@@ -45,18 +47,20 @@ spec:
                   the kubeconfig of the service cluster.
                 properties:
                   key:
-                    description: The key of the secret to select from.  Must be a
-                      valid secret key.
+                    description: The key of the secret to select from.  Must be "kubeconfig".
+                    enum:
+                    - kubeconfig
                     type: string
                   name:
                     description: Name of the referent.
+                    minLength: 1
                     type: string
                 required:
                 - key
                 type: object
                 x-kubernetes-validations:
                 - message: kubeconfigSecretRef is immutable
-                  rule: ="self == oldSelf"
+                  rule: self == oldSelf
               providerPrettyName:
                 default: unknown
                 description: providerPrettyName is the pretty name of the service

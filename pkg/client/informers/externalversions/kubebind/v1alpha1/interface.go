@@ -54,7 +54,7 @@ func (v *version) ClusterBindings() ClusterBindingInformer {
 
 // ServiceBindings returns a ServiceBindingInformer.
 func (v *version) ServiceBindings() ServiceBindingInformer {
-	return &serviceBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &serviceBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // ServiceBindingRequests returns a ServiceBindingRequestInformer.

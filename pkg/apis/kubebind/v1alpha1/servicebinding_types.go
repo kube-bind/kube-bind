@@ -28,6 +28,10 @@ const (
 
 	// ServiceBindingConditionInformersSynced is set when the informers can sync.
 	ServiceBindingConditionInformersSynced = "InformersSynced"
+
+	// ServiceBindingConditionHeartbeating is set when the ClusterBinding of the service provider
+	// is successfully heartbeated.
+	ServiceBindingConditionHeartbeating = "Heartbeating"
 )
 
 // ServiceBinding binds an API service represented by a ServiceExport

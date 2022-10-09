@@ -37,10 +37,13 @@ import (
 	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
+	"github.com/kube-bind/kube-bind/pkg/indexers"
 )
 
 const (
@@ -74,6 +77,10 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
+	consumerBindClient, err := bindclient.NewForConfig(consumerConfig)
+	if err != nil {
+		return nil, err
+	}
 	consumerKubeClient, err := kubernetesclient.NewForConfig(consumerConfig)
 	if err != nil {
 		return nil, err
@@ -84,6 +91,7 @@ func NewController(
 
 		providerBindClient: providerBindClient,
 		providerKubeClient: providerKubeClient,
+		consumerBindClient: consumerBindClient,
 		consumerKubeClient: consumerKubeClient,
 
 		clusterBindingLister:  clusterBindingInformer.Lister(),
@@ -204,6 +212,7 @@ type controller struct {
 
 	providerBindClient bindclient.Interface
 	providerKubeClient kubernetesclient.Interface
+	consumerBindClient bindclient.Interface
 	consumerKubeClient kubernetesclient.Interface
 
 	clusterBindingLister  bindlisters.ClusterBindingLister
@@ -387,7 +396,44 @@ func (c *controller) process(ctx context.Context, key string) error {
 	newResource := &Resource{ObjectMeta: obj.ObjectMeta, Spec: &obj.Spec, Status: &obj.Status}
 	if err := c.commit(ctx, oldResource, newResource); err != nil {
 		errs = append(errs, err)
+
+		// try to update service bindings
+		c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.ServiceBinding) {
+			conditions.MarkFalse(
+				binding,
+				kubebindv1alpha1.ServiceBindingConditionInformersSynced,
+				"ClusterBindingUpdateFailed",
+				conditionsapi.ConditionSeverityWarning,
+				"Failed to update service provider ClusterBinding: %v", err,
+			)
+		})
+	} else {
+		// try to update service bindings
+		c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.ServiceBinding) {
+			conditions.MarkTrue(binding, kubebindv1alpha1.ServiceBindingConditionHeartbeating)
+		})
 	}
 
 	return utilerrors.NewAggregate(errs)
+}
+
+func (c *controller) updateServiceBindings(ctx context.Context, update func(*kubebindv1alpha1.ServiceBinding)) {
+	logger := klog.FromContext(ctx)
+
+	objs, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, c.consumerSecretRefKey)
+	if err != nil {
+		logger.Error(err, "failed to list service bindings", "secretKey", c.consumerSecretRefKey)
+		return
+	}
+	for _, obj := range objs {
+		binding := obj.(*kubebindv1alpha1.ServiceBinding)
+		orig := binding.DeepCopy()
+		update(binding)
+		if !reflect.DeepEqual(binding.Status.Conditions, orig.Status.Conditions) {
+			if _, err := c.consumerBindClient.KubeBindV1alpha1().ServiceBindings().Update(ctx, binding, metav1.UpdateOptions{}); err != nil {
+				logger.Error(err, "failed to update service binding", "binding", binding.Name)
+				continue
+			}
+		}
+	}
 }

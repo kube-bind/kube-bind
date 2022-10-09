@@ -31,6 +31,10 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource:scope=Cluster
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=`.status.providerPrettyName`,priority=1
+// +kubebuilder:printcolumn:name="Resources",type="string",JSONPath=`.metadata.annotations.kube-bind\.io/resources`,priority=4
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type=="Ready")].status`,priority=5
+
 type ServiceBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -45,10 +49,17 @@ type ServiceBinding struct {
 
 type ServiceBindingSpec struct {
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
+	//
+	// +required
+	// +kubebuilder:validation:XValidation:rule=="self == oldSelf",message="kubeconfigSecretRef is immutable"
 	KubeconfigSecretRef ClusterSecretKeyRef `json:"kubeconfigSecretRef"`
 }
 
 type ServiceBindingStatus struct {
+	// providerPrettyName is the pretty name of the service provider cluster. This
+	// can be shared among different ServiceBindings.
+	ProviderPrettyName string `json:"providerPrettyName,omitempty"`
+
 	// conditions is a list of conditions that apply to the ServiceBinding.
 	//
 	// +optional

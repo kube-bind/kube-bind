@@ -55,6 +55,11 @@ spec:
             description: spec specifies how an API service from a service provider
               should be bound in the local consumer cluster.
             properties:
+              export:
+                description: export is the name of the ServiceExport object in the
+                  service provider cluster.
+                minLength: 1
+                type: string
               kubeconfigSecretRef:
                 description: kubeconfigSecretName is the secret ref that contains
                   the kubeconfig of the service cluster.
@@ -81,6 +86,7 @@ spec:
                 - message: kubeconfigSecretRef is immutable
                   rule: self == oldSelf
             required:
+            - export
             - kubeconfigSecretRef
             type: object
           status:

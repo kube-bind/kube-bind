@@ -68,6 +68,13 @@ func (in *ServiceBinding) SetConditions(conditions conditionsapi.Conditions) {
 }
 
 type ServiceBindingSpec struct {
+	// export is the name of the ServiceExport object in the service provider cluster.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Export string `json:"export"`
+
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
 	//
 	// +required

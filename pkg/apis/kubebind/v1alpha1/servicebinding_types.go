@@ -46,7 +46,7 @@ const (
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=`.status.providerPrettyName`,priority=1
 // +kubebuilder:printcolumn:name="Resources",type="string",JSONPath=`.metadata.annotations.kube-bind\.io/resources`,priority=4
-// +kubebuilder:printcolumn:name="Available",type="string",JSONPath=`.status.conditions[?(@.type=="Available")].status`,priority=5
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type=="Ready")].status`,priority=5
 type ServiceBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -68,6 +68,13 @@ func (in *ServiceBinding) SetConditions(conditions conditionsapi.Conditions) {
 }
 
 type ServiceBindingSpec struct {
+	// export is the name of the ServiceExport object in the service provider cluster.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Export string `json:"export"`
+
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
 	//
 	// +required

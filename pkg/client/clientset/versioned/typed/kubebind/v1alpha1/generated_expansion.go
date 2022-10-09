@@ -26,4 +26,6 @@ type ServiceBindingRequestExpansion interface{}
 
 type ServiceExportExpansion interface{}
 
+type ServiceExportResourceExpansion interface{}
+
 type ServiceNamespaceExpansion interface{}

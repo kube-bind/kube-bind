@@ -21,8 +21,8 @@ spec:
       name: Last Heartbeat
       priority: 4
       type: date
-    - jsonPath: .status.conditions[?(@.type=="Available")].status
-      name: Available
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
       priority: 5
       type: string
     name: v1alpha1

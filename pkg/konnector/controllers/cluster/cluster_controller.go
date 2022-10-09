@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"time"
 
+	crdinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
+	crdlisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -44,6 +46,7 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/clusterbinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/namespacedeletion"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport"
 )
 
 const (
@@ -61,6 +64,8 @@ func NewController(
 	namespaceLister corelisters.NamespaceLister,
 	serviceBindingsInformer bindv1alpha1informers.ServiceBindingInformer,
 	serviceBidningsLister bindlisters.ServiceBindingLister, // intentional lister and informer here to protect against race
+	crdInformer crdinformers.CustomResourceDefinitionInformer,
+	crdLister crdlisters.CustomResourceDefinitionLister, // intentional lister and informer here to protect against race
 ) (*controller, error) {
 	consumerConfig = rest.CopyConfig(consumerConfig)
 	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
@@ -124,6 +129,20 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
+	servicebindingCtrl, err := serviceexport.NewController(
+		consumerSecretRefKey,
+		providerNamespace,
+		consumerConfig,
+		providerConfig,
+		providerBindInformers.KubeBind().V1alpha1().ServiceExports(),
+		serviceBindingsInformer,
+		serviceBidningsLister,
+		crdInformer,
+		crdLister,
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	return &controller{
 		consumerSecretRefKey: consumerSecretRefKey,
@@ -135,6 +154,7 @@ func NewController(
 
 		clusterbindingCtrl:    clusterbindingCtrl,
 		namespacedeletionCtrl: namespacedeletionCtrl,
+		servicebindingCtrl:    servicebindingCtrl,
 	}, nil
 }
 
@@ -160,6 +180,7 @@ type controller struct {
 
 	clusterbindingCtrl    GenericController
 	namespacedeletionCtrl GenericController
+	servicebindingCtrl    GenericController
 }
 
 // Start starts the controller, which stops when ctx.Done() is closed.

@@ -21,6 +21,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	kubeinformers "k8s.io/client-go/informers"
 	kubernetesclient "k8s.io/client-go/kubernetes"
@@ -68,8 +70,13 @@ func New() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			apiextensionsClient, err := apiextensionsclient.NewForConfig(cfg)
+			if err != nil {
+				return err
+			}
 			kubeInformers := kubeinformers.NewSharedInformerFactory(kubeClient, time.Minute*30)
 			bindInformers := bindinformers.NewSharedInformerFactory(bindClient, time.Minute*30)
+			apiextensionsInformers := apiextensionsinformers.NewSharedInformerFactory(apiextensionsClient, time.Minute*30)
 
 			// construct controllers
 			k, err := konnector.New(
@@ -77,6 +84,7 @@ func New() *cobra.Command {
 				bindInformers.KubeBind().V1alpha1().ServiceBindings(),
 				kubeInformers.Core().V1().Secrets(), // TODO(sttts): watch indiviual secrets for security and memory consumption
 				kubeInformers.Core().V1().Namespaces(),
+				apiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
 			)
 			if err != nil {
 				return err
@@ -85,8 +93,10 @@ func New() *cobra.Command {
 			// start informer factories
 			go kubeInformers.Start(ctx.Done())
 			go bindInformers.Start(ctx.Done())
+			go apiextensionsInformers.Start(ctx.Done())
 			kubeInformers.WaitForCacheSync(ctx.Done())
 			bindInformers.WaitForCacheSync(ctx.Done())
+			apiextensionsInformers.WaitForCacheSync(ctx.Done())
 
 			go k.Start(ctx, 2)
 

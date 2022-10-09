@@ -22,6 +22,15 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
+const (
+	// ServiceExportConditionConnected means the ServiceExport has been connected to a ServiceBinding.
+	ServiceExportConditionConnected conditionsapi.ConditionType = "Connected"
+
+	// ServiceExportConditionSchemaInSync is set to true when the ServiceExport's
+	// schema is applied to the consumer cluster.
+	ServiceExportConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"
+)
+
 // ServiceExport specifies an API service to exported to a consumer cluster. The
 // consumer cluster is defined by the ClusterBinding singleton in the same namespace.
 //
@@ -44,13 +53,21 @@ type ServiceExport struct {
 	Status ServiceExportStatus `json:"status,omitempty"`
 }
 
+func (in *ServiceExport) GetConditions() conditionsapi.Conditions {
+	return in.Status.Conditions
+}
+
+func (in *ServiceExport) SetConditions(conditions conditionsapi.Conditions) {
+	in.Status.Conditions = conditions
+}
+
 type ServiceExportSpec struct {
 	// resources are the resources to be bound into the consumer cluster.
 	//
 	// +listType=map
 	// +listMapKey=group
 	// +listMapKey=resource
-	Resources []ServiceExportResource `json:"resources,omitempty"`
+	Resources []ServiceExportGroupResource `json:"resources,omitempty"`
 }
 
 type ServiceExportStatus struct {
@@ -58,7 +75,7 @@ type ServiceExportStatus struct {
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
-type ServiceExportResource struct {
+type ServiceExportGroupResource struct {
 	GroupResource `json:",inline"`
 }
 

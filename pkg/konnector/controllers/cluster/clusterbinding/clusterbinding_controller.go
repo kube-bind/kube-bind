@@ -69,6 +69,9 @@ func NewController(
 	providerConfig = rest.CopyConfig(providerConfig)
 	providerConfig = rest.AddUserAgent(providerConfig, controllerName)
 
+	consumerConfig = rest.CopyConfig(consumerConfig)
+	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
+
 	providerBindClient, err := bindclient.NewForConfig(providerConfig)
 	if err != nil {
 		return nil, err

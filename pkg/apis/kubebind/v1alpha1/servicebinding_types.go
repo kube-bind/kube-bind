@@ -22,6 +22,14 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
+const (
+	// ServiceBindingConditionAvailable is set when the binding is healthy.
+	ServiceBindingConditionAvailable = "Available"
+
+	// ServiceBindingConditionSecretValid is set when the secret is valid.
+	ServiceBindingConditionSecretValid = "SecretValid"
+)
+
 // ServiceBinding binds an API service represented by a ServiceExport
 // in a service provider cluster into a consumer cluster. This object lives in
 // the consumer cluster.
@@ -45,6 +53,14 @@ type ServiceBinding struct {
 
 	// status contains reconciliation information for a service binding.
 	Status ServiceBindingStatus `json:"status,omitempty"`
+}
+
+func (in *ServiceBinding) GetConditions() conditionsapi.Conditions {
+	return in.Status.Conditions
+}
+
+func (in *ServiceBinding) SetConditions(conditions conditionsapi.Conditions) {
+	in.Status.Conditions = conditions
 }
 
 type ServiceBindingSpec struct {

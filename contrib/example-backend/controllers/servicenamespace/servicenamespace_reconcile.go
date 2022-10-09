@@ -26,10 +26,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
-func (c *controller) reconcile(ctx context.Context, sns *v1alpha1.ServiceNamespace) error {
+func (c *controller) reconcile(ctx context.Context, sns *kubebindv1alpha1.ServiceNamespace) error {
 	var ns *corev1.Namespace
 	nsName := sns.Namespace + "-" + sns.Name
 	if sns.Status.Namespace != "" {
@@ -65,7 +65,7 @@ func (c *controller) reconcile(ctx context.Context, sns *v1alpha1.ServiceNamespa
 	return nil
 }
 
-func (c *controller) ensureRBACRole(ctx context.Context, ns string, sns *v1alpha1.ServiceNamespace) error {
+func (c *controller) ensureRBACRole(ctx context.Context, ns string, sns *kubebindv1alpha1.ServiceNamespace) error {
 	objName := sns.Namespace
 	role, err := c.getRole(ns, objName)
 	if err != nil && !errors.IsNotFound(err) {
@@ -105,7 +105,7 @@ func (c *controller) ensureRBACRole(ctx context.Context, ns string, sns *v1alpha
 	return nil
 }
 
-func (c *controller) ensureRBACRoleBinding(ctx context.Context, ns string, sns *v1alpha1.ServiceNamespace) error {
+func (c *controller) ensureRBACRoleBinding(ctx context.Context, ns string, sns *kubebindv1alpha1.ServiceNamespace) error {
 	objName := sns.Namespace
 	binding, err := c.getRoleBinding(ns, objName)
 	if err != nil && !errors.IsNotFound(err) {

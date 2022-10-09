@@ -32,17 +32,35 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 )
 
-func (c *controller) reconcile(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
+type reconciler struct {
+	// consumerSecretRefKey is the namespace/name value of the ServiceBinding kubeconfig secret reference.
+	consumerSecretRefKey string
+	providerNamespace    string
+	heartbeatInterval    time.Duration
+
+	getClusterBinding    func(ns string) (*kubebindv1alpha1.ClusterBinding, error)
+	updateClusterBinding func(ctx context.Context, cb *kubebindv1alpha1.ClusterBinding) (*kubebindv1alpha1.ClusterBinding, error)
+
+	listServiceExports  func() ([]*kubebindv1alpha1.ServiceExport, error)
+	listServiceBindings func() ([]*kubebindv1alpha1.ServiceBinding, error)
+
+	getProviderSecret    func() (*corev1.Secret, error)
+	getConsumerSecret    func() (*corev1.Secret, error)
+	updateConsumerSecret func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
+	createConsumerSecret func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
+}
+
+func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
 	var errs []error
 	available := true
 
-	if secretAvailable, err := c.ensureSecret(ctx, binding); err != nil {
+	if secretAvailable, err := r.ensureSecret(ctx, binding); err != nil {
 		errs = append(errs, err)
 	} else {
 		available = available && secretAvailable
 	}
 
-	if secretAvailable, err := c.ensureHeartbeat(ctx, binding); err != nil {
+	if secretAvailable, err := r.ensureHeartbeat(ctx, binding); err != nil {
 		errs = append(errs, err)
 	} else {
 		available = available && secretAvailable
@@ -66,19 +84,19 @@ func (c *controller) reconcile(ctx context.Context, binding *kubebindv1alpha1.Cl
 	return utilerrors.NewAggregate(errs)
 }
 
-func (c *controller) ensureHeartbeat(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) (bool, error) {
-	binding.Status.HeartbeatInterval.Duration = c.heartbeatInterval
-	if now := time.Now(); binding.Status.LastHeartbeatTime.IsZero() || now.After(binding.Status.LastHeartbeatTime.Add(c.heartbeatInterval/2)) {
+func (r *reconciler) ensureHeartbeat(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) (bool, error) {
+	binding.Status.HeartbeatInterval.Duration = r.heartbeatInterval
+	if now := time.Now(); binding.Status.LastHeartbeatTime.IsZero() || now.After(binding.Status.LastHeartbeatTime.Add(r.heartbeatInterval/2)) {
 		binding.Status.LastHeartbeatTime.Time = now
 	}
 
 	return true, nil
 }
 
-func (c *controller) ensureSecret(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) (bool, error) {
+func (r *reconciler) ensureSecret(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) (bool, error) {
 	logger := klog.FromContext(ctx)
 
-	providerSecret, err := c.getProviderSecret()
+	providerSecret, err := r.getProviderSecret()
 	if err != nil && !errors.IsNotFound(err) {
 		return false, err
 	} else if errors.IsNotFound(err) {
@@ -100,20 +118,20 @@ func (c *controller) ensureSecret(ctx context.Context, binding *kubebindv1alpha1
 			"ProviderSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Provider secret %s/%s missing %s string key",
-			c.providerNamespace,
+			r.providerNamespace,
 			binding.Spec.KubeconfigSecretRef.Name,
 			binding.Spec.KubeconfigSecretRef.Key,
 		)
 		return false, nil
 	}
 
-	consumerSecret, err := c.getConsumerSecret()
+	consumerSecret, err := r.getConsumerSecret()
 	if err != nil || !errors.IsNotFound(err) {
 		return false, err
 	}
 
 	if consumerSecret == nil {
-		ns, name, err := cache.SplitMetaNamespaceKey(c.consumerSecretRefKey)
+		ns, name, err := cache.SplitMetaNamespaceKey(r.consumerSecretRefKey)
 		if err != nil {
 			return false, err
 		}
@@ -127,7 +145,7 @@ func (c *controller) ensureSecret(ctx context.Context, binding *kubebindv1alpha1
 			Type:       providerSecret.Type,
 		}
 		logger.V(2).Info("Creating consumer secret", "namespace", ns, "name", name)
-		if _, err := c.createConsumerSecret(ctx, &consumerSecret); err != nil {
+		if _, err := r.createConsumerSecret(ctx, &consumerSecret); err != nil {
 			return false, err
 		}
 	} else {
@@ -136,7 +154,7 @@ func (c *controller) ensureSecret(ctx context.Context, binding *kubebindv1alpha1
 		consumerSecret.Type = providerSecret.Type
 
 		logger.V(2).Info("Updating consumer secret", "namespace", consumerSecret.Namespace, "name", consumerSecret.Name)
-		if _, err := c.updateConsumerSecret(ctx, consumerSecret); err != nil {
+		if _, err := r.updateConsumerSecret(ctx, consumerSecret); err != nil {
 			return false, err
 		}
 

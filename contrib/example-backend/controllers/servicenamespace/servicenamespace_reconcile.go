@@ -29,7 +29,27 @@ import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
-func (c *controller) reconcile(ctx context.Context, sns *kubebindv1alpha1.ServiceNamespace) error {
+type reconciler struct {
+	getNamespace    func(name string) (*corev1.Namespace, error)
+	createNamespace func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error)
+	deleteNamespace func(ctx context.Context, name string) error
+
+	getServiceNamespace func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error)
+
+	getClusterBinding func(ns string) (*kubebindv1alpha1.ClusterBinding, error)
+
+	getRole    func(ns, name string) (*rbacv1.Role, error)
+	createRole func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error)
+	updateRole func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error)
+
+	getRoleBinding    func(ns, name string) (*rbacv1.RoleBinding, error)
+	createRoleBinding func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+	updateRoleBinding func(ctx context.Context, cr *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+
+	listServiceExports func(ns string) ([]*kubebindv1alpha1.ServiceExport, error)
+}
+
+func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.ServiceNamespace) error {
 	var ns *corev1.Namespace
 	nsName := sns.Namespace + "-" + sns.Name
 	if sns.Status.Namespace != "" {
@@ -65,7 +85,7 @@ func (c *controller) reconcile(ctx context.Context, sns *kubebindv1alpha1.Servic
 	return nil
 }
 
-func (c *controller) ensureRBACRole(ctx context.Context, ns string, sns *kubebindv1alpha1.ServiceNamespace) error {
+func (c *reconciler) ensureRBACRole(ctx context.Context, ns string, sns *kubebindv1alpha1.ServiceNamespace) error {
 	objName := sns.Namespace
 	role, err := c.getRole(ns, objName)
 	if err != nil && !errors.IsNotFound(err) {
@@ -105,7 +125,7 @@ func (c *controller) ensureRBACRole(ctx context.Context, ns string, sns *kubebin
 	return nil
 }
 
-func (c *controller) ensureRBACRoleBinding(ctx context.Context, ns string, sns *kubebindv1alpha1.ServiceNamespace) error {
+func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, ns string, sns *kubebindv1alpha1.ServiceNamespace) error {
 	objName := sns.Namespace
 	binding, err := c.getRoleBinding(ns, objName)
 	if err != nil && !errors.IsNotFound(err) {

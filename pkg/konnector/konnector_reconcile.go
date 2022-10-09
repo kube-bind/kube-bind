@@ -18,31 +18,51 @@ package konnector
 
 import (
 	"context"
+	"sync"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster"
 )
 
-func (c *controller) reconcile(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
+type startable interface {
+	Start(ctx context.Context)
+}
+
+type reconciler struct {
+	lock        sync.Mutex
+	controllers map[string]*controllerContext // by service binding name
+
+	newClusterController func(consumerSecretRefKey, providerNamespace string, providerConfig *rest.Config) (startable, error)
+	getSecret            func(ns, name string) (*corev1.Secret, error)
+}
+
+type controllerContext struct {
+	kubeconfig      string
+	cancel          func()
+	serviceBindings sets.String // when this is empty, the controller should be stopped by closing the context
+}
+
+func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
 	logger := klog.FromContext(ctx)
 
 	ref := binding.Spec.KubeconfigSecretRef
-	secret, err := c.getSecret(ref.Namespace, ref.Name)
+	secret, err := r.getSecret(ref.Namespace, ref.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 	kubeconfig := secret.StringData[ref.Key]
 
-	c.lock.Lock()
-	defer c.lock.Unlock()
-	ctrlContext, found := c.controllers[binding.Name]
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	ctrlContext, found := r.controllers[binding.Name]
 
 	// stop existing with old kubeconfig
 	if found && ctrlContext.kubeconfig != kubeconfig {
@@ -50,7 +70,7 @@ func (c *controller) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 		if len(ctrlContext.serviceBindings) == 0 {
 			ctrlContext.cancel()
 		}
-		c.controllers[binding.Name] = nil
+		r.controllers[binding.Name] = nil
 	}
 
 	// no need to start a new one
@@ -59,10 +79,10 @@ func (c *controller) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 	}
 
 	// find existing with new kubeconfig
-	for _, ctrlContext := range c.controllers {
+	for _, ctrlContext := range r.controllers {
 		if ctrlContext.kubeconfig == kubeconfig {
 			// add to it
-			c.controllers[binding.Name] = ctrlContext
+			r.controllers[binding.Name] = ctrlContext
 			ctrlContext.serviceBindings.Insert(binding.Name)
 			return nil
 		}
@@ -91,15 +111,10 @@ func (c *controller) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 	}
 
 	// create new because there is none yet for this kubeconfig
-	ctrl, err := cluster.NewController(
+	ctrl, err := r.newClusterController(
 		binding.Spec.KubeconfigSecretRef.Namespace+"/"+binding.Spec.KubeconfigSecretRef.Name,
 		providerNamespace,
-		c.consumerConfig,
 		providerConfig,
-		c.namespaceInformer,
-		c.namespaceLister,
-		c.serviceBindingInformer,
-		c.serviceBindingLister,
 	)
 	if err != nil {
 		logger.Error(err, "failed to start new cluster controller")
@@ -107,7 +122,7 @@ func (c *controller) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 	}
 
 	ctrlCtx, cancel := context.WithCancel(ctx)
-	c.controllers[binding.Name] = &controllerContext{
+	r.controllers[binding.Name] = &controllerContext{
 		kubeconfig:      kubeconfig,
 		cancel:          cancel,
 		serviceBindings: sets.NewString(binding.Name),

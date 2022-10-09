@@ -54,6 +54,9 @@ spec:
                 required:
                 - key
                 type: object
+                x-kubernetes-validations:
+                - message: kubeconfigSecretRef is immutable
+                  rule: ="self == oldSelf"
               serviceProviderSpec:
                 description: serviceProviderSpec contains all the data and information
                   about the service which has been bound to the service binding request.

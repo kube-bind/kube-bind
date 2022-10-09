@@ -9,11 +9,11 @@ metadata:
 spec:
   group: kube-bind.io
   names:
+    categories:
+    - kube-bindings
     kind: ServiceNamespace
     listKind: ServiceNamespaceList
     plural: servicenamespaces
-    shortNames:
-    - sb
     singular: servicenamespace
   scope: Namespaced
   versions:

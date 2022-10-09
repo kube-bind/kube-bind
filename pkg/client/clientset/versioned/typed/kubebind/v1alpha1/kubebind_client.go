@@ -45,8 +45,8 @@ func (c *KubeBindV1alpha1Client) ClusterBindings(namespace string) ClusterBindin
 	return newClusterBindings(c, namespace)
 }
 
-func (c *KubeBindV1alpha1Client) ServiceBindings(namespace string) ServiceBindingInterface {
-	return newServiceBindings(c, namespace)
+func (c *KubeBindV1alpha1Client) ServiceBindings() ServiceBindingInterface {
+	return newServiceBindings(c)
 }
 
 func (c *KubeBindV1alpha1Client) ServiceBindingRequests(namespace string) ServiceBindingRequestInterface {

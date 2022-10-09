@@ -17,16 +17,21 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	genericapiserver "k8s.io/apiserver/pkg/server"
+	kubeinformers "k8s.io/client-go/informers"
+	kubernetesclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 	"k8s.io/component-base/version"
 
 	konnectoroptions "github.com/kube-bind/kube-bind/cmd/konnector/options"
+	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
+	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions"
+	"github.com/kube-bind/kube-bind/pkg/konnector"
 )
 
 func New() *cobra.Command {
@@ -47,9 +52,42 @@ func New() *cobra.Command {
 			}
 
 			ctx := genericapiserver.SetupSignalContext()
-			if err := Run(options, ctx); err != nil {
+
+			// construct informer factories
+			cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{
+				ExplicitPath: options.KubeConfigPath,
+			}, nil).ClientConfig()
+			if err != nil {
 				return err
 			}
+			bindClient, err := bindclient.NewForConfig(cfg)
+			if err != nil {
+				return err
+			}
+			kubeClient, err := kubernetesclient.NewForConfig(cfg)
+			if err != nil {
+				return err
+			}
+			kubeInformers := kubeinformers.NewSharedInformerFactory(kubeClient, time.Minute*30)
+			bindInformers := bindinformers.NewSharedInformerFactory(bindClient, time.Minute*30)
+
+			// construct controllers
+			k, err := konnector.New(
+				cfg,
+				bindInformers.KubeBind().V1alpha1().ServiceBindings(),
+				kubeInformers.Core().V1().Secrets(), // TODO(sttts): watch indiviual secrets for security and memory consumption
+			)
+			if err != nil {
+				return err
+			}
+
+			// start informer factories
+			go kubeInformers.Start(ctx.Done())
+			go bindInformers.Start(ctx.Done())
+			kubeInformers.WaitForCacheSync(ctx.Done())
+			bindInformers.WaitForCacheSync(ctx.Done())
+
+			go k.Start(ctx, 2)
 
 			<-ctx.Done()
 
@@ -66,32 +104,4 @@ func New() *cobra.Command {
 	}
 
 	return cmd
-}
-
-func Run(options *konnectoroptions.Options, ctx context.Context) error {
-	_, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{
-		ExplicitPath: options.KubeConfigPath,
-	}, nil).ClientConfig()
-	if err != nil {
-		return err
-	}
-
-	/*
-		if err := syncer.StartSyncer(
-			ctx,
-			&syncer.SyncerConfig{
-				UpstreamConfig:      upstreamConfig,
-				DownstreamConfig:    downstreamConfig,
-				ResourcesToSync:     sets.NewString(options.SyncedResourceTypes...),
-				SyncTargetWorkspace: logicalcluster.New(options.FromClusterName),
-				SyncTargetName:      options.SyncTargetName,
-				SyncTargetUID:       options.SyncTargetUID,
-			},
-			numThreads,
-			options.APIImportPollInterval,
-		); err != nil {
-			return err
-		}*/
-
-	return nil
 }

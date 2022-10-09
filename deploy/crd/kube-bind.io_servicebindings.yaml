@@ -9,13 +9,30 @@ metadata:
 spec:
   group: kube-bind.io
   names:
+    categories:
+    - kube-bindings
     kind: ServiceBinding
     listKind: ServiceBindingList
     plural: servicebindings
+    shortNames:
+    - sb
     singular: servicebinding
   scope: Cluster
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.providerPrettyName
+      name: Provider
+      priority: 1
+      type: string
+    - jsonPath: .metadata.annotations.kube-bind\.io/resources
+      name: Resources
+      priority: 4
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      priority: 5
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: ServiceBinding binds an API service represented by a ServiceExport
@@ -43,18 +60,24 @@ spec:
                   the kubeconfig of the service cluster.
                 properties:
                   key:
-                    description: The key of the secret to select from.  Must be a
-                      valid secret key.
+                    description: The key of the secret to select from.  Must be "kubeconfig".
+                    enum:
+                    - kubeconfig
                     type: string
                   name:
                     description: Name of the referent.
+                    minLength: 1
                     type: string
                   namespace:
                     description: Namespace of the referent.
+                    minLength: 1
                     type: string
                 required:
                 - key
                 type: object
+                x-kubernetes-validations:
+                - message: kubeconfigSecretRef is immutable
+                  rule: self == oldSelf
             required:
             - kubeconfigSecretRef
             type: object
@@ -108,6 +131,10 @@ spec:
                   - type
                   type: object
                 type: array
+              providerPrettyName:
+                description: providerPrettyName is the pretty name of the service
+                  provider cluster. This can be shared among different ServiceBindings.
+                type: string
             type: object
         required:
         - spec

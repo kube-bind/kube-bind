@@ -28,9 +28,13 @@ import (
 //
 // +crd
 // +genclient
+// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Cluster
+// +kubebuilder:resource:scope=Cluster,categories=kube-bindings,shortName=sb
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=`.status.providerPrettyName`,priority=1
+// +kubebuilder:printcolumn:name="Resources",type="string",JSONPath=`.metadata.annotations.kube-bind\.io/resources`,priority=4
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type=="Ready")].status`,priority=5
 type ServiceBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -45,10 +49,17 @@ type ServiceBinding struct {
 
 type ServiceBindingSpec struct {
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
+	//
+	// +required
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="kubeconfigSecretRef is immutable"
 	KubeconfigSecretRef ClusterSecretKeyRef `json:"kubeconfigSecretRef"`
 }
 
 type ServiceBindingStatus struct {
+	// providerPrettyName is the pretty name of the service provider cluster. This
+	// can be shared among different ServiceBindings.
+	ProviderPrettyName string `json:"providerPrettyName,omitempty"`
+
 	// conditions is a list of conditions that apply to the ServiceBinding.
 	//
 	// +optional
@@ -68,11 +79,14 @@ type ServiceBindingList struct {
 type LocalSecretKeyRef struct {
 	// Name of the referent.
 	// +required
-	Name string `json:"name,omitempty" protobuf:"bytes,1,opt,name=name"`
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name,omitempty"`
 
-	// The key of the secret to select from.  Must be a valid secret key.
+	// The key of the secret to select from.  Must be "kubeconfig".
+	//
 	// +required
-	Key string `json:"key" protobuf:"bytes,2,opt,name=key"`
+	// +kubebuilder:validation:Enum=kubeconfig
+	Key string `json:"key"`
 }
 
 type ClusterSecretKeyRef struct {
@@ -80,5 +94,6 @@ type ClusterSecretKeyRef struct {
 
 	// Namespace of the referent.
 	// +required
+	// +kubebuilder:validation:MinLength=1
 	Namespace string `json:"namespace,omitempty"`
 }

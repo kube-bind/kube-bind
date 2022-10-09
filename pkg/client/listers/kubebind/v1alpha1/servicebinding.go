@@ -32,8 +32,9 @@ type ServiceBindingLister interface {
 	// List lists all ServiceBindings in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.ServiceBinding, err error)
-	// ServiceBindings returns an object that can list and get ServiceBindings.
-	ServiceBindings(namespace string) ServiceBindingNamespaceLister
+	// Get retrieves the ServiceBinding from the index for a given name.
+	// Objects returned here must be treated as read-only.
+	Get(name string) (*v1alpha1.ServiceBinding, error)
 	ServiceBindingListerExpansion
 }
 
@@ -55,41 +56,9 @@ func (s *serviceBindingLister) List(selector labels.Selector) (ret []*v1alpha1.S
 	return ret, err
 }
 
-// ServiceBindings returns an object that can list and get ServiceBindings.
-func (s *serviceBindingLister) ServiceBindings(namespace string) ServiceBindingNamespaceLister {
-	return serviceBindingNamespaceLister{indexer: s.indexer, namespace: namespace}
-}
-
-// ServiceBindingNamespaceLister helps list and get ServiceBindings.
-// All objects returned here must be treated as read-only.
-type ServiceBindingNamespaceLister interface {
-	// List lists all ServiceBindings in the indexer for a given namespace.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.ServiceBinding, err error)
-	// Get retrieves the ServiceBinding from the indexer for a given namespace and name.
-	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.ServiceBinding, error)
-	ServiceBindingNamespaceListerExpansion
-}
-
-// serviceBindingNamespaceLister implements the ServiceBindingNamespaceLister
-// interface.
-type serviceBindingNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all ServiceBindings in the indexer for a given namespace.
-func (s serviceBindingNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.ServiceBinding, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.ServiceBinding))
-	})
-	return ret, err
-}
-
-// Get retrieves the ServiceBinding from the indexer for a given namespace and name.
-func (s serviceBindingNamespaceLister) Get(name string) (*v1alpha1.ServiceBinding, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
+// Get retrieves the ServiceBinding from the index for a given name.
+func (s *serviceBindingLister) Get(name string) (*v1alpha1.ServiceBinding, error) {
+	obj, exists, err := s.indexer.GetByKey(name)
 	if err != nil {
 		return nil, err
 	}

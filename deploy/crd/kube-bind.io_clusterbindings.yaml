@@ -57,6 +57,11 @@ spec:
                 x-kubernetes-validations:
                 - message: kubeconfigSecretRef is immutable
                   rule: ="self == oldSelf"
+              providerPrettyName:
+                default: unknown
+                description: providerPrettyName is the pretty name of the service
+                  provider cluster. This can be shared among different ServiceBindings.
+                type: string
               serviceProviderSpec:
                 description: serviceProviderSpec contains all the data and information
                   about the service which has been bound to the service binding request.

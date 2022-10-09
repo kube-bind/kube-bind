@@ -15,12 +15,22 @@ spec:
     singular: servicebinding
   scope: Cluster
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.providerPrettyName
+      name: Provider
+      priority: 1
+      type: string
+    - jsonPath: .metadata.annotations.kube-bind\.io/resources
+      name: Resources
+      priority: 4
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      priority: 5
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ServiceBinding binds an API service represented by a ServiceExport
-          in a service provider cluster into a consumer cluster. This object lives
-          in the consumer cluster.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -55,6 +65,9 @@ spec:
                 required:
                 - key
                 type: object
+                x-kubernetes-validations:
+                - message: kubeconfigSecretRef is immutable
+                  rule: ="self == oldSelf"
             required:
             - kubeconfigSecretRef
             type: object
@@ -108,6 +121,10 @@ spec:
                   - type
                   type: object
                 type: array
+              providerPrettyName:
+                description: providerPrettyName is the pretty name of the service
+                  provider cluster. This can be shared among different ServiceBindings.
+                type: string
             type: object
         required:
         - spec

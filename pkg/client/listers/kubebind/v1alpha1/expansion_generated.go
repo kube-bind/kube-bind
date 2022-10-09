@@ -46,6 +46,10 @@ type ServiceExportListerExpansion interface{}
 // ServiceExportNamespaceLister.
 type ServiceExportNamespaceListerExpansion interface{}
 
+// ServiceExportResourceListerExpansion allows custom methods to be added to
+// ServiceExportResourceLister.
+type ServiceExportResourceListerExpansion interface{}
+
 // ServiceNamespaceListerExpansion allows custom methods to be added to
 // ServiceNamespaceLister.
 type ServiceNamespaceListerExpansion interface{}

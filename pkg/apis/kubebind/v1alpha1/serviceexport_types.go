@@ -67,7 +67,7 @@ type ServiceExportSpec struct {
 	// +listType=map
 	// +listMapKey=group
 	// +listMapKey=resource
-	Resources []ServiceExportResource `json:"resources,omitempty"`
+	Resources []ServiceExportGroupResource `json:"resources,omitempty"`
 }
 
 type ServiceExportStatus struct {
@@ -75,7 +75,7 @@ type ServiceExportStatus struct {
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
-type ServiceExportResource struct {
+type ServiceExportGroupResource struct {
 	GroupResource `json:",inline"`
 }
 

@@ -33,6 +33,7 @@ type KubeBindV1alpha1Interface interface {
 	ServiceBindingsGetter
 	ServiceBindingRequestsGetter
 	ServiceExportsGetter
+	ServiceExportResourcesGetter
 	ServiceNamespacesGetter
 }
 
@@ -55,6 +56,10 @@ func (c *KubeBindV1alpha1Client) ServiceBindingRequests(namespace string) Servic
 
 func (c *KubeBindV1alpha1Client) ServiceExports(namespace string) ServiceExportInterface {
 	return newServiceExports(c, namespace)
+}
+
+func (c *KubeBindV1alpha1Client) ServiceExportResources() ServiceExportResourceInterface {
+	return newServiceExportResources(c)
 }
 
 func (c *KubeBindV1alpha1Client) ServiceNamespaces(namespace string) ServiceNamespaceInterface {

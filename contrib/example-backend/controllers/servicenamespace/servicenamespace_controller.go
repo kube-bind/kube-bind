@@ -101,44 +101,46 @@ func NewController(
 		roleBindingLister:  roleBindingInformer.Lister(),
 		roleBindingIndexer: roleBindingInformer.Informer().GetIndexer(),
 
-		getNamespace: namespaceInformer.Lister().Get,
-		createNamespace: func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error) {
-			return kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-		},
-		deleteNamespace: func(ctx context.Context, name string) error {
-			return kubeClient.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
-		},
+		reconciler: reconciler{
+			getNamespace: namespaceInformer.Lister().Get,
+			createNamespace: func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error) {
+				return kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+			},
+			deleteNamespace: func(ctx context.Context, name string) error {
+				return kubeClient.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
+			},
 
-		getServiceNamespace: func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error) {
-			return serviceNamespaceInformer.Lister().ServiceNamespaces(ns).Get(name)
-		},
+			getServiceNamespace: func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error) {
+				return serviceNamespaceInformer.Lister().ServiceNamespaces(ns).Get(name)
+			},
 
-		getClusterBinding: func(ns string) (*kubebindv1alpha1.ClusterBinding, error) {
-			return clusterBindingInformer.Lister().ClusterBindings(ns).Get("cluster")
-		},
+			getClusterBinding: func(ns string) (*kubebindv1alpha1.ClusterBinding, error) {
+				return clusterBindingInformer.Lister().ClusterBindings(ns).Get("cluster")
+			},
 
-		getRole: func(ns, name string) (*rbacv1.Role, error) {
-			return roleInformer.Lister().Roles(ns).Get(name)
-		},
-		createRole: func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error) {
-			return kubeClient.RbacV1().Roles(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
-		},
-		updateRole: func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error) {
-			return kubeClient.RbacV1().Roles(cr.Namespace).Update(ctx, cr, metav1.UpdateOptions{})
-		},
+			getRole: func(ns, name string) (*rbacv1.Role, error) {
+				return roleInformer.Lister().Roles(ns).Get(name)
+			},
+			createRole: func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error) {
+				return kubeClient.RbacV1().Roles(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
+			},
+			updateRole: func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error) {
+				return kubeClient.RbacV1().Roles(cr.Namespace).Update(ctx, cr, metav1.UpdateOptions{})
+			},
 
-		getRoleBinding: func(ns, name string) (*rbacv1.RoleBinding, error) {
-			return roleBindingInformer.Lister().RoleBindings(ns).Get(name)
-		},
-		createRoleBinding: func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
-			return kubeClient.RbacV1().RoleBindings(crb.Namespace).Create(ctx, crb, metav1.CreateOptions{})
-		},
-		updateRoleBinding: func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
-			return kubeClient.RbacV1().RoleBindings(crb.Namespace).Update(ctx, crb, metav1.UpdateOptions{})
-		},
+			getRoleBinding: func(ns, name string) (*rbacv1.RoleBinding, error) {
+				return roleBindingInformer.Lister().RoleBindings(ns).Get(name)
+			},
+			createRoleBinding: func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+				return kubeClient.RbacV1().RoleBindings(crb.Namespace).Create(ctx, crb, metav1.CreateOptions{})
+			},
+			updateRoleBinding: func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+				return kubeClient.RbacV1().RoleBindings(crb.Namespace).Update(ctx, crb, metav1.UpdateOptions{})
+			},
 
-		listServiceExports: func(ns string) ([]*kubebindv1alpha1.ServiceExport, error) {
-			return serviceExportInformer.Lister().ServiceExports(ns).List(labels.Everything())
+			listServiceExports: func(ns string) ([]*kubebindv1alpha1.ServiceExport, error) {
+				return serviceExportInformer.Lister().ServiceExports(ns).List(labels.Everything())
+			},
 		},
 
 		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceNamespace, *kubebindv1alpha1.ServiceNamespaceSpec, *kubebindv1alpha1.ServiceNamespaceStatus](
@@ -238,23 +240,7 @@ type controller struct {
 	roleBindingLister  rbaclisters.RoleBindingLister
 	roleBindingIndexer cache.Indexer
 
-	getNamespace    func(name string) (*corev1.Namespace, error)
-	createNamespace func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error)
-	deleteNamespace func(ctx context.Context, name string) error
-
-	getServiceNamespace func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error)
-
-	getClusterBinding func(ns string) (*kubebindv1alpha1.ClusterBinding, error)
-
-	getRole    func(ns, name string) (*rbacv1.Role, error)
-	createRole func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error)
-	updateRole func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error)
-
-	getRoleBinding    func(ns, name string) (*rbacv1.RoleBinding, error)
-	createRoleBinding func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
-	updateRoleBinding func(ctx context.Context, cr *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
-
-	listServiceExports func(ns string) ([]*kubebindv1alpha1.ServiceExport, error)
+	reconciler
 
 	commit CommitFunc
 }

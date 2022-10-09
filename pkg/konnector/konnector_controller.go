@@ -19,14 +19,12 @@ package konnector
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -41,6 +39,7 @@ import (
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster"
 )
 
 const (
@@ -49,7 +48,7 @@ const (
 
 // New returns a konnector controller.
 func New(
-	config *rest.Config,
+	consumerConfig *rest.Config,
 	serviceBindingInformer bindinformers.ServiceBindingInformer,
 	secretInformer coreinformers.SecretInformer,
 	namespaceInformer coreinformers.NamespaceInformer,
@@ -58,33 +57,44 @@ func New(
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
-	config = rest.CopyConfig(config)
-	config = rest.AddUserAgent(config, controllerName)
+	consumerConfig = rest.CopyConfig(consumerConfig)
+	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
 
-	bindClient, err := bindclient.NewForConfig(config)
+	bindClient, err := bindclient.NewForConfig(consumerConfig)
 	if err != nil {
 		return nil, err
 	}
 
+	namespaceLister := namespaceInformer.Lister()
 	c := &controller{
 		queue: queue,
 
-		consumerConfig: config,
+		consumerConfig: consumerConfig,
 		bindClient:     bindClient,
 
 		serviceBindingLister:  serviceBindingInformer.Lister(),
 		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
 
-		namespaceInformer: namespaceInformer,
-		namespaceLister:   namespaceInformer.Lister(),
-
 		secretLister:  secretInformer.Lister(),
 		secretIndexer: secretInformer.Informer().GetIndexer(),
 
-		controllers: map[string]*controllerContext{},
-
-		getSecret: func(ns, name string) (*corev1.Secret, error) {
-			return secretInformer.Lister().Secrets(ns).Get(name)
+		reconciler: reconciler{
+			controllers: map[string]*controllerContext{},
+			getSecret: func(ns, name string) (*corev1.Secret, error) {
+				return secretInformer.Lister().Secrets(ns).Get(name)
+			},
+			newClusterController: func(consumerSecretRefKey, providerNamespace string, providerConfig *rest.Config) (startable, error) {
+				return cluster.NewController(
+					consumerSecretRefKey,
+					providerNamespace,
+					consumerConfig,
+					providerConfig,
+					namespaceInformer,
+					namespaceLister,
+					serviceBindingInformer,
+					serviceBindingInformer.Lister(),
+				)
+			},
 		},
 	}
 
@@ -131,28 +141,15 @@ type controller struct {
 	consumerConfig *rest.Config
 	bindClient     bindclient.Interface
 
-	serviceBindingInformer bindinformers.ServiceBindingInformer
-	serviceBindingLister   bindlisters.ServiceBindingLister
-	serviceBindingIndexer  cache.Indexer
-
-	namespaceInformer coreinformers.NamespaceInformer
-	namespaceLister   corelisters.NamespaceLister
+	serviceBindingLister  bindlisters.ServiceBindingLister
+	serviceBindingIndexer cache.Indexer
 
 	secretLister  corelisters.SecretLister
 	secretIndexer cache.Indexer
 
-	lock        sync.Mutex
-	controllers map[string]*controllerContext // by service binding name
-
-	getSecret func(ns, name string) (*corev1.Secret, error)
+	reconciler
 
 	commit CommitFunc
-}
-
-type controllerContext struct {
-	kubeconfig      string
-	cancel          func()
-	serviceBindings sets.String // when this is empty, the controller should be stopped by closing the context
 }
 
 func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) {

@@ -84,10 +84,6 @@ func NewController(
 	c := &controller{
 		queue: queue,
 
-		consumerSecretRefKey: consumerSecretRefKey,
-		providerNamespace:    providerNamespace,
-		heartbeatInterval:    heartbeatInterval,
-
 		providerBindClient: providerBindClient,
 		providerKubeClient: providerKubeClient,
 		consumerKubeClient: consumerKubeClient,
@@ -104,50 +100,56 @@ func NewController(
 		consumerSecretLister: consumerSecretInformer.Lister(),
 		providerSecretLister: providerSecretInformer.Lister(),
 
-		getClusterBinding: func(ns string) (*kubebindv1alpha1.ClusterBinding, error) {
-			return clusterBindingInformer.Lister().ClusterBindings(ns).Get("cluster")
-		},
+		reconciler: reconciler{
+			consumerSecretRefKey: consumerSecretRefKey,
+			providerNamespace:    providerNamespace,
+			heartbeatInterval:    heartbeatInterval,
 
-		updateClusterBinding: func(ctx context.Context, cb *kubebindv1alpha1.ClusterBinding) (*kubebindv1alpha1.ClusterBinding, error) {
-			return providerBindClient.KubeBindV1alpha1().ClusterBindings(cb.Namespace).Update(ctx, cb, metav1.UpdateOptions{})
-		},
+			getClusterBinding: func(ns string) (*kubebindv1alpha1.ClusterBinding, error) {
+				return clusterBindingInformer.Lister().ClusterBindings(ns).Get("cluster")
+			},
 
-		listServiceExports: func() ([]*kubebindv1alpha1.ServiceExport, error) {
-			return serviceExportInformer.Lister().ServiceExports(providerNamespace).List(labels.Everything())
-		},
+			updateClusterBinding: func(ctx context.Context, cb *kubebindv1alpha1.ClusterBinding) (*kubebindv1alpha1.ClusterBinding, error) {
+				return providerBindClient.KubeBindV1alpha1().ClusterBindings(cb.Namespace).Update(ctx, cb, metav1.UpdateOptions{})
+			},
 
-		listServiceBindings: func() ([]*kubebindv1alpha1.ServiceBinding, error) {
-			objs, err := serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByKubeconfigSecret, consumerSecretRefKey)
-			if err != nil {
-				return nil, err
-			}
-			bindings := make([]*kubebindv1alpha1.ServiceBinding, 0, len(objs))
-			for _, obj := range objs {
-				bindings = append(bindings, obj.(*kubebindv1alpha1.ServiceBinding))
-			}
-			return bindings, nil
-		},
+			listServiceExports: func() ([]*kubebindv1alpha1.ServiceExport, error) {
+				return serviceExportInformer.Lister().ServiceExports(providerNamespace).List(labels.Everything())
+			},
 
-		getProviderSecret: func() (*corev1.Secret, error) {
-			cb, err := clusterBindingInformer.Lister().ClusterBindings(providerNamespace).Get("cluster")
-			if err != nil {
-				return nil, err
-			}
-			ref := &cb.Spec.KubeconfigSecretRef
-			return providerSecretInformer.Lister().Secrets(providerNamespace).Get(ref.Name)
-		},
-		getConsumerSecret: func() (*corev1.Secret, error) {
-			ns, name, err := cache.SplitMetaNamespaceKey(consumerSecretRefKey)
-			if err != nil {
-				return nil, err
-			}
-			return consumerSecretInformer.Lister().Secrets(ns).Get(name)
-		},
-		createConsumerSecret: func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
-			return consumerKubeClient.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
-		},
-		updateConsumerSecret: func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
-			return consumerKubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
+			listServiceBindings: func() ([]*kubebindv1alpha1.ServiceBinding, error) {
+				objs, err := serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByKubeconfigSecret, consumerSecretRefKey)
+				if err != nil {
+					return nil, err
+				}
+				bindings := make([]*kubebindv1alpha1.ServiceBinding, 0, len(objs))
+				for _, obj := range objs {
+					bindings = append(bindings, obj.(*kubebindv1alpha1.ServiceBinding))
+				}
+				return bindings, nil
+			},
+
+			getProviderSecret: func() (*corev1.Secret, error) {
+				cb, err := clusterBindingInformer.Lister().ClusterBindings(providerNamespace).Get("cluster")
+				if err != nil {
+					return nil, err
+				}
+				ref := &cb.Spec.KubeconfigSecretRef
+				return providerSecretInformer.Lister().Secrets(providerNamespace).Get(ref.Name)
+			},
+			getConsumerSecret: func() (*corev1.Secret, error) {
+				ns, name, err := cache.SplitMetaNamespaceKey(consumerSecretRefKey)
+				if err != nil {
+					return nil, err
+				}
+				return consumerSecretInformer.Lister().Secrets(ns).Get(name)
+			},
+			createConsumerSecret: func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
+				return consumerKubeClient.CoreV1().Secrets(secret.Namespace).Create(ctx, secret, metav1.CreateOptions{})
+			},
+			updateConsumerSecret: func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error) {
+				return consumerKubeClient.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
+			},
 		},
 
 		commit: committer.NewCommitter[*kubebindv1alpha1.ClusterBinding, *kubebindv1alpha1.ClusterBindingSpec, *kubebindv1alpha1.ClusterBindingStatus](
@@ -227,11 +229,6 @@ type CommitFunc = func(context.Context, *Resource, *Resource) error
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
-	// consumerSecretRefKey is the namespace/name value of the ServiceBinding kubeconfig secret reference.
-	consumerSecretRefKey string
-	providerNamespace    string
-	heartbeatInterval    time.Duration
-
 	providerBindClient bindclient.Interface
 	providerKubeClient kubernetesclient.Interface
 	consumerKubeClient kubernetesclient.Interface
@@ -248,16 +245,7 @@ type controller struct {
 	consumerSecretLister corelisters.SecretLister
 	providerSecretLister corelisters.SecretLister
 
-	getClusterBinding    func(ns string) (*kubebindv1alpha1.ClusterBinding, error)
-	updateClusterBinding func(ctx context.Context, cb *kubebindv1alpha1.ClusterBinding) (*kubebindv1alpha1.ClusterBinding, error)
-
-	listServiceExports  func() ([]*kubebindv1alpha1.ServiceExport, error)
-	listServiceBindings func() ([]*kubebindv1alpha1.ServiceBinding, error)
-
-	getProviderSecret    func() (*corev1.Secret, error)
-	getConsumerSecret    func() (*corev1.Secret, error)
-	updateConsumerSecret func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
-	createConsumerSecret func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
+	reconciler
 
 	commit CommitFunc
 }

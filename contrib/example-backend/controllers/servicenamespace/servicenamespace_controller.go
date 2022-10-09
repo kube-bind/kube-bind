@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The KCP Authors.
+Copyright 2022 The kube bind Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,16 +19,22 @@ package servicenamespace
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	coreinformers "k8s.io/client-go/informers/core/v1"
+	rbacinformers "k8s.io/client-go/informers/rbac/v1"
 	kubernetesclient "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
+	rbaclisters "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -38,19 +44,26 @@ import (
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/committer"
 )
 
 const (
-	controllerName = "servicenamespace"
+	controllerName = "kube-bind-example-backend-servicenamespace"
 )
 
 // NewController returns a new controller for ServiceNamespaces.
 func NewController(
 	config *rest.Config,
 	serviceNamespaceInformer bindinformers.ServiceNamespaceInformer,
+	clusterBindingInformer bindinformers.ClusterBindingInformer,
+	serviceExportInformer bindinformers.ServiceExportInformer,
 	namespaceInformer coreinformers.NamespaceInformer,
+	roleInformer rbacinformers.RoleInformer,
+	roleBindingInformer rbacinformers.RoleBindingInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
+
+	logger := klog.Background().WithValues("controller", controllerName)
 
 	config = rest.CopyConfig(config)
 	config = rest.AddUserAgent(config, controllerName)
@@ -73,13 +86,24 @@ func NewController(
 		serviceNamespaceLister:  serviceNamespaceInformer.Lister(),
 		serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
 
+		clusterBindingLister:  clusterBindingInformer.Lister(),
+		clusterBindingIndexer: clusterBindingInformer.Informer().GetIndexer(),
+
+		serviceExportLister:  serviceExportInformer.Lister(),
+		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
+
 		namespaceLister:  namespaceInformer.Lister(),
 		namespaceIndexer: namespaceInformer.Informer().GetIndexer(),
 
+		roleLister:  roleInformer.Lister(),
+		roleIndexer: roleInformer.Informer().GetIndexer(),
+
+		roleBindingLister:  roleBindingInformer.Lister(),
+		roleBindingIndexer: roleBindingInformer.Informer().GetIndexer(),
+
 		getNamespace: namespaceInformer.Lister().Get,
-		createNamespace: func(ctx context.Context, ns *corev1.Namespace) error {
-			_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
-			return err
+		createNamespace: func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error) {
+			return kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
 		},
 		deleteNamespace: func(ctx context.Context, name string) error {
 			return kubeClient.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
@@ -88,6 +112,40 @@ func NewController(
 		getServiceNamespace: func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error) {
 			return serviceNamespaceInformer.Lister().ServiceNamespaces(ns).Get(name)
 		},
+
+		getClusterBinding: func(ns string) (*kubebindv1alpha1.ClusterBinding, error) {
+			return clusterBindingInformer.Lister().ClusterBindings(ns).Get("cluster")
+		},
+
+		getRole: func(ns, name string) (*rbacv1.Role, error) {
+			return roleInformer.Lister().Roles(ns).Get(name)
+		},
+		createRole: func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error) {
+			return kubeClient.RbacV1().Roles(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
+		},
+		updateRole: func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error) {
+			return kubeClient.RbacV1().Roles(cr.Namespace).Update(ctx, cr, metav1.UpdateOptions{})
+		},
+
+		getRoleBinding: func(ns, name string) (*rbacv1.RoleBinding, error) {
+			return roleBindingInformer.Lister().RoleBindings(ns).Get(name)
+		},
+		createRoleBinding: func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+			return kubeClient.RbacV1().RoleBindings(crb.Namespace).Create(ctx, crb, metav1.CreateOptions{})
+		},
+		updateRoleBinding: func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+			return kubeClient.RbacV1().RoleBindings(crb.Namespace).Update(ctx, crb, metav1.UpdateOptions{})
+		},
+
+		listServiceExports: func(ns string) ([]*kubebindv1alpha1.ServiceExport, error) {
+			return serviceExportInformer.Lister().ServiceExports(ns).List(labels.Everything())
+		},
+
+		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceNamespace, *kubebindv1alpha1.ServiceNamespaceSpec, *kubebindv1alpha1.ServiceNamespaceStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceNamespace] {
+				return bindClient.KubeBindV1alpha1().ServiceNamespaces(ns)
+			},
+		),
 	}
 
 	// nolint:errcheck
@@ -97,30 +155,62 @@ func NewController(
 
 	namespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			c.enqueueNamespace(obj)
+			c.enqueueNamespace(logger, obj)
 		},
 		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueNamespace(newObj)
+			c.enqueueNamespace(logger, newObj)
 		},
 		DeleteFunc: func(obj interface{}) {
-			c.enqueueNamespace(obj)
+			c.enqueueNamespace(logger, obj)
 		},
 	})
 
 	serviceNamespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			c.enqueueServiceNamespace(obj)
+			c.enqueueServiceNamespace(logger, obj)
 		},
 		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueServiceNamespace(newObj)
+			c.enqueueServiceNamespace(logger, newObj)
 		},
 		DeleteFunc: func(obj interface{}) {
-			c.enqueueServiceNamespace(obj)
+			c.enqueueServiceNamespace(logger, obj)
+		},
+	})
+
+	clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueClusterBinding(logger, obj)
+		},
+	})
+
+	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueServiceExport(logger, obj)
+		},
+		UpdateFunc: func(old, newObj interface{}) {
+			oldExport, ok := old.(*kubebindv1alpha1.ServiceExport)
+			if !ok {
+				return
+			}
+			newExport, ok := old.(*kubebindv1alpha1.ServiceExport)
+			if !ok {
+				return
+			}
+			if reflect.DeepEqual(oldExport.Spec, newExport.Spec) {
+				return
+			}
+			c.enqueueServiceExport(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueServiceExport(logger, obj)
 		},
 	})
 
 	return c, nil
 }
+
+type Resource = committer.Resource[*kubebindv1alpha1.ServiceNamespaceSpec, *kubebindv1alpha1.ServiceNamespaceStatus]
+type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
 // the ServiceNamespace is deleted.
@@ -136,26 +226,107 @@ type controller struct {
 	serviceNamespaceLister  bindlisters.ServiceNamespaceLister
 	serviceNamespaceIndexer cache.Indexer
 
+	clusterBindingLister  bindlisters.ClusterBindingLister
+	clusterBindingIndexer cache.Indexer
+
+	serviceExportLister  bindlisters.ServiceExportLister
+	serviceExportIndexer cache.Indexer
+
+	roleLister  rbaclisters.RoleLister
+	roleIndexer cache.Indexer
+
+	roleBindingLister  rbaclisters.RoleBindingLister
+	roleBindingIndexer cache.Indexer
+
 	getNamespace    func(name string) (*corev1.Namespace, error)
-	createNamespace func(ctx context.Context, ns *corev1.Namespace) error
+	createNamespace func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error)
 	deleteNamespace func(ctx context.Context, name string) error
 
 	getServiceNamespace func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error)
+
+	getClusterBinding func(ns string) (*kubebindv1alpha1.ClusterBinding, error)
+
+	getRole    func(ns, name string) (*rbacv1.Role, error)
+	createRole func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error)
+	updateRole func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error)
+
+	getRoleBinding    func(ns, name string) (*rbacv1.RoleBinding, error)
+	createRoleBinding func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+	updateRoleBinding func(ctx context.Context, cr *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+
+	listServiceExports func(ns string) ([]*kubebindv1alpha1.ServiceExport, error)
+
+	commit CommitFunc
 }
 
-// enqueueAPIBinding enqueues an APIExport .
-func (c *controller) enqueueServiceNamespace(obj interface{}) {
+func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	klog.V(2).InfoS("queueing APIExport", "controller", controllerName, "key", key)
+	logger.V(2).Info("queueing ServiceNamespace", "key", key)
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueNamespace(obj interface{}) {
+func (c *controller) enqueueClusterBinding(logger klog.Logger, obj interface{}) {
+	cbKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	ns, _, err := cache.SplitMetaNamespaceKey(cbKey)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	snss, err := c.serviceNamespaceIndexer.ByIndex(cache.NamespaceIndex, ns)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	logger.V(2).Info("queueing ServiceNamespaces", "namespace", ns, "number", len(snss), "reason", "ClusterBinding", "ClusterBindingKey", cbKey)
+	for _, sns := range snss {
+		key, err := cache.MetaNamespaceKeyFunc(sns)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
+		}
+		c.queue.Add(key)
+	}
+}
+
+func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
+	seKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	ns, _, err := cache.SplitMetaNamespaceKey(seKey)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	snss, err := c.serviceNamespaceIndexer.ByIndex(cache.NamespaceIndex, ns)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	logger.V(2).Info("queueing ServiceNamespaces", "namespace", ns, "number", len(snss), "reason", "ServiceExport", "ServiceExportKey", seKey)
+	for _, sns := range snss {
+		key, err := cache.MetaNamespaceKeyFunc(sns)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
+		}
+		c.queue.Add(key)
+	}
+}
+
+func (c *controller) enqueueNamespace(logger klog.Logger, obj interface{}) {
 	if ns, ok := obj.(*corev1.Namespace); ok {
 		if value, found := ns.Annotations[serviceNamespaceAnnotationKey]; found {
 			ns, name, err := ServiceNamespaceFromAnnotation(value)
@@ -165,7 +336,7 @@ func (c *controller) enqueueNamespace(obj interface{}) {
 			}
 			key := ns + "/" + name
 
-			klog.V(2).InfoS("queueing ServiceNamespace via namespace annotation", "controller", controllerName, "key", key)
+			logger.V(2).Info("queueing ServiceNamespace", "key", key, "reason", "Namespace", "NamespaceKey", key)
 			c.queue.Add(key)
 		}
 	}
@@ -176,8 +347,10 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 	defer runtime.HandleCrash()
 	defer c.queue.ShutDown()
 
-	klog.InfoS("Starting controller", "controller", controllerName)
-	defer klog.InfoS("Shutting down controller", "controller", controllerName)
+	logger := klog.FromContext(ctx).WithValues("controller", controllerName)
+
+	logger.Info("Starting controller")
+	defer logger.Info("Shutting down controller")
 
 	for i := 0; i < numThreads; i++ {
 		go wait.UntilWithContext(ctx, c.startWorker, time.Second)
@@ -199,7 +372,9 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	}
 	key := k.(string)
 
-	klog.V(2).InfoS("processing key", "controller", controllerName, "key", key)
+	logger := klog.FromContext(ctx).WithValues("key", key)
+	ctx = klog.NewContext(ctx, logger)
+	logger.V(2).Info("processing key")
 
 	// No matter what, tell the queue we're done with this key, to unblock
 	// other workers.
@@ -222,7 +397,8 @@ func (c *controller) process(ctx context.Context, key string) error {
 	}
 	nsName := snsNamespace + "-" + snsName
 
-	if _, err := c.getServiceNamespace(snsNamespace, snsName); err != nil && !errors.IsNotFound(err) {
+	obj, err := c.getServiceNamespace(snsNamespace, snsName)
+	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		if err := c.deleteNamespace(ctx, nsName); err != nil && !errors.IsNotFound(err) {
@@ -231,22 +407,23 @@ func (c *controller) process(ctx context.Context, key string) error {
 		return nil
 	}
 
-	if _, err := c.getNamespace(nsName); err != nil && !errors.IsNotFound(err) {
-		return err // should not happen
-	}
-	if errors.IsNotFound(err) {
-		ns := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: nsName,
-				Annotations: map[string]string{
-					serviceNamespaceAnnotationKey: ServiceNamespaceAnnotationValue(snsNamespace, snsName),
-				},
-			},
-		}
-		if err := c.createNamespace(ctx, ns); err != nil {
-			return fmt.Errorf("failed to create namespace %q: %w", nsName, err)
-		}
+	old := obj
+	obj = obj.DeepCopy()
+
+	var errs []error
+	if err := c.reconcile(ctx, obj); err != nil {
+		errs = append(errs, err)
 	}
 
-	return nil
+	// Regardless of whether reconcile returned an error or not, always try to patch status if needed. Return the
+	// reconciliation error at the end.
+
+	// If the object being reconciled changed as a result, update it.
+	oldResource := &Resource{ObjectMeta: old.ObjectMeta, Spec: &old.Spec, Status: &old.Status}
+	newResource := &Resource{ObjectMeta: obj.ObjectMeta, Spec: &obj.Spec, Status: &obj.Status}
+	if err := c.commit(ctx, oldResource, newResource); err != nil {
+		errs = append(errs, err)
+	}
+
+	return utilerrors.NewAggregate(errs)
 }

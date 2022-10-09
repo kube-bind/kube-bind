@@ -48,6 +48,7 @@ type ClusterBinding struct {
 type ClusterBindingSpec struct {
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
 	// +required
+	// +kubebuilder:validation:XValidation:rule=="self == oldSelf",message="kubeconfigSecretRef is immutable"
 	KubeconfigSecretRef LocalSecretKeyRef `json:"kubeconfigSecretRef"`
 	// serviceProviderSpec contains all the data and information about the service which has been bound to the service
 	// binding request. The service providers decide what they need and what to configure based on what then include in

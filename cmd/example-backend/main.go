@@ -133,7 +133,14 @@ func main() {
 	bindInformers := bindinformers.NewSharedInformerFactory(bindClient, time.Minute*30)
 
 	// construct controllers
-	servicenamespaceCtrl, err := servicenamespace.NewController(cfg, bindInformers.KubeBind().V1alpha1().ServiceNamespaces(), kubeInformers.Core().V1().Namespaces())
+	servicenamespaceCtrl, err := servicenamespace.NewController(cfg,
+		bindInformers.KubeBind().V1alpha1().ServiceNamespaces(),
+		bindInformers.KubeBind().V1alpha1().ClusterBindings(),
+		bindInformers.KubeBind().V1alpha1().ServiceExports(),
+		kubeInformers.Core().V1().Namespaces(),
+		kubeInformers.Rbac().V1().Roles(),
+		kubeInformers.Rbac().V1().RoleBindings(),
+	)
 	if err != nil {
 		klog.Fatalf("error building the service namespace controller: %v", err)
 	}

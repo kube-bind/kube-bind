@@ -37,13 +37,13 @@ type ServiceNamespace struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec specifies a service namespace.
-	Spec ServiceNamespaceSepc `json:"spec"`
+	Spec ServiceNamespaceSpec `json:"spec"`
 
 	// status contains reconciliation information for a service namespace
 	Status ServiceNamespaceStatus `json:"status,omitempty"`
 }
 
-type ServiceNamespaceSepc struct {
+type ServiceNamespaceSpec struct {
 }
 
 type ServiceNamespaceStatus struct {

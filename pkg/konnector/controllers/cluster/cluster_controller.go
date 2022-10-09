@@ -23,6 +23,8 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	kubernetesinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/informers/internalinterfaces"
@@ -32,16 +34,22 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions"
 	bindv1alpha1informers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/clusterbinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/namespacedeletion"
 )
 
 const (
 	controllerName = "kube-bind-konnector-cluster"
+
+	heartbeatInterval = 5 * time.Minute // TODO: make configurable
 )
 
 // NewController returns a new controller handling one cluster connection.
@@ -69,6 +77,10 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
+	consumerBindClient, err := bindclient.NewForConfig(consumerConfig)
+	if err != nil {
+		return nil, err
+	}
 	consumerKubeClient, err := kubernetesclient.NewForConfig(consumerConfig)
 	if err != nil {
 		return nil, err
@@ -90,7 +102,7 @@ func NewController(
 	clusterbindingCtrl, err := clusterbinding.NewController(
 		consumerSecretRefKey,
 		providerNamespace,
-		time.Minute*10, // TODO: make configurable
+		heartbeatInterval,
 		consumerConfig,
 		providerConfig,
 		providerBindInformers.KubeBind().V1alpha1().ClusterBindings(),
@@ -116,6 +128,11 @@ func NewController(
 	return &controller{
 		consumerSecretRefKey: consumerSecretRefKey,
 
+		bindClient: consumerBindClient,
+
+		serviceBindingLister:  serviceBidningsLister,
+		serviceBindingIndexer: serviceBindingsInformer.Informer().GetIndexer(),
+
 		clusterbindingCtrl:    clusterbindingCtrl,
 		namespacedeletionCtrl: namespacedeletionCtrl,
 	}, nil
@@ -134,6 +151,11 @@ type SharedInformerFactory interface {
 type controller struct {
 	consumerSecretRefKey string
 
+	bindClient bindclient.Interface
+
+	serviceBindingLister  bindlisters.ServiceBindingLister
+	serviceBindingIndexer cache.Indexer
+
 	factories []SharedInformerFactory
 
 	clusterbindingCtrl    GenericController
@@ -148,12 +170,64 @@ func (c *controller) Start(ctx context.Context) {
 	for _, factory := range c.factories {
 		go factory.Start(ctx.Done())
 	}
-	for _, factory := range c.factories {
-		factory.WaitForCacheSync(ctx.Done())
+
+	if err := wait.PollInfiniteWithContext(ctx, heartbeatInterval, func(ctx context.Context) (bool, error) {
+		waitCtx, cancel := context.WithDeadline(ctx, time.Now().Add(heartbeatInterval/2))
+		defer cancel()
+		for _, factory := range c.factories {
+			factory.WaitForCacheSync(waitCtx.Done())
+		}
+		select {
+		case <-ctx.Done():
+			// timeout
+			logger.Info("informers did not sync in time", "timeout", heartbeatInterval/2)
+			c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.ServiceBinding) {
+				conditions.MarkFalse(
+					binding,
+					kubebindv1alpha1.ServiceBindingConditionAvailableInformersSyncer,
+					"",
+					conditionsapi.ConditionSeverityError,
+					"Informers did not sync within %s",
+					heartbeatInterval/2,
+				)
+			})
+
+			return false, nil
+		default:
+			return true, nil
+		}
+	}); err != nil {
+		runtime.HandleError(err)
+		return
 	}
+
+	c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.ServiceBinding) {
+		conditions.MarkTrue(binding, kubebindv1alpha1.ServiceBindingConditionAvailableInformersSyncer)
+	})
 
 	go c.clusterbindingCtrl.Start(ctx, 2)
 	go c.namespacedeletionCtrl.Start(ctx, 2)
 
 	<-ctx.Done()
+}
+
+func (c *controller) updateServiceBindings(ctx context.Context, update func(*kubebindv1alpha1.ServiceBinding)) {
+	logger := klog.FromContext(ctx)
+
+	objs, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, c.consumerSecretRefKey)
+	if err != nil {
+		logger.Error(err, "failed to list service bindings", "secretKey", c.consumerSecretRefKey)
+		return
+	}
+	for _, obj := range objs {
+		binding := obj.(*kubebindv1alpha1.ServiceBinding)
+		orig := binding.DeepCopy()
+		update(binding)
+		if !reflect.DeepEqual(binding.Status.Conditions, orig.Status.Conditions) {
+			if _, err := c.bindClient.KubeBindV1alpha1().ServiceBindings().Update(ctx, binding, metav1.UpdateOptions{}); err != nil {
+				logger.Error(err, "failed to update service binding", "binding", binding.Name)
+				continue
+			}
+		}
+	}
 }

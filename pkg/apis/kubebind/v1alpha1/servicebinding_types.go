@@ -28,6 +28,9 @@ const (
 
 	// ServiceBindingConditionSecretValid is set when the secret is valid.
 	ServiceBindingConditionSecretValid = "SecretValid"
+
+	// ServiceBindingConditionAvailableInformersSynced is set when the informers can sync..
+	ServiceBindingConditionAvailableInformersSyncer = "AvailableInformersSynced"
 )
 
 // ServiceBinding binds an API service represented by a ServiceExport

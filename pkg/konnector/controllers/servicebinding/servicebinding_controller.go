@@ -116,8 +116,9 @@ func NewController(
 type Resource = committer.Resource[*kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
-// controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
-// the ServiceNamespace is deleted.
+// controller reconciles ServiceBindings' kubeconfig secret references. It is
+// here as an individual controller because the cluster controller is not running
+// if the secret is invalid.
 type controller struct {
 	queue workqueue.RateLimitingInterface
 

@@ -66,6 +66,18 @@ spec:
                 description: providerPrettyName is the pretty name of the service
                   provider cluster. This can be shared among different ServiceBindings.
                 type: string
+              scope:
+                description: "scope is the scope of the ClusterBinding. It can be
+                  either Cluster or Namespace. \n Cluster:    The konnector has permission
+                  to watch all namespaces at once and cluster-scoped resources. This
+                  is more efficient than watching each namespace individually. Namespaced:
+                  The konnector has permission to watch only single namespaces. This
+                  is more resource intensive. And it means cluster-scoped resources
+                  cannot be exported."
+                enum:
+                - Cluster
+                - Namespaced
+                type: string
               serviceProviderSpec:
                 description: serviceProviderSpec contains all the data and information
                   about the service which has been bound to the service binding request.

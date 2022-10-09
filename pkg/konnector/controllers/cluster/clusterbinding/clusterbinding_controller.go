@@ -25,7 +25,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -42,14 +41,13 @@ import (
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
-	"github.com/kube-bind/kube-bind/pkg/indexers"
 )
 
 const (
-	controllerName = "kube-bind-example-backend-servicenamespace"
+	controllerName = "kube-bind-konnector-clusterbinding"
 )
 
-// NewController returns a new controller for ServiceNamespaces.
+// NewController returns a new controller for ClusterBindings.
 func NewController(
 	consumerSecretRefKey string,
 	providerNamespace string,
@@ -104,30 +102,6 @@ func NewController(
 			consumerSecretRefKey: consumerSecretRefKey,
 			providerNamespace:    providerNamespace,
 			heartbeatInterval:    heartbeatInterval,
-
-			getClusterBinding: func(ns string) (*kubebindv1alpha1.ClusterBinding, error) {
-				return clusterBindingInformer.Lister().ClusterBindings(ns).Get("cluster")
-			},
-
-			updateClusterBinding: func(ctx context.Context, cb *kubebindv1alpha1.ClusterBinding) (*kubebindv1alpha1.ClusterBinding, error) {
-				return providerBindClient.KubeBindV1alpha1().ClusterBindings(cb.Namespace).Update(ctx, cb, metav1.UpdateOptions{})
-			},
-
-			listServiceExports: func() ([]*kubebindv1alpha1.ServiceExport, error) {
-				return serviceExportInformer.Lister().ServiceExports(providerNamespace).List(labels.Everything())
-			},
-
-			listServiceBindings: func() ([]*kubebindv1alpha1.ServiceBinding, error) {
-				objs, err := serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByKubeconfigSecret, consumerSecretRefKey)
-				if err != nil {
-					return nil, err
-				}
-				bindings := make([]*kubebindv1alpha1.ServiceBinding, 0, len(objs))
-				for _, obj := range objs {
-					bindings = append(bindings, obj.(*kubebindv1alpha1.ServiceBinding))
-				}
-				return bindings, nil
-			},
 
 			getProviderSecret: func() (*corev1.Secret, error) {
 				cb, err := clusterBindingInformer.Lister().ClusterBindings(providerNamespace).Get("cluster")
@@ -224,8 +198,7 @@ func NewController(
 type Resource = committer.Resource[*kubebindv1alpha1.ClusterBindingSpec, *kubebindv1alpha1.ClusterBindingStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
-// controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
-// the ServiceNamespace is deleted.
+// controller reconciles ClusterBindings on the service provider cluster, including heartbeating.
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
@@ -390,7 +363,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.getClusterBinding(ns)
+	obj, err := c.clusterBindingLister.ClusterBindings(ns).Get("cluster")
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {

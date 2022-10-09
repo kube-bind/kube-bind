@@ -38,12 +38,6 @@ type reconciler struct {
 	providerNamespace    string
 	heartbeatInterval    time.Duration
 
-	getClusterBinding    func(ns string) (*kubebindv1alpha1.ClusterBinding, error)
-	updateClusterBinding func(ctx context.Context, cb *kubebindv1alpha1.ClusterBinding) (*kubebindv1alpha1.ClusterBinding, error)
-
-	listServiceExports  func() ([]*kubebindv1alpha1.ServiceExport, error)
-	listServiceBindings func() ([]*kubebindv1alpha1.ServiceBinding, error)
-
 	getProviderSecret    func() (*corev1.Secret, error)
 	getConsumerSecret    func() (*corev1.Secret, error)
 	updateConsumerSecret func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
@@ -117,7 +111,7 @@ func (r *reconciler) ensureSecret(ctx context.Context, binding *kubebindv1alpha1
 			kubebindv1alpha1.ClusterBindingConditionSecretValid,
 			"ProviderSecretInvalid",
 			conditionsapi.ConditionSeverityError,
-			"Provider secret %s/%s missing %s string key",
+			"Provider secret %s/%s is missing %q string key.",
 			r.providerNamespace,
 			binding.Spec.KubeconfigSecretRef.Name,
 			binding.Spec.KubeconfigSecretRef.Key,

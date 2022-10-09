@@ -23,6 +23,14 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
+const (
+	// ClusterBindingConditionAvailable is set when the binding is healthy.
+	ClusterBindingConditionAvailable = "Available"
+
+	// ClusterBindingConditionSecretValid is set when the secret is valid.
+	ClusterBindingConditionSecretValid = "SecretValid"
+)
+
 // ClusterBinding represents a bound consumer class. It lives in a service provider cluster
 // and is a singleton named "cluster".
 //
@@ -42,6 +50,14 @@ type ClusterBinding struct {
 
 	// status contains reconciliation information for the service binding.
 	Status ClusterBindingStatus `json:"status,omitempty"`
+}
+
+func (in *ClusterBinding) GetConditions() conditionsapi.Conditions {
+	return in.Status.Conditions
+}
+
+func (in *ClusterBinding) SetConditions(conditions conditionsapi.Conditions) {
+	in.Status.Conditions = conditions
 }
 
 // Scope is the scope of the ClusterBinding.
@@ -92,6 +108,7 @@ type ClusterBindingSpec struct {
 	//
 	// +required
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:rule="self == \"Cluster\"",message="Cluster scope not yet supported"
 	Scope Scope `json:"scope"`
 
 	// serviceProviderSpec contains all the data and information about the service which has been bound to the service

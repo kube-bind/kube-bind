@@ -22,9 +22,11 @@ import (
 	"sync"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -38,6 +40,7 @@ import (
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
+	"github.com/kube-bind/kube-bind/pkg/indexers"
 )
 
 const (
@@ -49,6 +52,7 @@ func New(
 	config *rest.Config,
 	serviceBindingInformer bindinformers.ServiceBindingInformer,
 	secretInformer coreinformers.SecretInformer,
+	namespaceInformer coreinformers.NamespaceInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -65,18 +69,28 @@ func New(
 	c := &controller{
 		queue: queue,
 
-		bindClient: bindClient,
+		consumerConfig: config,
+		bindClient:     bindClient,
 
 		serviceBindingLister:  serviceBindingInformer.Lister(),
 		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
 
+		namespaceInformer: namespaceInformer,
+		namespaceLister:   namespaceInformer.Lister(),
+
 		secretLister:  secretInformer.Lister(),
 		secretIndexer: secretInformer.Informer().GetIndexer(),
+
+		controllers: map[string]*controllerContext{},
+
+		getSecret: func(ns, name string) (*corev1.Secret, error) {
+			return secretInformer.Lister().Secrets(ns).Get(name)
+		},
 	}
 
 	// nolint:errcheck
-	serviceBindingInformer.Informer().AddIndexers(cache.Indexers{
-		ByKubeconfigSecret: IndexByKubeconfigSecret,
+	indexers.AddIfNotPresentOrDie(serviceBindingInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ByKubeconfigSecret: indexers.IndexByKubeconfigSecret,
 	})
 
 	serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -114,23 +128,31 @@ type CommitFunc = func(context.Context, *Resource, *Resource) error
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
-	bindClient bindclient.Interface
+	consumerConfig *rest.Config
+	bindClient     bindclient.Interface
 
-	serviceBindingLister  bindlisters.ServiceBindingLister
-	serviceBindingIndexer cache.Indexer
+	serviceBindingInformer bindinformers.ServiceBindingInformer
+	serviceBindingLister   bindlisters.ServiceBindingLister
+	serviceBindingIndexer  cache.Indexer
+
+	namespaceInformer coreinformers.NamespaceInformer
+	namespaceLister   corelisters.NamespaceLister
 
 	secretLister  corelisters.SecretLister
 	secretIndexer cache.Indexer
 
-	// Store the kubeconfig from the secrets. Every time a kubeconfig
-	// changes, some controllers have to be restarted to pick up the
-	// new credentials.
-	// nolint:unused
-	bindingKubeconfigLock sync.Mutex
-	// nolint:unused
-	bindingKubeconfigs map[string][]byte // by binding name
+	lock        sync.Mutex
+	controllers map[string]*controllerContext // by service binding name
+
+	getSecret func(ns, name string) (*corev1.Secret, error)
 
 	commit CommitFunc
+}
+
+type controllerContext struct {
+	kubeconfig      string
+	cancel          func()
+	serviceBindings sets.String // when this is empty, the controller should be stopped by closing the context
 }
 
 func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) {
@@ -156,7 +178,7 @@ func (c *controller) enqueueSecret(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	bindings, err := c.serviceBindingIndexer.ByIndex(ByKubeconfigSecret, fmt.Sprintf("%s/%s", ns, name))
+	bindings, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, fmt.Sprintf("%s/%s", ns, name))
 	if err != nil {
 		runtime.HandleError(err)
 		return

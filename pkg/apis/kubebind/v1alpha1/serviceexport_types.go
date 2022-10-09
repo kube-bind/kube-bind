@@ -37,11 +37,10 @@ type ServiceExport struct {
 	// spec represents the data in the newly created service binding export.
 	//
 	// +required
+	// +kubebuilder:validation:Required
 	Spec ServiceExportSpec `json:"spec"`
 
 	// status contains reconciliation information for the service binding export.
-	//
-	// +optional
 	Status ServiceExportStatus `json:"status,omitempty"`
 }
 
@@ -56,8 +55,6 @@ type ServiceExportSpec struct {
 
 type ServiceExportStatus struct {
 	// conditions is a list of conditions that apply to the ServiceExport.
-	//
-	// +optional
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
@@ -71,13 +68,13 @@ type GroupResource struct {
 	// For core groups this is the empty string '""'.
 	//
 	// +kubebuilder:validation:Pattern=`^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$`
-	// +optional
 	// +kubebuilder:default=""
 	Group string `json:"group,omitempty"`
 
 	// resource is the name of the resource.
 	// Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
 	// not provided by an service binding export.
+	//
 	// +kubebuilder:validation:Pattern=`^[a-z][-a-z0-9]*[a-z0-9]$`
 	// +required
 	// +kubebuilder:validation:Required

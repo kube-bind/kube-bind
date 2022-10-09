@@ -55,8 +55,6 @@ spec:
                     items:
                       type: string
                     type: array
-                required:
-                - issuerURL
                 type: object
               oidcResponseSpec:
                 description: OIDCResponseSpec contains the response of the OIDC request
@@ -74,7 +72,7 @@ spec:
                 type: object
               serviceProviderSpecSpec:
                 description: serviceProviderSpec contains all the data the service
-                  provider needs to conduct the chosen service by the user. An exmaple
+                  provider needs to conduct the chosen service by the user. An example
                   of those specs could be the resources that the user has chosen to
                   use.
                 type: object
@@ -94,11 +92,6 @@ spec:
                 description: userID Probably we don't need however it could be a convenient
                   value for better computations.
                 type: string
-            required:
-            - authenticatedClientURL
-            - sessionID
-            - userEmail
-            - userID
             type: object
           status:
             description: status contains reconciliation information for the service
@@ -121,8 +114,6 @@ spec:
                 format: date-time
                 type: string
             type: object
-        required:
-        - spec
         type: object
     served: true
     storage: true

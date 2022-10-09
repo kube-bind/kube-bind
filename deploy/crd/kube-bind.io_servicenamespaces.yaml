@@ -49,8 +49,6 @@ spec:
                   will be bound to the consumer namespace named like this object.
                 type: string
             type: object
-        required:
-        - spec
         type: object
     served: true
     storage: true

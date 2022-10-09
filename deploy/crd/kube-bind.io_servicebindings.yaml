@@ -74,6 +74,8 @@ spec:
                     type: string
                 required:
                 - key
+                - name
+                - namespace
                 type: object
                 x-kubernetes-validations:
                 - message: kubeconfigSecretRef is immutable
@@ -136,8 +138,6 @@ spec:
                   provider cluster. This can be shared among different ServiceBindings.
                 type: string
             type: object
-        required:
-        - spec
         type: object
     served: true
     storage: true

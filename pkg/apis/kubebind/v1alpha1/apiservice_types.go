@@ -43,8 +43,6 @@ type APIServiceSpec struct {
 
 type APIServiceStatus struct {
 	// conditions is a list of conditions that apply to the ServiceBinding.
-	//
-	// +optional
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 

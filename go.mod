@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/coreos/go-oidc v2.2.1+incompatible
+	github.com/evanphx/json-patch v4.12.0+incompatible
 	github.com/google/go-cmp v0.5.8
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/onsi/gomega v1.20.1
@@ -35,7 +36,6 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
-	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fatih/color v1.12.0 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect

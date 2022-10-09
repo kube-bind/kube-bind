@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
@@ -39,7 +37,7 @@ type ServiceExport struct {
 	// spec represents the data in the newly created service binding export.
 	//
 	// +required
-	Spec ServiceExportSepc `json:"spec"`
+	Spec ServiceExportSpec `json:"spec"`
 
 	// status contains reconciliation information for the service binding export.
 	//
@@ -47,21 +45,13 @@ type ServiceExport struct {
 	Status ServiceExportStatus `json:"status,omitempty"`
 }
 
-type ServiceExportSepc struct {
-	// permissionClaims make resources available in the ServiceExport virtual workspace that are not part
-	// of the actual APIExport resources.
+type ServiceExportSpec struct {
+	// resources are the resources to be bound into the consumer cluster.
 	//
-	// PermissionClaims are optional and should be the least access necessary to complete the functions
-	// that the service provider needs. Access is asked for on a GroupResource + identity basis.
-	//
-	// PermissionClaims must be accepted by the user's explicit acknowledgement. Hence, when claims
-	// change, the respecting objects are not visible immediately.
-	//
-	// PermissionClaims overlapping with the ServiceExport resources are ignored.
-	//
-	// +optional
-	// +listType=atomic
-	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
+	// +listType=map
+	// +listMapKey=group
+	// +listMapKey=resource
+	Resources []ServiceExportResource `json:"resources,omitempty"`
 }
 
 type ServiceExportStatus struct {
@@ -71,31 +61,8 @@ type ServiceExportStatus struct {
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
-// PermissionClaim identifies an object by GR and identity hash.
-// Its purpose is to determine the added permissions that a service provider may
-// request and that a consumer may accept and allow the service provider access to.
-type PermissionClaim struct {
-	GroupResource `json:","`
-
-	// identityHash is the identity for a given ServiceExport that the APIResourceSchema belongs to.
-	// The hash can be found on ServiceExport and APIResourceSchema's status.
-	// It will be empty for core types.
-	// Note that one must look this up for a particular KCP instance.
-	// +optional
-	IdentityHash string `json:"identityHash,omitempty"`
-}
-
-func (p PermissionClaim) String() string {
-	if p.IdentityHash == "" {
-		return fmt.Sprintf("%s.%s", p.Resource, p.Group)
-	}
-	return fmt.Sprintf("%s.%s:%s", p.Resource, p.Group, p.IdentityHash)
-}
-
-func (p PermissionClaim) Equal(claim PermissionClaim) bool {
-	return p.Group == claim.Group &&
-		p.Resource == claim.Resource &&
-		p.IdentityHash == claim.IdentityHash
+type ServiceExportResource struct {
+	GroupResource `json:",inline"`
 }
 
 // GroupResource identifies a resource.

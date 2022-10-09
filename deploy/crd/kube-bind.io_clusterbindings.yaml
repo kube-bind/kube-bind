@@ -16,7 +16,16 @@ spec:
     singular: clusterbinding
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.lastHeartbeatTime
+      name: Last Heartbeat
+      priority: 4
+      type: date
+    - jsonPath: .status.conditions[?(@.type=="Available")].status
+      name: Available
+      priority: 5
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: ClusterBinding represents a bound consumer class. It lives in

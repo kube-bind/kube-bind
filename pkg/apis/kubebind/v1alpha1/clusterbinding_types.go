@@ -24,9 +24,6 @@ import (
 )
 
 const (
-	// ClusterBindingConditionAvailable is set when the binding is healthy.
-	ClusterBindingConditionAvailable = "Available"
-
 	// ClusterBindingConditionSecretValid is set when the secret is valid.
 	ClusterBindingConditionSecretValid = "SecretValid"
 )
@@ -39,6 +36,8 @@ const (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
 // +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Last Heartbeat",type="date",JSONPath=`.status.lastHeartbeatTime`,priority=4
+// +kubebuilder:printcolumn:name="Available",type="string",JSONPath=`.status.conditions[?(@.type=="Available")].status`,priority=5
 type ClusterBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

@@ -28,8 +28,8 @@ spec:
       name: Resources
       priority: 4
       type: string
-    - jsonPath: .status.conditions[?(@.type=="Ready")].status
-      name: Ready
+    - jsonPath: .status.conditions[?(@.type=="Available")].status
+      name: Available
       priority: 5
       type: string
     name: v1alpha1

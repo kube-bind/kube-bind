@@ -1,5 +1,5 @@
 /*
-Copyright 2021 The kube bind Authors.
+Copyright 2022 The kube bind Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package konnector
+package servicebinding
 
 import (
 	"context"
@@ -39,71 +39,46 @@ import (
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
-	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster"
-	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/servicebinding"
 )
 
 const (
-	controllerName = "kube-bind-konnector"
+	controllerName = "kube-bind-konnector-servicebinding"
 )
 
-// New returns a konnector controller.
-func New(
+// NewController returns a new controller for ServiceNamespaces.
+func NewController(
 	consumerConfig *rest.Config,
 	serviceBindingInformer bindinformers.ServiceBindingInformer,
-	secretInformer coreinformers.SecretInformer,
-	namespaceInformer coreinformers.NamespaceInformer,
+	consumerSecretInformer coreinformers.SecretInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
-	consumerConfig = rest.CopyConfig(consumerConfig)
-	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
-
-	bindClient, err := bindclient.NewForConfig(consumerConfig)
+	consumerBindClient, err := bindclient.NewForConfig(consumerConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	servicebindingCtrl, err := servicebinding.NewController(consumerConfig, serviceBindingInformer, secretInformer)
-	if err != nil {
-		return nil, err
-	}
-
-	namespaceLister := namespaceInformer.Lister()
 	c := &controller{
 		queue: queue,
-
-		consumerConfig: consumerConfig,
-		bindClient:     bindClient,
 
 		serviceBindingLister:  serviceBindingInformer.Lister(),
 		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
 
-		secretLister:  secretInformer.Lister(),
-		secretIndexer: secretInformer.Informer().GetIndexer(),
-
-		ServiceBindingCtrl: servicebindingCtrl,
+		consumerSecretLister: consumerSecretInformer.Lister(),
 
 		reconciler: reconciler{
-			controllers: map[string]*controllerContext{},
-			getSecret: func(ns, name string) (*corev1.Secret, error) {
-				return secretInformer.Lister().Secrets(ns).Get(name)
-			},
-			newClusterController: func(consumerSecretRefKey, providerNamespace string, providerConfig *rest.Config) (startable, error) {
-				return cluster.NewController(
-					consumerSecretRefKey,
-					providerNamespace,
-					consumerConfig,
-					providerConfig,
-					namespaceInformer,
-					namespaceLister,
-					serviceBindingInformer,
-					serviceBindingInformer.Lister(),
-				)
+			getConsumerSecret: func(ns, namespace string) (*corev1.Secret, error) {
+				return consumerSecretInformer.Lister().Secrets(ns).Get(namespace)
 			},
 		},
+
+		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceBinding, *kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceBinding] {
+				return consumerBindClient.KubeBindV1alpha1().ServiceBindings()
+			},
+		),
 	}
 
 	// nolint:errcheck
@@ -123,43 +98,34 @@ func New(
 		},
 	})
 
-	secretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			c.enqueueSecret(logger, obj)
+			c.enqueueConsumerSecret(logger, obj)
 		},
 		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueSecret(logger, newObj)
+			c.enqueueConsumerSecret(logger, newObj)
 		},
 		DeleteFunc: func(obj interface{}) {
-			c.enqueueSecret(logger, obj)
+			c.enqueueConsumerSecret(logger, obj)
 		},
 	})
+
 	return c, nil
 }
 
 type Resource = committer.Resource[*kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
-type GenericController interface {
-	Start(ctx context.Context, numThreads int)
-}
-
-// controller is the top-level controller watching ServiceBindings and
-// service provider credentials, and then starts ServiceBinding controllers
-// dynamically.
+// controller reconciles ServiceBindings' kubeconfig secret references. It is
+// here as an individual controller because the cluster controller is not running
+// if the secret is invalid.
 type controller struct {
 	queue workqueue.RateLimitingInterface
-
-	consumerConfig *rest.Config
-	bindClient     bindclient.Interface
 
 	serviceBindingLister  bindlisters.ServiceBindingLister
 	serviceBindingIndexer cache.Indexer
 
-	secretLister  corelisters.SecretLister
-	secretIndexer cache.Indexer
-
-	ServiceBindingCtrl GenericController
+	consumerSecretLister corelisters.SecretLister
 
 	reconciler
 
@@ -177,42 +143,34 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueSecret(logger klog.Logger, obj interface{}) {
-	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-	ns, name, err := cache.SplitMetaNamespaceKey(key)
+func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj interface{}) {
+	secretKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	bindings, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, fmt.Sprintf("%s/%s", ns, name))
+	binding, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, secretKey)
+	if err != nil && !errors.IsNotFound(err) {
+		runtime.HandleError(err)
+		return
+	} else if errors.IsNotFound(err) {
+		return // skip this secret
+	}
+
+	key, err := cache.MetaNamespaceKeyFunc(binding)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
-	if len(bindings) == 0 {
-		return
-	}
-
-	for _, obj := range bindings {
-		bindingKey, err := cache.MetaNamespaceKeyFunc(obj)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
-		}
-		logger.V(2).Info("queueing ServiceBinding", "key", bindingKey, "reason", "Secret", "SecretKey", key)
-		c.queue.Add(bindingKey)
-	}
+	logger.V(2).Info("queueing ServiceBinding", "key", key, "reason", "Secret", "SecretKey", secretKey)
+	c.queue.Add(key)
 }
 
-// Start starts the konnector. It does block.
-func (k *controller) Start(ctx context.Context, numThreads int) {
+// Start starts the controller, which stops when ctx.Done() is closed.
+func (c *controller) Start(ctx context.Context, numThreads int) {
 	defer runtime.HandleCrash()
-	defer k.queue.ShutDown()
+	defer c.queue.ShutDown()
 
 	logger := klog.FromContext(ctx).WithValues("controller", controllerName)
 
@@ -220,10 +178,8 @@ func (k *controller) Start(ctx context.Context, numThreads int) {
 	defer logger.Info("Shutting down controller")
 
 	for i := 0; i < numThreads; i++ {
-		go wait.UntilWithContext(ctx, k.startWorker, time.Second)
+		go wait.UntilWithContext(ctx, c.startWorker, time.Second)
 	}
-
-	go k.ServiceBindingCtrl.Start(ctx, numThreads)
 
 	<-ctx.Done()
 }
@@ -243,7 +199,7 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 
 	logger := klog.FromContext(ctx).WithValues("key", key)
 	ctx = klog.NewContext(ctx, logger)
-	logger.Info("processing key")
+	logger.V(2).Info("processing key")
 
 	// No matter what, tell the queue we're done with this key, to unblock
 	// other workers.
@@ -259,17 +215,22 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 func (c *controller) process(ctx context.Context, key string) error {
-	_, name, err := cache.SplitMetaNamespaceKey(key)
+	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)
 		return nil // we cannot do anything
 	}
+	if name != "cluster" {
+		return nil // cannot happen by OpenAPI validation
+	}
 
-	obj, err := c.serviceBindingLister.Get(name)
+	logger := klog.FromContext(ctx)
+
+	obj, err := c.serviceBindingLister.Get(ns)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		// update remote condition
+		logger.Error(err, "ClusterBinding disappeared")
 		return nil
 	}
 

@@ -22,6 +22,18 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
+const (
+	// ServiceBindingConditionSecretValid is set when the secret is valid.
+	ServiceBindingConditionSecretValid = "SecretValid"
+
+	// ServiceBindingConditionInformersSynced is set when the informers can sync.
+	ServiceBindingConditionInformersSynced = "InformersSynced"
+
+	// ServiceBindingConditionHeartbeating is set when the ClusterBinding of the service provider
+	// is successfully heartbeated.
+	ServiceBindingConditionHeartbeating = "Heartbeating"
+)
+
 // ServiceBinding binds an API service represented by a ServiceExport
 // in a service provider cluster into a consumer cluster. This object lives in
 // the consumer cluster.
@@ -34,7 +46,7 @@ import (
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=`.status.providerPrettyName`,priority=1
 // +kubebuilder:printcolumn:name="Resources",type="string",JSONPath=`.metadata.annotations.kube-bind\.io/resources`,priority=4
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type=="Ready")].status`,priority=5
+// +kubebuilder:printcolumn:name="Available",type="string",JSONPath=`.status.conditions[?(@.type=="Available")].status`,priority=5
 type ServiceBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -45,6 +57,14 @@ type ServiceBinding struct {
 
 	// status contains reconciliation information for a service binding.
 	Status ServiceBindingStatus `json:"status,omitempty"`
+}
+
+func (in *ServiceBinding) GetConditions() conditionsapi.Conditions {
+	return in.Status.Conditions
+}
+
+func (in *ServiceBinding) SetConditions(conditions conditionsapi.Conditions) {
+	in.Status.Conditions = conditions
 }
 
 type ServiceBindingSpec struct {

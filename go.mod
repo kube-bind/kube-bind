@@ -12,6 +12,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1
 	k8s.io/api v0.25.2
+	k8s.io/apiextensions-apiserver v0.25.2
 	k8s.io/apimachinery v0.25.2
 	k8s.io/apiserver v0.25.2
 	k8s.io/cli-runtime v0.25.2
@@ -115,7 +116,6 @@ require (
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.25.2 // indirect
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
 	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed // indirect

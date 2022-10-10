@@ -66,8 +66,8 @@ func init() {
 
 func newBackendOptions() *backendOpts {
 	opts := &backendOpts{}
-	flag.StringVar(&opts.listenIP, "listenIP", "127.0.0.1", "The host IP where the backend is running")
-	flag.IntVar(&opts.listenPort, "listenPort", 8080, "The host port where the backend is running")
+	flag.StringVar(&opts.listenIP, "listen-ip", "127.0.0.1", "The host IP where the backend is running")
+	flag.IntVar(&opts.listenPort, "listen-port", 8080, "The host port where the backend is running")
 	flag.StringVar(&opts.oidcIssuerClientID, "oidc-issuer-client-id", "", "Issuer client ID")
 	flag.StringVar(&opts.oidcIssuerClientSecret, "oidc-issuer-client-secret", "", "OpenID client secret")
 	flag.StringVar(&opts.oidcIssuerURL, "oidc-issuer-url", "", "Callback URL for OpenID responses.")

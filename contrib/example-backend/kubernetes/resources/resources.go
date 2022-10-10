@@ -22,6 +22,7 @@ const (
 	ClusterAdminName              = "kubebind-cluster-admin"
 	SessionIDs                    = "session-ids"
 	ClusterBindingName            = "cluster"
+	ClusterBindingKubeConfig      = "cluster-admin-kubeconfig"
 )
 
 // AuthCode represents the data that are needed to complete the full authentication workflow.

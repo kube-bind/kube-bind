@@ -25,9 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/yaml"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
@@ -62,7 +60,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 	} else if errors.IsNotFound(err) {
 		logger.V(2).Info("secret not found", "secret", ref.Namespace+"/"+ref.Name)
 	} else {
-		kubeconfig = secret.StringData[ref.Key]
+		kubeconfig = string(secret.Data[ref.Key])
 	}
 
 	r.lock.Lock()
@@ -71,6 +69,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 
 	// stop existing with old kubeconfig
 	if found && ctrlContext.kubeconfig != kubeconfig {
+		logger.V(2).Info("stopping controller with old kubeconfig", "secret", ref.Namespace+"/"+ref.Name)
 		ctrlContext.serviceBindings.Delete(binding.Name)
 		if len(ctrlContext.serviceBindings) == 0 {
 			ctrlContext.cancel()
@@ -87,6 +86,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 	for _, ctrlContext := range r.controllers {
 		if ctrlContext.kubeconfig == kubeconfig {
 			// add to it
+			logger.V(2).Info("adding to existing controller", "secret", ref.Namespace+"/"+ref.Name)
 			r.controllers[binding.Name] = ctrlContext
 			ctrlContext.serviceBindings.Insert(binding.Name)
 			return nil
@@ -94,8 +94,8 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 	}
 
 	// extract which namespace this kubeconfig points to
-	var cfg clientcmdapi.Config
-	if err := yaml.Unmarshal([]byte(kubeconfig), &cfg); err != nil {
+	cfg, err := clientcmd.Load([]byte(kubeconfig))
+	if err != nil {
 		logger.Error(err, "invalid kubeconfig in secret", "namespace", ref.Namespace, "name", ref.Name)
 		return nil // nothing we can do here. The ServiceBinding controller will set a condition
 	}
@@ -116,6 +116,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 	}
 
 	// create new because there is none yet for this kubeconfig
+	logger.V(2).Info("starting new controller", "secret", ref.Namespace+"/"+ref.Name)
 	ctrl, err := r.newClusterController(
 		binding.Spec.KubeconfigSecretRef.Namespace+"/"+binding.Spec.KubeconfigSecretRef.Name,
 		providerNamespace,

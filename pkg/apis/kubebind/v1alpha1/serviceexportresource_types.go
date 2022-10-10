@@ -30,9 +30,8 @@ import (
 //
 // +crd
 // +genclient
-// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Cluster,categories=kube-bindings
+// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Established",type="string",JSONPath=`.status.conditions[?(@.type=="Established")].status`,priority=5
 type ServiceExportResource struct {
@@ -123,9 +122,7 @@ type ServiceExportResourceVersion struct {
 	// of this version of the custom resource.
 	//
 	// +required
-	// +kubebuilder:pruning:PreserveUnknownFields
-	// +structType=atomic
-	Schema runtime.RawExtension `json:"schema"`
+	Schema ServiceExportResourceSchema `json:"schema"`
 	// subresources specify what subresources this version of the defined custom resource have.
 	//
 	// +optional
@@ -138,6 +135,15 @@ type ServiceExportResourceVersion struct {
 	// +listType=map
 	// +listMapKey=name
 	AdditionalPrinterColumns []apiextensionsv1.CustomResourceColumnDefinition `json:"additionalPrinterColumns,omitempty"`
+}
+
+type ServiceExportResourceSchema struct {
+	// openAPIV3Schema is the OpenAPI v3 schema to use for validation and pruning.
+	//
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +structType=atomic
+	// +required
+	OpenAPIV3Schema runtime.RawExtension `json:"openAPIV3Schema"`
 }
 
 // ServiceExportResourceStatus stores status information about a ServiceExportResource. It

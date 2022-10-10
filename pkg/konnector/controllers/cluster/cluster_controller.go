@@ -129,6 +129,7 @@ func NewController(
 		consumerConfig,
 		providerConfig,
 		providerBindInformers.KubeBind().V1alpha1().ServiceExports(),
+		providerBindInformers.KubeBind().V1alpha1().ServiceExportResources(),
 		serviceBindingInformer,
 		crdInformer,
 	)

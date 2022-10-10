@@ -71,7 +71,7 @@ func (v *version) ServiceExports() ServiceExportInformer {
 
 // ServiceExportResources returns a ServiceExportResourceInformer.
 func (v *version) ServiceExportResources() ServiceExportResourceInformer {
-	return &serviceExportResourceInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+	return &serviceExportResourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // ServiceNamespaces returns a ServiceNamespaceInformer.

@@ -74,6 +74,21 @@ func (r *reconciler) ensureValidServiceExport(ctx context.Context, binding *kube
 		)
 	}
 
+	if ready := conditions.Get(export, conditionsapi.ReadyCondition); ready != nil {
+		clone := *ready
+		clone.Type = kubebindv1alpha1.ServiceExportConditionExportReady
+		conditions.Set(binding, &clone)
+	} else {
+		conditions.MarkFalse(
+			binding,
+			kubebindv1alpha1.ServiceExportConditionExportReady,
+			"Unknown",
+			conditionsapi.ConditionSeverityInfo,
+			"ServiceExport %s in the service provider cluster does not have a Ready condition.",
+			binding.Spec.Export,
+		)
+	}
+
 	conditions.MarkTrue(
 		binding,
 		kubebindv1alpha1.ServiceBindingConditionConnected,

@@ -43,32 +43,33 @@ type ServiceExportResourceInformer interface {
 type serviceExportResourceInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
+	namespace        string
 }
 
 // NewServiceExportResourceInformer constructs a new informer for ServiceExportResource type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewServiceExportResourceInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredServiceExportResourceInformer(client, resyncPeriod, indexers, nil)
+func NewServiceExportResourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredServiceExportResourceInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
 // NewFilteredServiceExportResourceInformer constructs a new informer for ServiceExportResource type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredServiceExportResourceInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredServiceExportResourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha1().ServiceExportResources().List(context.TODO(), options)
+				return client.KubeBindV1alpha1().ServiceExportResources(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha1().ServiceExportResources().Watch(context.TODO(), options)
+				return client.KubeBindV1alpha1().ServiceExportResources(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&kubebindv1alpha1.ServiceExportResource{},
@@ -78,7 +79,7 @@ func NewFilteredServiceExportResourceInformer(client versioned.Interface, resync
 }
 
 func (f *serviceExportResourceInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredServiceExportResourceInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+	return NewFilteredServiceExportResourceInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *serviceExportResourceInformer) Informer() cache.SharedIndexInformer {

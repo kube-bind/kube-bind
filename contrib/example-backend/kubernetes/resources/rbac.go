@@ -45,10 +45,10 @@ func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns s
 }
 
 func CreateAdminClusterRoleBinding(ctx context.Context, client kubeclient.Interface, ns string) error {
-	clusterRoleBinding, err := client.RbacV1().ClusterRoleBindings().Get(ctx, ClusterAdminName, metav1.GetOptions{})
+	_, err := client.RbacV1().ClusterRoleBindings().Get(ctx, ClusterAdminName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			clusterRoleBinding = &rbacv1.ClusterRoleBinding{
+			clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: ClusterAdminName,
 				},

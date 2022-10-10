@@ -19,6 +19,7 @@ package resources
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
@@ -26,19 +27,29 @@ import (
 )
 
 func CreateClusterBinding(ctx context.Context, client bindclient.Interface, name, ns string) error {
-	clusterBinding := &kubebindv1alpha1.ClusterBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "cluster",
-			Namespace: ns,
-		},
-		Spec: kubebindv1alpha1.ClusterBindingSpec{
-			KubeconfigSecretRef: kubebindv1alpha1.LocalSecretKeyRef{
-				Name: name,
-				Key:  "kubeconfig",
-			},
-		},
+	_, err := client.KubeBindV1alpha1().ClusterBindings(ns).Get(ctx, ClusterBindingName, metav1.GetOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			clusterBinding := &kubebindv1alpha1.ClusterBinding{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      ClusterBindingName,
+					Namespace: ns,
+				},
+				Spec: kubebindv1alpha1.ClusterBindingSpec{
+					ProviderPrettyName: "mangoDB",
+					KubeconfigSecretRef: kubebindv1alpha1.LocalSecretKeyRef{
+						Name: name,
+						Key:  "kubeconfig",
+					},
+				},
+			}
+
+			_, err = client.KubeBindV1alpha1().ClusterBindings(ns).Create(ctx, clusterBinding, metav1.CreateOptions{})
+			if err == nil {
+				return nil
+			}
+		}
 	}
 
-	_, err := client.KubeBindV1alpha1().ClusterBindings(ns).Create(ctx, clusterBinding, metav1.CreateOptions{})
 	return err
 }

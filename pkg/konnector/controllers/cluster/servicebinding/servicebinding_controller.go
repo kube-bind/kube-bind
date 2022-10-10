@@ -159,7 +159,7 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 	logger.Info("Starting controller")
 	defer logger.Info("Shutting down controller")
 
-	c.serviceBindingInformer.Informer().AddDynamicEventHandler(ctx, cache.ResourceEventHandlerFuncs{
+	c.serviceBindingInformer.Informer().AddDynamicEventHandler(ctx, controllerName, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceBinding(logger, obj)
 		},

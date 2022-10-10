@@ -28,6 +28,7 @@ import (
 )
 
 type Authenticator interface {
+	Endpoint(context.Context) string
 	Execute(context.Context) error
 }
 
@@ -76,6 +77,10 @@ func (d *defaultAuthenticator) Execute(ctx context.Context) error {
 		func(ctx context.Context) (done bool, err error) {
 			return false, d.server.Start(fmt.Sprintf("localhost:%v", d.port))
 		})
+}
+
+func (d *defaultAuthenticator) Endpoint(context.Context) string {
+	return fmt.Sprintf("http://localhost:%v", d.port)
 }
 
 func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {

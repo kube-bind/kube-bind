@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The KCP Authors.
+Copyright 2022 The Kubectl Bind contributors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,14 +24,17 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"sigs.k8s.io/yaml"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/authenticator"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
 )
 
@@ -88,29 +91,49 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return err
 	}
 
+	sessionID := rand.String(rand.IntnRange(10, 15))
+
+	auth := authenticator.NewDefaultAuthenticator(1*time.Minute, b.serviceBinding)
+	port, err := auth.GenerateServerPort(ctx)
+	if err != nil {
+		return err
+	}
+
 	url, err := url.Parse(b.url)
 	if err != nil {
 		return err // should never happen because we test this in Validate()
 	}
 
+	values := url.Query()
+	values.Add("redirect_url", fmt.Sprintf("%s:%v", "http://localhost", port))
+	values.Add("session_id", sessionID)
+
+	url.RawQuery = values.Encode()
 	resp, err := http.Get(url.String())
 	if err != nil {
 		return fmt.Errorf("failed to get %s: %w", url, err)
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read body from %s: %w", url, err)
+	if err := resp.Body.Close(); err != nil {
+		return fmt.Errorf("failed to close body: %v", err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to get %s (%d): %s", url, resp.StatusCode, string(body[:256]))
+	if err := auth.Execute(ctx, port); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *BindOptions) serviceBinding(ctx context.Context) error {
+	body, err := io.ReadAll(nil)
+	if err != nil {
+		return fmt.Errorf("failed to read body from %s: %w", b.url, err)
 	}
 
 	var obj metav1.PartialObjectMetadata
 	if err := yaml.Unmarshal(body, &obj); err != nil {
-		return fmt.Errorf("failed to unmashal response from %s (%q): %w", url, strings.ReplaceAll(string(body[:40]), "\n", "\\n"), err)
+		return fmt.Errorf("failed to unmashal response from %s (%q): %w", b.url, strings.ReplaceAll(string(body[:40]), "\n", "\\n"), err)
 	}
 
 	// TODO: generalize this, with scheme, and potentially forking into kubectl-bind-<lower(kind)>
@@ -124,7 +147,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 
 	var apiService kubebindv1alpha1.APIService
 	if err := yaml.Unmarshal(body, &apiService); err != nil {
-		return fmt.Errorf("failed to unmashal response from %s as APIService: %w", url, err)
+		return fmt.Errorf("failed to unmashal response from %s as APIService: %w", b.url, err)
 	}
 
 	fmt.Fprint(b.Out, string(body))

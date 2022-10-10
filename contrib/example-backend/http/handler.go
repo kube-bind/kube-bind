@@ -18,6 +18,8 @@ package http
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -25,6 +27,7 @@ import (
 	echo2 "github.com/labstack/echo/v4"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 )
 
 type handler struct {
@@ -45,13 +48,32 @@ func NewHandler(provider *oidcServiceProvider, mgr *kubernetes.Manager) (*handle
 
 func (h *handler) handleAuthorize(c echo2.Context) error {
 	var scopes = []string{"openid", "profile", "email", "offline_access"}
-	authURL := h.oidc.OIDCProviderConfig(scopes).AuthCodeURL("hello-kube-bind")
+	code := &resources.AuthCode{}
+	code.RedirectURL = c.QueryParam("redirect_url")
+	code.SessionID = c.QueryParam("session_id")
+
+	if err := h.kubeManager.SaveUserData(context.TODO(), code); err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	dataCode, err := json.Marshal(code)
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(dataCode)
+
+	authURL := h.oidc.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
+
 	return c.Redirect(http.StatusSeeOther, authURL)
 }
 
 func (h *handler) handleCallback(c echo2.Context) error {
 	// Authorization redirect callback from OAuth2 auth flow.
 	if errMsg := c.FormValue("error"); errMsg != "" {
+
 		http.Error(c.Response(), errMsg+": "+c.FormValue("error_description"), http.StatusBadRequest)
 		return errors.New(errMsg)
 	}
@@ -60,13 +82,38 @@ func (h *handler) handleCallback(c echo2.Context) error {
 		http.Error(c.Response(), fmt.Sprintf("no code in request: %q", c.Request().Form), http.StatusBadRequest)
 		return nil
 	}
-	if state := c.FormValue("state"); state != "hello-kube-bind" {
-		http.Error(c.Response(), fmt.Sprintf("expected state %q got %q", "hello-kube-bind", state), http.StatusBadRequest)
+
+	state := c.FormValue("state")
+	sessionIDSecret, err := h.kubeManager.FetchUserData(context.TODO())
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	decode, err := base64.StdEncoding.DecodeString(state)
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	authCode := &resources.AuthCode{}
+	if err := json.Unmarshal(decode, authCode); err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	secretData := sessionIDSecret.Data[authCode.SessionID]
+
+	if secretData == nil {
+		http.Error(c.Response(), "unexpected state", http.StatusBadRequest)
+		c.Logger().Error(err)
 		return nil
 	}
-	_, err := h.oidc.OIDCProviderConfig(nil).Exchange(context.TODO(), code)
+
+	_, err = h.oidc.OIDCProviderConfig(nil).Exchange(context.TODO(), code)
 	if err != nil {
 		http.Error(c.Response(), fmt.Sprintf("failed to get token: %v", err), http.StatusInternalServerError)
+		c.Logger().Error(err)
 		return err
 	}
 
@@ -75,6 +122,7 @@ func (h *handler) handleCallback(c echo2.Context) error {
 		c.Logger().Error(err)
 	}
 
-	_, err = c.Response().Writer.Write(kfg)
-	return err
+	redirectURL := fmt.Sprintf("%s?session_id=%s&kubeconfig=%s",
+		authCode.RedirectURL, authCode.SessionID, kfg)
+	return c.Redirect(301, redirectURL)
 }

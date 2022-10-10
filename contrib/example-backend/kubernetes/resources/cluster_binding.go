@@ -28,7 +28,7 @@ import (
 func CreateClusterBinding(ctx context.Context, client bindclient.Interface, name, ns string) error {
 	clusterBinding := &kubebindv1alpha1.ClusterBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      "cluster",
 			Namespace: ns,
 		},
 		Spec: kubebindv1alpha1.ClusterBindingSpec{

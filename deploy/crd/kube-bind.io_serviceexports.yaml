@@ -65,6 +65,23 @@ spec:
                 - group
                 - resource
                 x-kubernetes-list-type: map
+              scope:
+                description: "scope is the scope of the ServiceExport. It can be either
+                  Cluster or Namespace. \n Cluster:    The konnector has permission
+                  to watch all namespaces at once and cluster-scoped resources. This
+                  is more efficient than watching each namespace individually. Namespaced:
+                  The konnector has permission to watch only single namespaces. This
+                  is more resource intensive. And it means cluster-scoped resources
+                  cannot be exported."
+                enum:
+                - Cluster
+                - Namespaced
+                type: string
+                x-kubernetes-validations:
+                - message: Cluster scope not yet supported
+                  rule: self == "Cluster"
+            required:
+            - scope
             type: object
           status:
             description: status contains reconciliation information for the service

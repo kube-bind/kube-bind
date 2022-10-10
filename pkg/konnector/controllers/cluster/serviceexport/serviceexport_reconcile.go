@@ -30,11 +30,11 @@ import (
 )
 
 type reconciler struct {
-	listServiceBinding func(export string) ([]*kubebindv1alpha1.ServiceBinding, error)
-
+	listServiceBinding       func(export string) ([]*kubebindv1alpha1.ServiceBinding, error)
 	getServiceExportResource func(name string) (*kubebindv1alpha1.ServiceExportResource, error)
-	updateCRD                func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
-	createCRD                func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
+
+	updateCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
+	createCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
 }
 
 func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.ServiceExport) error {
@@ -95,6 +95,19 @@ func (r *reconciler) ensureCRDs(ctx context.Context, export *kubebindv1alpha1.Se
 				"ServiceExportResourceNotFound",
 				conditionsapi.ConditionSeverityError,
 				"ServiceExportResource %s not found on the service provider cluster.",
+				name,
+			)
+			resourceValid = false
+			continue
+		}
+
+		if resource.Spec.Scope != apiextensionsv1.NamespaceScoped && export.Spec.Scope != kubebindv1alpha1.ClusterScope {
+			conditions.MarkFalse(
+				export,
+				kubebindv1alpha1.ServiceExportConditionResourcesValid,
+				"ServiceExportResourceWrongScope",
+				conditionsapi.ConditionSeverityError,
+				"ServiceExportResource %s is Cluster scope, but the ServiceExport is not.",
 				name,
 			)
 			resourceValid = false

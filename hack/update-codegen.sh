@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2021 The Kubectl Bind contributors.
+# Copyright 2021 The Kube Bind Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

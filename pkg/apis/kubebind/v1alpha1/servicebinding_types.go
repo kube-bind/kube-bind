@@ -36,6 +36,10 @@ const (
 	// ServiceBindingConditionConnected means the ServiceBinding has been connected to a ServiceExport.
 	ServiceBindingConditionConnected conditionsapi.ConditionType = "Connected"
 
+	// ServiceBindingConditionResourcesValid is set to true when the ServiceExport's
+	// resources exist and are valid.
+	ServiceBindingConditionResourcesValid conditionsapi.ConditionType = "ResourcesValid"
+
 	// ServiceBindingConditionSchemaInSync is set to true when the ServiceExport's
 	// schema is applied to the consumer cluster.
 	ServiceBindingConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"

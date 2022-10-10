@@ -22,6 +22,8 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
+	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -50,10 +52,14 @@ func NewController(
 	consumerConfig *rest.Config,
 	serviceBindingInformer bindinformers.ServiceBindingInformer,
 	consumerSecretInformer coreinformers.SecretInformer,
+	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
 	logger := klog.Background().WithValues("controller", controllerName)
+
+	consumerConfig = rest.CopyConfig(consumerConfig)
+	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
 
 	consumerBindClient, err := bindclient.NewForConfig(consumerConfig)
 	if err != nil {
@@ -67,6 +73,9 @@ func NewController(
 		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
 
 		consumerSecretLister: consumerSecretInformer.Lister(),
+
+		crdLister:  crdInformer.Lister(),
+		crdIndexer: crdInformer.Informer().GetIndexer(),
 
 		reconciler: reconciler{
 			getConsumerSecret: func(ns, name string) (*corev1.Secret, error) {
@@ -110,6 +119,18 @@ func NewController(
 		},
 	})
 
+	consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueConsumerSecret(logger, obj)
+		},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueConsumerSecret(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueConsumerSecret(logger, obj)
+		},
+	})
+
 	return c, nil
 }
 
@@ -126,6 +147,9 @@ type controller struct {
 	serviceBindingIndexer cache.Indexer
 
 	consumerSecretLister corelisters.SecretLister
+
+	crdLister  apiextensionslisters.CustomResourceDefinitionLister
+	crdIndexer cache.Indexer
 
 	reconciler
 

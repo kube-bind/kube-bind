@@ -26,8 +26,8 @@ const (
 	// ServiceExportConditionConnected means the ServiceExport has been connected to a ServiceBinding.
 	ServiceExportConditionConnected conditionsapi.ConditionType = "Connected"
 
-	// ServiceExportConditionExportReady is set to true when the ServiceExport is ready.
-	ServiceExportConditionExportReady conditionsapi.ConditionType = "ExportReady"
+	// ServiceExportConditionServiceBindingReady is set to true when the ServiceExport is ready.
+	ServiceExportConditionServiceBindingReady conditionsapi.ConditionType = "ExportReady"
 
 	// ServiceExportConditionResourcesValid is set to true when the ServiceExport's
 	// resources exist and are valid.

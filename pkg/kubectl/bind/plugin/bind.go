@@ -20,9 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kube-bind/kube-bind/pkg/authenticator"
 	"io"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -31,10 +29,12 @@ import (
 	"github.com/spf13/cobra"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"sigs.k8s.io/yaml"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/authenticator"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
 )
 

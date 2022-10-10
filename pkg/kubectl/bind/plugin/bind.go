@@ -20,10 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kube-bind/kube-bind/pkg/authenticator"
 	"io"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -88,29 +91,47 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return err
 	}
 
+	sessionID := rand.String(rand.IntnRange(10, 15))
+
+	auth := authenticator.NewDefaultAuthenticator(1*time.Minute, b.serviceBinding)
+	port, err := auth.GenerateServerPort(ctx)
+	if err != nil {
+		return err
+	}
+
 	url, err := url.Parse(b.url)
 	if err != nil {
 		return err // should never happen because we test this in Validate()
 	}
 
+	url.Query().Add("redirect_url", fmt.Sprintf("%s:%v", "http://localhost", port))
+	url.Query().Add("session_id", sessionID)
+
 	resp, err := http.Get(url.String())
 	if err != nil {
 		return fmt.Errorf("failed to get %s: %w", url, err)
 	}
-	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read body from %s: %w", url, err)
+	if err := resp.Body.Close(); err != nil {
+		return fmt.Errorf("failed to close body: %v", err)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to get %s (%d): %s", url, resp.StatusCode, string(body[:256]))
+	if err := auth.Execute(ctx, port); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *BindOptions) serviceBinding(ctx context.Context) error {
+	body, err := io.ReadAll(nil)
+	if err != nil {
+		return fmt.Errorf("failed to read body from %s: %w", b.url, err)
 	}
 
 	var obj metav1.PartialObjectMetadata
 	if err := yaml.Unmarshal(body, &obj); err != nil {
-		return fmt.Errorf("failed to unmashal response from %s (%q): %w", url, strings.ReplaceAll(string(body[:40]), "\n", "\\n"), err)
+		return fmt.Errorf("failed to unmashal response from %s (%q): %w", b.url, strings.ReplaceAll(string(body[:40]), "\n", "\\n"), err)
 	}
 
 	// TODO: generalize this, with scheme, and potentially forking into kubectl-bind-<lower(kind)>
@@ -124,7 +145,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 
 	var apiService kubebindv1alpha1.APIService
 	if err := yaml.Unmarshal(body, &apiService); err != nil {
-		return fmt.Errorf("failed to unmashal response from %s as APIService: %w", url, err)
+		return fmt.Errorf("failed to unmashal response from %s as APIService: %w", b.url, err)
 	}
 
 	fmt.Fprint(b.Out, string(body))

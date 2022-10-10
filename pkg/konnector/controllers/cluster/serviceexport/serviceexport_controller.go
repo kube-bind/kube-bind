@@ -90,7 +90,7 @@ func NewController(
 
 		reconciler: reconciler{
 			listServiceBinding: func(export string) ([]*kubebindv1alpha1.ServiceBinding, error) {
-				objs, err := serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByKubeconfigSecret, consumerSecretRefKey)
+				objs, err := serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByServiceBindingKubeconfigSecret, consumerSecretRefKey)
 				if err != nil {
 					return nil, err
 				}
@@ -116,7 +116,7 @@ func NewController(
 	}
 
 	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
-		ByGroupResource: IndexByGroupResource,
+		indexers.ServiceExportByServiceExportResource: indexers.IndexServiceExportByServiceExportResource,
 	})
 
 	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -190,7 +190,7 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 		runtime.HandleError(fmt.Errorf("unexpected type %T", obj))
 		return
 	}
-	if indexers.ByKubeconfigSecretKey(binding) != c.consumerSecretRefKey {
+	if indexers.ByServiceBindingKubeconfigSecretKey(binding) != c.consumerSecretRefKey {
 		return // not for us
 	}
 
@@ -215,7 +215,7 @@ func (c *controller) enqueueServiceExportResource(logger klog.Logger, obj interf
 		return // not for us
 	}
 
-	exports, err := c.serviceExportIndexer.ByIndex(ByGroupResource, name)
+	exports, err := c.serviceExportIndexer.ByIndex(indexers.ServiceExportByServiceExportResource, ns+"/"+name)
 	if err != nil {
 		runtime.HandleError(err)
 		return

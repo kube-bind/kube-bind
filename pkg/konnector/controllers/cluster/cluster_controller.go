@@ -254,7 +254,7 @@ func (c *controller) Start(ctx context.Context) {
 func (c *controller) updateServiceBindings(ctx context.Context, update func(*kubebindv1alpha1.ServiceBinding)) {
 	logger := klog.FromContext(ctx)
 
-	objs, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, c.consumerSecretRefKey)
+	objs, err := c.serviceBindingIndexer.ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.consumerSecretRefKey)
 	if err != nil {
 		logger.Error(err, "failed to list service bindings", "secretKey", c.consumerSecretRefKey)
 		return

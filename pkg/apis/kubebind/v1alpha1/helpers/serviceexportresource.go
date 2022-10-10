@@ -17,6 +17,7 @@ limitations under the License.
 package helpers
 
 import (
+	"encoding/json"
 	"fmt"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -67,4 +68,47 @@ func ServiceExportResourceToCRD(resource *kubebindv1alpha1.ServiceExportResource
 	}
 
 	return crd, nil
+}
+
+// CRDToServiceExportResource converts a CRD to a ServiceExportResource.
+func CRDToServiceExportResource(crd *apiextensionsv1.CustomResourceDefinition) (*kubebindv1alpha1.ServiceExportResource, error) {
+	apiResourceSchema := &kubebindv1alpha1.ServiceExportResource{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: crd.Name,
+		},
+		Spec: kubebindv1alpha1.ServiceExportResourceSpec{
+			Group: crd.Spec.Group,
+			Names: crd.Spec.Names,
+			Scope: crd.Spec.Scope,
+		},
+	}
+
+	for i := range crd.Spec.Versions {
+		crdVersion := crd.Spec.Versions[i]
+
+		apiResourceVersion := kubebindv1alpha1.ServiceExportResourceVersion{
+			Name:                     crdVersion.Name,
+			Served:                   crdVersion.Served,
+			Storage:                  crdVersion.Storage,
+			Deprecated:               crdVersion.Deprecated,
+			DeprecationWarning:       crdVersion.DeprecationWarning,
+			AdditionalPrinterColumns: crdVersion.AdditionalPrinterColumns,
+		}
+
+		if crdVersion.Schema != nil && crdVersion.Schema.OpenAPIV3Schema != nil {
+			schema, err := json.Marshal(crdVersion.Schema.OpenAPIV3Schema)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal CRD %s schema for version %q: %w", crd.Name, crdVersion.Name, err)
+			}
+			apiResourceVersion.Schema.OpenAPIV3Schema.Raw = schema
+		}
+
+		if crdVersion.Subresources != nil {
+			apiResourceVersion.Subresources = *crdVersion.Subresources
+		}
+
+		apiResourceSchema.Spec.Versions = append(apiResourceSchema.Spec.Versions, apiResourceVersion)
+	}
+
+	return apiResourceSchema, nil
 }

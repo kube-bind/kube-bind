@@ -14,22 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package servicebinding
+package serviceexportresource
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
-	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	coreinformers "k8s.io/client-go/informers/core/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -44,24 +40,23 @@ import (
 )
 
 const (
-	controllerName = "kube-bind-konnector-servicebinding"
+	controllerName = "kube-bind-example-backend-serviceexportresource"
 )
 
-// NewController returns a new controller for ServiceBindings.
+// NewController returns a new controller to reconcile ServiceExportResources.
 func NewController(
-	consumerConfig *rest.Config,
-	serviceBindingInformer bindinformers.ServiceBindingInformer,
-	consumerSecretInformer coreinformers.SecretInformer,
-	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
+	config *rest.Config,
+	serviceExportInformer bindinformers.ServiceExportInformer,
+	serviceExportResourceInformer bindinformers.ServiceExportResourceInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
-	consumerConfig = rest.CopyConfig(consumerConfig)
-	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
+	config = rest.CopyConfig(config)
+	config = rest.AddUserAgent(config, controllerName)
 
-	consumerBindClient, err := bindclient.NewForConfig(consumerConfig)
+	bindClient, err := bindclient.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
@@ -69,129 +64,116 @@ func NewController(
 	c := &controller{
 		queue: queue,
 
-		serviceBindingLister:  serviceBindingInformer.Lister(),
-		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
+		bindClient: bindClient,
 
-		consumerSecretLister: consumerSecretInformer.Lister(),
+		serviceExportLister:  serviceExportInformer.Lister(),
+		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
 
-		crdLister:  crdInformer.Lister(),
-		crdIndexer: crdInformer.Informer().GetIndexer(),
+		serviceExportResourceLister:  serviceExportResourceInformer.Lister(),
+		serviceExportResourceIndexer: serviceExportResourceInformer.Informer().GetIndexer(),
 
 		reconciler: reconciler{
-			getConsumerSecret: func(ns, name string) (*corev1.Secret, error) {
-				return consumerSecretInformer.Lister().Secrets(ns).Get(name)
+			listServiceExports: func(ns, group, resource string) ([]*kubebindv1alpha1.ServiceExport, error) {
+				exports, err := serviceExportInformer.Informer().GetIndexer().ByIndex(indexers.ServiceExportByServiceExportResource, fmt.Sprintf("%s/%s.%s", ns, resource, group))
+				if err != nil {
+					return nil, err
+				}
+				var results []*kubebindv1alpha1.ServiceExport
+				for _, obj := range exports {
+					results = append(results, obj.(*kubebindv1alpha1.ServiceExport))
+				}
+				return results, nil
+			},
+			deleteServiceExportResource: func(ctx context.Context, ns, name string) error {
+				return bindClient.KubeBindV1alpha1().ServiceExportResources(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceBinding, *kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceBinding] {
-				return consumerBindClient.KubeBindV1alpha1().ServiceBindings()
+		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceExportResource, *kubebindv1alpha1.ServiceExportResourceSpec, *kubebindv1alpha1.ServiceExportResourceStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceExportResource] {
+				return bindClient.KubeBindV1alpha1().ServiceExportResources(ns)
 			},
 		),
 	}
 
-	// nolint:errcheck
-	indexers.AddIfNotPresentOrDie(serviceBindingInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ByServiceBindingKubeconfigSecret: indexers.IndexServiceBindingByKubeconfigSecret,
+	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceExportByServiceExportResource: indexers.IndexServiceExportByServiceExportResource,
 	})
 
-	serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			c.enqueueServiceBinding(logger, obj)
+			c.enqueueServiceExport(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueServiceBinding(logger, newObj)
+		UpdateFunc: func(old, newObj interface{}) {
+			c.enqueueServiceExport(logger, newObj)
 		},
 		DeleteFunc: func(obj interface{}) {
-			c.enqueueServiceBinding(logger, obj)
-		},
-	})
-
-	consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueConsumerSecret(logger, obj)
-		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueConsumerSecret(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueConsumerSecret(logger, obj)
+			c.enqueueServiceExport(logger, obj)
 		},
 	})
 
-	consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	serviceExportResourceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			c.enqueueConsumerSecret(logger, obj)
+			c.enqueueServiceExportResource(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueConsumerSecret(logger, newObj)
+		UpdateFunc: func(old, newObj interface{}) {
+			c.enqueueServiceExportResource(logger, newObj)
 		},
 		DeleteFunc: func(obj interface{}) {
-			c.enqueueConsumerSecret(logger, obj)
+			c.enqueueServiceExportResource(logger, obj)
 		},
 	})
 
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus]
+type Resource = committer.Resource[*kubebindv1alpha1.ServiceExportResourceSpec, *kubebindv1alpha1.ServiceExportResourceStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
-// controller reconciles ServiceBindings' kubeconfig secret references. It is
-// here as an individual controller because the cluster controller is not running
-// if the secret is invalid.
+// controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
+// the ServiceNamespace is deleted.
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
-	serviceBindingLister  bindlisters.ServiceBindingLister
-	serviceBindingIndexer cache.Indexer
+	bindClient bindclient.Interface
 
-	consumerSecretLister corelisters.SecretLister
+	serviceExportLister  bindlisters.ServiceExportLister
+	serviceExportIndexer cache.Indexer
 
-	crdLister  apiextensionslisters.CustomResourceDefinitionLister
-	crdIndexer cache.Indexer
+	serviceExportResourceLister  bindlisters.ServiceExportResourceLister
+	serviceExportResourceIndexer cache.Indexer
 
 	reconciler
 
 	commit CommitFunc
 }
 
-func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	logger.V(2).Info("queueing ServiceBinding", "key", key)
+	logger.V(2).Info("queueing ServiceExport", "key", key)
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj interface{}) {
-	secretKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+func (c *controller) enqueueServiceExportResource(logger klog.Logger, obj interface{}) {
+	serKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	ns, _, err := cache.SplitMetaNamespaceKey(serKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	bindings, err := c.serviceBindingIndexer.ByIndex(indexers.ByServiceBindingKubeconfigSecret, secretKey)
-	if err != nil && !errors.IsNotFound(err) {
-		runtime.HandleError(err)
-		return
-	} else if errors.IsNotFound(err) {
-		return // skip this secret
-	}
-
-	for _, obj := range bindings {
-		binding := obj.(*kubebindv1alpha1.ServiceBinding)
-		key, err := cache.MetaNamespaceKeyFunc(binding)
-		if err != nil {
-			runtime.HandleError(err)
-			return
-		}
-		logger.V(2).Info("queueing ServiceBinding", "key", key, "reason", "Secret", "SecretKey", secretKey)
-		c.queue.Add(key)
-	}
+	key := ns + "/cluster"
+	logger.V(2).Info("queueing ServiceExport", "key", key, "reason", "ServiceExportResource", "ServiceExportResourceKey", serKey)
+	c.queue.Add(key)
 }
 
 // Start starts the controller, which stops when ctx.Done() is closed.
@@ -242,20 +224,17 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 func (c *controller) process(ctx context.Context, key string) error {
-	_, name, err := cache.SplitMetaNamespaceKey(key)
+	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)
 		return nil // we cannot do anything
 	}
 
-	logger := klog.FromContext(ctx)
-
-	obj, err := c.serviceBindingLister.Get(name)
+	obj, err := c.serviceExportResourceLister.ServiceExportResources(ns).Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		logger.Error(err, "ServiceBinding disappeared")
-		return nil
+		return nil // nothing we can do
 	}
 
 	old := obj

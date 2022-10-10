@@ -383,7 +383,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 	}
 	nsName := snsNamespace + "-" + snsName
 
-	obj, err := c.getServiceNamespace(snsNamespace, snsName)
+	obj, err := c.serviceNamespaceLister.ServiceNamespaces(snsNamespace).Get(snsName)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {

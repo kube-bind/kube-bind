@@ -36,6 +36,10 @@ const (
 	// ServiceExportConditionSchemaInSync is set to true when the ServiceExport's
 	// schema is applied to the consumer cluster.
 	ServiceExportConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"
+
+	// ServiceExportConditionResourcesInSync is set to true when the ServiceExport's
+	// resources are in sync with the CRDs.
+	ServiceExportConditionResourcesInSync conditionsapi.ConditionType = "ResourcesInSync"
 )
 
 // ServiceExport specifies an API service to exported to a consumer cluster. The

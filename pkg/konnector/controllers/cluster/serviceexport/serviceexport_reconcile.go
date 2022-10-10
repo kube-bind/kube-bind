@@ -19,9 +19,7 @@ package serviceexport
 import (
 	"context"
 
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
@@ -34,18 +32,11 @@ import (
 type reconciler struct {
 	listServiceBinding       func(export string) ([]*kubebindv1alpha1.ServiceBinding, error)
 	getServiceExportResource func(name string) (*kubebindv1alpha1.ServiceExportResource, error)
-
-	getCRD    func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	updateCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
-	createCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
-
-	updateServiceExportResourceStatus func(ctx context.Context, resource *kubebindv1alpha1.ServiceExportResource) (*kubebindv1alpha1.ServiceExportResource, error)
 }
 
 func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.ServiceExport) error {
 	var errs []error
 
-	// connected?
 	bindings, err := r.listServiceBinding(export.Name)
 	if err != nil {
 		return err
@@ -72,9 +63,13 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 			kubebindv1alpha1.ServiceExportConditionConnected,
 		)
 
-		if err := r.ensureCRDs(ctx, export); err != nil {
-			return err
+		if err := r.ensureServiceBindingConditionCopied(ctx, export, bindings[0]); err != nil {
+			errs = append(errs, err)
 		}
+	}
+
+	if err := r.ensureResourcesExist(ctx, export); err != nil {
+		errs = append(errs, err)
 	}
 
 	conditions.SetSummary(export)
@@ -82,11 +77,42 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureCRDs(ctx context.Context, export *kubebindv1alpha1.ServiceExport) error {
+func (r *reconciler) ensureServiceBindingConditionCopied(ctx context.Context, export *kubebindv1alpha1.ServiceExport, binding *kubebindv1alpha1.ServiceBinding) error {
+	if inSync := conditions.Get(binding, kubebindv1alpha1.ServiceBindingConditionSchemaInSync); inSync != nil {
+		conditions.Set(export, inSync)
+	} else {
+		conditions.MarkFalse(
+			export,
+			kubebindv1alpha1.ServiceExportConditionSchemaInSync,
+			"Unknown",
+			conditionsapi.ConditionSeverityInfo,
+			"ServiceBinding %s in the consumer cluster does not have a SchemaInSync condition.",
+			binding.Name,
+		)
+	}
+
+	if ready := conditions.Get(binding, conditionsapi.ReadyCondition); ready != nil {
+		clone := *ready
+		clone.Type = kubebindv1alpha1.ServiceExportConditionServiceBindingReady
+		conditions.Set(export, &clone)
+	} else {
+		conditions.MarkFalse(
+			export,
+			kubebindv1alpha1.ServiceExportConditionServiceBindingReady,
+			"Unknown",
+			conditionsapi.ConditionSeverityInfo,
+			"SerciceBinding %s in the consumer cluster does not have a Ready condition.",
+			binding.Name,
+		)
+	}
+
+	return nil
+}
+
+func (r *reconciler) ensureResourcesExist(ctx context.Context, export *kubebindv1alpha1.ServiceExport) error {
 	var errs []error
 
 	resourceValid := true
-	schemaInSync := true
 	for _, resource := range export.Spec.Resources {
 		name := resource.Resource + "." + resource.Group
 		resource, err := r.getServiceExportResource(name)
@@ -119,8 +145,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, export *kubebindv1alpha1.Se
 			continue
 		}
 
-		crd, err := kubebindhelpers.ServiceExportResourceToCRD(resource)
-		if err != nil {
+		if _, err := kubebindhelpers.ServiceExportResourceToCRD(resource); err != nil {
 			conditions.MarkFalse(
 				export,
 				kubebindv1alpha1.ServiceExportConditionResourcesValid,
@@ -132,89 +157,12 @@ func (r *reconciler) ensureCRDs(ctx context.Context, export *kubebindv1alpha1.Se
 			resourceValid = false
 			continue
 		}
-
-		existing, err := r.getCRD(crd.Name)
-		var result *apiextensionsv1.CustomResourceDefinition
-		if err != nil && !errors.IsNotFound(err) {
-			errs = append(errs, err)
-			continue
-		} else if errors.IsNotFound(err) {
-			result, err = r.createCRD(ctx, crd)
-			if err != nil && !errors.IsInvalid(err) {
-				errs = append(errs, err)
-				continue
-			} else if errors.IsInvalid(err) {
-				conditions.MarkFalse(
-					export,
-					kubebindv1alpha1.ServiceExportConditionSchemaInSync,
-					"CustomResourceDefinitionCreateFailed",
-					conditionsapi.ConditionSeverityError,
-					"CustomResourceDefinition %s cannot be created: %s",
-					name, err,
-				)
-				schemaInSync = false
-				continue
-			}
-		} else {
-			crd.ObjectMeta = existing.ObjectMeta
-			result, err = r.updateCRD(ctx, crd)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			}
-			if errors.IsInvalid(err) {
-				conditions.MarkFalse(
-					export,
-					kubebindv1alpha1.ServiceExportConditionSchemaInSync,
-					"CustomResourceDefinitionUpdateFailed",
-					conditionsapi.ConditionSeverityError,
-					"CustomResourceDefinition %s cannot be updated: %s",
-					name, err,
-				)
-				schemaInSync = false
-				continue
-			}
-		}
-
-		// copy the CRD status onto the ServiceExportResource
-		if result != nil {
-			orig := resource.DeepCopy()
-			resource.Status.Conditions = nil
-			for _, c := range result.Status.Conditions {
-				severity := conditionsapi.ConditionSeverityError
-				if c.Status == apiextensionsv1.ConditionTrue {
-					severity = conditionsapi.ConditionSeverityNone
-				}
-				resource.Status.Conditions = append(resource.Status.Conditions, conditionsapi.Condition{
-					Type:               conditionsapi.ConditionType(c.Type),
-					Status:             corev1.ConditionStatus(c.Status),
-					Severity:           severity, // CRD conditions have no severity
-					LastTransitionTime: c.LastTransitionTime,
-					Reason:             c.Reason,
-					Message:            c.Message,
-				})
-			}
-			resource.Status.AcceptedNames = result.Status.AcceptedNames
-			resource.Status.StoredVersions = result.Status.StoredVersions
-			if !equality.Semantic.DeepEqual(orig, resource) {
-				if _, err := r.updateServiceExportResourceStatus(ctx, resource); err != nil {
-					errs = append(errs, err)
-				}
-			}
-		}
 	}
 
 	if resourceValid {
 		conditions.MarkTrue(
 			export,
 			kubebindv1alpha1.ServiceExportConditionResourcesValid,
-		)
-	}
-
-	if schemaInSync {
-		conditions.MarkTrue(
-			export,
-			kubebindv1alpha1.ServiceExportConditionSchemaInSync,
 		)
 	}
 

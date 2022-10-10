@@ -130,7 +130,6 @@ func NewController(
 		providerBindInformers.KubeBind().V1alpha1().ServiceExports(),
 		providerBindInformers.KubeBind().V1alpha1().ServiceExportResources(),
 		serviceBindingInformer,
-		crdInformer,
 	)
 	if err != nil {
 		return nil, err
@@ -139,8 +138,11 @@ func NewController(
 		consumerSecretRefKey,
 		providerNamespace,
 		consumerConfig,
+		providerConfig,
 		serviceBindingInformer,
 		providerBindInformers.KubeBind().V1alpha1().ServiceExports(),
+		providerBindInformers.KubeBind().V1alpha1().ServiceExportResources(),
+		crdInformer,
 	)
 	if err != nil {
 		return nil, err

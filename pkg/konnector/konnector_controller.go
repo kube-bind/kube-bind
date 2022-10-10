@@ -70,7 +70,7 @@ func New(
 		return nil, err
 	}
 
-	servicebindingCtrl, err := servicebinding.NewController(consumerConfig, serviceBindingInformer, secretInformer)
+	servicebindingCtrl, err := servicebinding.NewController(consumerConfig, serviceBindingInformer, secretInformer, crdInformer)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +120,10 @@ func New(
 	// nolint:errcheck
 	indexers.AddIfNotPresentOrDie(serviceBindingInformer.Informer().GetIndexer(), cache.Indexers{
 		indexers.ByKubeconfigSecret: indexers.IndexByKubeconfigSecret,
+	})
+
+	indexers.AddIfNotPresentOrDie(serviceBindingInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ByServiceExport: indexers.IndexByServiceExport,
 	})
 
 	serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{

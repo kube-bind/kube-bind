@@ -22,9 +22,9 @@ import (
 	"net"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/labstack/echo/v4"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type Authenticator interface {

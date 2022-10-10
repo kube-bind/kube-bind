@@ -22,12 +22,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"net/http"
 
 	echo2 "github.com/labstack/echo/v4"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 )
 
 type handler struct {

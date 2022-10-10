@@ -24,14 +24,21 @@ import (
 
 const (
 	// ServiceBindingConditionSecretValid is set when the secret is valid.
-	ServiceBindingConditionSecretValid = "SecretValid"
+	ServiceBindingConditionSecretValid conditionsapi.ConditionType = "SecretValid"
 
 	// ServiceBindingConditionInformersSynced is set when the informers can sync.
-	ServiceBindingConditionInformersSynced = "InformersSynced"
+	ServiceBindingConditionInformersSynced conditionsapi.ConditionType = "InformersSynced"
 
 	// ServiceBindingConditionHeartbeating is set when the ClusterBinding of the service provider
 	// is successfully heartbeated.
-	ServiceBindingConditionHeartbeating = "Heartbeating"
+	ServiceBindingConditionHeartbeating conditionsapi.ConditionType = "Heartbeating"
+
+	// ServiceBindingConditionConnected means the ServiceBinding has been connected to a ServiceExport.
+	ServiceBindingConditionConnected conditionsapi.ConditionType = "Connected"
+
+	// ServiceBindingConditionSchemaInSync is set to true when the ServiceExport's
+	// schema is applied to the consumer cluster.
+	ServiceBindingConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"
 )
 
 // ServiceBinding binds an API service represented by a ServiceExport

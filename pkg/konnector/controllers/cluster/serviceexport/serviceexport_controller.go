@@ -23,7 +23,6 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,6 +40,7 @@ import (
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
 const (
@@ -52,10 +52,8 @@ func NewController(
 	consumerSecretRefKey, providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
 	serviceExportInformer bindinformers.ServiceExportInformer,
-	serviceBindingInformer bindinformers.ServiceBindingInformer,
-	serviceBindingLister bindlisters.ServiceBindingLister, // intentional lister and informer here to protect against race
-	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer, // intentional lister and informer here to protect against race
-	crdLister apiextensionslisters.CustomResourceDefinitionLister,
+	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister],
+	crdInformer dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister],
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -88,11 +86,8 @@ func NewController(
 		serviceExportLister:  serviceExportInformer.Lister(),
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
 
-		serviceBindingLister:  serviceBindingLister,
-		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
-
-		crdLister:  crdLister,
-		crdIndexer: crdInformer.Informer().GetIndexer(),
+		serviceBindingInformer: serviceBindingInformer,
+		crdInformer:            crdInformer,
 
 		reconciler: reconciler{
 			listServiceBinding: func(export string) ([]*kubebindv1alpha1.ServiceBinding, error) {
@@ -136,30 +131,6 @@ func NewController(
 		},
 	})
 
-	serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueServiceBinding(logger, obj)
-		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueServiceBinding(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueServiceBinding(logger, obj)
-		},
-	})
-
-	crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueCRD(logger, obj)
-		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueCRD(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueCRD(logger, obj)
-		},
-	})
-
 	return c, nil
 }
 
@@ -180,11 +151,8 @@ type controller struct {
 	serviceExportLister  bindlisters.ServiceExportLister
 	serviceExportIndexer cache.Indexer
 
-	serviceBindingLister  bindlisters.ServiceBindingLister
-	serviceBindingIndexer cache.Indexer
-
-	crdLister  apiextensionslisters.CustomResourceDefinitionLister
-	crdIndexer cache.Indexer
+	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister]
+	crdInformer            dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister]
 
 	reconciler
 
@@ -230,6 +198,30 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 
 	logger.Info("Starting controller")
 	defer logger.Info("Shutting down controller")
+
+	c.serviceBindingInformer.Informer().AddDynamicEventHandler(ctx, cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueServiceBinding(logger, obj)
+		},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueServiceBinding(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueServiceBinding(logger, obj)
+		},
+	})
+
+	c.crdInformer.Informer().AddDynamicEventHandler(ctx, cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueCRD(logger, obj)
+		},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueCRD(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueCRD(logger, obj)
+		},
+	})
 
 	for i := 0; i < numThreads; i++ {
 		go wait.UntilWithContext(ctx, c.startWorker, time.Second)

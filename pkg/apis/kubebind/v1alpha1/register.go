@@ -50,6 +50,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ServiceExportList{},
 		&ServiceBinding{},
 		&ServiceBindingList{},
+		&ServiceExportResource{},
+		&ServiceExportResourceList{},
 		&ServiceNamespace{},
 		&ServiceNamespaceList{},
 		&ClusterBinding{},

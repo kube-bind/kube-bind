@@ -231,7 +231,7 @@ verify-modules: modules  # Verify go modules are up to date
 	fi
 
 .PHONY: verify
-verify: verify-modules verify-go-versions verify-imports verify-codegen ## verify formal properties of the code
+verify: verify-modules verify-go-versions verify-imports verify-codegen verify-boilerplate ## verify formal properties of the code
 
 .PHONY: help
 help: ## Show this help.

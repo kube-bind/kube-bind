@@ -1,4 +1,4 @@
-# Copyright 2021 The Kubectl Bind contributors.
+# Copyright 2021 The Kube Bind Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -177,7 +177,7 @@ $(TOOLS_DIR)/verify_boilerplate.py:
 
 .PHONY: verify-boilerplate
 verify-boilerplate: $(TOOLS_DIR)/verify_boilerplate.py
-	$(TOOLS_DIR)/verify_boilerplate.py --boilerplate-dir=hack/boilerplate
+	$(TOOLS_DIR)/verify_boilerplate.py --boilerplate-dir=hack/boilerplate --skip dex
 
 ifdef ARTIFACT_DIR
 GOTESTSUM_ARGS += --junitfile=$(ARTIFACT_DIR)/junit.xml
@@ -231,7 +231,7 @@ verify-modules: modules  # Verify go modules are up to date
 	fi
 
 .PHONY: verify
-verify: verify-modules verify-go-versions verify-imports verify-codegen ## verify formal properties of the code
+verify: verify-modules verify-go-versions verify-imports verify-codegen verify-boilerplate ## verify formal properties of the code
 
 .PHONY: help
 help: ## Show this help.

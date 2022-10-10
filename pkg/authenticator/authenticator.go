@@ -28,17 +28,18 @@ import (
 )
 
 type Authenticator interface {
-	GenerateServerPort(context.Context) (int, error)
-	Execute(context.Context, int) error
+	Endpoint(context.Context) string
+	Execute(context.Context) error
 }
 
 type defaultAuthenticator struct {
 	server  *echo.Echo
+	port    int
 	timeout time.Duration
 	action  func(context.Context) error
 }
 
-func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context) error) Authenticator {
+func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context) error) (Authenticator, error) {
 	if timeout == 0 {
 		timeout = 2 * time.Second
 	}
@@ -52,32 +53,34 @@ func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context)
 	server.GET("/", defaultAuthenticator.actionWrapper())
 	defaultAuthenticator.server = server
 
-	return defaultAuthenticator
-}
-
-func (d *defaultAuthenticator) GenerateServerPort(ctx context.Context) (int, error) {
 	address, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	listener, err := net.ListenTCP("tcp", address)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if err = listener.Close(); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return listener.Addr().(*net.TCPAddr).Port, nil
+	defaultAuthenticator.port = listener.Addr().(*net.TCPAddr).Port
+
+	return defaultAuthenticator, nil
 }
 
-func (d *defaultAuthenticator) Execute(ctx context.Context, port int) error {
+func (d *defaultAuthenticator) Execute(ctx context.Context) error {
 	return wait.PollImmediateWithContext(ctx, d.timeout, d.timeout,
 		func(ctx context.Context) (done bool, err error) {
-			return false, d.server.Start(fmt.Sprintf("localhost:%v", port))
+			return false, d.server.Start(fmt.Sprintf("localhost:%v", d.port))
 		})
+}
+
+func (d *defaultAuthenticator) Endpoint(context.Context) string {
+	return fmt.Sprintf("http://localhost:%v", d.port)
 }
 
 func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {

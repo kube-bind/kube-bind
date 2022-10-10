@@ -93,8 +93,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 
 	sessionID := rand.String(rand.IntnRange(10, 15))
 
-	auth := authenticator.NewDefaultAuthenticator(1*time.Minute, b.serviceBinding)
-	port, err := auth.GenerateServerPort(ctx)
+	auth, err := authenticator.NewDefaultAuthenticator(1*time.Minute, b.serviceBinding)
 	if err != nil {
 		return err
 	}
@@ -105,7 +104,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 	}
 
 	values := url.Query()
-	values.Add("redirect_url", fmt.Sprintf("%s:%v", "http://localhost", port))
+	values.Add("redirect_url", auth.Endpoint(ctx))
 	values.Add("session_id", sessionID)
 
 	url.RawQuery = values.Encode()
@@ -118,7 +117,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to close body: %v", err)
 	}
 
-	if err := auth.Execute(ctx, port); err != nil {
+	if err := auth.Execute(ctx); err != nil {
 		return err
 	}
 

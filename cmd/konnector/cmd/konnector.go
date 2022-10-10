@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
+	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -29,6 +31,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 	"k8s.io/component-base/version"
+	"k8s.io/klog/v2"
 
 	konnectoroptions "github.com/kube-bind/kube-bind/cmd/konnector/options"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
@@ -82,7 +85,7 @@ func New() *cobra.Command {
 			k, err := konnector.New(
 				cfg,
 				bindInformers.KubeBind().V1alpha1().ServiceBindings(),
-				kubeInformers.Core().V1().Secrets(), // TODO(sttts): watch indiviual secrets for security and memory consumption
+				kubeInformers.Core().V1().Secrets(), // TODO(sttts): watch individual secrets for security and memory consumption
 				kubeInformers.Core().V1().Namespaces(),
 				apiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
 			)
@@ -91,12 +94,18 @@ func New() *cobra.Command {
 			}
 
 			// start informer factories
-			go kubeInformers.Start(ctx.Done())
-			go bindInformers.Start(ctx.Done())
-			go apiextensionsInformers.Start(ctx.Done())
-			kubeInformers.WaitForCacheSync(ctx.Done())
-			bindInformers.WaitForCacheSync(ctx.Done())
-			apiextensionsInformers.WaitForCacheSync(ctx.Done())
+			kubeInformers.Start(ctx.Done())
+			bindInformers.Start(ctx.Done())
+			apiextensionsInformers.Start(ctx.Done())
+			kubeSynced := kubeInformers.WaitForCacheSync(ctx.Done())
+			kubeBindSynced := bindInformers.WaitForCacheSync(ctx.Done())
+			apiextensionsSynced := apiextensionsInformers.WaitForCacheSync(ctx.Done())
+
+			klog.FromContext(context.Background()).Info("local informers are synced",
+				"kubeSynced", fmt.Sprintf("%v", kubeSynced),
+				"kubeBindSynced", fmt.Sprintf("%v", kubeBindSynced),
+				"apiextensionsSynced", fmt.Sprintf("%v", apiextensionsSynced),
+			)
 
 			go k.Start(ctx, 2)
 

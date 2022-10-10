@@ -108,6 +108,9 @@ func NewController(
 				}
 				return bindings, nil
 			},
+			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
+				return crdInformer.Lister().Get(name)
+			},
 			updateCRD: func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
 			},

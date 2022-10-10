@@ -45,7 +45,7 @@ const (
 
 // NewController returns a new controller for ServiceBindings.
 func NewController(
-	providerNamespace string,
+	consumerSecretRefKey, providerNamespace string,
 	consumerConfig *rest.Config,
 	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister],
 	serviceExportInformer bindinformers.ServiceExportInformer,
@@ -68,7 +68,8 @@ func NewController(
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
 
 		reconciler: reconciler{
-			providerNamespace: providerNamespace,
+			consumerSecretRefKey: consumerSecretRefKey,
+			providerNamespace:    providerNamespace,
 
 			getServiceExport: func(name string) (*kubebindv1alpha1.ServiceExport, error) {
 				return serviceExportInformer.Lister().ServiceExports(providerNamespace).Get(name)
@@ -126,27 +127,22 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 }
 
 func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
-	secretKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	bindings, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByKubeconfigSecret, c.reconciler.consumerSecretRefKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	binding, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByKubeconfigSecret, secretKey)
-	if err != nil && !errors.IsNotFound(err) {
-		runtime.HandleError(err)
-		return
-	} else if errors.IsNotFound(err) {
-		return // skip this secret
+	for _, obj := range bindings {
+		binding := obj.(*kubebindv1alpha1.ServiceBinding)
+		key, err := cache.MetaNamespaceKeyFunc(binding)
+		if err != nil {
+			runtime.HandleError(err)
+			return
+		}
+		logger.V(2).Info("queueing ServiceBinding", "key", key, "reason", "ServiceExport", "ServiceExportKey", c.reconciler.consumerSecretRefKey)
+		c.queue.Add(key)
 	}
-
-	key, err := cache.MetaNamespaceKeyFunc(binding)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-	logger.V(2).Info("queueing ServiceBinding", "key", key, "reason", "Secret", "SecretKey", secretKey)
-	c.queue.Add(key)
 }
 
 // Start starts the controller, which stops when ctx.Done() is closed.

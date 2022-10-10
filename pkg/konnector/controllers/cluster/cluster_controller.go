@@ -136,6 +136,7 @@ func NewController(
 		return nil, err
 	}
 	servicebindingCtrl, err := servicebinding.NewController(
+		consumerSecretRefKey,
 		providerNamespace,
 		consumerConfig,
 		serviceBindingInformer,

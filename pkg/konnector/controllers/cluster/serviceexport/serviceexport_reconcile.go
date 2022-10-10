@@ -35,6 +35,7 @@ type reconciler struct {
 	listServiceBinding       func(export string) ([]*kubebindv1alpha1.ServiceBinding, error)
 	getServiceExportResource func(name string) (*kubebindv1alpha1.ServiceExportResource, error)
 
+	getCRD    func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	updateCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
 	createCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
 
@@ -132,8 +133,9 @@ func (r *reconciler) ensureCRDs(ctx context.Context, export *kubebindv1alpha1.Se
 			continue
 		}
 
-		result, err := r.updateCRD(ctx, crd)
-		if err != nil && !errors.IsNotFound(err) && !errors.IsInvalid(err) {
+		existing, err := r.getCRD(crd.Name)
+		var result *apiextensionsv1.CustomResourceDefinition
+		if err != nil && !errors.IsNotFound(err) {
 			errs = append(errs, err)
 			continue
 		} else if errors.IsNotFound(err) {
@@ -153,17 +155,25 @@ func (r *reconciler) ensureCRDs(ctx context.Context, export *kubebindv1alpha1.Se
 				schemaInSync = false
 				continue
 			}
-		} else if errors.IsInvalid(err) {
-			conditions.MarkFalse(
-				export,
-				kubebindv1alpha1.ServiceExportConditionSchemaInSync,
-				"CustomResourceDefinitionUpdateFailed",
-				conditionsapi.ConditionSeverityError,
-				"CustomResourceDefinition %s cannot be updated: %s",
-				name, err,
-			)
-			schemaInSync = false
-			continue
+		} else {
+			crd.ObjectMeta = existing.ObjectMeta
+			result, err = r.updateCRD(ctx, crd)
+			if err != nil {
+				errs = append(errs, err)
+				continue
+			}
+			if errors.IsInvalid(err) {
+				conditions.MarkFalse(
+					export,
+					kubebindv1alpha1.ServiceExportConditionSchemaInSync,
+					"CustomResourceDefinitionUpdateFailed",
+					conditionsapi.ConditionSeverityError,
+					"CustomResourceDefinition %s cannot be updated: %s",
+					name, err,
+				)
+				schemaInSync = false
+				continue
+			}
 		}
 
 		// copy the CRD status onto the ServiceExportResource

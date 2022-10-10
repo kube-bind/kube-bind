@@ -28,7 +28,7 @@ import (
 )
 
 type reconciler struct {
-	providerNamespace string
+	consumerSecretRefKey, providerNamespace string
 
 	getServiceExport func(ns string) (*kubebindv1alpha1.ServiceExport, error)
 }

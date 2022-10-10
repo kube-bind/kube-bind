@@ -75,11 +75,11 @@ const (
 	// In a kcp cluster, the platform provides the isolation between workspaces and hence tenants
 	// are isolated if with full cluster-wide access of a konnector.
 	ClusterScope Scope = "Cluster"
-	// NamespaceScope means that the konnector has permission to watch only single namespaces.
+	// NamespacedScope means that the konnector has permission to watch only single namespaces.
 	// This is more resource intensive than Cluster scope.
 	//
 	// Only namespace-scoped resources can be exported in Namespace scope.
-	NamespaceScope Scope = "Namespace"
+	NamespacedScope Scope = "Namespaced"
 )
 
 // ClusterBindingSpec represents the data in the newly created ClusterBinding.
@@ -97,18 +97,6 @@ type ClusterBindingSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	ProviderPrettyName string `json:"providerPrettyName"`
-
-	// scope is the scope of the ClusterBinding. It can be either Cluster or Namespace.
-	//
-	// Cluster:    The konnector has permission to watch all namespaces at once and cluster-scoped resources.
-	//             This is more efficient than watching each namespace individually.
-	// Namespaced: The konnector has permission to watch only single namespaces.
-	//             This is more resource intensive. And it means cluster-scoped resources cannot be exported.
-	//
-	// +required
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:XValidation:rule="self == \"Cluster\"",message="Cluster scope not yet supported"
-	Scope Scope `json:"scope"`
 
 	// serviceProviderSpec contains all the data and information about the service which has been bound to the service
 	// binding request. The service providers decide what they need and what to configure based on what then include in

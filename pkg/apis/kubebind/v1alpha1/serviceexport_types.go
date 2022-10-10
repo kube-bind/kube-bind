@@ -75,6 +75,18 @@ type ServiceExportSpec struct {
 	// +listMapKey=group
 	// +listMapKey=resource
 	Resources []ServiceExportGroupResource `json:"resources,omitempty"`
+
+	// scope is the scope of the ServiceExport. It can be either Cluster or Namespace.
+	//
+	// Cluster:    The konnector has permission to watch all namespaces at once and cluster-scoped resources.
+	//             This is more efficient than watching each namespace individually.
+	// Namespaced: The konnector has permission to watch only single namespaces.
+	//             This is more resource intensive. And it means cluster-scoped resources cannot be exported.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:rule="self == \"Cluster\"",message="Cluster scope not yet supported"
+	Scope Scope `json:"scope"`
 }
 
 type ServiceExportStatus struct {

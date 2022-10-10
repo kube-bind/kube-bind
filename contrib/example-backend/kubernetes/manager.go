@@ -95,17 +95,17 @@ func (m *Manager) FetchUserData(ctx context.Context) (*corev1.Secret, error) {
 }
 
 func (m *Manager) HandleResources(ctx context.Context) ([]byte, error) {
-	saSecret, err := kuberesources.CreateSASecret(ctx, m.kubeClient, m.namespace)
-	if err != nil {
-		return nil, err
-	}
-
 	sa, err := kuberesources.CreateServiceAccount(ctx, m.kubeClient, m.namespace)
 	if err != nil {
 		return nil, err
 	}
 
 	if err := kuberesources.CreateAdminClusterRoleBinding(ctx, m.kubeClient, m.namespace); err != nil {
+		return nil, err
+	}
+
+	saSecret, err := kuberesources.CreateSASecret(ctx, m.kubeClient, m.namespace)
+	if err != nil {
 		return nil, err
 	}
 

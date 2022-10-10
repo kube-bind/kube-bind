@@ -19,10 +19,12 @@ package resources
 import (
 	"context"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -32,11 +34,26 @@ func GenerateKubeconfig(ctx context.Context,
 	client kubernetes.Interface,
 	host, clusterName, secretName, ns string,
 ) (*corev1.Secret, error) {
-	kfg, err := client.CoreV1().Secrets(ns).Get(ctx, "cluster-admin-kubeconfig", v1.GetOptions{})
+	kfg, err := client.CoreV1().Secrets(ns).Get(ctx, ClusterBindingKubeConfig, v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			secret, err := client.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
-			if err != nil {
+			var secret *corev1.Secret
+			if err := wait.PollImmediateWithContext(ctx, 5*time.Second, 20*time.Second, func(ctx context.Context) (done bool, err error) {
+				secret, err = client.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
+				if secret != nil {
+					if secret.Data["token"] != nil && secret.Data["ca.crt"] != nil {
+						return true, nil
+					}
+
+					return false, nil
+				}
+
+				if err != nil && errors.IsNotFound(err) {
+					return false, nil
+				}
+
+				return false, err
+			}); err != nil {
 				return nil, err
 			}
 

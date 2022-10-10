@@ -34,6 +34,7 @@ import (
 // FakeServiceExportResources implements ServiceExportResourceInterface
 type FakeServiceExportResources struct {
 	Fake *FakeKubeBindV1alpha1
+	ns   string
 }
 
 var serviceexportresourcesResource = schema.GroupVersionResource{Group: "kube-bind.io", Version: "v1alpha1", Resource: "serviceexportresources"}
@@ -43,7 +44,8 @@ var serviceexportresourcesKind = schema.GroupVersionKind{Group: "kube-bind.io", 
 // Get takes name of the serviceExportResource, and returns the corresponding serviceExportResource object, and an error if there is any.
 func (c *FakeServiceExportResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ServiceExportResource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootGetAction(serviceexportresourcesResource, name), &v1alpha1.ServiceExportResource{})
+		Invokes(testing.NewGetAction(serviceexportresourcesResource, c.ns, name), &v1alpha1.ServiceExportResource{})
+
 	if obj == nil {
 		return nil, err
 	}
@@ -53,7 +55,8 @@ func (c *FakeServiceExportResources) Get(ctx context.Context, name string, optio
 // List takes label and field selectors, and returns the list of ServiceExportResources that match those selectors.
 func (c *FakeServiceExportResources) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.ServiceExportResourceList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootListAction(serviceexportresourcesResource, serviceexportresourcesKind, opts), &v1alpha1.ServiceExportResourceList{})
+		Invokes(testing.NewListAction(serviceexportresourcesResource, serviceexportresourcesKind, c.ns, opts), &v1alpha1.ServiceExportResourceList{})
+
 	if obj == nil {
 		return nil, err
 	}
@@ -74,13 +77,15 @@ func (c *FakeServiceExportResources) List(ctx context.Context, opts v1.ListOptio
 // Watch returns a watch.Interface that watches the requested serviceExportResources.
 func (c *FakeServiceExportResources) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewRootWatchAction(serviceexportresourcesResource, opts))
+		InvokesWatch(testing.NewWatchAction(serviceexportresourcesResource, c.ns, opts))
+
 }
 
 // Create takes the representation of a serviceExportResource and creates it.  Returns the server's representation of the serviceExportResource, and an error, if there is any.
 func (c *FakeServiceExportResources) Create(ctx context.Context, serviceExportResource *v1alpha1.ServiceExportResource, opts v1.CreateOptions) (result *v1alpha1.ServiceExportResource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootCreateAction(serviceexportresourcesResource, serviceExportResource), &v1alpha1.ServiceExportResource{})
+		Invokes(testing.NewCreateAction(serviceexportresourcesResource, c.ns, serviceExportResource), &v1alpha1.ServiceExportResource{})
+
 	if obj == nil {
 		return nil, err
 	}
@@ -90,7 +95,8 @@ func (c *FakeServiceExportResources) Create(ctx context.Context, serviceExportRe
 // Update takes the representation of a serviceExportResource and updates it. Returns the server's representation of the serviceExportResource, and an error, if there is any.
 func (c *FakeServiceExportResources) Update(ctx context.Context, serviceExportResource *v1alpha1.ServiceExportResource, opts v1.UpdateOptions) (result *v1alpha1.ServiceExportResource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateAction(serviceexportresourcesResource, serviceExportResource), &v1alpha1.ServiceExportResource{})
+		Invokes(testing.NewUpdateAction(serviceexportresourcesResource, c.ns, serviceExportResource), &v1alpha1.ServiceExportResource{})
+
 	if obj == nil {
 		return nil, err
 	}
@@ -101,7 +107,8 @@ func (c *FakeServiceExportResources) Update(ctx context.Context, serviceExportRe
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
 func (c *FakeServiceExportResources) UpdateStatus(ctx context.Context, serviceExportResource *v1alpha1.ServiceExportResource, opts v1.UpdateOptions) (*v1alpha1.ServiceExportResource, error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootUpdateSubresourceAction(serviceexportresourcesResource, "status", serviceExportResource), &v1alpha1.ServiceExportResource{})
+		Invokes(testing.NewUpdateSubresourceAction(serviceexportresourcesResource, "status", c.ns, serviceExportResource), &v1alpha1.ServiceExportResource{})
+
 	if obj == nil {
 		return nil, err
 	}
@@ -111,13 +118,14 @@ func (c *FakeServiceExportResources) UpdateStatus(ctx context.Context, serviceEx
 // Delete takes name of the serviceExportResource and deletes it. Returns an error if one occurs.
 func (c *FakeServiceExportResources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteActionWithOptions(serviceexportresourcesResource, name, opts), &v1alpha1.ServiceExportResource{})
+		Invokes(testing.NewDeleteActionWithOptions(serviceexportresourcesResource, c.ns, name, opts), &v1alpha1.ServiceExportResource{})
+
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeServiceExportResources) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewRootDeleteCollectionAction(serviceexportresourcesResource, listOpts)
+	action := testing.NewDeleteCollectionAction(serviceexportresourcesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.ServiceExportResourceList{})
 	return err
@@ -126,7 +134,8 @@ func (c *FakeServiceExportResources) DeleteCollection(ctx context.Context, opts 
 // Patch applies the patch and returns the patched serviceExportResource.
 func (c *FakeServiceExportResources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ServiceExportResource, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewRootPatchSubresourceAction(serviceexportresourcesResource, name, pt, data, subresources...), &v1alpha1.ServiceExportResource{})
+		Invokes(testing.NewPatchSubresourceAction(serviceexportresourcesResource, c.ns, name, pt, data, subresources...), &v1alpha1.ServiceExportResource{})
+
 	if obj == nil {
 		return nil, err
 	}

@@ -45,8 +45,8 @@ func (c *FakeKubeBindV1alpha1) ServiceExports(namespace string) v1alpha1.Service
 	return &FakeServiceExports{c, namespace}
 }
 
-func (c *FakeKubeBindV1alpha1) ServiceExportResources() v1alpha1.ServiceExportResourceInterface {
-	return &FakeServiceExportResources{c}
+func (c *FakeKubeBindV1alpha1) ServiceExportResources(namespace string) v1alpha1.ServiceExportResourceInterface {
+	return &FakeServiceExportResources{c, namespace}
 }
 
 func (c *FakeKubeBindV1alpha1) ServiceNamespaces(namespace string) v1alpha1.ServiceNamespaceInterface {

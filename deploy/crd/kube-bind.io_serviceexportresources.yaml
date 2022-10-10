@@ -15,7 +15,7 @@ spec:
     listKind: ServiceExportResourceList
     plural: serviceexportresources
     singular: serviceexportresource
-  scope: Cluster
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .status.conditions[?(@.type=="Established")].status
@@ -180,9 +180,14 @@ spec:
                       description: schema describes the structural schema used for
                         validation, pruning, and defaulting of this version of the
                         custom resource.
+                      properties:
+                        openAPIV3Schema:
+                          description: openAPIV3Schema is the OpenAPI v3 schema to
+                            use for validation and pruning.
+                          type: object
+                          x-kubernetes-map-type: atomic
+                          x-kubernetes-preserve-unknown-fields: true
                       type: object
-                      x-kubernetes-map-type: atomic
-                      x-kubernetes-preserve-unknown-fields: true
                     served:
                       default: true
                       description: served is a flag enabling/disabling this version

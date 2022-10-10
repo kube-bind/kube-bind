@@ -32,9 +32,8 @@ type ServiceExportResourceLister interface {
 	// List lists all ServiceExportResources in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.ServiceExportResource, err error)
-	// Get retrieves the ServiceExportResource from the index for a given name.
-	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.ServiceExportResource, error)
+	// ServiceExportResources returns an object that can list and get ServiceExportResources.
+	ServiceExportResources(namespace string) ServiceExportResourceNamespaceLister
 	ServiceExportResourceListerExpansion
 }
 
@@ -56,9 +55,41 @@ func (s *serviceExportResourceLister) List(selector labels.Selector) (ret []*v1a
 	return ret, err
 }
 
-// Get retrieves the ServiceExportResource from the index for a given name.
-func (s *serviceExportResourceLister) Get(name string) (*v1alpha1.ServiceExportResource, error) {
-	obj, exists, err := s.indexer.GetByKey(name)
+// ServiceExportResources returns an object that can list and get ServiceExportResources.
+func (s *serviceExportResourceLister) ServiceExportResources(namespace string) ServiceExportResourceNamespaceLister {
+	return serviceExportResourceNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// ServiceExportResourceNamespaceLister helps list and get ServiceExportResources.
+// All objects returned here must be treated as read-only.
+type ServiceExportResourceNamespaceLister interface {
+	// List lists all ServiceExportResources in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
+	List(selector labels.Selector) (ret []*v1alpha1.ServiceExportResource, err error)
+	// Get retrieves the ServiceExportResource from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
+	Get(name string) (*v1alpha1.ServiceExportResource, error)
+	ServiceExportResourceNamespaceListerExpansion
+}
+
+// serviceExportResourceNamespaceLister implements the ServiceExportResourceNamespaceLister
+// interface.
+type serviceExportResourceNamespaceLister struct {
+	indexer   cache.Indexer
+	namespace string
+}
+
+// List lists all ServiceExportResources in the indexer for a given namespace.
+func (s serviceExportResourceNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.ServiceExportResource, err error) {
+	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1alpha1.ServiceExportResource))
+	})
+	return ret, err
+}
+
+// Get retrieves the ServiceExportResource from the indexer for a given namespace and name.
+func (s serviceExportResourceNamespaceLister) Get(name string) (*v1alpha1.ServiceExportResource, error) {
+	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
 	}

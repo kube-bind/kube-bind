@@ -34,7 +34,7 @@ import (
 // ServiceExportResourcesGetter has a method to return a ServiceExportResourceInterface.
 // A group's client should implement this interface.
 type ServiceExportResourcesGetter interface {
-	ServiceExportResources() ServiceExportResourceInterface
+	ServiceExportResources(namespace string) ServiceExportResourceInterface
 }
 
 // ServiceExportResourceInterface has methods to work with ServiceExportResource resources.
@@ -54,12 +54,14 @@ type ServiceExportResourceInterface interface {
 // serviceExportResources implements ServiceExportResourceInterface
 type serviceExportResources struct {
 	client rest.Interface
+	ns     string
 }
 
 // newServiceExportResources returns a ServiceExportResources
-func newServiceExportResources(c *KubeBindV1alpha1Client) *serviceExportResources {
+func newServiceExportResources(c *KubeBindV1alpha1Client, namespace string) *serviceExportResources {
 	return &serviceExportResources{
 		client: c.RESTClient(),
+		ns:     namespace,
 	}
 }
 
@@ -67,6 +69,7 @@ func newServiceExportResources(c *KubeBindV1alpha1Client) *serviceExportResource
 func (c *serviceExportResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ServiceExportResource, err error) {
 	result = &v1alpha1.ServiceExportResource{}
 	err = c.client.Get().
+		Namespace(c.ns).
 		Resource("serviceexportresources").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
@@ -83,6 +86,7 @@ func (c *serviceExportResources) List(ctx context.Context, opts v1.ListOptions) 
 	}
 	result = &v1alpha1.ServiceExportResourceList{}
 	err = c.client.Get().
+		Namespace(c.ns).
 		Resource("serviceexportresources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -99,6 +103,7 @@ func (c *serviceExportResources) Watch(ctx context.Context, opts v1.ListOptions)
 	}
 	opts.Watch = true
 	return c.client.Get().
+		Namespace(c.ns).
 		Resource("serviceexportresources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -109,6 +114,7 @@ func (c *serviceExportResources) Watch(ctx context.Context, opts v1.ListOptions)
 func (c *serviceExportResources) Create(ctx context.Context, serviceExportResource *v1alpha1.ServiceExportResource, opts v1.CreateOptions) (result *v1alpha1.ServiceExportResource, err error) {
 	result = &v1alpha1.ServiceExportResource{}
 	err = c.client.Post().
+		Namespace(c.ns).
 		Resource("serviceexportresources").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(serviceExportResource).
@@ -121,6 +127,7 @@ func (c *serviceExportResources) Create(ctx context.Context, serviceExportResour
 func (c *serviceExportResources) Update(ctx context.Context, serviceExportResource *v1alpha1.ServiceExportResource, opts v1.UpdateOptions) (result *v1alpha1.ServiceExportResource, err error) {
 	result = &v1alpha1.ServiceExportResource{}
 	err = c.client.Put().
+		Namespace(c.ns).
 		Resource("serviceexportresources").
 		Name(serviceExportResource.Name).
 		VersionedParams(&opts, scheme.ParameterCodec).
@@ -135,6 +142,7 @@ func (c *serviceExportResources) Update(ctx context.Context, serviceExportResour
 func (c *serviceExportResources) UpdateStatus(ctx context.Context, serviceExportResource *v1alpha1.ServiceExportResource, opts v1.UpdateOptions) (result *v1alpha1.ServiceExportResource, err error) {
 	result = &v1alpha1.ServiceExportResource{}
 	err = c.client.Put().
+		Namespace(c.ns).
 		Resource("serviceexportresources").
 		Name(serviceExportResource.Name).
 		SubResource("status").
@@ -148,6 +156,7 @@ func (c *serviceExportResources) UpdateStatus(ctx context.Context, serviceExport
 // Delete takes name of the serviceExportResource and deletes it. Returns an error if one occurs.
 func (c *serviceExportResources) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
+		Namespace(c.ns).
 		Resource("serviceexportresources").
 		Name(name).
 		Body(&opts).
@@ -162,6 +171,7 @@ func (c *serviceExportResources) DeleteCollection(ctx context.Context, opts v1.D
 		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
+		Namespace(c.ns).
 		Resource("serviceexportresources").
 		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
@@ -174,6 +184,7 @@ func (c *serviceExportResources) DeleteCollection(ctx context.Context, opts v1.D
 func (c *serviceExportResources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ServiceExportResource, err error) {
 	result = &v1alpha1.ServiceExportResource{}
 	err = c.client.Patch(pt).
+		Namespace(c.ns).
 		Resource("serviceexportresources").
 		Name(name).
 		SubResource(subresources...).

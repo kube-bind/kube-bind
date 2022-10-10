@@ -58,8 +58,8 @@ func (c *KubeBindV1alpha1Client) ServiceExports(namespace string) ServiceExportI
 	return newServiceExports(c, namespace)
 }
 
-func (c *KubeBindV1alpha1Client) ServiceExportResources() ServiceExportResourceInterface {
-	return newServiceExportResources(c)
+func (c *KubeBindV1alpha1Client) ServiceExportResources(namespace string) ServiceExportResourceInterface {
+	return newServiceExportResources(c, namespace)
 }
 
 func (c *KubeBindV1alpha1Client) ServiceNamespaces(namespace string) ServiceNamespaceInterface {

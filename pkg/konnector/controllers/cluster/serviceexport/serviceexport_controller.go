@@ -52,6 +52,7 @@ func NewController(
 	consumerSecretRefKey, providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
 	serviceExportInformer bindinformers.ServiceExportInformer,
+	serviceExportResourceInformer bindinformers.ServiceExportResourceInformer,
 	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister],
 	crdInformer dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister],
 ) (*controller, error) {
@@ -86,6 +87,9 @@ func NewController(
 		serviceExportLister:  serviceExportInformer.Lister(),
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
 
+		serviceExportResourceLister:  serviceExportResourceInformer.Lister(),
+		serviceExportResourceIndexer: serviceExportResourceInformer.Informer().GetIndexer(),
+
 		serviceBindingInformer: serviceBindingInformer,
 		crdInformer:            crdInformer,
 
@@ -110,6 +114,9 @@ func NewController(
 			createCRD: func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, crd, metav1.CreateOptions{})
 			},
+			getServiceExportResource: func(name string) (*kubebindv1alpha1.ServiceExportResource, error) {
+				return serviceExportResourceInformer.Lister().ServiceExportResources(providerNamespace).Get(name)
+			},
 		},
 
 		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceExport, *kubebindv1alpha1.ServiceExportSpec, *kubebindv1alpha1.ServiceExportStatus](
@@ -118,6 +125,10 @@ func NewController(
 			},
 		),
 	}
+
+	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
+		ByGroupResource: IndexByGroupResource,
+	})
 
 	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
@@ -128,6 +139,18 @@ func NewController(
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
+		},
+	})
+
+	serviceExportResourceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueServiceExportResource(logger, obj)
+		},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueServiceExportResource(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueServiceExportResource(logger, obj)
 		},
 	})
 
@@ -150,6 +173,9 @@ type controller struct {
 
 	serviceExportLister  bindlisters.ServiceExportLister
 	serviceExportIndexer cache.Indexer
+
+	serviceExportResourceLister  bindlisters.ServiceExportResourceLister
+	serviceExportResourceIndexer cache.Indexer
 
 	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister]
 	crdInformer            dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister]
@@ -185,8 +211,53 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 	c.queue.Add(key)
 }
 
+func (c *controller) enqueueServiceExportResource(logger klog.Logger, obj interface{}) {
+	serKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	ns, name, err := cache.SplitMetaNamespaceKey(serKey)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	if ns != c.providerNamespace {
+		return // not for us
+	}
+
+	exports, err := c.serviceExportIndexer.ByIndex(ByGroupResource, name)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	for _, obj := range exports {
+		export := obj.(*kubebindv1alpha1.ServiceExport)
+		key := c.providerNamespace + "/" + export.Name
+		logger.V(2).Info("queueing ServiceExport", "key", key, "reason", "ServiceExportResource", "ServiceExportResourceKey", serKey)
+		c.queue.Add(key)
+	}
+}
+
 func (c *controller) enqueueCRD(logger klog.Logger, obj interface{}) {
-	// implement me
+	name, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	exports, err := c.serviceExportIndexer.ByIndex(ByGroupResource, name)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	for _, obj := range exports {
+		export := obj.(*kubebindv1alpha1.ServiceExport)
+		key := c.providerNamespace + "/" + export.Name
+		logger.V(2).Info("queueing ServiceExport", "key", key, "reason", "CustomResourceDefinition", "CustomResourceDefinitionKey", name)
+		c.queue.Add(key)
+	}
 }
 
 // Start starts the controller, which stops when ctx.Done() is closed.

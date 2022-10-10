@@ -20,9 +20,11 @@ import (
 	"context"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	kubebindhelpers "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1/helpers"
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 )
@@ -30,8 +32,9 @@ import (
 type reconciler struct {
 	listServiceBinding func(export string) ([]*kubebindv1alpha1.ServiceBinding, error)
 
-	updateCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
-	createCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
+	getServiceExportResource func(name string) (*kubebindv1alpha1.ServiceExportResource, error)
+	updateCRD                func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
+	createCRD                func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
 }
 
 func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.ServiceExport) error {
@@ -75,5 +78,91 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 }
 
 func (r *reconciler) ensureCRDs(ctx context.Context, export *kubebindv1alpha1.ServiceExport) error {
-	return nil
+	var errs []error
+
+	resourceValid := true
+	schemaInSync := true
+	for _, resource := range export.Spec.Resources {
+		name := resource.Resource + "." + resource.Group
+		resource, err := r.getServiceExportResource(name)
+		if err != nil && !errors.IsNotFound(err) {
+			errs = append(errs, err)
+			continue
+		} else if errors.IsNotFound(err) {
+			conditions.MarkFalse(
+				export,
+				kubebindv1alpha1.ServiceExportConditionResourcesValid,
+				"ServiceExportResourceNotFound",
+				conditionsapi.ConditionSeverityError,
+				"ServiceExportResource %s not found on the service provider cluster.",
+				name,
+			)
+			resourceValid = false
+			continue
+		}
+
+		crd, err := kubebindhelpers.ServiceExportResourceToCRD(resource)
+		if err != nil {
+			conditions.MarkFalse(
+				export,
+				kubebindv1alpha1.ServiceExportConditionResourcesValid,
+				"ServiceExportResourceInvalid",
+				conditionsapi.ConditionSeverityError,
+				"ServiceExportResource %s on the service provider cluster is invalid: %s",
+				name, err,
+			)
+			resourceValid = false
+			continue
+		}
+
+		_, err = r.updateCRD(ctx, crd)
+		if err != nil && !errors.IsNotFound(err) && !errors.IsInvalid(err) {
+			errs = append(errs, err)
+			continue
+		} else if errors.IsNotFound(err) {
+			_, err = r.createCRD(ctx, crd)
+			if err != nil && !errors.IsInvalid(err) {
+				errs = append(errs, err)
+				continue
+			} else if errors.IsInvalid(err) {
+				conditions.MarkFalse(
+					export,
+					kubebindv1alpha1.ServiceExportConditionSchemaInSync,
+					"CustomResourceDefinitionCreateFailed",
+					conditionsapi.ConditionSeverityError,
+					"CustomResourceDefinition %s cannot be created: %s",
+					name, err,
+				)
+				schemaInSync = false
+				continue
+			}
+		} else if errors.IsInvalid(err) {
+			conditions.MarkFalse(
+				export,
+				kubebindv1alpha1.ServiceExportConditionSchemaInSync,
+				"CustomResourceDefinitionUpdateFailed",
+				conditionsapi.ConditionSeverityError,
+				"CustomResourceDefinition %s cannot be updated: %s",
+				name, err,
+			)
+			schemaInSync = false
+			continue
+		}
+	}
+
+	if resourceValid {
+		conditions.MarkTrue(
+			export,
+			kubebindv1alpha1.ServiceExportConditionResourcesValid,
+		)
+	}
+
+	if schemaInSync {
+		conditions.MarkTrue(
+			export,
+			kubebindv1alpha1.ServiceExportConditionSchemaInSync,
+		)
+	}
+
+	return utilerrors.NewAggregate(errs)
 }

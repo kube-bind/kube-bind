@@ -22,6 +22,8 @@ import (
 	"os"
 	"time"
 
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	genericapiserver "k8s.io/apiserver/pkg/server"
@@ -32,6 +34,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexport"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexportresource"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicenamespace"
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
@@ -129,8 +133,13 @@ func main() {
 	if err != nil {
 		klog.Fatalf("error building kubernetes client: %v", err)
 	}
+	apiextensionClient, err := apiextensionsclient.NewForConfig(cfg)
+	if err != nil {
+		klog.Fatalf("error building apiextension client: %v", err)
+	}
 	kubeInformers := kubeinformers.NewSharedInformerFactory(kubeClient, time.Minute*30)
 	bindInformers := bindinformers.NewSharedInformerFactory(bindClient, time.Minute*30)
+	apiextensionInformers := apiextensionsinformers.NewSharedInformerFactory(apiextensionClient, time.Minute*30)
 
 	// construct controllers
 	servicenamespaceCtrl, err := servicenamespace.NewController(cfg,
@@ -144,15 +153,35 @@ func main() {
 	if err != nil {
 		klog.Fatalf("error building the service namespace controller: %v", err)
 	}
+	serviceexportCtrl, err := serviceexport.NewController(cfg,
+		bindInformers.KubeBind().V1alpha1().ServiceExports(),
+		bindInformers.KubeBind().V1alpha1().ServiceExportResources(),
+		apiextensionInformers.Apiextensions().V1().CustomResourceDefinitions(),
+	)
+	if err != nil {
+		klog.Fatalf("error building the service export controller: %v", err)
+	}
+	serviceexportresourceCtrl, err := serviceexportresource.NewController(cfg,
+		bindInformers.KubeBind().V1alpha1().ServiceExports(),
+		bindInformers.KubeBind().V1alpha1().ServiceExportResources(),
+	)
+	if err != nil {
+		klog.Fatalf("error building the service export controller: %v", err)
+	}
 
 	// start informer factories
-	go kubeInformers.Start(ctx.Done())
-	go bindInformers.Start(ctx.Done())
+	kubeInformers.Start(ctx.Done())
+	bindInformers.Start(ctx.Done())
+	apiextensionInformers.Start(ctx.Done())
+
 	kubeInformers.WaitForCacheSync(ctx.Done())
 	bindInformers.WaitForCacheSync(ctx.Done())
+	apiextensionInformers.WaitForCacheSync(ctx.Done())
 
 	// start controllers
 	go servicenamespaceCtrl.Start(ctx, 1)
+	go serviceexportCtrl.Start(ctx, 1)
+	go serviceexportresourceCtrl.Start(ctx, 1)
 
 	go func() {
 		<-ctx.Done()

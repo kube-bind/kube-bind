@@ -5,10 +5,24 @@ import (
 )
 
 const (
-	ByServiceExportGroupResource = "byGroupResource"
+	ServiceExportByServiceExportResource    = "serviceExportByServiceExportResource"
+	ServiceExportByCustomResourceDefinition = "serviceExportByCustomResourceDefinition"
 )
 
-func IndexByServiceExportGroupResource(obj interface{}) ([]string, error) {
+func IndexServiceExportByServiceExportResource(obj interface{}) ([]string, error) {
+	export, ok := obj.(*v1alpha1.ServiceExport)
+	if !ok {
+		return nil, nil
+	}
+
+	grs := []string{}
+	for _, gr := range export.Spec.Resources {
+		grs = append(grs, export.Namespace+"/"+gr.Resource+"."+gr.Group)
+	}
+	return grs, nil
+}
+
+func IndexServiceExportByCustomResourceDefinition(obj interface{}) ([]string, error) {
 	export, ok := obj.(*v1alpha1.ServiceExport)
 	if !ok {
 		return nil, nil

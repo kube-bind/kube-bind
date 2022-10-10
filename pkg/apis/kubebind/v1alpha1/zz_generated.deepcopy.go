@@ -353,7 +353,7 @@ func (in *ServiceBindingList) DeepCopyInto(out *ServiceBindingList) {
 	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]ServiceExport, len(*in))
+		*out = make([]ServiceBinding, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
@@ -642,7 +642,7 @@ func (in *ServiceExportResourceList) DeepCopyInto(out *ServiceExportResourceList
 	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]ServiceExport, len(*in))
+		*out = make([]ServiceExportResource, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

@@ -87,7 +87,7 @@ func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebind
 		return nil
 	}
 
-	if _, found := providerSecret.StringData[binding.Spec.KubeconfigSecretRef.Key]; !found {
+	if _, found := providerSecret.Data[binding.Spec.KubeconfigSecretRef.Key]; !found {
 		conditions.MarkFalse(
 			binding,
 			kubebindv1alpha1.ClusterBindingConditionSecretValid,
@@ -116,9 +116,8 @@ func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebind
 				Name:      ns,
 				Namespace: name,
 			},
-			Data:       providerSecret.Data,
-			StringData: providerSecret.StringData,
-			Type:       providerSecret.Type,
+			Data: providerSecret.Data,
+			Type: providerSecret.Type,
 		}
 		logger.V(2).Info("Creating consumer secret", "namespace", ns, "name", name)
 		if _, err := r.createConsumerSecret(ctx, &consumerSecret); err != nil {
@@ -126,7 +125,6 @@ func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebind
 		}
 	} else {
 		consumerSecret.Data = providerSecret.Data
-		consumerSecret.StringData = providerSecret.StringData
 		consumerSecret.Type = providerSecret.Type
 
 		logger.V(2).Info("Updating consumer secret", "namespace", consumerSecret.Namespace, "name", consumerSecret.Name)

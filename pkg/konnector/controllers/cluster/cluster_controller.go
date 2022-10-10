@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubernetesinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/informers/internalinterfaces"
 	kubernetesclient "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
@@ -137,6 +136,7 @@ func NewController(
 		return nil, err
 	}
 	servicebindingCtrl, err := servicebinding.NewController(
+		consumerSecretRefKey,
 		providerNamespace,
 		consumerConfig,
 		serviceBindingInformer,
@@ -150,6 +150,12 @@ func NewController(
 		consumerSecretRefKey: consumerSecretRefKey,
 
 		bindClient: consumerBindClient,
+
+		factories: []SharedInformerFactory{
+			providerBindInformers,
+			providerKubeInformers,
+			consumerSecretInformers,
+		},
 
 		serviceBindingLister:  serviceBindingInformer.Lister(),
 		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
@@ -166,7 +172,7 @@ type GenericController interface {
 }
 
 type SharedInformerFactory interface {
-	internalinterfaces.SharedInformerFactory
+	Start(stopCh <-chan struct{})
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 }
 
@@ -192,15 +198,19 @@ func (c *controller) Start(ctx context.Context) {
 	logger := klog.FromContext(ctx).WithValues("controller", controllerName, "secretKey", c.consumerSecretRefKey)
 	ctx = klog.NewContext(ctx, logger)
 
+	logger.V(2).Info("starting factories")
 	for _, factory := range c.factories {
-		go factory.Start(ctx.Done())
+		factory.Start(ctx.Done())
 	}
 
-	if err := wait.PollInfiniteWithContext(ctx, heartbeatInterval, func(ctx context.Context) (bool, error) {
+	if err := wait.PollImmediateInfiniteWithContext(ctx, heartbeatInterval, func(ctx context.Context) (bool, error) {
 		waitCtx, cancel := context.WithDeadline(ctx, time.Now().Add(heartbeatInterval/2))
 		defer cancel()
+
+		logger.V(2).Info("waiting for cache sync")
 		for _, factory := range c.factories {
-			factory.WaitForCacheSync(waitCtx.Done())
+			synced := factory.WaitForCacheSync(waitCtx.Done())
+			logger.V(2).Info("cache sync", "synced", synced)
 		}
 		select {
 		case <-ctx.Done():
@@ -226,6 +236,7 @@ func (c *controller) Start(ctx context.Context) {
 		return
 	}
 
+	logger.V(2).Info("setting InformersSynced condition to true on service binding")
 	c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.ServiceBinding) {
 		conditions.MarkTrue(binding, kubebindv1alpha1.ServiceBindingConditionInformersSynced)
 	})
@@ -251,7 +262,8 @@ func (c *controller) updateServiceBindings(ctx context.Context, update func(*kub
 		orig := binding.DeepCopy()
 		update(binding)
 		if !reflect.DeepEqual(binding.Status.Conditions, orig.Status.Conditions) {
-			if _, err := c.bindClient.KubeBindV1alpha1().ServiceBindings().Update(ctx, binding, metav1.UpdateOptions{}); err != nil {
+			logger.V(2).Info("updating service binding", "binding", binding.Name)
+			if _, err := c.bindClient.KubeBindV1alpha1().ServiceBindings().UpdateStatus(ctx, binding, metav1.UpdateOptions{}); err != nil {
 				logger.Error(err, "failed to update service binding", "binding", binding.Name)
 				continue
 			}

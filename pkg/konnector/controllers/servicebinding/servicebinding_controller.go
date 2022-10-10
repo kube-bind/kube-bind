@@ -150,7 +150,7 @@ func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj interface{}) 
 		return
 	}
 
-	binding, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, secretKey)
+	bindings, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, secretKey)
 	if err != nil && !errors.IsNotFound(err) {
 		runtime.HandleError(err)
 		return
@@ -158,13 +158,16 @@ func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj interface{}) 
 		return // skip this secret
 	}
 
-	key, err := cache.MetaNamespaceKeyFunc(binding)
-	if err != nil {
-		runtime.HandleError(err)
-		return
+	for _, obj := range bindings {
+		binding := obj.(*kubebindv1alpha1.ServiceBinding)
+		key, err := cache.MetaNamespaceKeyFunc(binding)
+		if err != nil {
+			runtime.HandleError(err)
+			return
+		}
+		logger.V(2).Info("queueing ServiceBinding", "key", key, "reason", "Secret", "SecretKey", secretKey)
+		c.queue.Add(key)
 	}
-	logger.V(2).Info("queueing ServiceBinding", "key", key, "reason", "Secret", "SecretKey", secretKey)
-	c.queue.Add(key)
 }
 
 // Start starts the controller, which stops when ctx.Done() is closed.
@@ -215,22 +218,19 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 func (c *controller) process(ctx context.Context, key string) error {
-	ns, name, err := cache.SplitMetaNamespaceKey(key)
+	_, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)
 		return nil // we cannot do anything
 	}
-	if name != "cluster" {
-		return nil // cannot happen by OpenAPI validation
-	}
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.serviceBindingLister.Get(ns)
+	obj, err := c.serviceBindingLister.Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		logger.Error(err, "ClusterBinding disappeared")
+		logger.Error(err, "ServiceBinding disappeared")
 		return nil
 	}
 

@@ -92,18 +92,21 @@ type ServiceExportResourceVersion struct {
 	// The custom resources are served under this version at `/apis/<group>/<version>/...` if `served` is true.
 	//
 	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:Pattern=^v[1-9][0-9]*([a-z]+[1-9][0-9]*)?$
 	Name string `json:"name"`
 	// served is a flag enabling/disabling this version from being served via REST APIs
 	//
 	// +required
+	// +kubebuilder:validation:Required
 	// +kubebuilder:default=true
 	Served bool `json:"served"`
 	// storage indicates this version should be used when persisting custom resources to storage.
 	// There must be exactly one version with storage=true.
 	//
 	// +required
+	// +kubebuilder:validation:Required
 	Storage bool `json:"storage"`
 	// deprecated indicates this version of the custom resource API is deprecated.
 	// When set to true, API requests to this version receive a warning header in the server response.
@@ -122,6 +125,7 @@ type ServiceExportResourceVersion struct {
 	// of this version of the custom resource.
 	//
 	// +required
+	// +kubebuilder:validation:Required
 	Schema ServiceExportResourceSchema `json:"schema"`
 	// subresources specify what subresources this version of the defined custom resource have.
 	//
@@ -143,6 +147,7 @@ type ServiceExportResourceSchema struct {
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +structType=atomic
 	// +required
+	// +kubebuilder:validation:Required
 	OpenAPIV3Schema runtime.RawExtension `json:"openAPIV3Schema"`
 }
 
@@ -175,5 +180,5 @@ type ServiceExportResourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []ServiceExport `json:"items"`
+	Items []ServiceExportResource `json:"items"`
 }

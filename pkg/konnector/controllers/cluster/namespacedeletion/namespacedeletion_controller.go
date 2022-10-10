@@ -152,7 +152,7 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 	logger.Info("Starting controller")
 	defer logger.Info("Shutting down controller")
 
-	c.namespaceInformer.Informer().AddDynamicEventHandler(ctx, cache.ResourceEventHandlerFuncs{
+	c.namespaceInformer.Informer().AddDynamicEventHandler(ctx, controllerName, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueNamespace(logger, obj)
 		},

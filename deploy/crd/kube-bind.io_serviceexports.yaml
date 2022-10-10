@@ -17,7 +17,11 @@ spec:
     singular: serviceexport
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: ServiceExport specifies an API service to exported to a consumer
@@ -79,7 +83,7 @@ spec:
                 type: string
                 x-kubernetes-validations:
                 - message: Cluster scope not yet supported
-                  rule: self == "Cluster"
+                  rule: self != "Cluster"
             required:
             - scope
             type: object

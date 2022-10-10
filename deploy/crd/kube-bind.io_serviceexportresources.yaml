@@ -187,6 +187,8 @@ spec:
                           type: object
                           x-kubernetes-map-type: atomic
                           x-kubernetes-preserve-unknown-fields: true
+                      required:
+                      - openAPIV3Schema
                       type: object
                     served:
                       default: true
@@ -252,6 +254,11 @@ spec:
                             anything other than the `status` stanza of the object.'
                           type: object
                       type: object
+                  required:
+                  - name
+                  - schema
+                  - served
+                  - storage
                   type: object
                 minItems: 1
                 type: array

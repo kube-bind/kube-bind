@@ -22,15 +22,13 @@ spec:
   - additionalPrinterColumns:
     - jsonPath: .status.providerPrettyName
       name: Provider
-      priority: 1
       type: string
     - jsonPath: .metadata.annotations.kube-bind\.io/resources
       name: Resources
-      priority: 4
+      priority: 1
       type: string
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: Ready
-      priority: 5
       type: string
     name: v1alpha1
     schema:

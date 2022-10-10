@@ -17,7 +17,11 @@ spec:
     singular: servicenamespace
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.namespace
+      name: Namespace
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: "ServiceNamespace defines how consumer namespaces map to service

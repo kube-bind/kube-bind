@@ -108,6 +108,9 @@ func NewController(
 				}
 				return bindings, nil
 			},
+			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
+				return crdInformer.Lister().Get(name)
+			},
 			updateCRD: func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
 			},
@@ -116,6 +119,9 @@ func NewController(
 			},
 			getServiceExportResource: func(name string) (*kubebindv1alpha1.ServiceExportResource, error) {
 				return serviceExportResourceInformer.Lister().ServiceExportResources(providerNamespace).Get(name)
+			},
+			updateServiceExportResourceStatus: func(ctx context.Context, resource *kubebindv1alpha1.ServiceExportResource) (*kubebindv1alpha1.ServiceExportResource, error) {
+				return providerBindClient.KubeBindV1alpha1().ServiceExportResources(providerNamespace).UpdateStatus(ctx, resource, metav1.UpdateOptions{})
 			},
 		},
 
@@ -270,7 +276,7 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 	logger.Info("Starting controller")
 	defer logger.Info("Shutting down controller")
 
-	c.serviceBindingInformer.Informer().AddDynamicEventHandler(ctx, cache.ResourceEventHandlerFuncs{
+	c.serviceBindingInformer.Informer().AddDynamicEventHandler(ctx, controllerName, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceBinding(logger, obj)
 		},
@@ -282,7 +288,7 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 		},
 	})
 
-	c.crdInformer.Informer().AddDynamicEventHandler(ctx, cache.ResourceEventHandlerFuncs{
+	c.crdInformer.Informer().AddDynamicEventHandler(ctx, controllerName, cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueCRD(logger, obj)
 		},

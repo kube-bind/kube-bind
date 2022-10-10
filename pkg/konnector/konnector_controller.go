@@ -109,6 +109,12 @@ func New(
 				)
 			},
 		},
+
+		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceBinding, *kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceBinding] {
+				return bindClient.KubeBindV1alpha1().ServiceBindings()
+			},
+		),
 	}
 
 	// nolint:errcheck

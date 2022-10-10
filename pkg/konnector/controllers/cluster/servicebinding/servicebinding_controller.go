@@ -209,22 +209,19 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 func (c *controller) process(ctx context.Context, key string) error {
-	ns, name, err := cache.SplitMetaNamespaceKey(key)
+	_, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)
 		return nil // we cannot do anything
 	}
-	if name != "cluster" {
-		return nil // cannot happen by OpenAPI validation
-	}
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.serviceBindingInformer.Lister().Get(ns)
+	obj, err := c.serviceBindingInformer.Lister().Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		logger.Error(err, "ClusterBinding disappeared")
+		logger.Error(err, "ServiceBinding disappeared")
 		return nil
 	}
 

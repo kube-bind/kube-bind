@@ -431,7 +431,8 @@ func (c *controller) updateServiceBindings(ctx context.Context, update func(*kub
 		orig := binding.DeepCopy()
 		update(binding)
 		if !reflect.DeepEqual(binding.Status.Conditions, orig.Status.Conditions) {
-			if _, err := c.consumerBindClient.KubeBindV1alpha1().ServiceBindings().Update(ctx, binding, metav1.UpdateOptions{}); err != nil {
+			logger.V(2).Info("updating service binding", "binding", binding.Name)
+			if _, err := c.consumerBindClient.KubeBindV1alpha1().ServiceBindings().UpdateStatus(ctx, binding, metav1.UpdateOptions{}); err != nil {
 				logger.Error(err, "failed to update service binding", "binding", binding.Name)
 				continue
 			}

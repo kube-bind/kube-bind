@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	coreinformers "k8s.io/client-go/informers/core/v1"
 	kubernetesclient "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
@@ -38,6 +37,7 @@ import (
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
 const (
@@ -48,8 +48,7 @@ const (
 func NewController(
 	config *rest.Config,
 	serviceNamespaceInformer bindinformers.ServiceNamespaceInformer,
-	namespaceInformer coreinformers.NamespaceInformer,
-	namespaceLister corelisters.NamespaceLister, // intentional lister and informer here to protect against race
+	namespaceInformer dynamic.Informer[corelisters.NamespaceLister],
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -76,8 +75,9 @@ func NewController(
 		serviceNamespaceLister:  serviceNamespaceInformer.Lister(),
 		serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
 
-		namespaceLister: namespaceLister,
-		getNamespace:    namespaceLister.Get,
+		namespaceInformer: namespaceInformer,
+
+		getNamespace: namespaceInformer.Lister().Get,
 
 		getServiceNamespace: func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error) {
 			return serviceNamespaceInformer.Lister().ServiceNamespaces(ns).Get(name)
@@ -86,18 +86,6 @@ func NewController(
 			return bindClient.KubeBindV1alpha1().ServiceNamespaces(ns).Delete(ctx, name, metav1.DeleteOptions{})
 		},
 	}
-
-	namespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueNamespace(logger, obj)
-		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueNamespace(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueNamespace(logger, obj)
-		},
-	})
 
 	serviceNamespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
@@ -122,8 +110,7 @@ type controller struct {
 	bindClient bindclient.Interface
 	kubeClient kubernetesclient.Interface
 
-	namespaceLister  corelisters.NamespaceLister
-	namespaceIndexer cache.Indexer // nolint:unused
+	namespaceInformer dynamic.Informer[corelisters.NamespaceLister]
 
 	serviceNamespaceLister  bindlisters.ServiceNamespaceLister
 	serviceNamespaceIndexer cache.Indexer
@@ -164,6 +151,18 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 
 	logger.Info("Starting controller")
 	defer logger.Info("Shutting down controller")
+
+	c.namespaceInformer.Informer().AddDynamicEventHandler(ctx, cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueNamespace(logger, obj)
+		},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueNamespace(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueNamespace(logger, obj)
+		},
+	})
 
 	for i := 0; i < numThreads; i++ {
 		go wait.UntilWithContext(ctx, c.startWorker, time.Second)

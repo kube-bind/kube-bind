@@ -23,6 +23,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	crdinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
+	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -41,6 +42,7 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/servicebinding"
 )
 
@@ -73,7 +75,9 @@ func New(
 		return nil, err
 	}
 
-	namespaceLister := namespaceInformer.Lister()
+	namespaceDynamicInformer := dynamic.NewDynamicInformer[corelisters.NamespaceLister](namespaceInformer)
+	serviceBindingDynamicInformer := dynamic.NewDynamicInformer[bindlisters.ServiceBindingLister](serviceBindingInformer)
+	crdDynamicInformer := dynamic.NewDynamicInformer[apiextensionslisters.CustomResourceDefinitionLister](crdInformer)
 	c := &controller{
 		queue: queue,
 
@@ -99,12 +103,9 @@ func New(
 					providerNamespace,
 					consumerConfig,
 					providerConfig,
-					namespaceInformer,
-					namespaceLister,
-					serviceBindingInformer,
-					serviceBindingInformer.Lister(),
-					crdInformer,
-					crdInformer.Lister(),
+					namespaceDynamicInformer,
+					serviceBindingDynamicInformer,
+					crdDynamicInformer,
 				)
 			},
 		},

@@ -22,13 +22,11 @@ import (
 	"reflect"
 	"time"
 
-	crdinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
 	crdlisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubernetesinformers "k8s.io/client-go/informers"
-	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/informers/internalinterfaces"
 	kubernetesclient "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
@@ -41,13 +39,13 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions"
-	bindv1alpha1informers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/clusterbinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/namespacedeletion"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/servicebinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
 const (
@@ -61,12 +59,9 @@ func NewController(
 	consumerSecretRefKey string,
 	providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
-	namespaceInformer coreinformers.NamespaceInformer,
-	namespaceLister corelisters.NamespaceLister,
-	serviceBindingsInformer bindv1alpha1informers.ServiceBindingInformer,
-	serviceBindingsLister bindlisters.ServiceBindingLister, // intentional lister and informer here to protect against race
-	crdInformer crdinformers.CustomResourceDefinitionInformer,
-	crdLister crdlisters.CustomResourceDefinitionLister, // intentional lister and informer here to protect against race
+	namespaceInformer dynamic.Informer[corelisters.NamespaceLister],
+	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister],
+	crdInformer dynamic.Informer[crdlisters.CustomResourceDefinitionLister],
 ) (*controller, error) {
 	consumerConfig = rest.CopyConfig(consumerConfig)
 	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
@@ -112,8 +107,7 @@ func NewController(
 		consumerConfig,
 		providerConfig,
 		providerBindInformers.KubeBind().V1alpha1().ClusterBindings(),
-		serviceBindingsInformer,
-		serviceBindingsLister,
+		serviceBindingInformer,
 		providerBindInformers.KubeBind().V1alpha1().ServiceExports(),
 		consumerSecretInformers.Core().V1().Secrets(),
 		providerKubeInformers.Core().V1().Secrets(),
@@ -125,7 +119,6 @@ func NewController(
 		providerConfig,
 		providerBindInformers.KubeBind().V1alpha1().ServiceNamespaces(),
 		namespaceInformer,
-		namespaceLister,
 	)
 	if err != nil {
 		return nil, err
@@ -136,10 +129,8 @@ func NewController(
 		consumerConfig,
 		providerConfig,
 		providerBindInformers.KubeBind().V1alpha1().ServiceExports(),
-		serviceBindingsInformer,
-		serviceBindingsLister,
+		serviceBindingInformer,
 		crdInformer,
-		crdLister,
 	)
 	if err != nil {
 		return nil, err
@@ -147,8 +138,7 @@ func NewController(
 	servicebindingCtrl, err := servicebinding.NewController(
 		providerNamespace,
 		consumerConfig,
-		serviceBindingsInformer,
-		serviceBindingsLister,
+		serviceBindingInformer,
 		providerBindInformers.KubeBind().V1alpha1().ServiceExports(),
 	)
 	if err != nil {
@@ -160,8 +150,8 @@ func NewController(
 
 		bindClient: consumerBindClient,
 
-		serviceBindingLister:  serviceBindingsLister,
-		serviceBindingIndexer: serviceBindingsInformer.Informer().GetIndexer(),
+		serviceBindingLister:  serviceBindingInformer.Lister(),
+		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
 
 		clusterbindingCtrl:    clusterbindingCtrl,
 		namespacedeletionCtrl: namespacedeletionCtrl,

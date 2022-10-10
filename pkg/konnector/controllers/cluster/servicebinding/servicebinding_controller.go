@@ -36,6 +36,7 @@ import (
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
 const (
@@ -46,8 +47,7 @@ const (
 func NewController(
 	providerNamespace string,
 	consumerConfig *rest.Config,
-	serviceBindingInformer bindinformers.ServiceBindingInformer,
-	serviceBindingLister bindlisters.ServiceBindingLister,
+	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister],
 	serviceExportInformer bindinformers.ServiceExportInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
@@ -62,8 +62,7 @@ func NewController(
 	c := &controller{
 		queue: queue,
 
-		serviceBindingLister:  serviceBindingLister,
-		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
+		serviceBindingInformer: serviceBindingInformer,
 
 		serviceExportLister:  serviceExportInformer.Lister(),
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
@@ -82,18 +81,6 @@ func NewController(
 			},
 		),
 	}
-
-	serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueServiceBinding(logger, obj)
-		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueServiceBinding(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueServiceBinding(logger, obj)
-		},
-	})
 
 	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
@@ -117,8 +104,7 @@ type CommitFunc = func(context.Context, *Resource, *Resource) error
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
-	serviceBindingLister  bindlisters.ServiceBindingLister
-	serviceBindingIndexer cache.Indexer
+	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister]
 
 	serviceExportLister  bindlisters.ServiceExportLister
 	serviceExportIndexer cache.Indexer
@@ -146,7 +132,7 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	binding, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, secretKey)
+	binding, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByKubeconfigSecret, secretKey)
 	if err != nil && !errors.IsNotFound(err) {
 		runtime.HandleError(err)
 		return
@@ -172,6 +158,18 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 
 	logger.Info("Starting controller")
 	defer logger.Info("Shutting down controller")
+
+	c.serviceBindingInformer.Informer().AddDynamicEventHandler(ctx, cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueServiceBinding(logger, obj)
+		},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueServiceBinding(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueServiceBinding(logger, obj)
+		},
+	})
 
 	for i := 0; i < numThreads; i++ {
 		go wait.UntilWithContext(ctx, c.startWorker, time.Second)
@@ -222,7 +220,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.serviceBindingLister.Get(ns)
+	obj, err := c.serviceBindingInformer.Lister().Get(ns)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {

@@ -44,6 +44,7 @@ import (
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
 const (
@@ -57,8 +58,7 @@ func NewController(
 	heartbeatInterval time.Duration,
 	consumerConfig, providerConfig *rest.Config,
 	clusterBindingInformer bindinformers.ClusterBindingInformer,
-	serviceBindingInformer bindinformers.ServiceBindingInformer,
-	serviceBindingLister bindlisters.ServiceBindingLister, // intentional lister and informer here to protect against race
+	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister],
 	serviceExportInformer bindinformers.ServiceExportInformer,
 	consumerSecretInformer, providerSecretInformer coreinformers.SecretInformer,
 ) (*controller, error) {
@@ -100,8 +100,7 @@ func NewController(
 		clusterBindingLister:  clusterBindingInformer.Lister(),
 		clusterBindingIndexer: clusterBindingInformer.Informer().GetIndexer(),
 
-		serviceBindingLister:  serviceBindingLister,
-		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
+		serviceBindingInformer: serviceBindingInformer,
 
 		serviceExportLister:  serviceExportInformer.Lister(),
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
@@ -221,8 +220,7 @@ type controller struct {
 	clusterBindingLister  bindlisters.ClusterBindingLister
 	clusterBindingIndexer cache.Indexer
 
-	serviceBindingLister  bindlisters.ServiceBindingLister
-	serviceBindingIndexer cache.Indexer
+	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister]
 
 	serviceExportLister  bindlisters.ServiceExportLister
 	serviceExportIndexer cache.Indexer
@@ -423,7 +421,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 func (c *controller) updateServiceBindings(ctx context.Context, update func(*kubebindv1alpha1.ServiceBinding)) {
 	logger := klog.FromContext(ctx)
 
-	objs, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, c.consumerSecretRefKey)
+	objs, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByKubeconfigSecret, c.consumerSecretRefKey)
 	if err != nil {
 		logger.Error(err, "failed to list service bindings", "secretKey", c.consumerSecretRefKey)
 		return

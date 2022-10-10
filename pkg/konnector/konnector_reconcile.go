@@ -53,12 +53,17 @@ type controllerContext struct {
 func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
 	logger := klog.FromContext(ctx)
 
+	var kubeconfig string
+
 	ref := binding.Spec.KubeconfigSecretRef
 	secret, err := r.getSecret(ref.Namespace, ref.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
+	} else if errors.IsNotFound(err) {
+		logger.V(2).Info("secret not found", "secret", ref.Namespace+"/"+ref.Name)
+	} else {
+		kubeconfig = secret.StringData[ref.Key]
 	}
-	kubeconfig := secret.StringData[ref.Key]
 
 	r.lock.Lock()
 	defer r.lock.Unlock()

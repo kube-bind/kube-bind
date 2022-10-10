@@ -58,7 +58,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			"KubeconfigSecretNotFound",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s not found. Rerun kubectl bind for repair.",
-			binding.Namespace, binding.Spec.KubeconfigSecretRef.Name,
+			binding.Spec.KubeconfigSecretRef.Namespace, binding.Spec.KubeconfigSecretRef.Name,
 		)
 		return nil
 	}

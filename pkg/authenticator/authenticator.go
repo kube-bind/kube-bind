@@ -83,7 +83,9 @@ func (d *defaultAuthenticator) Execute(ctx context.Context, port int) error {
 func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 	return func(c echo.Context) error {
 		c.Get("token")
-		d.action(context.TODO())
+		if err := d.action(context.TODO()); err != nil {
+			return err
+		}
 
 		fmt.Fprintf(c.Response(), "<h1>Successfully Authentication! Please head back to the command line</h1>")
 		time.Sleep(10 * time.Second)

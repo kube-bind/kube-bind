@@ -14,25 +14,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package servicebinding
+package indexers
 
 import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
 const (
-	ByGroupResource = "byGroupResource"
+	ByServiceBindingKubeconfigSecret = "byKubeconfigSecret"
+	ByServiceBindingExport           = "byServiceExport"
 )
 
-func IndexByGroupResource(obj interface{}) ([]string, error) {
-	export, ok := obj.(*kubebindv1alpha1.ServiceExport)
+func IndexServiceBindingByKubeconfigSecret(obj interface{}) ([]string, error) {
+	binding, ok := obj.(*kubebindv1alpha1.ServiceBinding)
+	if !ok {
+		return nil, nil
+	}
+	return []string{ByServiceBindingKubeconfigSecretKey(binding)}, nil
+}
+
+func ByServiceBindingKubeconfigSecretKey(binding *kubebindv1alpha1.ServiceBinding) string {
+	ref := &binding.Spec.KubeconfigSecretRef
+	return ref.Namespace + "/" + ref.Name
+}
+
+func IndexByServiceBindingExport(obj interface{}) ([]string, error) {
+	export, ok := obj.(*kubebindv1alpha1.ServiceBinding)
 	if !ok {
 		return nil, nil
 	}
 
-	grs := []string{}
-	for _, gr := range export.Spec.Resources {
-		grs = append(grs, gr.Resource+"."+gr.Group)
-	}
-	return grs, nil
+	return []string{export.Spec.Export}, nil
 }

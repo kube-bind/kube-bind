@@ -92,7 +92,7 @@ func NewController(
 
 	// nolint:errcheck
 	indexers.AddIfNotPresentOrDie(serviceBindingInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ByKubeconfigSecret: indexers.IndexByKubeconfigSecret,
+		indexers.ByServiceBindingKubeconfigSecret: indexers.IndexServiceBindingByKubeconfigSecret,
 	})
 
 	serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -174,7 +174,7 @@ func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj interface{}) 
 		return
 	}
 
-	bindings, err := c.serviceBindingIndexer.ByIndex(indexers.ByKubeconfigSecret, secretKey)
+	bindings, err := c.serviceBindingIndexer.ByIndex(indexers.ByServiceBindingKubeconfigSecret, secretKey)
 	if err != nil && !errors.IsNotFound(err) {
 		runtime.HandleError(err)
 		return

@@ -130,6 +130,10 @@ func NewController(
 		ByGroupResource: IndexByGroupResource,
 	})
 
+	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ByServiceExportGroupResource: indexers.IndexByServiceExportGroupResource,
+	})
+
 	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
@@ -179,7 +183,7 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 }
 
 func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
-	bindings, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByKubeconfigSecret, c.reconciler.consumerSecretRefKey)
+	bindings, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.reconciler.consumerSecretRefKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return

@@ -21,13 +21,10 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	coreinformers "k8s.io/client-go/informers/core/v1"
-	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -42,14 +39,16 @@ import (
 )
 
 const (
-	controllerName = "kube-bind-konnector-servicebinding"
+	controllerName = "kube-bind-konnector-cluster-servicebinding"
 )
 
 // NewController returns a new controller for ServiceBindings.
 func NewController(
+	providerNamespace string,
 	consumerConfig *rest.Config,
 	serviceBindingInformer bindinformers.ServiceBindingInformer,
-	consumerSecretInformer coreinformers.SecretInformer,
+	serviceBindingLister bindlisters.ServiceBindingLister,
+	serviceExportInformer bindinformers.ServiceExportInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -63,14 +62,17 @@ func NewController(
 	c := &controller{
 		queue: queue,
 
-		serviceBindingLister:  serviceBindingInformer.Lister(),
+		serviceBindingLister:  serviceBindingLister,
 		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
 
-		consumerSecretLister: consumerSecretInformer.Lister(),
+		serviceExportLister:  serviceExportInformer.Lister(),
+		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
 
 		reconciler: reconciler{
-			getConsumerSecret: func(ns, name string) (*corev1.Secret, error) {
-				return consumerSecretInformer.Lister().Secrets(ns).Get(name)
+			providerNamespace: providerNamespace,
+
+			getServiceExport: func(name string) (*kubebindv1alpha1.ServiceExport, error) {
+				return serviceExportInformer.Lister().ServiceExports(providerNamespace).Get(name)
 			},
 		},
 
@@ -80,11 +82,6 @@ func NewController(
 			},
 		),
 	}
-
-	// nolint:errcheck
-	indexers.AddIfNotPresentOrDie(serviceBindingInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ByKubeconfigSecret: indexers.IndexByKubeconfigSecret,
-	})
 
 	serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
@@ -98,15 +95,15 @@ func NewController(
 		},
 	})
 
-	consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			c.enqueueConsumerSecret(logger, obj)
+			c.enqueueServiceExport(logger, obj)
 		},
 		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueConsumerSecret(logger, newObj)
+			c.enqueueServiceExport(logger, newObj)
 		},
 		DeleteFunc: func(obj interface{}) {
-			c.enqueueConsumerSecret(logger, obj)
+			c.enqueueServiceExport(logger, obj)
 		},
 	})
 
@@ -116,16 +113,15 @@ func NewController(
 type Resource = committer.Resource[*kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
-// controller reconciles ServiceBindings' kubeconfig secret references. It is
-// here as an individual controller because the cluster controller is not running
-// if the secret is invalid.
+// controller reconciles ServiceBindings with there ServiceExports counterparts.
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
 	serviceBindingLister  bindlisters.ServiceBindingLister
 	serviceBindingIndexer cache.Indexer
 
-	consumerSecretLister corelisters.SecretLister
+	serviceExportLister  bindlisters.ServiceExportLister
+	serviceExportIndexer cache.Indexer
 
 	reconciler
 
@@ -143,7 +139,7 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	secretKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)

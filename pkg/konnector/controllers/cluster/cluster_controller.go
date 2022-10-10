@@ -46,6 +46,7 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/clusterbinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/namespacedeletion"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/servicebinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport"
 )
 
@@ -63,7 +64,7 @@ func NewController(
 	namespaceInformer coreinformers.NamespaceInformer,
 	namespaceLister corelisters.NamespaceLister,
 	serviceBindingsInformer bindv1alpha1informers.ServiceBindingInformer,
-	serviceBidningsLister bindlisters.ServiceBindingLister, // intentional lister and informer here to protect against race
+	serviceBindingsLister bindlisters.ServiceBindingLister, // intentional lister and informer here to protect against race
 	crdInformer crdinformers.CustomResourceDefinitionInformer,
 	crdLister crdlisters.CustomResourceDefinitionLister, // intentional lister and informer here to protect against race
 ) (*controller, error) {
@@ -112,7 +113,7 @@ func NewController(
 		providerConfig,
 		providerBindInformers.KubeBind().V1alpha1().ClusterBindings(),
 		serviceBindingsInformer,
-		serviceBidningsLister,
+		serviceBindingsLister,
 		providerBindInformers.KubeBind().V1alpha1().ServiceExports(),
 		consumerSecretInformers.Core().V1().Secrets(),
 		providerKubeInformers.Core().V1().Secrets(),
@@ -129,16 +130,26 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
-	servicebindingCtrl, err := serviceexport.NewController(
+	serviceexportCtrl, err := serviceexport.NewController(
 		consumerSecretRefKey,
 		providerNamespace,
 		consumerConfig,
 		providerConfig,
 		providerBindInformers.KubeBind().V1alpha1().ServiceExports(),
 		serviceBindingsInformer,
-		serviceBidningsLister,
+		serviceBindingsLister,
 		crdInformer,
 		crdLister,
+	)
+	if err != nil {
+		return nil, err
+	}
+	servicebindingCtrl, err := servicebinding.NewController(
+		providerNamespace,
+		consumerConfig,
+		serviceBindingsInformer,
+		serviceBindingsLister,
+		providerBindInformers.KubeBind().V1alpha1().ServiceExports(),
 	)
 	if err != nil {
 		return nil, err
@@ -149,11 +160,12 @@ func NewController(
 
 		bindClient: consumerBindClient,
 
-		serviceBindingLister:  serviceBidningsLister,
+		serviceBindingLister:  serviceBindingsLister,
 		serviceBindingIndexer: serviceBindingsInformer.Informer().GetIndexer(),
 
 		clusterbindingCtrl:    clusterbindingCtrl,
 		namespacedeletionCtrl: namespacedeletionCtrl,
+		serviceexportCtrl:     serviceexportCtrl,
 		servicebindingCtrl:    servicebindingCtrl,
 	}, nil
 }
@@ -180,6 +192,7 @@ type controller struct {
 
 	clusterbindingCtrl    GenericController
 	namespacedeletionCtrl GenericController
+	serviceexportCtrl     GenericController
 	servicebindingCtrl    GenericController
 }
 
@@ -228,6 +241,8 @@ func (c *controller) Start(ctx context.Context) {
 
 	go c.clusterbindingCtrl.Start(ctx, 2)
 	go c.namespacedeletionCtrl.Start(ctx, 2)
+	go c.serviceexportCtrl.Start(ctx, 2)
+	go c.servicebindingCtrl.Start(ctx, 2)
 
 	<-ctx.Done()
 }

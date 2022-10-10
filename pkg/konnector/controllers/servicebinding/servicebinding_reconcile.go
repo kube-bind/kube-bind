@@ -32,7 +32,7 @@ import (
 )
 
 type reconciler struct {
-	getConsumerSecret func(ns, namespace string) (*corev1.Secret, error)
+	getConsumerSecret func(ns, name string) (*corev1.Secret, error)
 }
 
 func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {

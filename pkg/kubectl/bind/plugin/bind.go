@@ -104,9 +104,11 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return err // should never happen because we test this in Validate()
 	}
 
-	url.Query().Add("redirect_url", fmt.Sprintf("%s:%v", "http://localhost", port))
-	url.Query().Add("session_id", sessionID)
+	values := url.Query()
+	values.Add("redirect_url", fmt.Sprintf("%s:%v", "http://localhost", port))
+	values.Add("session_id", sessionID)
 
+	url.RawQuery = values.Encode()
 	resp, err := http.Get(url.String())
 	if err != nil {
 		return fmt.Errorf("failed to get %s: %w", url, err)

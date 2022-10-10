@@ -117,6 +117,9 @@ func NewController(
 			getServiceExportResource: func(name string) (*kubebindv1alpha1.ServiceExportResource, error) {
 				return serviceExportResourceInformer.Lister().ServiceExportResources(providerNamespace).Get(name)
 			},
+			updateServiceExportResourceStatus: func(ctx context.Context, resource *kubebindv1alpha1.ServiceExportResource) (*kubebindv1alpha1.ServiceExportResource, error) {
+				return providerBindClient.KubeBindV1alpha1().ServiceExportResources(providerNamespace).UpdateStatus(ctx, resource, metav1.UpdateOptions{})
+			},
 		},
 
 		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceExport, *kubebindv1alpha1.ServiceExportSpec, *kubebindv1alpha1.ServiceExportStatus](

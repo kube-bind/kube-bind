@@ -19,7 +19,9 @@ package serviceexport
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 
@@ -35,6 +37,8 @@ type reconciler struct {
 
 	updateCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
 	createCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
+
+	updateServiceExportResourceStatus func(ctx context.Context, resource *kubebindv1alpha1.ServiceExportResource) (*kubebindv1alpha1.ServiceExportResource, error)
 }
 
 func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.ServiceExport) error {
@@ -128,12 +132,12 @@ func (r *reconciler) ensureCRDs(ctx context.Context, export *kubebindv1alpha1.Se
 			continue
 		}
 
-		_, err = r.updateCRD(ctx, crd)
+		result, err := r.updateCRD(ctx, crd)
 		if err != nil && !errors.IsNotFound(err) && !errors.IsInvalid(err) {
 			errs = append(errs, err)
 			continue
 		} else if errors.IsNotFound(err) {
-			_, err = r.createCRD(ctx, crd)
+			result, err = r.createCRD(ctx, crd)
 			if err != nil && !errors.IsInvalid(err) {
 				errs = append(errs, err)
 				continue
@@ -160,6 +164,33 @@ func (r *reconciler) ensureCRDs(ctx context.Context, export *kubebindv1alpha1.Se
 			)
 			schemaInSync = false
 			continue
+		}
+
+		// copy the CRD status onto the ServiceExportResource
+		if result != nil {
+			orig := resource.DeepCopy()
+			resource.Status.Conditions = nil
+			for _, c := range result.Status.Conditions {
+				severity := conditionsapi.ConditionSeverityError
+				if c.Status == apiextensionsv1.ConditionTrue {
+					severity = conditionsapi.ConditionSeverityNone
+				}
+				resource.Status.Conditions = append(resource.Status.Conditions, conditionsapi.Condition{
+					Type:               conditionsapi.ConditionType(c.Type),
+					Status:             corev1.ConditionStatus(c.Status),
+					Severity:           severity, // CRD conditions have no severity
+					LastTransitionTime: c.LastTransitionTime,
+					Reason:             c.Reason,
+					Message:            c.Message,
+				})
+			}
+			resource.Status.AcceptedNames = result.Status.AcceptedNames
+			resource.Status.StoredVersions = result.Status.StoredVersions
+			if !equality.Semantic.DeepEqual(orig, resource) {
+				if _, err := r.updateServiceExportResourceStatus(ctx, resource); err != nil {
+					errs = append(errs, err)
+				}
+			}
 		}
 	}
 

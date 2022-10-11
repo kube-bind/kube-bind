@@ -83,8 +83,15 @@ func CRDToServiceExportResource(crd *apiextensionsv1.CustomResourceDefinition) (
 		},
 	}
 
+	onlyFirstServingVersion := crd.Spec.Conversion != nil && crd.Spec.Conversion.Strategy == apiextensionsv1.WebhookConverter
+	// TODO: come up with an API to select versions
 	for i := range crd.Spec.Versions {
 		crdVersion := crd.Spec.Versions[i]
+
+		// skip non-served versions
+		if !crdVersion.Served {
+			continue
+		}
 
 		apiResourceVersion := kubebindv1alpha1.ServiceExportResourceVersion{
 			Name:                     crdVersion.Name,
@@ -108,6 +115,10 @@ func CRDToServiceExportResource(crd *apiextensionsv1.CustomResourceDefinition) (
 		}
 
 		apiResourceSchema.Spec.Versions = append(apiResourceSchema.Spec.Versions, apiResourceVersion)
+
+		if onlyFirstServingVersion {
+			break
+		}
 	}
 
 	return apiResourceSchema, nil

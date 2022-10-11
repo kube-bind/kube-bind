@@ -43,6 +43,10 @@ const (
 	// ServiceBindingConditionSchemaInSync is set to true when the ServiceExport's
 	// schema is applied to the consumer cluster.
 	ServiceBindingConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"
+
+	// DownstreamFinalizer is put on downstream objects to block their deletion until
+	// the upstream object has been deleted.
+	DownstreamFinalizer = "kubebind.io/syncer"
 )
 
 // ServiceBinding binds an API service represented by a ServiceExport

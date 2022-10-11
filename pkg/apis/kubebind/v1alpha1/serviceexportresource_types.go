@@ -24,6 +24,11 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
+const (
+	// ServiceExportResourceConditionSyncing means the resource is actively syncing.
+	ServiceExportResourrceConditionSyncing conditionsapi.ConditionType = "Syncing"
+)
+
 // ServiceExportResource specifies the resource to be exported. It is mostly a CRD::
 // - the spec is a CRD spec, but without webhooks
 // - the status reflects that on the consumer cluster

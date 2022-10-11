@@ -44,6 +44,7 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/namespacedeletion"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/servicebinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
@@ -147,6 +148,19 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
+	serviceresourcebindingCtrl, err := serviceexportresource.NewController(
+		consumerSecretRefKey,
+		providerNamespace,
+		consumerConfig,
+		providerConfig,
+		providerBindInformers.KubeBind().V1alpha1().ServiceExportResources(),
+		providerBindInformers.KubeBind().V1alpha1().ServiceNamespaces(),
+		serviceBindingInformer,
+		crdInformer,
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	return &controller{
 		consumerSecretRefKey: consumerSecretRefKey,
@@ -162,10 +176,11 @@ func NewController(
 		serviceBindingLister:  serviceBindingInformer.Lister(),
 		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
 
-		clusterbindingCtrl:    clusterbindingCtrl,
-		namespacedeletionCtrl: namespacedeletionCtrl,
-		serviceexportCtrl:     serviceexportCtrl,
-		servicebindingCtrl:    servicebindingCtrl,
+		clusterbindingCtrl:         clusterbindingCtrl,
+		namespacedeletionCtrl:      namespacedeletionCtrl,
+		serviceexportCtrl:          serviceexportCtrl,
+		servicebindingCtrl:         servicebindingCtrl,
+		serviceresourcebindingCtrl: serviceresourcebindingCtrl,
 	}, nil
 }
 
@@ -189,10 +204,11 @@ type controller struct {
 
 	factories []SharedInformerFactory
 
-	clusterbindingCtrl    GenericController
-	namespacedeletionCtrl GenericController
-	serviceexportCtrl     GenericController
-	servicebindingCtrl    GenericController
+	clusterbindingCtrl         GenericController
+	namespacedeletionCtrl      GenericController
+	serviceexportCtrl          GenericController
+	servicebindingCtrl         GenericController
+	serviceresourcebindingCtrl GenericController
 }
 
 // Start starts the controller, which stops when ctx.Done() is closed.
@@ -247,6 +263,7 @@ func (c *controller) Start(ctx context.Context) {
 	go c.namespacedeletionCtrl.Start(ctx, 2)
 	go c.serviceexportCtrl.Start(ctx, 2)
 	go c.servicebindingCtrl.Start(ctx, 2)
+	go c.serviceresourcebindingCtrl.Start(ctx, 2)
 
 	<-ctx.Done()
 }

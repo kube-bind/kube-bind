@@ -126,6 +126,10 @@ func New(
 		indexers.ByServiceBindingExport: indexers.IndexByServiceBindingExport,
 	})
 
+	indexers.AddIfNotPresentOrDie(crdInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.CRDByServiceBinding: indexers.IndexCRDByServiceBinding,
+	})
+
 	serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceBinding(logger, obj)

@@ -20,6 +20,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	ServiceNamespaceAnnotationKey = "kube-bind.io/service-namespace"
+)
+
 // ServiceNamespace defines how consumer namespaces map to service namespaces.
 // These objects are created by the konnector, and a service namespace is then
 // created by the service provider.

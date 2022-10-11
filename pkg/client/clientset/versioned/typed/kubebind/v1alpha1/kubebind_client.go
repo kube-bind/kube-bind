@@ -29,12 +29,12 @@ import (
 
 type KubeBindV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	APIServiceBindingsGetter
+	APIServiceExportsGetter
+	APIServiceExportResourcesGetter
+	APIServiceNamespacesGetter
+	APIServiceProvidersGetter
 	ClusterBindingsGetter
-	ServiceBindingsGetter
-	ServiceExportsGetter
-	ServiceExportResourcesGetter
-	ServiceNamespacesGetter
-	ServiceProvidersGetter
 }
 
 // KubeBindV1alpha1Client is used to interact with features provided by the kube-bind.io group.
@@ -42,28 +42,28 @@ type KubeBindV1alpha1Client struct {
 	restClient rest.Interface
 }
 
+func (c *KubeBindV1alpha1Client) APIServiceBindings() APIServiceBindingInterface {
+	return newAPIServiceBindings(c)
+}
+
+func (c *KubeBindV1alpha1Client) APIServiceExports(namespace string) APIServiceExportInterface {
+	return newAPIServiceExports(c, namespace)
+}
+
+func (c *KubeBindV1alpha1Client) APIServiceExportResources(namespace string) APIServiceExportResourceInterface {
+	return newAPIServiceExportResources(c, namespace)
+}
+
+func (c *KubeBindV1alpha1Client) APIServiceNamespaces(namespace string) APIServiceNamespaceInterface {
+	return newAPIServiceNamespaces(c, namespace)
+}
+
+func (c *KubeBindV1alpha1Client) APIServiceProviders(namespace string) APIServiceProviderInterface {
+	return newAPIServiceProviders(c, namespace)
+}
+
 func (c *KubeBindV1alpha1Client) ClusterBindings(namespace string) ClusterBindingInterface {
 	return newClusterBindings(c, namespace)
-}
-
-func (c *KubeBindV1alpha1Client) ServiceBindings() ServiceBindingInterface {
-	return newServiceBindings(c)
-}
-
-func (c *KubeBindV1alpha1Client) ServiceExports(namespace string) ServiceExportInterface {
-	return newServiceExports(c, namespace)
-}
-
-func (c *KubeBindV1alpha1Client) ServiceExportResources(namespace string) ServiceExportResourceInterface {
-	return newServiceExportResources(c, namespace)
-}
-
-func (c *KubeBindV1alpha1Client) ServiceNamespaces(namespace string) ServiceNamespaceInterface {
-	return newServiceNamespaces(c, namespace)
-}
-
-func (c *KubeBindV1alpha1Client) ServiceProviders(namespace string) ServiceProviderInterface {
-	return newServiceProviders(c, namespace)
 }
 
 // NewForConfig creates a new KubeBindV1alpha1Client for the given config.

@@ -34,7 +34,7 @@ type reconciler struct {
 	createNamespace func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error)
 	deleteNamespace func(ctx context.Context, name string) error
 
-	getServiceNamespace func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error)
+	getServiceNamespace func(ns, name string) (*kubebindv1alpha1.APIServiceNamespace, error)
 
 	getClusterBinding func(ns string) (*kubebindv1alpha1.ClusterBinding, error)
 
@@ -46,10 +46,10 @@ type reconciler struct {
 	createRoleBinding func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
 	updateRoleBinding func(ctx context.Context, cr *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
 
-	listServiceExports func(ns string) ([]*kubebindv1alpha1.ServiceExport, error)
+	listServiceExports func(ns string) ([]*kubebindv1alpha1.APIServiceExport, error)
 }
 
-func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.ServiceNamespace) error {
+func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.APIServiceNamespace) error {
 	var ns *corev1.Namespace
 	nsName := sns.Namespace + "-" + sns.Name
 	if sns.Status.Namespace != "" {
@@ -61,7 +61,7 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.Servic
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nsName,
 				Annotations: map[string]string{
-					kubebindv1alpha1.ServiceNamespaceAnnotationKey: sns.Namespace + "/" + sns.Name,
+					kubebindv1alpha1.APIServiceNamespaceAnnotationKey: sns.Namespace + "/" + sns.Name,
 				},
 			},
 		}
@@ -85,7 +85,7 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.Servic
 	return nil
 }
 
-func (c *reconciler) ensureRBACRole(ctx context.Context, ns string, sns *kubebindv1alpha1.ServiceNamespace) error {
+func (c *reconciler) ensureRBACRole(ctx context.Context, ns string, sns *kubebindv1alpha1.APIServiceNamespace) error {
 	objName := sns.Namespace
 	role, err := c.getRole(ns, objName)
 	if err != nil && !errors.IsNotFound(err) {
@@ -94,7 +94,7 @@ func (c *reconciler) ensureRBACRole(ctx context.Context, ns string, sns *kubebin
 
 	exports, err := c.listServiceExports(ns)
 	if err != nil {
-		return fmt.Errorf("failed to list service exports: %w", err)
+		return fmt.Errorf("failed to list APIServiceExports: %w", err)
 	}
 	expected := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -125,7 +125,7 @@ func (c *reconciler) ensureRBACRole(ctx context.Context, ns string, sns *kubebin
 	return nil
 }
 
-func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, ns string, sns *kubebindv1alpha1.ServiceNamespace) error {
+func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, ns string, sns *kubebindv1alpha1.APIServiceNamespace) error {
 	objName := sns.Namespace
 	binding, err := c.getRoleBinding(ns, objName)
 	if err != nil && !errors.IsNotFound(err) {

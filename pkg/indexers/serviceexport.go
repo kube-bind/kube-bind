@@ -26,7 +26,7 @@ const (
 )
 
 func IndexServiceExportByServiceExportResource(obj interface{}) ([]string, error) {
-	export, ok := obj.(*v1alpha1.ServiceExport)
+	export, ok := obj.(*v1alpha1.APIServiceExport)
 	if !ok {
 		return nil, nil
 	}
@@ -39,7 +39,7 @@ func IndexServiceExportByServiceExportResource(obj interface{}) ([]string, error
 }
 
 func IndexServiceExportByCustomResourceDefinition(obj interface{}) ([]string, error) {
-	export, ok := obj.(*v1alpha1.ServiceExport)
+	export, ok := obj.(*v1alpha1.APIServiceExport)
 	if !ok {
 		return nil, nil
 	}

@@ -18,14 +18,14 @@ limitations under the License.
 
 package v1alpha1
 
+type APIServiceBindingExpansion interface{}
+
+type APIServiceExportExpansion interface{}
+
+type APIServiceExportResourceExpansion interface{}
+
+type APIServiceNamespaceExpansion interface{}
+
+type APIServiceProviderExpansion interface{}
+
 type ClusterBindingExpansion interface{}
-
-type ServiceBindingExpansion interface{}
-
-type ServiceExportExpansion interface{}
-
-type ServiceExportResourceExpansion interface{}
-
-type ServiceNamespaceExpansion interface{}
-
-type ServiceProviderExpansion interface{}

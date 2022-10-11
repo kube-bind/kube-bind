@@ -42,10 +42,10 @@ import (
 )
 
 type reconciler struct {
-	// consumerSecretRefKey is the namespace/name value of the ServiceBinding kubeconfig secret reference.
+	// consumerSecretRefKey is the namespace/name value of the APIServiceBinding kubeconfig secret reference.
 	consumerSecretRefKey     string
 	providerNamespace        string
-	serviceNamespaceInformer dynamic.Informer[bindlisters.ServiceNamespaceLister]
+	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister]
 
 	consumerConfig, providerConfig *rest.Config
 
@@ -53,7 +53,7 @@ type reconciler struct {
 	syncContext map[string]syncContext // by CRD name
 
 	getCRD            func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	getServiceBinding func(name string) (*kubebindv1alpha1.ServiceBinding, error)
+	getServiceBinding func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
 }
 
 type syncContext struct {
@@ -61,7 +61,7 @@ type syncContext struct {
 	cancel     func()
 }
 
-func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubebindv1alpha1.ServiceExportResource) error {
+func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubebindv1alpha1.APIServiceExportResource) error {
 	logger := klog.FromContext(ctx)
 
 	if resource == nil {
@@ -69,7 +69,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		r.lock.Lock()
 		defer r.lock.Unlock()
 		if c, found := r.syncContext[name]; found {
-			logger.V(1).Info("Stopping ServiceExportResource sync", "reason", "ServiceExportResource deleted")
+			logger.V(1).Info("Stopping APIServiceExportResource sync", "reason", "APIServiceExportResource deleted")
 			c.cancel()
 			delete(r.syncContext, name)
 		}
@@ -85,14 +85,14 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		r.lock.Lock()
 		defer r.lock.Unlock()
 		if c, found := r.syncContext[resource.Name]; found {
-			logger.V(1).Info("Stopping ServiceExportResource sync", "reason", "NoCustomResourceDefinition")
+			logger.V(1).Info("Stopping APIServiceExportResource sync", "reason", "NoCustomResourceDefinition")
 			c.cancel()
 			delete(r.syncContext, resource.Name)
 		}
 
 		conditions.MarkFalse(
 			resource,
-			kubebindv1alpha1.ServiceExportResourrceConditionSyncing,
+			kubebindv1alpha1.APIServiceExportResourrceConditionSyncing,
 			"CustomResourceDefinitionNotFound",
 			conditionsapi.ConditionSeverityWarning,
 			"No CustomResourceDefinition for this resource in the consumer cluster",
@@ -105,7 +105,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 	foundBinding := false
 	for _, ref := range crd.OwnerReferences {
 		parts := strings.SplitN(ref.APIVersion, "/", 2)
-		if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "ServiceBinding" {
+		if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
 			continue
 		}
 		binding, err := r.getServiceBinding(ref.Name)
@@ -126,17 +126,17 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		r.lock.Lock()
 		defer r.lock.Unlock()
 		if c, found := r.syncContext[resource.Name]; found {
-			logger.V(1).Info("Stopping ServiceExportResource sync", "reason", "NoServiceBinding")
+			logger.V(1).Info("Stopping APIServiceExportResource sync", "reason", "NoServiceBinding")
 			c.cancel()
 			delete(r.syncContext, resource.Name)
 		}
 
 		conditions.MarkFalse(
 			resource,
-			kubebindv1alpha1.ServiceExportResourrceConditionSyncing,
+			kubebindv1alpha1.APIServiceExportResourrceConditionSyncing,
 			"ServiceBindingNotFound",
 			conditionsapi.ConditionSeverityWarning,
-			"No ServiceBinding for this resource in the consumer cluster",
+			"No APIServiceBinding for this resource in the consumer cluster",
 		)
 
 		return nil
@@ -145,7 +145,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 	c, found := r.syncContext[resource.Name]
 	if found {
 		if c.generation == resource.Generation {
-			conditions.MarkTrue(resource, kubebindv1alpha1.ServiceExportResourrceConditionSyncing)
+			conditions.MarkTrue(resource, kubebindv1alpha1.APIServiceExportResourrceConditionSyncing)
 			return nil // all as expected
 		}
 
@@ -153,7 +153,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 
 		r.lock.Lock()
 		if c, found := r.syncContext[resource.Name]; found {
-			logger.V(1).Info("Stopping ServiceExportResource sync", "reason", "GenerationChanged", "generation", resource.Generation)
+			logger.V(1).Info("Stopping APIServiceExportResource sync", "reason", "GenerationChanged", "generation", resource.Generation)
 			c.cancel()
 			delete(r.syncContext, resource.Name)
 		}
@@ -226,7 +226,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		cancel:     cancel,
 	}
 
-	conditions.MarkTrue(resource, kubebindv1alpha1.ServiceExportResourrceConditionSyncing)
+	conditions.MarkTrue(resource, kubebindv1alpha1.APIServiceExportResourrceConditionSyncing)
 
 	return utilerrors.NewAggregate(errs)
 }

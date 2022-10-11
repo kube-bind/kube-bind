@@ -33,7 +33,7 @@ type reconciler struct {
 	getConsumerSecret func(ns, name string) (*corev1.Secret, error)
 }
 
-func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
+func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
 	var errs []error
 
 	if err := r.ensureValidKubeconfigSecret(ctx, binding); err != nil {
@@ -45,14 +45,14 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
+func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
 	secret, err := r.getConsumerSecret(binding.Spec.KubeconfigSecretRef.Namespace, binding.Spec.KubeconfigSecretRef.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.ServiceBindingConditionSecretValid,
+			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretNotFound",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s not found. Rerun kubectl bind for repair.",
@@ -65,7 +65,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 	if !found {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.ServiceBindingConditionSecretValid,
+			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s is missing %q string key.",
@@ -80,7 +80,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 	if err != nil {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.ServiceBindingConditionSecretValid,
+			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: %v",
@@ -94,7 +94,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 	if !found {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.ServiceBindingConditionSecretValid,
+			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: current context %q not found",
@@ -107,7 +107,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 	if kubeContext.Namespace == "" {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.ServiceBindingConditionSecretValid,
+			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: current context %q has no namespace set",
@@ -120,7 +120,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 	if _, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig)); err != nil {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.ServiceBindingConditionSecretValid,
+			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: %v",
@@ -133,7 +133,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 
 	conditions.MarkTrue(
 		binding,
-		kubebindv1alpha1.ServiceBindingConditionSecretValid,
+		kubebindv1alpha1.APIServiceBindingConditionSecretValid,
 	)
 
 	return nil

@@ -48,7 +48,7 @@ type controllerContext struct {
 	serviceBindings sets.String // when this is empty, the controller should be stopped by closing the context
 }
 
-func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
+func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
 	logger := klog.FromContext(ctx)
 
 	var kubeconfig string
@@ -97,22 +97,22 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 	cfg, err := clientcmd.Load([]byte(kubeconfig))
 	if err != nil {
 		logger.Error(err, "invalid kubeconfig in secret", "namespace", ref.Namespace, "name", ref.Name)
-		return nil // nothing we can do here. The ServiceBinding controller will set a condition
+		return nil // nothing we can do here. The APIServiceBinding controller will set a condition
 	}
 	kubeContext, found := cfg.Contexts[cfg.CurrentContext]
 	if !found {
 		logger.Error(err, "kubeconfig in secret does not have a current context", "namespace", ref.Namespace, "name", ref.Name)
-		return nil // nothing we can do here. The ServiceBinding controller will set a condition
+		return nil // nothing we can do here. The APIServiceBinding controller will set a condition
 	}
 	if kubeContext.Namespace == "" {
 		logger.Error(err, "kubeconfig in secret does not have a namespace set for the current context", "namespace", ref.Namespace, "name", ref.Name)
-		return nil // nothing we can do here. The ServiceBinding controller will set a condition
+		return nil // nothing we can do here. The APIServiceBinding controller will set a condition
 	}
 	providerNamespace := kubeContext.Namespace
 	providerConfig, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig))
 	if err != nil {
 		logger.Error(err, "invalid kubeconfig in secret", "namespace", ref.Namespace, "name", ref.Name)
-		return nil // nothing we can do here. The ServiceBinding controller will set a condition
+		return nil // nothing we can do here. The APIServiceBinding controller will set a condition
 	}
 
 	// create new because there is none yet for this kubeconfig

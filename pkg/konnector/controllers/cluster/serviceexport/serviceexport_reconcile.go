@@ -30,11 +30,11 @@ import (
 )
 
 type reconciler struct {
-	listServiceBinding       func(export string) ([]*kubebindv1alpha1.ServiceBinding, error)
-	getServiceExportResource func(name string) (*kubebindv1alpha1.ServiceExportResource, error)
+	listServiceBinding       func(export string) ([]*kubebindv1alpha1.APIServiceBinding, error)
+	getServiceExportResource func(name string) (*kubebindv1alpha1.APIServiceExportResource, error)
 }
 
-func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.ServiceExport) error {
+func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
 	var errs []error
 
 	bindings, err := r.listServiceBinding(export.Name)
@@ -44,23 +44,23 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 	if len(bindings) == 0 {
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.ServiceExportConditionConnected,
+			kubebindv1alpha1.APIServiceExportConditionConnected,
 			"NoServiceBinding",
 			conditionsapi.ConditionSeverityInfo,
-			"No ServiceBindings found for ServiceExport",
+			"No ServiceBindings found for APIServiceExport",
 		)
 	} else if len(bindings) > 1 {
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.ServiceExportConditionConnected,
+			kubebindv1alpha1.APIServiceExportConditionConnected,
 			"MultipleServiceBindings",
 			conditionsapi.ConditionSeverityError,
-			"Multiple ServiceBindings found for ServiceExport. Delete all but one.",
+			"Multiple ServiceBindings found for APIServiceExport. Delete all but one.",
 		)
 	} else {
 		conditions.MarkTrue(
 			export,
-			kubebindv1alpha1.ServiceExportConditionConnected,
+			kubebindv1alpha1.APIServiceExportConditionConnected,
 		)
 
 		if err := r.ensureServiceBindingConditionCopied(ctx, export, bindings[0]); err != nil {
@@ -77,28 +77,28 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureServiceBindingConditionCopied(ctx context.Context, export *kubebindv1alpha1.ServiceExport, binding *kubebindv1alpha1.ServiceBinding) error {
-	if inSync := conditions.Get(binding, kubebindv1alpha1.ServiceBindingConditionSchemaInSync); inSync != nil {
+func (r *reconciler) ensureServiceBindingConditionCopied(ctx context.Context, export *kubebindv1alpha1.APIServiceExport, binding *kubebindv1alpha1.APIServiceBinding) error {
+	if inSync := conditions.Get(binding, kubebindv1alpha1.APIServiceBindingConditionSchemaInSync); inSync != nil {
 		conditions.Set(export, inSync)
 	} else {
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.ServiceExportConditionSchemaInSync,
+			kubebindv1alpha1.APIServiceExportConditionSchemaInSync,
 			"Unknown",
 			conditionsapi.ConditionSeverityInfo,
-			"ServiceBinding %s in the consumer cluster does not have a SchemaInSync condition.",
+			"APIServiceBinding %s in the consumer cluster does not have a SchemaInSync condition.",
 			binding.Name,
 		)
 	}
 
 	if ready := conditions.Get(binding, conditionsapi.ReadyCondition); ready != nil {
 		clone := *ready
-		clone.Type = kubebindv1alpha1.ServiceExportConditionServiceBindingReady
+		clone.Type = kubebindv1alpha1.APIServiceExportConditionServiceBindingReady
 		conditions.Set(export, &clone)
 	} else {
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.ServiceExportConditionServiceBindingReady,
+			kubebindv1alpha1.APIServiceExportConditionServiceBindingReady,
 			"Unknown",
 			conditionsapi.ConditionSeverityInfo,
 			"SerciceBinding %s in the consumer cluster does not have a Ready condition.",
@@ -109,7 +109,7 @@ func (r *reconciler) ensureServiceBindingConditionCopied(ctx context.Context, ex
 	return nil
 }
 
-func (r *reconciler) ensureResourcesExist(ctx context.Context, export *kubebindv1alpha1.ServiceExport) error {
+func (r *reconciler) ensureResourcesExist(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
 	var errs []error
 
 	resourceValid := true
@@ -122,10 +122,10 @@ func (r *reconciler) ensureResourcesExist(ctx context.Context, export *kubebindv
 		} else if errors.IsNotFound(err) {
 			conditions.MarkFalse(
 				export,
-				kubebindv1alpha1.ServiceExportConditionResourcesValid,
+				kubebindv1alpha1.APIServiceExportConditionResourcesValid,
 				"ServiceExportResourceNotFound",
 				conditionsapi.ConditionSeverityError,
-				"ServiceExportResource %s not found on the service provider cluster.",
+				"APIServiceExportResource %s not found on the service provider cluster.",
 				name,
 			)
 			resourceValid = false
@@ -135,10 +135,10 @@ func (r *reconciler) ensureResourcesExist(ctx context.Context, export *kubebindv
 		if resource.Spec.Scope != apiextensionsv1.NamespaceScoped && export.Spec.Scope != kubebindv1alpha1.ClusterScope {
 			conditions.MarkFalse(
 				export,
-				kubebindv1alpha1.ServiceExportConditionResourcesValid,
+				kubebindv1alpha1.APIServiceExportConditionResourcesValid,
 				"ServiceExportResourceWrongScope",
 				conditionsapi.ConditionSeverityError,
-				"ServiceExportResource %s is Cluster scope, but the ServiceExport is not.",
+				"APIServiceExportResource %s is Cluster scope, but the APIServiceExport is not.",
 				name,
 			)
 			resourceValid = false
@@ -148,10 +148,10 @@ func (r *reconciler) ensureResourcesExist(ctx context.Context, export *kubebindv
 		if _, err := kubebindhelpers.ServiceExportResourceToCRD(resource); err != nil {
 			conditions.MarkFalse(
 				export,
-				kubebindv1alpha1.ServiceExportConditionResourcesValid,
+				kubebindv1alpha1.APIServiceExportConditionResourcesValid,
 				"ServiceExportResourceInvalid",
 				conditionsapi.ConditionSeverityError,
-				"ServiceExportResource %s on the service provider cluster is invalid: %s",
+				"APIServiceExportResource %s on the service provider cluster is invalid: %s",
 				name, err,
 			)
 			resourceValid = false
@@ -162,7 +162,7 @@ func (r *reconciler) ensureResourcesExist(ctx context.Context, export *kubebindv
 	if resourceValid {
 		conditions.MarkTrue(
 			export,
-			kubebindv1alpha1.ServiceExportConditionResourcesValid,
+			kubebindv1alpha1.APIServiceExportConditionResourcesValid,
 		)
 	}
 

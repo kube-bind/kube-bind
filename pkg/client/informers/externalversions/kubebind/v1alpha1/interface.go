@@ -24,18 +24,18 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// APIServiceBindings returns a APIServiceBindingInformer.
+	APIServiceBindings() APIServiceBindingInformer
+	// APIServiceExports returns a APIServiceExportInformer.
+	APIServiceExports() APIServiceExportInformer
+	// APIServiceExportResources returns a APIServiceExportResourceInformer.
+	APIServiceExportResources() APIServiceExportResourceInformer
+	// APIServiceNamespaces returns a APIServiceNamespaceInformer.
+	APIServiceNamespaces() APIServiceNamespaceInformer
+	// APIServiceProviders returns a APIServiceProviderInformer.
+	APIServiceProviders() APIServiceProviderInformer
 	// ClusterBindings returns a ClusterBindingInformer.
 	ClusterBindings() ClusterBindingInformer
-	// ServiceBindings returns a ServiceBindingInformer.
-	ServiceBindings() ServiceBindingInformer
-	// ServiceExports returns a ServiceExportInformer.
-	ServiceExports() ServiceExportInformer
-	// ServiceExportResources returns a ServiceExportResourceInformer.
-	ServiceExportResources() ServiceExportResourceInformer
-	// ServiceNamespaces returns a ServiceNamespaceInformer.
-	ServiceNamespaces() ServiceNamespaceInformer
-	// ServiceProviders returns a ServiceProviderInformer.
-	ServiceProviders() ServiceProviderInformer
 }
 
 type version struct {
@@ -49,32 +49,32 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+// APIServiceBindings returns a APIServiceBindingInformer.
+func (v *version) APIServiceBindings() APIServiceBindingInformer {
+	return &aPIServiceBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceExports returns a APIServiceExportInformer.
+func (v *version) APIServiceExports() APIServiceExportInformer {
+	return &aPIServiceExportInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceExportResources returns a APIServiceExportResourceInformer.
+func (v *version) APIServiceExportResources() APIServiceExportResourceInformer {
+	return &aPIServiceExportResourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceNamespaces returns a APIServiceNamespaceInformer.
+func (v *version) APIServiceNamespaces() APIServiceNamespaceInformer {
+	return &aPIServiceNamespaceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceProviders returns a APIServiceProviderInformer.
+func (v *version) APIServiceProviders() APIServiceProviderInformer {
+	return &aPIServiceProviderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // ClusterBindings returns a ClusterBindingInformer.
 func (v *version) ClusterBindings() ClusterBindingInformer {
 	return &clusterBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// ServiceBindings returns a ServiceBindingInformer.
-func (v *version) ServiceBindings() ServiceBindingInformer {
-	return &serviceBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
-}
-
-// ServiceExports returns a ServiceExportInformer.
-func (v *version) ServiceExports() ServiceExportInformer {
-	return &serviceExportInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// ServiceExportResources returns a ServiceExportResourceInformer.
-func (v *version) ServiceExportResources() ServiceExportResourceInformer {
-	return &serviceExportResourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// ServiceNamespaces returns a ServiceNamespaceInformer.
-func (v *version) ServiceNamespaces() ServiceNamespaceInformer {
-	return &serviceNamespaceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// ServiceProviders returns a ServiceProviderInformer.
-func (v *version) ServiceProviders() ServiceProviderInformer {
-	return &serviceProviderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

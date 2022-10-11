@@ -5,16 +5,16 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: serviceexportresources.kube-bind.io
+  name: apiserviceexportresources.kube-bind.io
 spec:
   group: kube-bind.io
   names:
     categories:
     - kube-bindings
-    kind: ServiceExportResource
-    listKind: ServiceExportResourceList
-    plural: serviceexportresources
-    singular: serviceexportresource
+    kind: APIServiceExportResource
+    listKind: APIServiceExportResourceList
+    plural: apiserviceexportresources
+    singular: apiserviceexportresource
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -25,7 +25,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: 'ServiceExportResource specifies the resource to be exported.
+        description: 'APIServiceExportResource specifies the resource to be exported.
           It is mostly a CRD:: - the spec is a CRD spec, but without webhooks - the
           status reflects that on the consumer cluster'
         properties:
@@ -103,7 +103,7 @@ spec:
                   \n Note: the OpenAPI v3 schemas must be equal for all versions until
                   CEL version migration is supported."
                 items:
-                  description: ServiceExportResourceVersion describes one API version
+                  description: APIServiceExportResourceVersion describes one API version
                     of a resource.
                   properties:
                     additionalPrinterColumns:
@@ -313,8 +313,8 @@ spec:
                 type: object
               conditions:
                 description: conditions is a list of conditions that apply to the
-                  ServiceExportResource. It is updated by the konnector on the consumer
-                  cluster.
+                  APIServiceExportResource. It is updated by the konnector on the
+                  consumer cluster.
                 items:
                   description: Condition defines an observation of a object operational
                     state.

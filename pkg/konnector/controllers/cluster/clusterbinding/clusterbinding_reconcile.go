@@ -33,7 +33,7 @@ import (
 )
 
 type reconciler struct {
-	// consumerSecretRefKey is the namespace/name value of the ServiceBinding kubeconfig secret reference.
+	// consumerSecretRefKey is the namespace/name value of the APIServiceBinding kubeconfig secret reference.
 	consumerSecretRefKey string
 	providerNamespace    string
 	heartbeatInterval    time.Duration

@@ -37,18 +37,18 @@ import (
 type reconciler struct {
 	consumerSecretRefKey, providerNamespace string
 
-	getServiceExport  func(ns string) (*kubebindv1alpha1.ServiceExport, error)
-	getServiceBinding func(name string) (*kubebindv1alpha1.ServiceBinding, error)
+	getServiceExport  func(ns string) (*kubebindv1alpha1.APIServiceExport, error)
+	getServiceBinding func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
 
-	getServiceExportResource          func(name string) (*kubebindv1alpha1.ServiceExportResource, error)
-	updateServiceExportResourceStatus func(ctx context.Context, resource *kubebindv1alpha1.ServiceExportResource) (*kubebindv1alpha1.ServiceExportResource, error)
+	getServiceExportResource          func(name string) (*kubebindv1alpha1.APIServiceExportResource, error)
+	updateServiceExportResourceStatus func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error)
 
 	getCRD    func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	updateCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
 	createCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
 }
 
-func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
+func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
 	var errs []error
 
 	if err := r.ensureValidServiceExport(ctx, binding); err != nil {
@@ -64,16 +64,16 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureValidServiceExport(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
+func (r *reconciler) ensureValidServiceExport(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
 	if _, err := r.getServiceExport(binding.Spec.Export); err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.ServiceBindingConditionConnected,
+			kubebindv1alpha1.APIServiceBindingConditionConnected,
 			"ServiceExportNotFound",
 			conditionsapi.ConditionSeverityError,
-			"ServiceExport %s not found on the service provider cluster. Rerun kubectl bind for repair.",
+			"APIServiceExport %s not found on the service provider cluster. Rerun kubectl bind for repair.",
 			binding.Spec.Export,
 		)
 		return nil
@@ -81,13 +81,13 @@ func (r *reconciler) ensureValidServiceExport(ctx context.Context, binding *kube
 
 	conditions.MarkTrue(
 		binding,
-		kubebindv1alpha1.ServiceBindingConditionConnected,
+		kubebindv1alpha1.APIServiceBindingConditionConnected,
 	)
 
 	return nil
 }
 
-func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha1.ServiceBinding) error {
+func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
 	var errs []error
 
 	export, err := r.getServiceExport(binding.Spec.Export)
@@ -109,10 +109,10 @@ nextResource:
 		} else if errors.IsNotFound(err) {
 			conditions.MarkFalse(
 				binding,
-				kubebindv1alpha1.ServiceBindingConditionResourcesValid,
+				kubebindv1alpha1.APIServiceBindingConditionResourcesValid,
 				"ServiceExportResourceNotFound",
 				conditionsapi.ConditionSeverityError,
-				"ServiceExportResource %s not found on the service provider cluster.",
+				"APIServiceExportResource %s not found on the service provider cluster.",
 				name,
 			)
 			resourceValid = false
@@ -122,10 +122,10 @@ nextResource:
 		if resource.Spec.Scope != apiextensionsv1.NamespaceScoped && export.Spec.Scope != kubebindv1alpha1.ClusterScope {
 			conditions.MarkFalse(
 				binding,
-				kubebindv1alpha1.ServiceBindingConditionResourcesValid,
+				kubebindv1alpha1.APIServiceBindingConditionResourcesValid,
 				"ServiceExportResourceWrongScope",
 				conditionsapi.ConditionSeverityError,
-				"ServiceExportResource %s is Cluster scope, but the ServiceExport is not.",
+				"APIServiceExportResource %s is Cluster scope, but the APIServiceExport is not.",
 				name,
 			)
 			resourceValid = false
@@ -136,10 +136,10 @@ nextResource:
 		if err != nil {
 			conditions.MarkFalse(
 				binding,
-				kubebindv1alpha1.ServiceBindingConditionResourcesValid,
+				kubebindv1alpha1.APIServiceBindingConditionResourcesValid,
 				"ServiceExportResourceInvalid",
 				conditionsapi.ConditionSeverityError,
-				"ServiceExportResource %s on the service provider cluster is invalid: %s",
+				"APIServiceExportResource %s on the service provider cluster is invalid: %s",
 				name, err,
 			)
 			resourceValid = false
@@ -149,7 +149,7 @@ nextResource:
 		// put binding owner reference on the CRD.
 		newReference := metav1.OwnerReference{
 			APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
-			Kind:       "ServiceBinding",
+			Kind:       "APIServiceBinding",
 			Name:       binding.Name,
 			UID:        binding.UID,
 			Controller: pointer.Bool(true),
@@ -169,7 +169,7 @@ nextResource:
 			} else if errors.IsInvalid(err) {
 				conditions.MarkFalse(
 					binding,
-					kubebindv1alpha1.ServiceExportConditionSchemaInSync,
+					kubebindv1alpha1.APIServiceExportConditionSchemaInSync,
 					"CustomResourceDefinitionCreateFailed",
 					conditionsapi.ConditionSeverityError,
 					"CustomResourceDefinition %s cannot be created: %s",
@@ -185,7 +185,7 @@ nextResource:
 			var newOwners []metav1.OwnerReference
 			for _, ref := range existing.OwnerReferences {
 				parts := strings.SplitN(ref.APIVersion, "/", 2)
-				if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "ServiceBinding" {
+				if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
 					newOwners = append(newOwners, ref)
 					continue
 				}
@@ -214,10 +214,10 @@ nextResource:
 				// here we found a binding from another service provider. So the CRD is not ours.
 				conditions.MarkFalse(
 					binding,
-					kubebindv1alpha1.ServiceExportConditionSchemaInSync,
+					kubebindv1alpha1.APIServiceExportConditionSchemaInSync,
 					"ForeignCustomResourceDefinition",
 					conditionsapi.ConditionSeverityError,
-					"CustomResourceDefinition %s is owned by ServiceBinding %s.",
+					"CustomResourceDefinition %s is owned by APIServiceBinding %s.",
 					name, other.Name,
 				)
 				schemaInSync = false
@@ -227,7 +227,7 @@ nextResource:
 				// this is not our CRD, we should not touch it
 				conditions.MarkFalse(
 					binding,
-					kubebindv1alpha1.ServiceExportConditionSchemaInSync,
+					kubebindv1alpha1.APIServiceExportConditionSchemaInSync,
 					"ForeignCustomResourceDefinition",
 					conditionsapi.ConditionSeverityError,
 					"CustomResourceDefinition %s is not owned by kube-bind.io.",
@@ -250,7 +250,7 @@ nextResource:
 			} else if errors.IsInvalid(err) {
 				conditions.MarkFalse(
 					binding,
-					kubebindv1alpha1.ServiceExportConditionSchemaInSync,
+					kubebindv1alpha1.APIServiceExportConditionSchemaInSync,
 					"CustomResourceDefinitionUpdateFailed",
 					conditionsapi.ConditionSeverityError,
 					"CustomResourceDefinition %s cannot be updated: %s",
@@ -261,7 +261,7 @@ nextResource:
 			}
 		}
 
-		// copy the CRD status onto the ServiceExportResource
+		// copy the CRD status onto the APIServiceExportResource
 		if result != nil {
 			orig := resource
 			resource = resource.DeepCopy()
@@ -293,14 +293,14 @@ nextResource:
 	if resourceValid {
 		conditions.MarkTrue(
 			binding,
-			kubebindv1alpha1.ServiceBindingConditionResourcesValid,
+			kubebindv1alpha1.APIServiceBindingConditionResourcesValid,
 		)
 	}
 
 	if schemaInSync {
 		conditions.MarkTrue(
 			binding,
-			kubebindv1alpha1.ServiceBindingConditionSchemaInSync,
+			kubebindv1alpha1.APIServiceBindingConditionSchemaInSync,
 		)
 	}
 

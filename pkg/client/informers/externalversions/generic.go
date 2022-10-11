@@ -54,18 +54,18 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=kube-bind.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("apiservicebindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceBindings().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("apiserviceexports"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceExports().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("apiserviceexportresources"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceExportResources().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("apiservicenamespaces"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceNamespaces().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("apiserviceproviders"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceProviders().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("clusterbindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ClusterBindings().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("servicebindings"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ServiceBindings().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("serviceexports"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ServiceExports().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("serviceexportresources"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ServiceExportResources().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("servicenamespaces"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ServiceNamespaces().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("serviceproviders"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ServiceProviders().Informer()}, nil
 
 	}
 

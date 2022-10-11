@@ -23,33 +23,33 @@ import (
 )
 
 const (
-	// ServiceBindingConditionSecretValid is set when the secret is valid.
-	ServiceBindingConditionSecretValid conditionsapi.ConditionType = "SecretValid"
+	// APIServiceBindingConditionSecretValid is set when the secret is valid.
+	APIServiceBindingConditionSecretValid conditionsapi.ConditionType = "SecretValid"
 
-	// ServiceBindingConditionInformersSynced is set when the informers can sync.
-	ServiceBindingConditionInformersSynced conditionsapi.ConditionType = "InformersSynced"
+	// APIServiceBindingConditionInformersSynced is set when the informers can sync.
+	APIServiceBindingConditionInformersSynced conditionsapi.ConditionType = "InformersSynced"
 
-	// ServiceBindingConditionHeartbeating is set when the ClusterBinding of the service provider
+	// APIServiceBindingConditionHeartbeating is set when the ClusterBinding of the service provider
 	// is successfully heartbeated.
-	ServiceBindingConditionHeartbeating conditionsapi.ConditionType = "Heartbeating"
+	APIServiceBindingConditionHeartbeating conditionsapi.ConditionType = "Heartbeating"
 
-	// ServiceBindingConditionConnected means the ServiceBinding has been connected to a ServiceExport.
-	ServiceBindingConditionConnected conditionsapi.ConditionType = "Connected"
+	// APIServiceBindingConditionConnected means the APIServiceBinding has been connected to a APIServiceExport.
+	APIServiceBindingConditionConnected conditionsapi.ConditionType = "Connected"
 
-	// ServiceBindingConditionResourcesValid is set to true when the ServiceExport's
+	// APIServiceBindingConditionResourcesValid is set to true when the APIServiceExport's
 	// resources exist and are valid.
-	ServiceBindingConditionResourcesValid conditionsapi.ConditionType = "ResourcesValid"
+	APIServiceBindingConditionResourcesValid conditionsapi.ConditionType = "ResourcesValid"
 
-	// ServiceBindingConditionSchemaInSync is set to true when the ServiceExport's
+	// APIServiceBindingConditionSchemaInSync is set to true when the APIServiceExport's
 	// schema is applied to the consumer cluster.
-	ServiceBindingConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"
+	APIServiceBindingConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"
 
 	// DownstreamFinalizer is put on downstream objects to block their deletion until
 	// the upstream object has been deleted.
 	DownstreamFinalizer = "kubebind.io/syncer"
 )
 
-// ServiceBinding binds an API service represented by a ServiceExport
+// APIServiceBinding binds an API service represented by a APIServiceExport
 // in a service provider cluster into a consumer cluster. This object lives in
 // the consumer cluster.
 //
@@ -62,28 +62,28 @@ const (
 // +kubebuilder:printcolumn:name="Provider",type="string",JSONPath=`.status.providerPrettyName`,priority=0
 // +kubebuilder:printcolumn:name="Resources",type="string",JSONPath=`.metadata.annotations.kube-bind\.io/resources`,priority=1
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type=="Ready")].status`,priority=0
-type ServiceBinding struct {
+type APIServiceBinding struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec specifies how an API service from a service provider should be bound in the
 	// local consumer cluster.
-	Spec ServiceBindingSpec `json:"spec"`
+	Spec APIServiceBindingSpec `json:"spec"`
 
 	// status contains reconciliation information for a service binding.
-	Status ServiceBindingStatus `json:"status,omitempty"`
+	Status APIServiceBindingStatus `json:"status,omitempty"`
 }
 
-func (in *ServiceBinding) GetConditions() conditionsapi.Conditions {
+func (in *APIServiceBinding) GetConditions() conditionsapi.Conditions {
 	return in.Status.Conditions
 }
 
-func (in *ServiceBinding) SetConditions(conditions conditionsapi.Conditions) {
+func (in *APIServiceBinding) SetConditions(conditions conditionsapi.Conditions) {
 	in.Status.Conditions = conditions
 }
 
-type ServiceBindingSpec struct {
-	// export is the name of the ServiceExport object in the service provider cluster.
+type APIServiceBindingSpec struct {
+	// export is the name of the APIServiceExport object in the service provider cluster.
 	//
 	// +required
 	// +kubebuilder:validation:Required
@@ -98,23 +98,23 @@ type ServiceBindingSpec struct {
 	KubeconfigSecretRef ClusterSecretKeyRef `json:"kubeconfigSecretRef"`
 }
 
-type ServiceBindingStatus struct {
+type APIServiceBindingStatus struct {
 	// providerPrettyName is the pretty name of the service provider cluster. This
-	// can be shared among different ServiceBindings.
+	// can be shared among different APIServiceBindings.
 	ProviderPrettyName string `json:"providerPrettyName,omitempty"`
 
-	// conditions is a list of conditions that apply to the ServiceBinding.
+	// conditions is a list of conditions that apply to the APIServiceBinding.
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
-// ServiceBindingList is a list of ServiceBindings.
+// APIServiceBindingList is a list of APIServiceBindings.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type ServiceBindingList struct {
+type APIServiceBindingList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []ServiceBinding `json:"items"`
+	Items []APIServiceBinding `json:"items"`
 }
 
 type LocalSecretKeyRef struct {

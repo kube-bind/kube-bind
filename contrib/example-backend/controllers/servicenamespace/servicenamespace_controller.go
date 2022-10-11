@@ -55,9 +55,9 @@ const (
 // NewController returns a new controller for ServiceNamespaces.
 func NewController(
 	config *rest.Config,
-	serviceNamespaceInformer bindinformers.ServiceNamespaceInformer,
+	serviceNamespaceInformer bindinformers.APIServiceNamespaceInformer,
 	clusterBindingInformer bindinformers.ClusterBindingInformer,
-	serviceExportInformer bindinformers.ServiceExportInformer,
+	serviceExportInformer bindinformers.APIServiceExportInformer,
 	namespaceInformer coreinformers.NamespaceInformer,
 	roleInformer rbacinformers.RoleInformer,
 	roleBindingInformer rbacinformers.RoleBindingInformer,
@@ -111,8 +111,8 @@ func NewController(
 				return kubeClient.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
 			},
 
-			getServiceNamespace: func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error) {
-				return serviceNamespaceInformer.Lister().ServiceNamespaces(ns).Get(name)
+			getServiceNamespace: func(ns, name string) (*kubebindv1alpha1.APIServiceNamespace, error) {
+				return serviceNamespaceInformer.Lister().APIServiceNamespaces(ns).Get(name)
 			},
 
 			getClusterBinding: func(ns string) (*kubebindv1alpha1.ClusterBinding, error) {
@@ -139,14 +139,14 @@ func NewController(
 				return kubeClient.RbacV1().RoleBindings(crb.Namespace).Update(ctx, crb, metav1.UpdateOptions{})
 			},
 
-			listServiceExports: func(ns string) ([]*kubebindv1alpha1.ServiceExport, error) {
-				return serviceExportInformer.Lister().ServiceExports(ns).List(labels.Everything())
+			listServiceExports: func(ns string) ([]*kubebindv1alpha1.APIServiceExport, error) {
+				return serviceExportInformer.Lister().APIServiceExports(ns).List(labels.Everything())
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceNamespace, *kubebindv1alpha1.ServiceNamespaceSpec, *kubebindv1alpha1.ServiceNamespaceStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceNamespace] {
-				return bindClient.KubeBindV1alpha1().ServiceNamespaces(ns)
+		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceNamespace, *kubebindv1alpha1.APIServiceNamespaceSpec, *kubebindv1alpha1.APIServiceNamespaceStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceNamespace] {
+				return bindClient.KubeBindV1alpha1().APIServiceNamespaces(ns)
 			},
 		),
 	}
@@ -190,11 +190,11 @@ func NewController(
 			c.enqueueServiceExport(logger, obj)
 		},
 		UpdateFunc: func(old, newObj interface{}) {
-			oldExport, ok := old.(*kubebindv1alpha1.ServiceExport)
+			oldExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
 			if !ok {
 				return
 			}
-			newExport, ok := old.(*kubebindv1alpha1.ServiceExport)
+			newExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
 			if !ok {
 				return
 			}
@@ -211,11 +211,11 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.ServiceNamespaceSpec, *kubebindv1alpha1.ServiceNamespaceStatus]
+type Resource = committer.Resource[*kubebindv1alpha1.APIServiceNamespaceSpec, *kubebindv1alpha1.APIServiceNamespaceStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
-// the ServiceNamespace is deleted.
+// the APIServiceNamespace is deleted.
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
@@ -225,13 +225,13 @@ type controller struct {
 	namespaceLister  corelisters.NamespaceLister
 	namespaceIndexer cache.Indexer
 
-	serviceNamespaceLister  bindlisters.ServiceNamespaceLister
+	serviceNamespaceLister  bindlisters.APIServiceNamespaceLister
 	serviceNamespaceIndexer cache.Indexer
 
 	clusterBindingLister  bindlisters.ClusterBindingLister
 	clusterBindingIndexer cache.Indexer
 
-	serviceExportLister  bindlisters.ServiceExportLister
+	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
 
 	roleLister  rbaclisters.RoleLister
@@ -252,7 +252,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		return
 	}
 
-	logger.V(2).Info("queueing ServiceNamespace", "key", key)
+	logger.V(2).Info("queueing APIServiceNamespace", "key", key)
 	c.queue.Add(key)
 }
 
@@ -301,7 +301,7 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 		runtime.HandleError(err)
 		return
 	}
-	logger.V(2).Info("queueing ServiceNamespaces", "namespace", ns, "number", len(snss), "reason", "ServiceExport", "ServiceExportKey", seKey)
+	logger.V(2).Info("queueing ServiceNamespaces", "namespace", ns, "number", len(snss), "reason", "APIServiceExport", "ServiceExportKey", seKey)
 	for _, sns := range snss {
 		key, err := cache.MetaNamespaceKeyFunc(sns)
 		if err != nil {
@@ -329,7 +329,7 @@ func (c *controller) enqueueNamespace(logger klog.Logger, obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing ServiceNamespace", "key", key, "reason", "Namespace", "NamespaceKey", nsKey)
+		logger.V(2).Info("queueing APIServiceNamespace", "key", key, "reason", "Namespace", "NamespaceKey", nsKey)
 		c.queue.Add(key)
 	}
 }
@@ -391,7 +391,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 	}
 	nsName := snsNamespace + "-" + snsName
 
-	obj, err := c.serviceNamespaceLister.ServiceNamespaces(snsNamespace).Get(snsName)
+	obj, err := c.serviceNamespaceLister.APIServiceNamespaces(snsNamespace).Get(snsName)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {

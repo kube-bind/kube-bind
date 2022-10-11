@@ -28,4 +28,4 @@ type ServiceExportResourceExpansion interface{}
 
 type ServiceNamespaceExpansion interface{}
 
-type ServiceProviderBindingRequestExpansion interface{}
+type ServiceProviderExpansion interface{}

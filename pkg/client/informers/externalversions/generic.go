@@ -64,8 +64,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ServiceExportResources().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("servicenamespaces"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ServiceNamespaces().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("serviceproviderbindingrequests"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ServiceProviderBindingRequests().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("serviceproviders"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ServiceProviders().Informer()}, nil
 
 	}
 

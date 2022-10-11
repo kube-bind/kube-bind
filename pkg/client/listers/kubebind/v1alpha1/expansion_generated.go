@@ -54,10 +54,10 @@ type ServiceNamespaceListerExpansion interface{}
 // ServiceNamespaceNamespaceLister.
 type ServiceNamespaceNamespaceListerExpansion interface{}
 
-// ServiceProviderBindingRequestListerExpansion allows custom methods to be added to
-// ServiceProviderBindingRequestLister.
-type ServiceProviderBindingRequestListerExpansion interface{}
+// ServiceProviderListerExpansion allows custom methods to be added to
+// ServiceProviderLister.
+type ServiceProviderListerExpansion interface{}
 
-// ServiceProviderBindingRequestNamespaceListerExpansion allows custom methods to be added to
-// ServiceProviderBindingRequestNamespaceLister.
-type ServiceProviderBindingRequestNamespaceListerExpansion interface{}
+// ServiceProviderNamespaceListerExpansion allows custom methods to be added to
+// ServiceProviderNamespaceLister.
+type ServiceProviderNamespaceListerExpansion interface{}

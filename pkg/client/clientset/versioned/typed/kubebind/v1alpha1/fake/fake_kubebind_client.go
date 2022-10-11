@@ -49,8 +49,8 @@ func (c *FakeKubeBindV1alpha1) ServiceNamespaces(namespace string) v1alpha1.Serv
 	return &FakeServiceNamespaces{c, namespace}
 }
 
-func (c *FakeKubeBindV1alpha1) ServiceProviderBindingRequests(namespace string) v1alpha1.ServiceProviderBindingRequestInterface {
-	return &FakeServiceProviderBindingRequests{c, namespace}
+func (c *FakeKubeBindV1alpha1) ServiceProviders(namespace string) v1alpha1.ServiceProviderInterface {
+	return &FakeServiceProviders{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

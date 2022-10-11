@@ -98,6 +98,9 @@ func New(
 				return secretInformer.Lister().Secrets(ns).Get(name)
 			},
 			newClusterController: func(consumerSecretRefKey, providerNamespace string, providerConfig *rest.Config) (startable, error) {
+				providerConfig = rest.CopyConfig(providerConfig)
+				providerConfig = rest.AddUserAgent(providerConfig, controllerName)
+
 				return cluster.NewController(
 					consumerSecretRefKey,
 					providerNamespace,

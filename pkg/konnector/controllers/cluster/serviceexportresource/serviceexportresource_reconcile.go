@@ -37,6 +37,7 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource/spec"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource/status"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
@@ -178,7 +179,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 	specCtrl, err := spec.NewController(
 		gvr,
 		r.providerNamespace,
-		r.providerConfig,
+		r.consumerConfig, r.providerConfig,
 		consumerInf.ForResource(gvr),
 		providerInf.ForResource(gvr),
 		r.serviceNamespaceInformer,
@@ -187,9 +188,11 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		runtime.HandleError(err)
 		return nil // nothing we can do here
 	}
-	statusCtrl, err := spec.NewController(
+	statusCtrl, err := status.NewController(
 		gvr,
+		resource.Spec.Scope == apiextensionsv1.NamespaceScoped,
 		r.providerNamespace,
+		r.consumerConfig,
 		r.providerConfig,
 		consumerInf.ForResource(gvr),
 		providerInf.ForResource(gvr),
@@ -207,8 +210,10 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 
 	go func() {
 		// to not block the main thread
-		consumerInf.WaitForCacheSync(ctx.Done())
-		providerInf.WaitForCacheSync(ctx.Done())
+		consumerSynced := consumerInf.WaitForCacheSync(ctx.Done())
+		providerSynced := providerInf.WaitForCacheSync(ctx.Done())
+
+		logger.V(2).Info("Synced informers", "consumer", consumerSynced, "provider", providerSynced)
 
 		go specCtrl.Start(ctx, 1)
 		go statusCtrl.Start(ctx, 1)

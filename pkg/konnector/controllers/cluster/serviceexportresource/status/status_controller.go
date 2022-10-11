@@ -36,9 +36,9 @@ import (
 	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
 const (
@@ -51,8 +51,8 @@ func NewController(
 	namespaced bool,
 	providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
-	dynamicInformer informers.GenericInformer,
-	serviceNamespaceInformer bindinformers.ServiceNamespaceInformer,
+	consumerDynamicInformer, providerDynamicInformer informers.GenericInformer,
+	serviceNamespaceInformer dynamic.Informer[bindlisters.ServiceNamespaceLister],
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -73,7 +73,8 @@ func NewController(
 		return nil, err
 	}
 
-	dynamicLister := dynamiclister.New(dynamicInformer.Informer().GetIndexer(), gvr)
+	dynamicConsumerLister := dynamiclister.New(consumerDynamicInformer.Informer().GetIndexer(), gvr)
+	dynamicProviderLister := dynamiclister.New(providerDynamicInformer.Informer().GetIndexer(), gvr)
 	c := &controller{
 		queue: queue,
 
@@ -83,11 +84,13 @@ func NewController(
 		consumerClient: consumerClient,
 		providerClient: providerClient,
 
-		dynamicLister:  dynamicLister,
-		dynamicIndexer: dynamicInformer.Informer().GetIndexer(),
+		consumerDynamicLister:  dynamicConsumerLister,
+		consumerDynamicIndexer: consumerDynamicInformer.Informer().GetIndexer(),
 
-		serviceNamespaceLister:  serviceNamespaceInformer.Lister(),
-		serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
+		providerDynamicLister:  dynamicProviderLister,
+		providerDynamicIndexer: providerDynamicInformer.Informer().GetIndexer(),
+
+		serviceNamespaceInformer: serviceNamespaceInformer,
 
 		reconciler: reconciler{
 			namespaced: namespaced,
@@ -103,7 +106,7 @@ func NewController(
 				return sns[0].(*kubebindv1alpha1.ServiceNamespace), nil
 			},
 			getConsumerObject: func(ns, name string) (*unstructured.Unstructured, error) {
-				return dynamicLister.Namespace(ns).Get(name)
+				return dynamicConsumerLister.Namespace(ns).Get(name)
 			},
 			updateConsumerObjectStatus: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				return consumerClient.Resource(gvr).Namespace(obj.GetNamespace()).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
@@ -114,11 +117,7 @@ func NewController(
 		},
 	}
 
-	indexers.AddIfNotPresentOrDie(serviceNamespaceInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceNamespaceByNamespace: indexers.IndexServiceNamespaceByNamespace,
-	})
-
-	dynamicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
+	providerDynamicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
 		FilterFunc: func(obj interface{}) bool {
 			if !namespaced {
 				return true
@@ -146,18 +145,6 @@ func NewController(
 		},
 	})
 
-	serviceNamespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueServiceNamespace(logger, obj)
-		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueServiceNamespace(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueServiceNamespace(logger, obj)
-		},
-	})
-
 	return c, nil
 }
 
@@ -170,11 +157,13 @@ type controller struct {
 
 	consumerClient, providerClient dynamicclient.Interface
 
-	dynamicLister  dynamiclister.Lister
-	dynamicIndexer cache.Indexer
+	consumerDynamicLister  dynamiclister.Lister
+	consumerDynamicIndexer cache.Indexer
 
-	serviceNamespaceLister  bindlisters.ServiceNamespaceLister
-	serviceNamespaceIndexer cache.Indexer
+	providerDynamicLister  dynamiclister.Lister
+	providerDynamicIndexer cache.Indexer
+
+	serviceNamespaceInformer dynamic.Informer[bindlisters.ServiceNamespaceLister]
 
 	reconciler
 }
@@ -209,7 +198,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		return // not for us
 	}
 
-	sn, err := c.serviceNamespaceLister.ServiceNamespaces(ns).Get(name)
+	sn, err := c.serviceNamespaceInformer.Lister().ServiceNamespaces(ns).Get(name)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -217,7 +206,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 	if sn.Status.Namespace == "" {
 		return // not ready
 	}
-	objs, err := c.dynamicIndexer.ByIndex(cache.NamespaceIndex, sn.Status.Namespace)
+	objs, err := c.providerDynamicIndexer.ByIndex(cache.NamespaceIndex, sn.Status.Namespace)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -242,6 +231,18 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 
 	logger.Info("Starting controller")
 	defer logger.Info("Shutting down controller")
+
+	c.serviceNamespaceInformer.Informer().AddDynamicEventHandler(ctx, controllerName, cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueServiceNamespace(logger, obj)
+		},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueServiceNamespace(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueServiceNamespace(logger, obj)
+		},
+	})
 
 	for i := 0; i < numThreads; i++ {
 		go wait.UntilWithContext(ctx, c.startWorker, time.Second)
@@ -291,7 +292,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.dynamicLister.Namespace(ns).Get(name)
+	obj, err := c.providerDynamicLister.Namespace(ns).Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {

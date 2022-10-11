@@ -263,7 +263,8 @@ nextResource:
 
 		// copy the CRD status onto the ServiceExportResource
 		if result != nil {
-			orig := resource.DeepCopy()
+			orig := resource
+			resource = resource.DeepCopy()
 			resource.Status.Conditions = nil
 			for _, c := range result.Status.Conditions {
 				severity := conditionsapi.ConditionSeverityError

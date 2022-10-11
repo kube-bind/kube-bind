@@ -56,6 +56,7 @@ type dynamicSharedIndexInformer struct {
 	cache.SharedIndexInformer
 
 	lock     sync.RWMutex
+	counter  int
 	handlers map[string]cache.ResourceEventHandler
 }
 
@@ -106,12 +107,11 @@ func (i *dynamicInformer[L]) Lister() L {
 }
 
 func (i *dynamicSharedIndexInformer) AddDynamicEventHandler(ctx context.Context, handlerName string, handler cache.ResourceEventHandler) {
+	handlerName = fmt.Sprintf("%s-%d", handlerName, i.counter)
+
 	i.lock.Lock()
-	if _, found := i.handlers[handlerName]; found {
-		i.lock.Unlock()
-		panic(fmt.Sprintf("handler %q already exists", handlerName))
-	}
 	i.handlers[handlerName] = handler
+	i.counter++ // make unique
 	i.lock.Unlock()
 
 	go func() {

@@ -74,7 +74,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Se
 		if len(ctrlContext.serviceBindings) == 0 {
 			ctrlContext.cancel()
 		}
-		r.controllers[binding.Name] = nil
+		delete(r.controllers, binding.Name)
 	}
 
 	// no need to start a new one

@@ -54,7 +54,7 @@ const (
 func NewController(
 	gvr schema.GroupVersionResource,
 	providerNamespace string,
-	providerConfig *rest.Config,
+	consumerConfig, providerConfig *rest.Config,
 	consumerDynamicInformer, providerDynamicInformer informers.GenericInformer,
 	serviceNamespaceInformer dynamic.Informer[bindlisters.ServiceNamespaceLister],
 ) (*controller, error) {
@@ -73,18 +73,23 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
+	consumerClient, err := dynamicclient.NewForConfig(consumerConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	dynamicConsumerLister := dynamiclister.New(consumerDynamicInformer.Informer().GetIndexer(), gvr)
-	dynamicProviderLister := dynamiclister.New(consumerDynamicInformer.Informer().GetIndexer(), gvr)
+	dynamicProviderLister := dynamiclister.New(providerDynamicInformer.Informer().GetIndexer(), gvr)
 	c := &controller{
 		queue: queue,
 
+		consumerClient: consumerClient,
 		providerClient: providerClient,
 
 		consumerDynamicLister:  dynamicConsumerLister,
 		consumerDynamicIndexer: consumerDynamicInformer.Informer().GetIndexer(),
 
-		providerDynamicLister:  dynamicConsumerLister,
+		providerDynamicLister:  dynamicProviderLister,
 		providerDynamicIndexer: providerDynamicInformer.Informer().GetIndexer(),
 
 		serviceNamespaceInformer: serviceNamespaceInformer,
@@ -115,8 +120,17 @@ func NewController(
 			deleteProviderObject: func(ctx context.Context, ns, name string) error {
 				return providerClient.Resource(gvr).Namespace(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
-			updateConsumerObject: nil,
-			requeue:              nil,
+			updateConsumerObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+				return consumerClient.Resource(gvr).Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{})
+			},
+			requeue: func(obj *unstructured.Unstructured, after time.Duration) error {
+				key, err := cache.MetaNamespaceKeyFunc(obj)
+				if err != nil {
+					return err
+				}
+				queue.AddAfter(key, after)
+				return nil
+			},
 		},
 	}
 
@@ -139,6 +153,7 @@ func NewController(
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
+	consumerClient dynamicclient.Interface
 	providerClient dynamicclient.Interface
 
 	consumerDynamicLister  dynamiclister.Lister
@@ -224,6 +239,8 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 }
 
 func (c *controller) startWorker(ctx context.Context) {
+	defer runtime.HandleCrash()
+
 	for c.processNextWorkItem(ctx) {
 	}
 }

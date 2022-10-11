@@ -129,17 +129,13 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		logger.V(1).Info("object is already deleting downstream, deleting upstream too")
 		if err := r.deleteProviderObject(ctx, ns, obj.GetName()); err != nil && !errors.IsNotFound(err) {
 			return err
-		} else if errors.IsNotFound(err) {
-			logger.V(2).Info("upstream is already deleted, waiting for downstream deletion to finish")
-
-			if _, err := r.removeDownstreamFinalizer(ctx, obj); err != nil {
-				return err
-			}
-
-			return nil
 		}
 
-		logger.V(2).Info("upstream deleted, waiting for downstream deletion to finish")
+		if _, err := r.removeDownstreamFinalizer(ctx, obj); err != nil {
+			return err
+		}
+
+		logger.V(2).Info("upstream deleted, finalizer removed in downstream, waiting for downstream deletion to finish")
 		return nil // we will get an event when the upstream is deleted
 	}
 

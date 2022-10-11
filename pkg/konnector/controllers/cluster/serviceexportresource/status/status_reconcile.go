@@ -57,11 +57,11 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 			return err // hoping the status is set soon.
 		}
 
-		logger = logger.WithValues("downstreamNamespace", sn.Status.Namespace)
+		logger = logger.WithValues("upstreamNamespace", sn.Status.Namespace)
 		ctx = klog.NewContext(ctx, logger)
 
 		// continue with downstream namespace
-		ns = sn.Status.Namespace
+		ns = sn.Name
 	}
 
 	downstream, err := r.getConsumerObject(ns, obj.GetName())
@@ -74,6 +74,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		if err := r.deleteProviderObject(ctx, obj.GetNamespace(), obj.GetName()); err != nil {
 			return err
 		}
+		return nil
 	}
 
 	status, found, err := unstructured.NestedFieldNoCopy(obj.Object, "status")

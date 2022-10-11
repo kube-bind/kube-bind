@@ -136,9 +136,6 @@ type controller struct {
 	serviceNamespaceLister  bindlisters.ServiceNamespaceLister
 	serviceNamespaceIndexer cache.Indexer
 
-	serviceExportLister  bindlisters.ServiceExportResourceLister
-	serviceExportIndexer cache.Indexer // nolint:unused
-
 	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister]
 	crdInformer            dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister]
 
@@ -239,6 +236,8 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 }
 
 func (c *controller) startWorker(ctx context.Context) {
+	defer runtime.HandleCrash()
+
 	for c.processNextWorkItem(ctx) {
 	}
 }
@@ -277,7 +276,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.serviceExportLister.ServiceExportResources(ns).Get(name)
+	obj, err := c.serviceExportResourceLister.ServiceExportResources(ns).Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {

@@ -25,6 +25,7 @@ import (
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	kubeinformers "k8s.io/client-go/informers"
 	kubernetesclient "k8s.io/client-go/kubernetes"
@@ -34,6 +35,8 @@ import (
 	"k8s.io/klog/v2"
 
 	konnectoroptions "github.com/kube-bind/kube-bind/cmd/konnector/options"
+	"github.com/kube-bind/kube-bind/deploy/crd"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions"
 	"github.com/kube-bind/kube-bind/pkg/konnector"
@@ -58,10 +61,22 @@ func New() *cobra.Command {
 
 			ctx := genericapiserver.SetupSignalContext()
 
-			// construct informer factories
+			// install/upgrade CRDs
 			cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{
 				ExplicitPath: options.KubeConfigPath,
 			}, nil).ClientConfig()
+			apiextensionsClient, err := apiextensionsclient.NewForConfig(cfg)
+			if err != nil {
+				return err
+			}
+			if err := crd.Create(ctx,
+				apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
+				metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "servicebindings"},
+			); err != nil {
+				return err
+			}
+
+			// construct informer factories
 			if err != nil {
 				return err
 			}
@@ -70,10 +85,6 @@ func New() *cobra.Command {
 				return err
 			}
 			kubeClient, err := kubernetesclient.NewForConfig(cfg)
-			if err != nil {
-				return err
-			}
-			apiextensionsClient, err := apiextensionsclient.NewForConfig(cfg)
 			if err != nil {
 				return err
 			}

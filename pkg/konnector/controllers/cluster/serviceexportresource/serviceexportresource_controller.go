@@ -51,6 +51,7 @@ func NewController(
 	consumerSecretRefKey, providerNamespace string,
 	providerConfig *rest.Config,
 	serviceExportResourceInformer bindinformers.ServiceExportResourceInformer,
+	serviceNamespaceInformer bindinformers.ServiceNamespaceInformer,
 	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister],
 	crdInformer dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister],
 ) (*controller, error) {
@@ -71,6 +72,9 @@ func NewController(
 
 		serviceExportResourceLister:  serviceExportResourceInformer.Lister(),
 		serviceExportResourceIndexer: serviceExportResourceInformer.Informer().GetIndexer(),
+
+		serviceNamespaceLister:  serviceNamespaceInformer.Lister(),
+		serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
 
 		serviceBindingInformer: serviceBindingInformer,
 		crdInformer:            crdInformer,
@@ -96,6 +100,10 @@ func NewController(
 		),
 	}
 
+	indexers.AddIfNotPresentOrDie(serviceNamespaceInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceNamespaceByNamespace: indexers.IndexServiceNamespaceByNamespace,
+	})
+
 	serviceExportResourceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceExportResource(logger, obj)
@@ -120,6 +128,9 @@ type controller struct {
 
 	serviceExportResourceLister  bindlisters.ServiceExportResourceLister
 	serviceExportResourceIndexer cache.Indexer
+
+	serviceNamespaceLister  bindlisters.ServiceNamespaceLister
+	serviceNamespaceIndexer cache.Indexer
 
 	serviceExportLister  bindlisters.ServiceExportResourceLister
 	serviceExportIndexer cache.Indexer

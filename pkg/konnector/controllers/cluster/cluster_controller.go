@@ -153,6 +153,7 @@ func NewController(
 		providerNamespace,
 		providerConfig,
 		providerBindInformers.KubeBind().V1alpha1().ServiceExportResources(),
+		providerBindInformers.KubeBind().V1alpha1().ServiceNamespaces(),
 		serviceBindingInformer,
 		crdInformer,
 	)

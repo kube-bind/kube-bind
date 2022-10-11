@@ -45,6 +45,7 @@ import (
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
+	"github.com/kube-bind/kube-bind/pkg/indexers"
 )
 
 const (
@@ -150,9 +151,8 @@ func NewController(
 		),
 	}
 
-	// nolint:errcheck
-	namespaceInformer.Informer().GetIndexer().AddIndexers(cache.Indexers{
-		ByServiceNamespace: IndexByServiceNamespace,
+	indexers.AddIfNotPresentOrDie(serviceNamespaceInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceNamespaceByNamespace: indexers.IndexServiceNamespaceByNamespace,
 	})
 
 	namespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -313,18 +313,24 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 }
 
 func (c *controller) enqueueNamespace(logger klog.Logger, obj interface{}) {
-	if ns, ok := obj.(*corev1.Namespace); ok {
-		if value, found := ns.Annotations[serviceNamespaceAnnotationKey]; found {
-			ns, name, err := ServiceNamespaceFromAnnotation(value)
-			if err != nil {
-				runtime.HandleError(err)
-				return
-			}
-			key := ns + "/" + name
-
-			logger.V(2).Info("queueing ServiceNamespace", "key", key, "reason", "Namespace", "NamespaceKey", key)
-			c.queue.Add(key)
+	nsKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	sns, err := c.serviceNamespaceIndexer.ByIndex(indexers.ServiceNamespaceByNamespace, nsKey)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	for _, obj := range sns {
+		key, err := cache.MetaNamespaceKeyFunc(obj)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
 		}
+		logger.V(2).Info("queueing ServiceNamespace", "key", key, "reason", "Namespace", "NamespaceKey", nsKey)
+		c.queue.Add(key)
 	}
 }
 

@@ -61,7 +61,7 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.Servic
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nsName,
 				Annotations: map[string]string{
-					serviceNamespaceAnnotationKey: sns.Namespace + "/" + sns.Name,
+					kubebindv1alpha1.ServiceNamespaceAnnotationKey: sns.Namespace + "/" + sns.Name,
 				},
 			},
 		}

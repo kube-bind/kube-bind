@@ -49,7 +49,7 @@ const (
 // and status syncer on-demand.
 func NewController(
 	consumerSecretRefKey, providerNamespace string,
-	providerConfig *rest.Config,
+	consumerConfig, providerConfig *rest.Config,
 	serviceExportResourceInformer bindinformers.ServiceExportResourceInformer,
 	serviceNamespaceInformer bindinformers.ServiceNamespaceInformer,
 	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister],
@@ -67,6 +67,7 @@ func NewController(
 		return nil, err
 	}
 
+	dynamicServiceNamespaceInformer := dynamic.NewDynamicInformer[bindlisters.ServiceNamespaceLister](serviceNamespaceInformer)
 	c := &controller{
 		queue: queue,
 
@@ -80,8 +81,11 @@ func NewController(
 		crdInformer:            crdInformer,
 
 		reconciler: reconciler{
-			consumerSecretRefKey: consumerSecretRefKey,
-			providerNamespace:    providerNamespace,
+			consumerSecretRefKey:     consumerSecretRefKey,
+			providerNamespace:        providerNamespace,
+			consumerConfig:           consumerConfig,
+			providerConfig:           providerConfig,
+			serviceNamespaceInformer: dynamicServiceNamespaceInformer,
 
 			syncContext: map[string]syncContext{},
 

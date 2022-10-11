@@ -29,12 +29,24 @@ import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource/spec"
+	runtimeschema "k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	"time"
+	dynamicclient "k8s.io/client-go/dynamic"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
+	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
+	"k8s.io/apimachinery/pkg/util/runtime"
 )
 
 type reconciler struct {
 	// consumerSecretRefKey is the namespace/name value of the ServiceBinding kubeconfig secret reference.
-	consumerSecretRefKey string
-	providerNamespace    string
+	consumerSecretRefKey     string
+	providerNamespace        string
+	serviceNamespaceInformer dynamic.Informer[bindlisters.ServiceNamespaceLister]
+
+	consumerConfig, providerConfig *rest.Config
 
 	lock        sync.Mutex
 	syncContext map[string]syncContext // by CRD name
@@ -136,7 +148,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 			return nil // all as expected
 		}
 
-		// technically, we could be less aggressive here if nothing big changed in the resource. But ¯\_(ツ)_/¯
+		// technically, we could be less aggressive here if nothing big changed in the resource, e.g. just schemas. But ¯\_(ツ)_/¯
 
 		r.lock.Lock()
 		if c, found := r.syncContext[resource.Name]; found {
@@ -147,8 +159,61 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		r.lock.Unlock()
 	}
 
-	// start a new sync
+	// start a new syncer
+
+	var syncVersion string
+	for _, v := range resource.Spec.Versions {
+		if v.Served {
+			syncVersion = v.Name
+			break
+		}
+	}
+	gvr := runtimeschema.GroupVersionResource{resource.Spec.Group, syncVersion, resource.Spec.Names.Plural}
+
+	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
+	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
+	consumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
+	providerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
+
+	specCtrl, err := spec.NewController(
+		gvr,
+		r.providerNamespace,
+		r.providerConfig,
+		consumerInf.ForResource(gvr),
+		providerInf.ForResource(gvr),
+		r.serviceNamespaceInformer,
+	)
+	if err != nil {
+		runtime.HandleError(err)
+		return nil // nothing we can do here
+	}
+	statusCtrl, err := spec.NewController(
+		gvr,
+		r.providerNamespace,
+		r.providerConfig,
+		consumerInf.ForResource(gvr),
+		providerInf.ForResource(gvr),
+		r.serviceNamespaceInformer,
+	)
+	if err != nil {
+		runtime.HandleError(err)
+		return nil // nothing we can do here
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
+
+	consumerInf.Start(ctx.Done())
+	providerInf.Start(ctx.Done())
+
+	go func() {
+		// to not block the main thread
+		consumerInf.WaitForCacheSync(ctx.Done())
+		providerInf.WaitForCacheSync(ctx.Done())
+
+		go specCtrl.Start(ctx, 1)
+		go statusCtrl.Start(ctx, 1)
+	}()
+
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	r.syncContext[resource.Name] = syncContext{

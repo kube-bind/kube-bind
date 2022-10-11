@@ -32,7 +32,6 @@ import (
 )
 
 type reconciler struct {
-	namespaced        bool
 	providerNamespace string
 
 	getServiceNamespace    func(name string) (*kubebindv1alpha1.ServiceNamespace, error)

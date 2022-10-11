@@ -151,6 +151,7 @@ func NewController(
 	serviceresourcebindingCtrl, err := serviceexportresource.NewController(
 		consumerSecretRefKey,
 		providerNamespace,
+		consumerConfig,
 		providerConfig,
 		providerBindInformers.KubeBind().V1alpha1().ServiceExportResources(),
 		providerBindInformers.KubeBind().V1alpha1().ServiceNamespaces(),

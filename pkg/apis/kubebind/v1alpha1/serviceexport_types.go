@@ -90,7 +90,7 @@ type ServiceExportSpec struct {
 	//
 	// +required
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:XValidation:rule="self != \"Cluster\"",message="Cluster scope not yet supported"
+	// +kubebuilder:validation:XValidation:rule="self != \"Namespaced\"",message="Namespaced scope not yet supported"
 	Scope Scope `json:"scope"`
 }
 

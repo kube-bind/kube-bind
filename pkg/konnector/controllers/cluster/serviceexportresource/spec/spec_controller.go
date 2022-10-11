@@ -53,8 +53,7 @@ const (
 // NewController returns a new controller reconciling downstream objects to upstream.
 func NewController(
 	gvr schema.GroupVersionResource,
-	namespaced bool,
-	consumerNamespace, providerNamespace string,
+	providerNamespace string,
 	providerConfig *rest.Config,
 	consumerDynamicInformer, providerDynamicInformer informers.GenericInformer,
 	serviceNamespaceInformer dynamic.Informer[bindlisters.ServiceNamespaceLister],
@@ -80,8 +79,7 @@ func NewController(
 	c := &controller{
 		queue: queue,
 
-		consumerNamespace: consumerNamespace,
-		providerClient:    providerClient,
+		providerClient: providerClient,
 
 		consumerDynamicLister:  dynamicConsumerLister,
 		consumerDynamicIndexer: consumerDynamicInformer.Informer().GetIndexer(),
@@ -92,7 +90,6 @@ func NewController(
 		serviceNamespaceInformer: serviceNamespaceInformer,
 
 		reconciler: reconciler{
-			namespaced:        namespaced,
 			providerNamespace: providerNamespace,
 			getServiceNamespace: func(name string) (*kubebindv1alpha1.ServiceNamespace, error) {
 				return serviceNamespaceInformer.Lister().ServiceNamespaces(providerNamespace).Get(name)
@@ -123,31 +120,15 @@ func NewController(
 		},
 	}
 
-	consumerDynamicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj interface{}) bool {
-			if !namespaced {
-				return true
-			}
-			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err != nil {
-				return false
-			}
-			ns, _, err := cache.SplitMetaNamespaceKey(key)
-			if err != nil {
-				return false
-			}
-			return ns == c.consumerNamespace
+	consumerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueUnstructured(logger, obj)
 		},
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				c.enqueueUnstructured(logger, obj)
-			},
-			UpdateFunc: func(_, newObj interface{}) {
-				c.enqueueUnstructured(logger, newObj)
-			},
-			DeleteFunc: func(obj interface{}) {
-				c.enqueueUnstructured(logger, obj)
-			},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueUnstructured(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueUnstructured(logger, obj)
 		},
 	})
 
@@ -158,8 +139,8 @@ func NewController(
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
-	consumerNamespace string
-	providerClient    dynamicclient.Interface
+	namespace      string
+	providerClient dynamicclient.Interface
 
 	consumerDynamicLister  dynamiclister.Lister
 	consumerDynamicIndexer cache.Indexer
@@ -184,10 +165,6 @@ func (c *controller) enqueueUnstructured(logger klog.Logger, obj interface{}) {
 }
 
 func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
-	if !c.namespaced {
-		return // ignore
-	}
-
 	snKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)

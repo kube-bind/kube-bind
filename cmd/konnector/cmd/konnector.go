@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -66,25 +67,13 @@ func New() *cobra.Command {
 			if i := strings.Index(ver, "bind-"); i != -1 {
 				ver = ver[i+5:] // example: v1.25.2+kubectl-bind-v0.0.7-52-g8fee0baeaff3aa
 			}
-			logging := klog.FromContext(ctx)
-			logging.Info("Starting konnector", "version", ver)
+			logger := klog.FromContext(ctx)
+			logger.Info("Starting konnector", "version", ver)
 
-			// install/upgrade CRDs
+			// create clients
 			cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{
 				ExplicitPath: options.KubeConfigPath,
 			}, nil).ClientConfig()
-			apiextensionsClient, err := apiextensionsclient.NewForConfig(cfg)
-			if err != nil {
-				return err
-			}
-			if err := crd.Create(ctx,
-				apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
-				metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "servicebindings"},
-			); err != nil {
-				return err
-			}
-
-			// construct informer factories
 			if err != nil {
 				return err
 			}
@@ -96,6 +85,20 @@ func New() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			apiextensionsClient, err := apiextensionsclient.NewForConfig(cfg)
+			if err != nil {
+				return err
+			}
+
+			// install/upgrade CRDs
+			if err := crd.Create(ctx,
+				apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
+				metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "servicebindings"},
+			); err != nil {
+				return err
+			}
+
+			// construct informer factories
 			kubeInformers := kubeinformers.NewSharedInformerFactory(kubeClient, time.Minute*30)
 			bindInformers := bindinformers.NewSharedInformerFactory(bindClient, time.Minute*30)
 			apiextensionsInformers := apiextensionsinformers.NewSharedInformerFactory(apiextensionsClient, time.Minute*30)
@@ -112,23 +115,27 @@ func New() *cobra.Command {
 				return err
 			}
 
-			// start informer factories
-			kubeInformers.Start(ctx.Done())
-			bindInformers.Start(ctx.Done())
-			apiextensionsInformers.Start(ctx.Done())
-			kubeSynced := kubeInformers.WaitForCacheSync(ctx.Done())
-			kubeBindSynced := bindInformers.WaitForCacheSync(ctx.Done())
-			apiextensionsSynced := apiextensionsInformers.WaitForCacheSync(ctx.Done())
+			logger.Info("trying to acquire the lock")
+			lock := NewLock(kubeClient, options.LeaseLockNamespace, options.LeaseLockName, options.LeaseLockIdentity)
+			runLeaderElection(ctx, lock, options.LeaseLockIdentity, func(ctx context.Context) {
+				// start informer factories
+				logger.Info("starting informers")
+				kubeInformers.Start(ctx.Done())
+				bindInformers.Start(ctx.Done())
+				apiextensionsInformers.Start(ctx.Done())
+				kubeSynced := kubeInformers.WaitForCacheSync(ctx.Done())
+				kubeBindSynced := bindInformers.WaitForCacheSync(ctx.Done())
+				apiextensionsSynced := apiextensionsInformers.WaitForCacheSync(ctx.Done())
 
-			logging.Info("local informers are synced",
-				"kubeSynced", fmt.Sprintf("%v", kubeSynced),
-				"kubeBindSynced", fmt.Sprintf("%v", kubeBindSynced),
-				"apiextensionsSynced", fmt.Sprintf("%v", apiextensionsSynced),
-			)
+				logger.Info("local informers are synced",
+					"kubeSynced", fmt.Sprintf("%v", kubeSynced),
+					"kubeBindSynced", fmt.Sprintf("%v", kubeBindSynced),
+					"apiextensionsSynced", fmt.Sprintf("%v", apiextensionsSynced),
+				)
 
-			go k.Start(ctx, 2)
-
-			<-ctx.Done()
+				logger.Info("starting konnector controller")
+				k.Start(ctx, 2)
+			})
 
 			return nil
 		},

@@ -17,6 +17,8 @@ limitations under the License.
 package options
 
 import (
+	"fmt"
+	"math/rand"
 	"os"
 
 	"github.com/spf13/pflag"
@@ -28,6 +30,10 @@ import (
 type Options struct {
 	KubeConfigPath string
 
+	LeaseLockName      string
+	LeaseLockNamespace string
+	LeaseLockIdentity  string
+
 	Logs *logs.Options
 }
 
@@ -36,20 +42,36 @@ func NewOptions() *Options {
 	logs := logs.NewOptions()
 	logs.Verbosity = logsv1.VerbosityLevel(2)
 
-	return &Options{
+	opts := &Options{
 		Logs: logs,
 
 		KubeConfigPath: os.Getenv("KUBECONFIG"),
+
+		LeaseLockName:      "kube-bind",
+		LeaseLockNamespace: os.Getenv("POD_NAMESPACE"),
+		LeaseLockIdentity:  os.Getenv("POD_NAME"),
 	}
+
+	if opts.LeaseLockNamespace == "" {
+		opts.LeaseLockNamespace = "kube-system"
+	}
+
+	return opts
 }
 
 func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	logsv1.AddFlags(options.Logs, fs)
 
 	fs.StringVar(&options.KubeConfigPath, "kubeconfig", options.KubeConfigPath, "Kubeconfig file for the local cluster.")
+	fs.StringVar(&options.LeaseLockName, "lease-name", options.LeaseLockName, "Name of lease lock")
+	fs.StringVar(&options.LeaseLockNamespace, "lease-namespace", options.LeaseLockNamespace, "Name of lease lock namespace")
 }
 
 func (options *Options) Complete() error {
+	if options.LeaseLockIdentity == "" {
+		options.LeaseLockIdentity = fmt.Sprintf("%d", rand.Int31())
+	}
+
 	return nil
 }
 

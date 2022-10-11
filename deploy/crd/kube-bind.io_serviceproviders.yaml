@@ -5,23 +5,22 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: serviceproviderbindingrequests.kube-bind.io
+  name: serviceproviders.kube-bind.io
 spec:
   group: kube-bind.io
   names:
-    kind: ServiceProviderBindingRequest
-    listKind: ServiceProviderBindingRequestList
-    plural: serviceproviderbindingrequests
+    kind: ServiceProvider
+    listKind: ServiceProviderList
+    plural: serviceproviders
     shortNames:
     - sbr
-    singular: serviceproviderbindingrequest
+    singular: serviceprovider
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ServiceProviderBindingRequest is the object that represents the
-          ServiceProviderBindingRequest.
+        description: ServiceProvider is the object that represents the ServiceProvider.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

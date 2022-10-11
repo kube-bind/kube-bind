@@ -70,7 +70,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		if c, found := r.syncContext[name]; found {
 			logger.V(1).Info("Stopping ServiceExportResource sync", "reason", "ServiceExportResource deleted")
 			c.cancel()
-			delete(r.syncContext, resource.Name)
+			delete(r.syncContext, name)
 		}
 		return nil
 	}

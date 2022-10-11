@@ -37,10 +37,6 @@ func (c *FakeKubeBindV1alpha1) ServiceBindings() v1alpha1.ServiceBindingInterfac
 	return &FakeServiceBindings{c}
 }
 
-func (c *FakeKubeBindV1alpha1) ServiceBindingRequests(namespace string) v1alpha1.ServiceBindingRequestInterface {
-	return &FakeServiceBindingRequests{c, namespace}
-}
-
 func (c *FakeKubeBindV1alpha1) ServiceExports(namespace string) v1alpha1.ServiceExportInterface {
 	return &FakeServiceExports{c, namespace}
 }
@@ -51,6 +47,10 @@ func (c *FakeKubeBindV1alpha1) ServiceExportResources(namespace string) v1alpha1
 
 func (c *FakeKubeBindV1alpha1) ServiceNamespaces(namespace string) v1alpha1.ServiceNamespaceInterface {
 	return &FakeServiceNamespaces{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha1) ServiceProviderBindingRequests(namespace string) v1alpha1.ServiceProviderBindingRequestInterface {
+	return &FakeServiceProviderBindingRequests{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

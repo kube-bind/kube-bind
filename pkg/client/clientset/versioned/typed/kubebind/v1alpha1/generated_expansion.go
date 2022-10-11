@@ -22,10 +22,10 @@ type ClusterBindingExpansion interface{}
 
 type ServiceBindingExpansion interface{}
 
-type ServiceBindingRequestExpansion interface{}
-
 type ServiceExportExpansion interface{}
 
 type ServiceExportResourceExpansion interface{}
 
 type ServiceNamespaceExpansion interface{}
+
+type ServiceProviderBindingRequestExpansion interface{}

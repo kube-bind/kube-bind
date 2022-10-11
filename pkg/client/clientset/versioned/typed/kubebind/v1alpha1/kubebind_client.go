@@ -31,10 +31,10 @@ type KubeBindV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	ClusterBindingsGetter
 	ServiceBindingsGetter
-	ServiceBindingRequestsGetter
 	ServiceExportsGetter
 	ServiceExportResourcesGetter
 	ServiceNamespacesGetter
+	ServiceProviderBindingRequestsGetter
 }
 
 // KubeBindV1alpha1Client is used to interact with features provided by the kube-bind.io group.
@@ -50,10 +50,6 @@ func (c *KubeBindV1alpha1Client) ServiceBindings() ServiceBindingInterface {
 	return newServiceBindings(c)
 }
 
-func (c *KubeBindV1alpha1Client) ServiceBindingRequests(namespace string) ServiceBindingRequestInterface {
-	return newServiceBindingRequests(c, namespace)
-}
-
 func (c *KubeBindV1alpha1Client) ServiceExports(namespace string) ServiceExportInterface {
 	return newServiceExports(c, namespace)
 }
@@ -64,6 +60,10 @@ func (c *KubeBindV1alpha1Client) ServiceExportResources(namespace string) Servic
 
 func (c *KubeBindV1alpha1Client) ServiceNamespaces(namespace string) ServiceNamespaceInterface {
 	return newServiceNamespaces(c, namespace)
+}
+
+func (c *KubeBindV1alpha1Client) ServiceProviderBindingRequests(namespace string) ServiceProviderBindingRequestInterface {
+	return newServiceProviderBindingRequests(c, namespace)
 }
 
 // NewForConfig creates a new KubeBindV1alpha1Client for the given config.

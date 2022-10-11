@@ -139,7 +139,6 @@ func NewController(
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
-	namespace      string
 	providerClient dynamicclient.Interface
 
 	consumerDynamicLister  dynamiclister.Lister

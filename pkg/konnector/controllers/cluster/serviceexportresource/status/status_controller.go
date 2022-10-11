@@ -321,7 +321,7 @@ func (c *controller) removeDownstreamFinalizer(ctx context.Context, obj *unstruc
 	if found {
 		logger.V(2).Info("removing finalizer from downstream object")
 		obj = obj.DeepCopy()
-		obj.SetFinalizers(append(obj.GetFinalizers(), kubebindv1alpha1.DownstreamFinalizer))
+		obj.SetFinalizers(finalizers)
 		var err error
 		if obj, err = c.consumerClient.Resource(c.gvr).Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{}); err != nil && !errors.IsNotFound(err) {
 			return nil, err

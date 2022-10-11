@@ -21,24 +21,24 @@ import (
 	"fmt"
 	"time"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
-	"k8s.io/client-go/rest"
-	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 )
 
 const (
@@ -137,7 +137,7 @@ type controller struct {
 	serviceNamespaceIndexer cache.Indexer
 
 	serviceExportLister  bindlisters.ServiceExportResourceLister
-	serviceExportIndexer cache.Indexer
+	serviceExportIndexer cache.Indexer // nolint:unused
 
 	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister]
 	crdInformer            dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister]

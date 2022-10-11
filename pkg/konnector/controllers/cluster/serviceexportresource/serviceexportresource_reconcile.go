@@ -20,24 +20,24 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"time"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	runtimeschema "k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/runtime"
+	dynamicclient "k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
-	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource/spec"
-	runtimeschema "k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/dynamic/dynamicinformer"
-	"time"
-	dynamicclient "k8s.io/client-go/dynamic"
-	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
-	"k8s.io/apimachinery/pkg/util/runtime"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource/spec"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
 type reconciler struct {
@@ -168,7 +168,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 			break
 		}
 	}
-	gvr := runtimeschema.GroupVersionResource{resource.Spec.Group, syncVersion, resource.Spec.Names.Plural}
+	gvr := runtimeschema.GroupVersionResource{Group: resource.Spec.Group, Version: syncVersion, Resource: resource.Spec.Names.Plural}
 
 	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
 	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)

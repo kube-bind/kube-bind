@@ -44,8 +44,8 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/namespacedeletion"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/servicebinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport"
-	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
 const (

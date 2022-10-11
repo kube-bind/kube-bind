@@ -226,7 +226,7 @@ func (r *reconciler) removeDownstreamFinalizer(ctx context.Context, obj *unstruc
 	if found {
 		logger.V(2).Info("removing finalizer from downstream object")
 		obj = obj.DeepCopy()
-		obj.SetFinalizers(append(obj.GetFinalizers(), kubebindv1alpha1.DownstreamFinalizer))
+		obj.SetFinalizers(finalizers)
 		var err error
 		if obj, err = r.updateConsumerObject(ctx, obj); err != nil {
 			return nil, err

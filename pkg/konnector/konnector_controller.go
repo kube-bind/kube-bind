@@ -248,6 +248,8 @@ func (k *controller) Start(ctx context.Context, numThreads int) {
 }
 
 func (c *controller) startWorker(ctx context.Context) {
+	defer runtime.HandleCrash()
+
 	for c.processNextWorkItem(ctx) {
 	}
 }

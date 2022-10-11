@@ -1,0 +1,83 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.10.0
+  creationTimestamp: null
+  name: serviceproviders.kube-bind.io
+spec:
+  group: kube-bind.io
+  names:
+    kind: ServiceProvider
+    listKind: ServiceProviderList
+    plural: serviceproviders
+    shortNames:
+    - sbr
+    singular: serviceprovider
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: ServiceProvider is the object that represents the ServiceProvider.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: spec represents the service binding requestSpec spec
+            properties:
+              authenticatedClientURL:
+                description: 'AuthenticatedClientURL is the service provider url where
+                  the service consumer will use to authenticate against the service
+                  provider in case of using OIDC mode made, e.g: www.mangodb.com/kubernetes/authorize.'
+                minLength: 1
+                type: string
+              providerPrettyName:
+                description: 'providerPrettyName is the pretty name of the service
+                  provider where the ServiceBinding is eventually bound. e.g: MongoDB.Inc'
+                minLength: 1
+                type: string
+              serviceProviderSpecSpec:
+                description: serviceProviderSpec contains all the data the service
+                  provider needs to conduct the chosen service by the user. An example
+                  of those specs could be the resources that the user has chosen to
+                  use.
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+            required:
+            - authenticatedClientURL
+            - providerPrettyName
+            type: object
+          status:
+            description: status contains reconciliation information for the service
+              binding request.
+            properties:
+              errorMessage:
+                description: errorMessage contains a default error message in case
+                  the controller encountered an error. Will be reset if the error
+                  was resolved.
+                type: string
+              errorReason:
+                description: errorReason contains a error reason in case the controller
+                  encountered an error. Will be reset if the error was resolved.
+                type: string
+              lastUpdated:
+                format: date-time
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

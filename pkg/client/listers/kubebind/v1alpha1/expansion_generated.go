@@ -30,14 +30,6 @@ type ClusterBindingNamespaceListerExpansion interface{}
 // ServiceBindingLister.
 type ServiceBindingListerExpansion interface{}
 
-// ServiceBindingRequestListerExpansion allows custom methods to be added to
-// ServiceBindingRequestLister.
-type ServiceBindingRequestListerExpansion interface{}
-
-// ServiceBindingRequestNamespaceListerExpansion allows custom methods to be added to
-// ServiceBindingRequestNamespaceLister.
-type ServiceBindingRequestNamespaceListerExpansion interface{}
-
 // ServiceExportListerExpansion allows custom methods to be added to
 // ServiceExportLister.
 type ServiceExportListerExpansion interface{}
@@ -61,3 +53,11 @@ type ServiceNamespaceListerExpansion interface{}
 // ServiceNamespaceNamespaceListerExpansion allows custom methods to be added to
 // ServiceNamespaceNamespaceLister.
 type ServiceNamespaceNamespaceListerExpansion interface{}
+
+// ServiceProviderListerExpansion allows custom methods to be added to
+// ServiceProviderLister.
+type ServiceProviderListerExpansion interface{}
+
+// ServiceProviderNamespaceListerExpansion allows custom methods to be added to
+// ServiceProviderNamespaceLister.
+type ServiceProviderNamespaceListerExpansion interface{}

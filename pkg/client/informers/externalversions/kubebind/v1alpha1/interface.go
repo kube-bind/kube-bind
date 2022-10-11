@@ -28,14 +28,14 @@ type Interface interface {
 	ClusterBindings() ClusterBindingInformer
 	// ServiceBindings returns a ServiceBindingInformer.
 	ServiceBindings() ServiceBindingInformer
-	// ServiceBindingRequests returns a ServiceBindingRequestInformer.
-	ServiceBindingRequests() ServiceBindingRequestInformer
 	// ServiceExports returns a ServiceExportInformer.
 	ServiceExports() ServiceExportInformer
 	// ServiceExportResources returns a ServiceExportResourceInformer.
 	ServiceExportResources() ServiceExportResourceInformer
 	// ServiceNamespaces returns a ServiceNamespaceInformer.
 	ServiceNamespaces() ServiceNamespaceInformer
+	// ServiceProviders returns a ServiceProviderInformer.
+	ServiceProviders() ServiceProviderInformer
 }
 
 type version struct {
@@ -59,11 +59,6 @@ func (v *version) ServiceBindings() ServiceBindingInformer {
 	return &serviceBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
-// ServiceBindingRequests returns a ServiceBindingRequestInformer.
-func (v *version) ServiceBindingRequests() ServiceBindingRequestInformer {
-	return &serviceBindingRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
 // ServiceExports returns a ServiceExportInformer.
 func (v *version) ServiceExports() ServiceExportInformer {
 	return &serviceExportInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
@@ -77,4 +72,9 @@ func (v *version) ServiceExportResources() ServiceExportResourceInformer {
 // ServiceNamespaces returns a ServiceNamespaceInformer.
 func (v *version) ServiceNamespaces() ServiceNamespaceInformer {
 	return &serviceNamespaceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceProviders returns a ServiceProviderInformer.
+func (v *version) ServiceProviders() ServiceProviderInformer {
+	return &serviceProviderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

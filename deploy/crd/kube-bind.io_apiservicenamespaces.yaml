@@ -5,16 +5,16 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: servicenamespaces.kube-bind.io
+  name: apiservicenamespaces.kube-bind.io
 spec:
   group: kube-bind.io
   names:
     categories:
     - kube-bindings
-    kind: ServiceNamespace
-    listKind: ServiceNamespaceList
-    plural: servicenamespaces
-    singular: servicenamespace
+    kind: APIServiceNamespace
+    listKind: APIServiceNamespaceList
+    plural: apiservicenamespaces
+    singular: apiservicenamespace
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -24,9 +24,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: "ServiceNamespace defines how consumer namespaces map to service
+        description: "APIServiceNamespace defines how consumer namespaces map to service
           namespaces. These objects are created by the konnector, and a service namespace
-          is then created by the service provider. \n The name of the ServiceNamespace
+          is then created by the service provider. \n The name of the APIServiceNamespace
           equals the namespace name in the consumer cluster."
         properties:
           apiVersion:

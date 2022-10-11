@@ -23,26 +23,26 @@ import (
 )
 
 const (
-	// ServiceExportConditionConnected means the ServiceExport has been connected to a ServiceBinding.
-	ServiceExportConditionConnected conditionsapi.ConditionType = "Connected"
+	// APIServiceExportConditionConnected means the APIServiceExport has been connected to a APIServiceBinding.
+	APIServiceExportConditionConnected conditionsapi.ConditionType = "Connected"
 
-	// ServiceExportConditionServiceBindingReady is set to true when the ServiceExport is ready.
-	ServiceExportConditionServiceBindingReady conditionsapi.ConditionType = "ExportReady"
+	// APIServiceExportConditionServiceBindingReady is set to true when the APIServiceExport is ready.
+	APIServiceExportConditionServiceBindingReady conditionsapi.ConditionType = "ExportReady"
 
-	// ServiceExportConditionResourcesValid is set to true when the ServiceExport's
+	// APIServiceExportConditionResourcesValid is set to true when the APIServiceExport's
 	// resources exist and are valid.
-	ServiceExportConditionResourcesValid conditionsapi.ConditionType = "ResourcesValid"
+	APIServiceExportConditionResourcesValid conditionsapi.ConditionType = "ResourcesValid"
 
-	// ServiceExportConditionSchemaInSync is set to true when the ServiceExport's
+	// APIServiceExportConditionSchemaInSync is set to true when the APIServiceExport's
 	// schema is applied to the consumer cluster.
-	ServiceExportConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"
+	APIServiceExportConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"
 
-	// ServiceExportConditionResourcesInSync is set to true when the ServiceExport's
+	// APIServiceExportConditionResourcesInSync is set to true when the APIServiceExport's
 	// resources are in sync with the CRDs.
-	ServiceExportConditionResourcesInSync conditionsapi.ConditionType = "ResourcesInSync"
+	APIServiceExportConditionResourcesInSync conditionsapi.ConditionType = "ResourcesInSync"
 )
 
-// ServiceExport specifies an API service to exported to a consumer cluster. The
+// APIServiceExport specifies an API service to exported to a consumer cluster. The
 // consumer cluster is defined by the ClusterBinding singleton in the same namespace.
 //
 // +crd
@@ -51,7 +51,7 @@ const (
 // +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type=="Ready")].status`,priority=0
-type ServiceExport struct {
+type APIServiceExport struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -59,29 +59,29 @@ type ServiceExport struct {
 	//
 	// +required
 	// +kubebuilder:validation:Required
-	Spec ServiceExportSpec `json:"spec"`
+	Spec APIServiceExportSpec `json:"spec"`
 
 	// status contains reconciliation information for the service binding export.
-	Status ServiceExportStatus `json:"status,omitempty"`
+	Status APIServiceExportStatus `json:"status,omitempty"`
 }
 
-func (in *ServiceExport) GetConditions() conditionsapi.Conditions {
+func (in *APIServiceExport) GetConditions() conditionsapi.Conditions {
 	return in.Status.Conditions
 }
 
-func (in *ServiceExport) SetConditions(conditions conditionsapi.Conditions) {
+func (in *APIServiceExport) SetConditions(conditions conditionsapi.Conditions) {
 	in.Status.Conditions = conditions
 }
 
-type ServiceExportSpec struct {
+type APIServiceExportSpec struct {
 	// resources are the resources to be bound into the consumer cluster.
 	//
 	// +listType=map
 	// +listMapKey=group
 	// +listMapKey=resource
-	Resources []ServiceExportGroupResource `json:"resources,omitempty"`
+	Resources []APIServiceExportGroupResource `json:"resources,omitempty"`
 
-	// scope is the scope of the ServiceExport. It can be either Cluster or Namespace.
+	// scope is the scope of the APIServiceExport. It can be either Cluster or Namespace.
 	//
 	// Cluster:    The konnector has permission to watch all namespaces at once and cluster-scoped resources.
 	//             This is more efficient than watching each namespace individually.
@@ -94,12 +94,12 @@ type ServiceExportSpec struct {
 	Scope Scope `json:"scope"`
 }
 
-type ServiceExportStatus struct {
-	// conditions is a list of conditions that apply to the ServiceExport.
+type APIServiceExportStatus struct {
+	// conditions is a list of conditions that apply to the APIServiceExport.
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
-type ServiceExportGroupResource struct {
+type APIServiceExportGroupResource struct {
 	GroupResource `json:",inline"`
 }
 
@@ -122,12 +122,12 @@ type GroupResource struct {
 	Resource string `json:"resource"`
 }
 
-// ServiceExportList is the objects list that represents the ServiceExport.
+// APIServiceExportList is the objects list that represents the APIServiceExport.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type ServiceExportList struct {
+type APIServiceExportList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []ServiceExport `json:"items"`
+	Items []APIServiceExport `json:"items"`
 }

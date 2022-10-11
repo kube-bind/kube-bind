@@ -58,8 +58,8 @@ func NewController(
 	heartbeatInterval time.Duration,
 	consumerConfig, providerConfig *rest.Config,
 	clusterBindingInformer bindinformers.ClusterBindingInformer,
-	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister],
-	serviceExportInformer bindinformers.ServiceExportInformer,
+	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
+	serviceExportInformer bindinformers.APIServiceExportInformer,
 	consumerSecretInformer, providerSecretInformer coreinformers.SecretInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
@@ -184,11 +184,11 @@ func NewController(
 			c.enqueueServiceExport(logger, obj)
 		},
 		UpdateFunc: func(old, newObj interface{}) {
-			oldExport, ok := old.(*kubebindv1alpha1.ServiceExport)
+			oldExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
 			if !ok {
 				return
 			}
-			newExport, ok := old.(*kubebindv1alpha1.ServiceExport)
+			newExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
 			if !ok {
 				return
 			}
@@ -220,9 +220,9 @@ type controller struct {
 	clusterBindingLister  bindlisters.ClusterBindingLister
 	clusterBindingIndexer cache.Indexer
 
-	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister]
+	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister]
 
-	serviceExportLister  bindlisters.ServiceExportLister
+	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
 
 	consumerSecretLister corelisters.SecretLister
@@ -303,7 +303,7 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	}
 
 	key := ns + "/cluster"
-	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "ServiceExport", "ServiceExportKey", seKey)
+	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "APIServiceExport", "ServiceExportKey", seKey)
 	c.queue.Add(key)
 }
 
@@ -401,10 +401,10 @@ func (c *controller) process(ctx context.Context, key string) error {
 		errs = append(errs, err)
 
 		// try to update service bindings
-		c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.ServiceBinding) {
+		c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.APIServiceBinding) {
 			conditions.MarkFalse(
 				binding,
-				kubebindv1alpha1.ServiceBindingConditionInformersSynced,
+				kubebindv1alpha1.APIServiceBindingConditionInformersSynced,
 				"ClusterBindingUpdateFailed",
 				conditionsapi.ConditionSeverityWarning,
 				"Failed to update service provider ClusterBinding: %v", err,
@@ -412,15 +412,15 @@ func (c *controller) process(ctx context.Context, key string) error {
 		})
 	} else {
 		// try to update service bindings
-		c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.ServiceBinding) {
-			conditions.MarkTrue(binding, kubebindv1alpha1.ServiceBindingConditionHeartbeating)
+		c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.APIServiceBinding) {
+			conditions.MarkTrue(binding, kubebindv1alpha1.APIServiceBindingConditionHeartbeating)
 		})
 	}
 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (c *controller) updateServiceBindings(ctx context.Context, update func(*kubebindv1alpha1.ServiceBinding)) {
+func (c *controller) updateServiceBindings(ctx context.Context, update func(*kubebindv1alpha1.APIServiceBinding)) {
 	logger := klog.FromContext(ctx)
 
 	objs, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.consumerSecretRefKey)
@@ -429,12 +429,12 @@ func (c *controller) updateServiceBindings(ctx context.Context, update func(*kub
 		return
 	}
 	for _, obj := range objs {
-		binding := obj.(*kubebindv1alpha1.ServiceBinding)
+		binding := obj.(*kubebindv1alpha1.APIServiceBinding)
 		orig := binding.DeepCopy()
 		update(binding)
 		if !reflect.DeepEqual(binding.Status.Conditions, orig.Status.Conditions) {
 			logger.V(2).Info("updating service binding", "binding", binding.Name)
-			if _, err := c.consumerBindClient.KubeBindV1alpha1().ServiceBindings().UpdateStatus(ctx, binding, metav1.UpdateOptions{}); err != nil {
+			if _, err := c.consumerBindClient.KubeBindV1alpha1().APIServiceBindings().UpdateStatus(ctx, binding, metav1.UpdateOptions{}); err != nil {
 				logger.Error(err, "failed to update service binding", "binding", binding.Name)
 				continue
 			}

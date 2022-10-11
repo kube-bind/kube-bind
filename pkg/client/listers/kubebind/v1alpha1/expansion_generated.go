@@ -18,6 +18,42 @@ limitations under the License.
 
 package v1alpha1
 
+// APIServiceBindingListerExpansion allows custom methods to be added to
+// APIServiceBindingLister.
+type APIServiceBindingListerExpansion interface{}
+
+// APIServiceExportListerExpansion allows custom methods to be added to
+// APIServiceExportLister.
+type APIServiceExportListerExpansion interface{}
+
+// APIServiceExportNamespaceListerExpansion allows custom methods to be added to
+// APIServiceExportNamespaceLister.
+type APIServiceExportNamespaceListerExpansion interface{}
+
+// APIServiceExportResourceListerExpansion allows custom methods to be added to
+// APIServiceExportResourceLister.
+type APIServiceExportResourceListerExpansion interface{}
+
+// APIServiceExportResourceNamespaceListerExpansion allows custom methods to be added to
+// APIServiceExportResourceNamespaceLister.
+type APIServiceExportResourceNamespaceListerExpansion interface{}
+
+// APIServiceNamespaceListerExpansion allows custom methods to be added to
+// APIServiceNamespaceLister.
+type APIServiceNamespaceListerExpansion interface{}
+
+// APIServiceNamespaceNamespaceListerExpansion allows custom methods to be added to
+// APIServiceNamespaceNamespaceLister.
+type APIServiceNamespaceNamespaceListerExpansion interface{}
+
+// APIServiceProviderListerExpansion allows custom methods to be added to
+// APIServiceProviderLister.
+type APIServiceProviderListerExpansion interface{}
+
+// APIServiceProviderNamespaceListerExpansion allows custom methods to be added to
+// APIServiceProviderNamespaceLister.
+type APIServiceProviderNamespaceListerExpansion interface{}
+
 // ClusterBindingListerExpansion allows custom methods to be added to
 // ClusterBindingLister.
 type ClusterBindingListerExpansion interface{}
@@ -25,39 +61,3 @@ type ClusterBindingListerExpansion interface{}
 // ClusterBindingNamespaceListerExpansion allows custom methods to be added to
 // ClusterBindingNamespaceLister.
 type ClusterBindingNamespaceListerExpansion interface{}
-
-// ServiceBindingListerExpansion allows custom methods to be added to
-// ServiceBindingLister.
-type ServiceBindingListerExpansion interface{}
-
-// ServiceExportListerExpansion allows custom methods to be added to
-// ServiceExportLister.
-type ServiceExportListerExpansion interface{}
-
-// ServiceExportNamespaceListerExpansion allows custom methods to be added to
-// ServiceExportNamespaceLister.
-type ServiceExportNamespaceListerExpansion interface{}
-
-// ServiceExportResourceListerExpansion allows custom methods to be added to
-// ServiceExportResourceLister.
-type ServiceExportResourceListerExpansion interface{}
-
-// ServiceExportResourceNamespaceListerExpansion allows custom methods to be added to
-// ServiceExportResourceNamespaceLister.
-type ServiceExportResourceNamespaceListerExpansion interface{}
-
-// ServiceNamespaceListerExpansion allows custom methods to be added to
-// ServiceNamespaceLister.
-type ServiceNamespaceListerExpansion interface{}
-
-// ServiceNamespaceNamespaceListerExpansion allows custom methods to be added to
-// ServiceNamespaceNamespaceLister.
-type ServiceNamespaceNamespaceListerExpansion interface{}
-
-// ServiceProviderListerExpansion allows custom methods to be added to
-// ServiceProviderLister.
-type ServiceProviderListerExpansion interface{}
-
-// ServiceProviderNamespaceListerExpansion allows custom methods to be added to
-// ServiceProviderNamespaceLister.
-type ServiceProviderNamespaceListerExpansion interface{}

@@ -5,18 +5,18 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: servicebindings.kube-bind.io
+  name: apiservicebindings.kube-bind.io
 spec:
   group: kube-bind.io
   names:
     categories:
     - kube-bindings
-    kind: ServiceBinding
-    listKind: ServiceBindingList
-    plural: servicebindings
+    kind: APIServiceBinding
+    listKind: APIServiceBindingList
+    plural: apiservicebindings
     shortNames:
     - sb
-    singular: servicebinding
+    singular: apiservicebinding
   scope: Cluster
   versions:
   - additionalPrinterColumns:
@@ -33,7 +33,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ServiceBinding binds an API service represented by a ServiceExport
+        description: APIServiceBinding binds an API service represented by a APIServiceExport
           in a service provider cluster into a consumer cluster. This object lives
           in the consumer cluster.
         properties:
@@ -54,8 +54,8 @@ spec:
               should be bound in the local consumer cluster.
             properties:
               export:
-                description: export is the name of the ServiceExport object in the
-                  service provider cluster.
+                description: export is the name of the APIServiceExport object in
+                  the service provider cluster.
                 minLength: 1
                 type: string
               kubeconfigSecretRef:
@@ -93,7 +93,7 @@ spec:
             properties:
               conditions:
                 description: conditions is a list of conditions that apply to the
-                  ServiceBinding.
+                  APIServiceBinding.
                 items:
                   description: Condition defines an observation of a object operational
                     state.
@@ -139,7 +139,7 @@ spec:
                 type: array
               providerPrettyName:
                 description: providerPrettyName is the pretty name of the service
-                  provider cluster. This can be shared among different ServiceBindings.
+                  provider cluster. This can be shared among different APIServiceBindings.
                 type: string
             type: object
         type: object

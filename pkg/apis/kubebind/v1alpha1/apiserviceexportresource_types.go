@@ -25,11 +25,11 @@ import (
 )
 
 const (
-	// ServiceExportResourceConditionSyncing means the resource is actively syncing.
-	ServiceExportResourrceConditionSyncing conditionsapi.ConditionType = "Syncing"
+	// APIServiceExportResourrceConditionSyncing means the resource is actively syncing.
+	APIServiceExportResourrceConditionSyncing conditionsapi.ConditionType = "Syncing"
 )
 
-// ServiceExportResource specifies the resource to be exported. It is mostly a CRD::
+// APIServiceExportResource specifies the resource to be exported. It is mostly a CRD::
 // - the spec is a CRD spec, but without webhooks
 // - the status reflects that on the consumer cluster
 //
@@ -39,29 +39,29 @@ const (
 // +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Established",type="string",JSONPath=`.status.conditions[?(@.type=="Established")].status`,priority=5
-type ServiceExportResource struct {
+type APIServiceExportResource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec specifies the resource.
 	// +required
 	// +kubebuilder:validation:Required
-	Spec ServiceExportResourceSpec `json:"spec"`
+	Spec APIServiceExportResourceSpec `json:"spec"`
 
 	// status contains reconciliation information for the resource.
-	Status ServiceExportResourceStatus `json:"status,omitempty"`
+	Status APIServiceExportResourceStatus `json:"status,omitempty"`
 }
 
-func (in *ServiceExportResource) GetConditions() conditionsapi.Conditions {
+func (in *APIServiceExportResource) GetConditions() conditionsapi.Conditions {
 	return in.Status.Conditions
 }
 
-func (in *ServiceExportResource) SetConditions(conditions conditionsapi.Conditions) {
+func (in *APIServiceExportResource) SetConditions(conditions conditionsapi.Conditions) {
 	in.Status.Conditions = conditions
 }
 
-// ServiceExportResourceSpec defines the desired state of ServiceExportResource.
-type ServiceExportResourceSpec struct {
+// APIServiceExportResourceSpec defines the desired state of APIServiceExportResource.
+type APIServiceExportResourceSpec struct {
 	// group is the API group of the defined custom resource. Empty string means the
 	// core API group. 	The resources are served under `/apis/<group>/...` or `/api` for the core group.
 	//
@@ -88,11 +88,11 @@ type ServiceExportResourceSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MinItems=1
-	Versions []ServiceExportResourceVersion `json:"versions"`
+	Versions []APIServiceExportResourceVersion `json:"versions"`
 }
 
-// ServiceExportResourceVersion describes one API version of a resource.
-type ServiceExportResourceVersion struct {
+// APIServiceExportResourceVersion describes one API version of a resource.
+type APIServiceExportResourceVersion struct {
 	// name is the version name, e.g. “v1”, “v2beta1”, etc.
 	// The custom resources are served under this version at `/apis/<group>/<version>/...` if `served` is true.
 	//
@@ -131,7 +131,7 @@ type ServiceExportResourceVersion struct {
 	//
 	// +required
 	// +kubebuilder:validation:Required
-	Schema ServiceExportResourceSchema `json:"schema"`
+	Schema APIServiceExportResourceSchema `json:"schema"`
 	// subresources specify what subresources this version of the defined custom resource have.
 	//
 	// +optional
@@ -146,7 +146,7 @@ type ServiceExportResourceVersion struct {
 	AdditionalPrinterColumns []apiextensionsv1.CustomResourceColumnDefinition `json:"additionalPrinterColumns,omitempty"`
 }
 
-type ServiceExportResourceSchema struct {
+type APIServiceExportResourceSchema struct {
 	// openAPIV3Schema is the OpenAPI v3 schema to use for validation and pruning.
 	//
 	// +kubebuilder:pruning:PreserveUnknownFields
@@ -156,9 +156,9 @@ type ServiceExportResourceSchema struct {
 	OpenAPIV3Schema runtime.RawExtension `json:"openAPIV3Schema"`
 }
 
-// ServiceExportResourceStatus stores status information about a ServiceExportResource. It
+// APIServiceExportResourceStatus stores status information about a APIServiceExportResource. It
 // reflects the status of the CRD of the consumer cluster.
-type ServiceExportResourceStatus struct {
+type APIServiceExportResourceStatus struct {
 	// acceptedNames are the names that are actually being used to serve discovery.
 	// They may be different than the names in spec.
 	// +optional
@@ -173,17 +173,17 @@ type ServiceExportResourceStatus struct {
 	// +optional
 	StoredVersions []string `json:"storedVersions"`
 
-	// conditions is a list of conditions that apply to the ServiceExportResource. It is
+	// conditions is a list of conditions that apply to the APIServiceExportResource. It is
 	// updated by the konnector on the consumer cluster.
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
-// ServiceExportResourceList is the objects list that represents the ServiceExport.
+// APIServiceExportResourceList is the objects list that represents the APIServiceExport.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type ServiceExportResourceList struct {
+type APIServiceExportResourceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []ServiceExportResource `json:"items"`
+	Items []APIServiceExportResource `json:"items"`
 }

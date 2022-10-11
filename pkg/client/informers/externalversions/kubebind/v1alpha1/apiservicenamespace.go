@@ -33,58 +33,59 @@ import (
 	v1alpha1 "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 )
 
-// ServiceBindingInformer provides access to a shared informer and lister for
-// ServiceBindings.
-type ServiceBindingInformer interface {
+// APIServiceNamespaceInformer provides access to a shared informer and lister for
+// APIServiceNamespaces.
+type APIServiceNamespaceInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.ServiceBindingLister
+	Lister() v1alpha1.APIServiceNamespaceLister
 }
 
-type serviceBindingInformer struct {
+type aPIServiceNamespaceInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
+	namespace        string
 }
 
-// NewServiceBindingInformer constructs a new informer for ServiceBinding type.
+// NewAPIServiceNamespaceInformer constructs a new informer for APIServiceNamespace type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewServiceBindingInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredServiceBindingInformer(client, resyncPeriod, indexers, nil)
+func NewAPIServiceNamespaceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredAPIServiceNamespaceInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredServiceBindingInformer constructs a new informer for ServiceBinding type.
+// NewFilteredAPIServiceNamespaceInformer constructs a new informer for APIServiceNamespace type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredServiceBindingInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredAPIServiceNamespaceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha1().ServiceBindings().List(context.TODO(), options)
+				return client.KubeBindV1alpha1().APIServiceNamespaces(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha1().ServiceBindings().Watch(context.TODO(), options)
+				return client.KubeBindV1alpha1().APIServiceNamespaces(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubebindv1alpha1.ServiceBinding{},
+		&kubebindv1alpha1.APIServiceNamespace{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *serviceBindingInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredServiceBindingInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *aPIServiceNamespaceInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredAPIServiceNamespaceInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *serviceBindingInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubebindv1alpha1.ServiceBinding{}, f.defaultInformer)
+func (f *aPIServiceNamespaceInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&kubebindv1alpha1.APIServiceNamespace{}, f.defaultInformer)
 }
 
-func (f *serviceBindingInformer) Lister() v1alpha1.ServiceBindingLister {
-	return v1alpha1.NewServiceBindingLister(f.Informer().GetIndexer())
+func (f *aPIServiceNamespaceInformer) Lister() v1alpha1.APIServiceNamespaceLister {
+	return v1alpha1.NewAPIServiceNamespaceLister(f.Informer().GetIndexer())
 }

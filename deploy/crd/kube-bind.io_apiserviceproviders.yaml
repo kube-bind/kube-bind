@@ -5,22 +5,22 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: serviceproviders.kube-bind.io
+  name: apiserviceproviders.kube-bind.io
 spec:
   group: kube-bind.io
   names:
-    kind: ServiceProvider
-    listKind: ServiceProviderList
-    plural: serviceproviders
+    kind: APIServiceProvider
+    listKind: APIServiceProviderList
+    plural: apiserviceproviders
     shortNames:
     - sbr
-    singular: serviceprovider
+    singular: apiserviceprovider
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ServiceProvider is the object that represents the ServiceProvider.
+        description: APIServiceProvider is the object that represents the APIServiceProvider.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -45,7 +45,7 @@ spec:
                 type: string
               providerPrettyName:
                 description: 'providerPrettyName is the pretty name of the service
-                  provider where the ServiceBinding is eventually bound. e.g: MongoDB.Inc'
+                  provider where the APIServiceBinding is eventually bound. e.g: MongoDB.Inc'
                 minLength: 1
                 type: string
               serviceProviderSpecSpec:

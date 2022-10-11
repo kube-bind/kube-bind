@@ -26,11 +26,11 @@ import (
 )
 
 type reconciler struct {
-	listServiceExports          func(ns, group, resource string) ([]*kubebindv1alpha1.ServiceExport, error)
+	listServiceExports          func(ns, group, resource string) ([]*kubebindv1alpha1.APIServiceExport, error)
 	deleteServiceExportResource func(ctx context.Context, ns, name string) error
 }
 
-func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.ServiceExportResource) error {
+func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.APIServiceExportResource) error {
 	logger := klog.FromContext(ctx)
 
 	exports, err := r.listServiceExports(export.Namespace, export.Spec.Group, export.Spec.Names.Plural)
@@ -39,7 +39,7 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 	}
 	if len(exports) == 0 {
 		// No ServiceExports => delete SER
-		logger.V(1).Info("Deleting ServiceExportResource because not ServiceExport needs it")
+		logger.V(1).Info("Deleting APIServiceExportResource because not APIServiceExport needs it")
 		if err := r.deleteServiceExportResource(ctx, export.Namespace, export.Name); err != nil && !errors.IsNotFound(err) {
 			return err
 		}

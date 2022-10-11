@@ -32,13 +32,13 @@ import (
 
 type reconciler struct {
 	getCRD                      func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	getServiceExportResource    func(ns, name string) (*kubebindv1alpha1.ServiceExportResource, error)
-	createServiceExportResource func(ctx context.Context, resource *kubebindv1alpha1.ServiceExportResource) (*kubebindv1alpha1.ServiceExportResource, error)
-	updateServiceExportResource func(ctx context.Context, resource *kubebindv1alpha1.ServiceExportResource) (*kubebindv1alpha1.ServiceExportResource, error)
+	getServiceExportResource    func(ns, name string) (*kubebindv1alpha1.APIServiceExportResource, error)
+	createServiceExportResource func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error)
+	updateServiceExportResource func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error)
 	deleteServiceExportResource func(ctx context.Context, ns, name string) error
 }
 
-func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.ServiceExport) error {
+func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
 	logger := klog.FromContext(ctx)
 	var errs []error
 
@@ -58,7 +58,7 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 		if crd == nil {
 			if ser != nil {
 				// CRD missing => delete SER too
-				logger.V(1).Info("Deleting ServiceExportResource because CRD is missing")
+				logger.V(1).Info("Deleting APIServiceExportResource because CRD is missing")
 				if err := r.deleteServiceExportResource(ctx, export.Namespace, name); err != nil && !errors.IsNotFound(err) {
 					return err
 				}
@@ -67,7 +67,7 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 			if resourceInSync {
 				conditions.MarkFalse(
 					export,
-					kubebindv1alpha1.ServiceExportConditionResourcesInSync,
+					kubebindv1alpha1.APIServiceExportConditionResourcesInSync,
 					"CustomResourceDefinitionMissing",
 					conditionsapi.ConditionSeverityError,
 					"Referenced CustomResourceDefinition %s does not exist",
@@ -83,10 +83,10 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 			if resourceInSync {
 				conditions.MarkFalse(
 					export,
-					kubebindv1alpha1.ServiceExportConditionResourcesInSync,
+					kubebindv1alpha1.APIServiceExportConditionResourcesInSync,
 					"CustomResourceDefinitionUpdateFailed",
 					conditionsapi.ConditionSeverityError,
-					"CustomResourceDefinition %s cannot be converted into a ServiceExportResource: %s",
+					"CustomResourceDefinition %s cannot be converted into a APIServiceExportResource: %s",
 					name, err,
 				)
 				resourceInSync = false
@@ -96,15 +96,15 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 		resource.Namespace = export.Namespace
 
 		if ser == nil {
-			// ServiceExportResource missing
-			logger.V(1).Info("Creating ServiceExportResource")
+			// APIServiceExportResource missing
+			logger.V(1).Info("Creating APIServiceExportResource")
 			if _, err := r.createServiceExportResource(ctx, resource); err != nil {
 				errs = append(errs, err)
 				continue
 			}
 		} else {
-			// both exist, update ServiceExportResource
-			logger.V(1).Info("Updating ServiceExportResource")
+			// both exist, update APIServiceExportResource
+			logger.V(1).Info("Updating APIServiceExportResource")
 			resource.ObjectMeta = ser.ObjectMeta
 			if _, err := r.updateServiceExportResource(ctx, resource); err != nil {
 				errs = append(errs, err)
@@ -114,7 +114,7 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Ser
 	}
 
 	if resourceInSync {
-		conditions.MarkTrue(export, kubebindv1alpha1.ServiceExportConditionResourcesInSync)
+		conditions.MarkTrue(export, kubebindv1alpha1.APIServiceExportConditionResourcesInSync)
 	}
 
 	return utilerrors.NewAggregate(errs)

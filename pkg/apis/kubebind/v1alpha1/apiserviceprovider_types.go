@@ -21,26 +21,26 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-// ServiceProvider is the object that represents the ServiceProvider.
+// APIServiceProvider is the object that represents the APIServiceProvider.
 //
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource:shortName=sbr
 // +kubebuilder:subresource:status
-type ServiceProvider struct {
+type APIServiceProvider struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec represents the service binding requestSpec spec
-	Spec ServiceProviderSpec `json:"spec"`
+	Spec APIServiceProviderSpec `json:"spec"`
 
 	// status contains reconciliation information for the service binding request.
-	Status ServiceProviderStatus `json:"status,omitempty"`
+	Status APIServiceProviderStatus `json:"status,omitempty"`
 }
 
-// ServiceProviderSpec represents the data in the newly created ServiceProvider
-type ServiceProviderSpec struct {
+// APIServiceProviderSpec represents the data in the newly created APIServiceProvider
+type APIServiceProviderSpec struct {
 	// AuthenticatedClientURL is the service provider url where the service consumer will use to authenticate against
 	// the service provider in case of using OIDC mode made, e.g: www.mangodb.com/kubernetes/authorize.
 	//
@@ -49,7 +49,7 @@ type ServiceProviderSpec struct {
 	// +kubebuilder:validation:MinLength=1
 	AuthenticatedClientURL string `json:"authenticatedClientURL"`
 
-	// providerPrettyName is the pretty name of the service provider where the ServiceBinding is eventually bound. e.g:
+	// providerPrettyName is the pretty name of the service provider where the APIServiceBinding is eventually bound. e.g:
 	// MongoDB.Inc
 	//
 	// +required
@@ -62,8 +62,8 @@ type ServiceProviderSpec struct {
 	ServiceProviderSpec runtime.RawExtension `json:"serviceProviderSpecSpec,omitempty"`
 }
 
-// ServiceProviderStatus stores status information about a service binding request.
-type ServiceProviderStatus struct {
+// APIServiceProviderStatus stores status information about a service binding request.
+type APIServiceProviderStatus struct {
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 
 	// errorMessage contains a default error message in case the controller encountered an error.
@@ -74,12 +74,12 @@ type ServiceProviderStatus struct {
 	ErrorReason string `json:"errorReason,omitempty"`
 }
 
-// ServiceProviderList is the objects list that represents the ServiceProvider.
+// APIServiceProviderList is the objects list that represents the APIServiceProvider.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type ServiceProviderList struct {
+type APIServiceProviderList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []ServiceProvider `json:"items"`
+	Items []APIServiceProvider `json:"items"`
 }

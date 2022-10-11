@@ -29,28 +29,28 @@ type FakeKubeBindV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeKubeBindV1alpha1) APIServiceBindings() v1alpha1.APIServiceBindingInterface {
+	return &FakeAPIServiceBindings{c}
+}
+
+func (c *FakeKubeBindV1alpha1) APIServiceExports(namespace string) v1alpha1.APIServiceExportInterface {
+	return &FakeAPIServiceExports{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha1) APIServiceExportResources(namespace string) v1alpha1.APIServiceExportResourceInterface {
+	return &FakeAPIServiceExportResources{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha1) APIServiceNamespaces(namespace string) v1alpha1.APIServiceNamespaceInterface {
+	return &FakeAPIServiceNamespaces{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha1) APIServiceProviders(namespace string) v1alpha1.APIServiceProviderInterface {
+	return &FakeAPIServiceProviders{c, namespace}
+}
+
 func (c *FakeKubeBindV1alpha1) ClusterBindings(namespace string) v1alpha1.ClusterBindingInterface {
 	return &FakeClusterBindings{c, namespace}
-}
-
-func (c *FakeKubeBindV1alpha1) ServiceBindings() v1alpha1.ServiceBindingInterface {
-	return &FakeServiceBindings{c}
-}
-
-func (c *FakeKubeBindV1alpha1) ServiceExports(namespace string) v1alpha1.ServiceExportInterface {
-	return &FakeServiceExports{c, namespace}
-}
-
-func (c *FakeKubeBindV1alpha1) ServiceExportResources(namespace string) v1alpha1.ServiceExportResourceInterface {
-	return &FakeServiceExportResources{c, namespace}
-}
-
-func (c *FakeKubeBindV1alpha1) ServiceNamespaces(namespace string) v1alpha1.ServiceNamespaceInterface {
-	return &FakeServiceNamespaces{c, namespace}
-}
-
-func (c *FakeKubeBindV1alpha1) ServiceProviders(namespace string) v1alpha1.ServiceProviderInterface {
-	return &FakeServiceProviders{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

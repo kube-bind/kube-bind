@@ -5,16 +5,16 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: serviceexports.kube-bind.io
+  name: apiserviceexports.kube-bind.io
 spec:
   group: kube-bind.io
   names:
     categories:
     - kube-bindings
-    kind: ServiceExport
-    listKind: ServiceExportList
-    plural: serviceexports
-    singular: serviceexport
+    kind: APIServiceExport
+    listKind: APIServiceExportList
+    plural: apiserviceexports
+    singular: apiserviceexport
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -24,7 +24,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ServiceExport specifies an API service to exported to a consumer
+        description: APIServiceExport specifies an API service to exported to a consumer
           cluster. The consumer cluster is defined by the ClusterBinding singleton
           in the same namespace.
         properties:
@@ -70,8 +70,8 @@ spec:
                 - resource
                 x-kubernetes-list-type: map
               scope:
-                description: "scope is the scope of the ServiceExport. It can be either
-                  Cluster or Namespace. \n Cluster:    The konnector has permission
+                description: "scope is the scope of the APIServiceExport. It can be
+                  either Cluster or Namespace. \n Cluster:    The konnector has permission
                   to watch all namespaces at once and cluster-scoped resources. This
                   is more efficient than watching each namespace individually. Namespaced:
                   The konnector has permission to watch only single namespaces. This
@@ -93,7 +93,7 @@ spec:
             properties:
               conditions:
                 description: conditions is a list of conditions that apply to the
-                  ServiceExport.
+                  APIServiceExport.
                 items:
                   description: Condition defines an observation of a object operational
                     state.

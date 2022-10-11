@@ -56,7 +56,7 @@ func NewController(
 	providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
 	consumerDynamicInformer, providerDynamicInformer informers.GenericInformer,
-	serviceNamespaceInformer dynamic.Informer[bindlisters.ServiceNamespaceLister],
+	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister],
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -96,11 +96,11 @@ func NewController(
 
 		reconciler: reconciler{
 			providerNamespace: providerNamespace,
-			getServiceNamespace: func(name string) (*kubebindv1alpha1.ServiceNamespace, error) {
-				return serviceNamespaceInformer.Lister().ServiceNamespaces(providerNamespace).Get(name)
+			getServiceNamespace: func(name string) (*kubebindv1alpha1.APIServiceNamespace, error) {
+				return serviceNamespaceInformer.Lister().APIServiceNamespaces(providerNamespace).Get(name)
 			},
-			createServiceNamespace: func(ctx context.Context, sn *kubebindv1alpha1.ServiceNamespace) (*kubebindv1alpha1.ServiceNamespace, error) {
-				return providerBindClient.KubeBindV1alpha1().ServiceNamespaces(providerNamespace).Create(ctx, sn, metav1.CreateOptions{})
+			createServiceNamespace: func(ctx context.Context, sn *kubebindv1alpha1.APIServiceNamespace) (*kubebindv1alpha1.APIServiceNamespace, error) {
+				return providerBindClient.KubeBindV1alpha1().APIServiceNamespaces(providerNamespace).Create(ctx, sn, metav1.CreateOptions{})
 			},
 			getProviderObject: func(ns, name string) (*unstructured.Unstructured, error) {
 				return dynamicProviderLister.Namespace(ns).Get(name)
@@ -162,7 +162,7 @@ type controller struct {
 	providerDynamicLister  dynamiclister.Lister
 	providerDynamicIndexer cache.Indexer
 
-	serviceNamespaceInformer dynamic.Informer[bindlisters.ServiceNamespaceLister]
+	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister]
 
 	reconciler
 }
@@ -204,7 +204,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing Unstructured", "key", key, "reason", "ServiceNamespace", "ServiceNamespaceKey", key)
+		logger.V(2).Info("queueing Unstructured", "key", key, "reason", "APIServiceNamespace", "ServiceNamespaceKey", key)
 		c.queue.Add(key)
 	}
 }

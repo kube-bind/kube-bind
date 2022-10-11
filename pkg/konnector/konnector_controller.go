@@ -53,7 +53,7 @@ const (
 // New returns a konnector controller.
 func New(
 	consumerConfig *rest.Config,
-	serviceBindingInformer bindinformers.ServiceBindingInformer,
+	serviceBindingInformer bindinformers.APIServiceBindingInformer,
 	secretInformer coreinformers.SecretInformer,
 	namespaceInformer coreinformers.NamespaceInformer,
 	crdInformer crdinformers.CustomResourceDefinitionInformer,
@@ -76,7 +76,7 @@ func New(
 	}
 
 	namespaceDynamicInformer := dynamic.NewDynamicInformer[corelisters.NamespaceLister](namespaceInformer)
-	serviceBindingDynamicInformer := dynamic.NewDynamicInformer[bindlisters.ServiceBindingLister](serviceBindingInformer)
+	serviceBindingDynamicInformer := dynamic.NewDynamicInformer[bindlisters.APIServiceBindingLister](serviceBindingInformer)
 	crdDynamicInformer := dynamic.NewDynamicInformer[apiextensionslisters.CustomResourceDefinitionLister](crdInformer)
 	c := &controller{
 		queue: queue,
@@ -113,9 +113,9 @@ func New(
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceBinding, *kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceBinding] {
-				return bindClient.KubeBindV1alpha1().ServiceBindings()
+		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceBinding, *kubebindv1alpha1.APIServiceBindingSpec, *kubebindv1alpha1.APIServiceBindingStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceBinding] {
+				return bindClient.KubeBindV1alpha1().APIServiceBindings()
 			},
 		),
 	}
@@ -159,7 +159,7 @@ func New(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus]
+type Resource = committer.Resource[*kubebindv1alpha1.APIServiceBindingSpec, *kubebindv1alpha1.APIServiceBindingStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 type GenericController interface {
@@ -167,7 +167,7 @@ type GenericController interface {
 }
 
 // controller is the top-level controller watching ServiceBindings and
-// service provider credentials, and then starts ServiceBinding controllers
+// service provider credentials, and then starts APIServiceBinding controllers
 // dynamically.
 type controller struct {
 	queue workqueue.RateLimitingInterface
@@ -175,7 +175,7 @@ type controller struct {
 	consumerConfig *rest.Config
 	bindClient     bindclient.Interface
 
-	serviceBindingLister  bindlisters.ServiceBindingLister
+	serviceBindingLister  bindlisters.APIServiceBindingLister
 	serviceBindingIndexer cache.Indexer
 
 	secretLister  corelisters.SecretLister
@@ -195,7 +195,7 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 		return
 	}
 
-	logger.V(2).Info("queueing ServiceBinding", "key", key)
+	logger.V(2).Info("queueing APIServiceBinding", "key", key)
 	c.queue.Add(key)
 }
 
@@ -226,7 +226,7 @@ func (c *controller) enqueueSecret(logger klog.Logger, obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing ServiceBinding", "key", bindingKey, "reason", "Secret", "SecretKey", key)
+		logger.V(2).Info("queueing APIServiceBinding", "key", bindingKey, "reason", "Secret", "SecretKey", key)
 		c.queue.Add(bindingKey)
 	}
 }

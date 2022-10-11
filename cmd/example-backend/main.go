@@ -143,30 +143,30 @@ func main() {
 
 	// construct controllers
 	servicenamespaceCtrl, err := servicenamespace.NewController(cfg,
-		bindInformers.KubeBind().V1alpha1().ServiceNamespaces(),
+		bindInformers.KubeBind().V1alpha1().APIServiceNamespaces(),
 		bindInformers.KubeBind().V1alpha1().ClusterBindings(),
-		bindInformers.KubeBind().V1alpha1().ServiceExports(),
+		bindInformers.KubeBind().V1alpha1().APIServiceExports(),
 		kubeInformers.Core().V1().Namespaces(),
 		kubeInformers.Rbac().V1().Roles(),
 		kubeInformers.Rbac().V1().RoleBindings(),
 	)
 	if err != nil {
-		klog.Fatalf("error building the service namespace controller: %v", err)
+		klog.Fatalf("error building the APIServiceNamespace controller: %v", err)
 	}
 	serviceexportCtrl, err := serviceexport.NewController(cfg,
-		bindInformers.KubeBind().V1alpha1().ServiceExports(),
-		bindInformers.KubeBind().V1alpha1().ServiceExportResources(),
+		bindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		bindInformers.KubeBind().V1alpha1().APIServiceExportResources(),
 		apiextensionInformers.Apiextensions().V1().CustomResourceDefinitions(),
 	)
 	if err != nil {
-		klog.Fatalf("error building the service export controller: %v", err)
+		klog.Fatalf("error building the APIServiceExport controller: %v", err)
 	}
 	serviceexportresourceCtrl, err := serviceexportresource.NewController(cfg,
-		bindInformers.KubeBind().V1alpha1().ServiceExports(),
-		bindInformers.KubeBind().V1alpha1().ServiceExportResources(),
+		bindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		bindInformers.KubeBind().V1alpha1().APIServiceExportResources(),
 	)
 	if err != nil {
-		klog.Fatalf("error building the service export controller: %v", err)
+		klog.Fatalf("error building the APIServiceExport controller: %v", err)
 	}
 
 	// start informer factories

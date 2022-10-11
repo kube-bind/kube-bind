@@ -21,7 +21,7 @@ func IndexCRDByServiceBinding(obj interface{}) ([]string, error) {
 	bindings := []string{}
 	for _, ref := range crd.OwnerReferences {
 		parts := strings.SplitN(ref.APIVersion, "/", 2)
-		if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "ServiceBinding" {
+		if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
 			continue
 		}
 		bindings = append(bindings, ref.Name)

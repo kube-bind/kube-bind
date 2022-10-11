@@ -50,8 +50,8 @@ const (
 // NewController returns a new controller to reconcile CRDs.
 func NewController(
 	config *rest.Config,
-	serviceExportInformer bindinformers.ServiceExportInformer,
-	serviceExportResourceInformer bindinformers.ServiceExportResourceInformer,
+	serviceExportInformer bindinformers.APIServiceExportInformer,
+	serviceExportResourceInformer bindinformers.APIServiceExportResourceInformer,
 	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
@@ -89,23 +89,23 @@ func NewController(
 			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return crdInformer.Lister().Get(name)
 			},
-			getServiceExportResource: func(ns, name string) (*kubebindv1alpha1.ServiceExportResource, error) {
-				return serviceExportResourceInformer.Lister().ServiceExportResources(ns).Get(name)
+			getServiceExportResource: func(ns, name string) (*kubebindv1alpha1.APIServiceExportResource, error) {
+				return serviceExportResourceInformer.Lister().APIServiceExportResources(ns).Get(name)
 			},
-			createServiceExportResource: func(ctx context.Context, resource *kubebindv1alpha1.ServiceExportResource) (*kubebindv1alpha1.ServiceExportResource, error) {
-				return bindClient.KubeBindV1alpha1().ServiceExportResources(resource.Namespace).Create(ctx, resource, metav1.CreateOptions{})
+			createServiceExportResource: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error) {
+				return bindClient.KubeBindV1alpha1().APIServiceExportResources(resource.Namespace).Create(ctx, resource, metav1.CreateOptions{})
 			},
-			updateServiceExportResource: func(ctx context.Context, resource *kubebindv1alpha1.ServiceExportResource) (*kubebindv1alpha1.ServiceExportResource, error) {
-				return bindClient.KubeBindV1alpha1().ServiceExportResources(resource.Namespace).Update(ctx, resource, metav1.UpdateOptions{})
+			updateServiceExportResource: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error) {
+				return bindClient.KubeBindV1alpha1().APIServiceExportResources(resource.Namespace).Update(ctx, resource, metav1.UpdateOptions{})
 			},
 			deleteServiceExportResource: func(ctx context.Context, ns, name string) error {
-				return bindClient.KubeBindV1alpha1().ServiceExportResources(ns).Delete(ctx, name, metav1.DeleteOptions{})
+				return bindClient.KubeBindV1alpha1().APIServiceExportResources(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceExport, *kubebindv1alpha1.ServiceExportSpec, *kubebindv1alpha1.ServiceExportStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceExport] {
-				return bindClient.KubeBindV1alpha1().ServiceExports(ns)
+		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceExport, *kubebindv1alpha1.APIServiceExportSpec, *kubebindv1alpha1.APIServiceExportStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceExport] {
+				return bindClient.KubeBindV1alpha1().APIServiceExports(ns)
 			},
 		),
 	}
@@ -157,21 +157,21 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.ServiceExportSpec, *kubebindv1alpha1.ServiceExportStatus]
+type Resource = committer.Resource[*kubebindv1alpha1.APIServiceExportSpec, *kubebindv1alpha1.APIServiceExportStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
-// the ServiceNamespace is deleted.
+// the APIServiceNamespace is deleted.
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
 	bindClient bindclient.Interface
 	kubeClient kubernetesclient.Interface
 
-	serviceExportLister  bindlisters.ServiceExportLister
+	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
 
-	serviceExportResourceLister  bindlisters.ServiceExportResourceLister
+	serviceExportResourceLister  bindlisters.APIServiceExportResourceLister
 	serviceExportResourceIndexer cache.Indexer
 
 	crdLister  apiextensionslisters.CustomResourceDefinitionLister
@@ -189,7 +189,7 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	logger.V(2).Info("queueing ServiceExport", "key", key)
+	logger.V(2).Info("queueing APIServiceExport", "key", key)
 	c.queue.Add(key)
 }
 
@@ -211,7 +211,7 @@ func (c *controller) enqueueServiceExportResource(logger klog.Logger, obj interf
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing ServiceExport", "key", key, "reason", "ServiceExportResource", "ServiceExportResourceKey", serKey)
+		logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceExportResource", "ServiceExportResourceKey", serKey)
 		c.queue.Add(key)
 	}
 }
@@ -230,7 +230,7 @@ func (c *controller) enqueueCRD(logger klog.Logger, obj interface{}) {
 	}
 
 	for _, obj := range exports {
-		export, ok := obj.(*kubebindv1alpha1.ServiceExport)
+		export, ok := obj.(*kubebindv1alpha1.APIServiceExport)
 		if !ok {
 			runtime.HandleError(fmt.Errorf("unexpected type %T", obj))
 			return
@@ -240,7 +240,7 @@ func (c *controller) enqueueCRD(logger klog.Logger, obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing ServiceExport", "key", key, "reason", "CustomResourceDefinition", "CustomResourceDefinitionKey", crdKey)
+		logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "CustomResourceDefinition", "CustomResourceDefinitionKey", crdKey)
 		c.queue.Add(key)
 	}
 }
@@ -303,11 +303,11 @@ func (c *controller) process(ctx context.Context, key string) error {
 		return nil // we cannot do anything
 	}
 
-	obj, err := c.serviceExportLister.ServiceExports(ns).Get(name)
+	obj, err := c.serviceExportLister.APIServiceExports(ns).Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		logger.V(2).Info("ServiceExport not found, ignoring")
+		logger.V(2).Info("APIServiceExport not found, ignoring")
 		return nil // nothing we can do
 	}
 

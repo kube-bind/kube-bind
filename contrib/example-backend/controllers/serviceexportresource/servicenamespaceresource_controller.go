@@ -46,8 +46,8 @@ const (
 // NewController returns a new controller to reconcile ServiceExportResources.
 func NewController(
 	config *rest.Config,
-	serviceExportInformer bindinformers.ServiceExportInformer,
-	serviceExportResourceInformer bindinformers.ServiceExportResourceInformer,
+	serviceExportInformer bindinformers.APIServiceExportInformer,
+	serviceExportResourceInformer bindinformers.APIServiceExportResourceInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -73,25 +73,25 @@ func NewController(
 		serviceExportResourceIndexer: serviceExportResourceInformer.Informer().GetIndexer(),
 
 		reconciler: reconciler{
-			listServiceExports: func(ns, group, resource string) ([]*kubebindv1alpha1.ServiceExport, error) {
+			listServiceExports: func(ns, group, resource string) ([]*kubebindv1alpha1.APIServiceExport, error) {
 				exports, err := serviceExportInformer.Informer().GetIndexer().ByIndex(indexers.ServiceExportByServiceExportResource, fmt.Sprintf("%s/%s.%s", ns, resource, group))
 				if err != nil {
 					return nil, err
 				}
-				var results []*kubebindv1alpha1.ServiceExport
+				var results []*kubebindv1alpha1.APIServiceExport
 				for _, obj := range exports {
-					results = append(results, obj.(*kubebindv1alpha1.ServiceExport))
+					results = append(results, obj.(*kubebindv1alpha1.APIServiceExport))
 				}
 				return results, nil
 			},
 			deleteServiceExportResource: func(ctx context.Context, ns, name string) error {
-				return bindClient.KubeBindV1alpha1().ServiceExportResources(ns).Delete(ctx, name, metav1.DeleteOptions{})
+				return bindClient.KubeBindV1alpha1().APIServiceExportResources(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceExportResource, *kubebindv1alpha1.ServiceExportResourceSpec, *kubebindv1alpha1.ServiceExportResourceStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceExportResource] {
-				return bindClient.KubeBindV1alpha1().ServiceExportResources(ns)
+		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceExportResource, *kubebindv1alpha1.APIServiceExportResourceSpec, *kubebindv1alpha1.APIServiceExportResourceStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceExportResource] {
+				return bindClient.KubeBindV1alpha1().APIServiceExportResources(ns)
 			},
 		),
 	}
@@ -127,20 +127,20 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.ServiceExportResourceSpec, *kubebindv1alpha1.ServiceExportResourceStatus]
+type Resource = committer.Resource[*kubebindv1alpha1.APIServiceExportResourceSpec, *kubebindv1alpha1.APIServiceExportResourceStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
-// the ServiceNamespace is deleted.
+// the APIServiceNamespace is deleted.
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
 	bindClient bindclient.Interface
 
-	serviceExportLister  bindlisters.ServiceExportLister
+	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
 
-	serviceExportResourceLister  bindlisters.ServiceExportResourceLister
+	serviceExportResourceLister  bindlisters.APIServiceExportResourceLister
 	serviceExportResourceIndexer cache.Indexer
 
 	reconciler
@@ -155,7 +155,7 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	logger.V(2).Info("queueing ServiceExport", "key", key)
+	logger.V(2).Info("queueing APIServiceExport", "key", key)
 	c.queue.Add(key)
 }
 
@@ -172,7 +172,7 @@ func (c *controller) enqueueServiceExportResource(logger klog.Logger, obj interf
 	}
 
 	key := ns + "/cluster"
-	logger.V(2).Info("queueing ServiceExport", "key", key, "reason", "ServiceExportResource", "ServiceExportResourceKey", serKey)
+	logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceExportResource", "ServiceExportResourceKey", serKey)
 	c.queue.Add(key)
 }
 
@@ -232,7 +232,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 		return nil // we cannot do anything
 	}
 
-	obj, err := c.serviceExportResourceLister.ServiceExportResources(ns).Get(name)
+	obj, err := c.serviceExportResourceLister.APIServiceExportResources(ns).Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {

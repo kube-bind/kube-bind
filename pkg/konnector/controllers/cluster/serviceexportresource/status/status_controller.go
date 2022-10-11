@@ -52,7 +52,7 @@ func NewController(
 	providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
 	consumerDynamicInformer, providerDynamicInformer informers.GenericInformer,
-	serviceNamespaceInformer dynamic.Informer[bindlisters.ServiceNamespaceLister],
+	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister],
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -95,15 +95,15 @@ func NewController(
 		reconciler: reconciler{
 			namespaced: namespaced,
 
-			getServiceNamespace: func(upstreamNamespace string) (*kubebindv1alpha1.ServiceNamespace, error) {
+			getServiceNamespace: func(upstreamNamespace string) (*kubebindv1alpha1.APIServiceNamespace, error) {
 				sns, err := serviceNamespaceInformer.Informer().GetIndexer().ByIndex(indexers.ServiceNamespaceByNamespace, upstreamNamespace)
 				if err != nil {
 					return nil, err
 				}
 				if len(sns) == 0 {
-					return nil, errors.NewNotFound(kubebindv1alpha1.SchemeGroupVersion.WithResource("ServiceNamespace").GroupResource(), upstreamNamespace)
+					return nil, errors.NewNotFound(kubebindv1alpha1.SchemeGroupVersion.WithResource("APIServiceNamespace").GroupResource(), upstreamNamespace)
 				}
-				return sns[0].(*kubebindv1alpha1.ServiceNamespace), nil
+				return sns[0].(*kubebindv1alpha1.APIServiceNamespace), nil
 			},
 			getConsumerObject: func(ns, name string) (*unstructured.Unstructured, error) {
 				return dynamicConsumerLister.Namespace(ns).Get(name)
@@ -163,7 +163,7 @@ type controller struct {
 	providerDynamicLister  dynamiclister.Lister
 	providerDynamicIndexer cache.Indexer
 
-	serviceNamespaceInformer dynamic.Informer[bindlisters.ServiceNamespaceLister]
+	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister]
 
 	reconciler
 }
@@ -198,7 +198,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		return // not for us
 	}
 
-	sn, err := c.serviceNamespaceInformer.Lister().ServiceNamespaces(ns).Get(name)
+	sn, err := c.serviceNamespaceInformer.Lister().APIServiceNamespaces(ns).Get(name)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -217,7 +217,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing Unstructured", "key", key, "reason", "ServiceNamespace", "ServiceNamespaceKey", key)
+		logger.V(2).Info("queueing Unstructured", "key", key, "reason", "APIServiceNamespace", "ServiceNamespaceKey", key)
 		c.queue.Add(key)
 	}
 }

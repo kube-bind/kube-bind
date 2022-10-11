@@ -34,8 +34,8 @@ import (
 type reconciler struct {
 	providerNamespace string
 
-	getServiceNamespace    func(name string) (*kubebindv1alpha1.ServiceNamespace, error)
-	createServiceNamespace func(ctx context.Context, sn *kubebindv1alpha1.ServiceNamespace) (*kubebindv1alpha1.ServiceNamespace, error)
+	getServiceNamespace    func(name string) (*kubebindv1alpha1.APIServiceNamespace, error)
+	createServiceNamespace func(ctx context.Context, sn *kubebindv1alpha1.APIServiceNamespace) (*kubebindv1alpha1.APIServiceNamespace, error)
 
 	getProviderObject    func(ns, name string) (*unstructured.Unstructured, error)
 	createProviderObject func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
@@ -57,8 +57,8 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		if err != nil && !errors.IsNotFound(err) {
 			return err
 		} else if errors.IsNotFound(err) {
-			logger.V(1).Info("creating ServiceNamespace", "namespace", ns)
-			sn, err = r.createServiceNamespace(ctx, &kubebindv1alpha1.ServiceNamespace{
+			logger.V(1).Info("creating APIServiceNamespace", "namespace", ns)
+			sn, err = r.createServiceNamespace(ctx, &kubebindv1alpha1.APIServiceNamespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      ns,
 					Namespace: r.providerNamespace,
@@ -70,7 +70,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		}
 		if sn.Status.Namespace == "" {
 			// note: the service provider might implement this synchronously in admission. if so, we can skip the requeue.
-			logger.V(1).Info("waiting for ServiceNamespace to be ready", "namespace", ns)
+			logger.V(1).Info("waiting for APIServiceNamespace to be ready", "namespace", ns)
 			return r.requeue(obj, 1*time.Second)
 		}
 

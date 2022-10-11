@@ -21,14 +21,14 @@ import (
 )
 
 const (
-	ServiceNamespaceAnnotationKey = "kube-bind.io/service-namespace"
+	APIServiceNamespaceAnnotationKey = "kube-bind.io/api-service-namespace"
 )
 
-// ServiceNamespace defines how consumer namespaces map to service namespaces.
+// APIServiceNamespace defines how consumer namespaces map to service namespaces.
 // These objects are created by the konnector, and a service namespace is then
 // created by the service provider.
 //
-// The name of the ServiceNamespace equals the namespace name in the consumer
+// The name of the APIServiceNamespace equals the namespace name in the consumer
 // cluster.
 //
 // +crd
@@ -37,32 +37,32 @@ const (
 // +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Namespace",type="string",JSONPath=`.status.namespace`,priority=0
-type ServiceNamespace struct {
+type APIServiceNamespace struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec specifies a service namespace.
-	Spec ServiceNamespaceSpec `json:"spec"`
+	Spec APIServiceNamespaceSpec `json:"spec"`
 
 	// status contains reconciliation information for a service namespace
-	Status ServiceNamespaceStatus `json:"status,omitempty"`
+	Status APIServiceNamespaceStatus `json:"status,omitempty"`
 }
 
-type ServiceNamespaceSpec struct {
+type APIServiceNamespaceSpec struct {
 }
 
-type ServiceNamespaceStatus struct {
+type APIServiceNamespaceStatus struct {
 	// namespace is the service provider namespace name that will be bound to the
 	// consumer namespace named like this object.
 	Namespace string `json:"namespace,omitempty"`
 }
 
-// ServiceNamespaceList is the list of ServiceNamespaces.
+// APIServiceNamespaceList is the list of ServiceNamespaces.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type ServiceNamespaceList struct {
+type APIServiceNamespaceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []ServiceNamespace `json:"items"`
+	Items []APIServiceNamespace `json:"items"`
 }

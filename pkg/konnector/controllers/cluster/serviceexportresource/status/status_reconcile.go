@@ -31,7 +31,7 @@ import (
 type reconciler struct {
 	namespaced bool
 
-	getServiceNamespace func(upstreamNamespace string) (*kubebindv1alpha1.ServiceNamespace, error)
+	getServiceNamespace func(upstreamNamespace string) (*kubebindv1alpha1.APIServiceNamespace, error)
 
 	getConsumerObject          func(ns, name string) (*unstructured.Unstructured, error)
 	updateConsumerObjectStatus func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
@@ -50,7 +50,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 			return err
 		} else if errors.IsNotFound(err) {
 			runtime.HandleError(err)
-			return err // hoping the ServiceNamespace will be created soon. Otherwise, this item goes into backoff.
+			return err // hoping the APIServiceNamespace will be created soon. Otherwise, this item goes into backoff.
 		}
 		if sn.Status.Namespace == "" {
 			runtime.HandleError(err)

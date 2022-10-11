@@ -93,7 +93,7 @@ func New() *cobra.Command {
 			// install/upgrade CRDs
 			if err := crd.Create(ctx,
 				apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
-				metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "servicebindings"},
+				metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiservicebindings"},
 			); err != nil {
 				return err
 			}
@@ -106,7 +106,7 @@ func New() *cobra.Command {
 			// construct controllers
 			k, err := konnector.New(
 				cfg,
-				bindInformers.KubeBind().V1alpha1().ServiceBindings(),
+				bindInformers.KubeBind().V1alpha1().APIServiceBindings(),
 				kubeInformers.Core().V1().Secrets(), // TODO(sttts): watch individual secrets for security and memory consumption
 				kubeInformers.Core().V1().Namespaces(),
 				apiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),

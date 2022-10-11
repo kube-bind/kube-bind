@@ -50,7 +50,7 @@ const (
 // NewController returns a new controller for ServiceBindings.
 func NewController(
 	consumerConfig *rest.Config,
-	serviceBindingInformer bindinformers.ServiceBindingInformer,
+	serviceBindingInformer bindinformers.APIServiceBindingInformer,
 	consumerSecretInformer coreinformers.SecretInformer,
 	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
 ) (*controller, error) {
@@ -83,9 +83,9 @@ func NewController(
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceBinding, *kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceBinding] {
-				return consumerBindClient.KubeBindV1alpha1().ServiceBindings()
+		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceBinding, *kubebindv1alpha1.APIServiceBindingSpec, *kubebindv1alpha1.APIServiceBindingStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceBinding] {
+				return consumerBindClient.KubeBindV1alpha1().APIServiceBindings()
 			},
 		),
 	}
@@ -134,7 +134,7 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.ServiceBindingSpec, *kubebindv1alpha1.ServiceBindingStatus]
+type Resource = committer.Resource[*kubebindv1alpha1.APIServiceBindingSpec, *kubebindv1alpha1.APIServiceBindingStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // controller reconciles ServiceBindings' kubeconfig secret references. It is
@@ -143,7 +143,7 @@ type CommitFunc = func(context.Context, *Resource, *Resource) error
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
-	serviceBindingLister  bindlisters.ServiceBindingLister
+	serviceBindingLister  bindlisters.APIServiceBindingLister
 	serviceBindingIndexer cache.Indexer
 
 	consumerSecretLister corelisters.SecretLister
@@ -163,7 +163,7 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 		return
 	}
 
-	logger.V(2).Info("queueing ServiceBinding", "key", key)
+	logger.V(2).Info("queueing APIServiceBinding", "key", key)
 	c.queue.Add(key)
 }
 
@@ -183,13 +183,13 @@ func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj interface{}) 
 	}
 
 	for _, obj := range bindings {
-		binding := obj.(*kubebindv1alpha1.ServiceBinding)
+		binding := obj.(*kubebindv1alpha1.APIServiceBinding)
 		key, err := cache.MetaNamespaceKeyFunc(binding)
 		if err != nil {
 			runtime.HandleError(err)
 			return
 		}
-		logger.V(2).Info("queueing ServiceBinding", "key", key, "reason", "Secret", "SecretKey", secretKey)
+		logger.V(2).Info("queueing APIServiceBinding", "key", key, "reason", "Secret", "SecretKey", secretKey)
 		c.queue.Add(key)
 	}
 }
@@ -256,7 +256,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		logger.Error(err, "ServiceBinding disappeared")
+		logger.Error(err, "APIServiceBinding disappeared")
 		return nil
 	}
 

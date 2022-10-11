@@ -33,59 +33,59 @@ import (
 	v1alpha1 "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 )
 
-// ServiceProviderInformer provides access to a shared informer and lister for
-// ServiceProviders.
-type ServiceProviderInformer interface {
+// APIServiceProviderInformer provides access to a shared informer and lister for
+// APIServiceProviders.
+type APIServiceProviderInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.ServiceProviderLister
+	Lister() v1alpha1.APIServiceProviderLister
 }
 
-type serviceProviderInformer struct {
+type aPIServiceProviderInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewServiceProviderInformer constructs a new informer for ServiceProvider type.
+// NewAPIServiceProviderInformer constructs a new informer for APIServiceProvider type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewServiceProviderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredServiceProviderInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewAPIServiceProviderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredAPIServiceProviderInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredServiceProviderInformer constructs a new informer for ServiceProvider type.
+// NewFilteredAPIServiceProviderInformer constructs a new informer for APIServiceProvider type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredServiceProviderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredAPIServiceProviderInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha1().ServiceProviders(namespace).List(context.TODO(), options)
+				return client.KubeBindV1alpha1().APIServiceProviders(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha1().ServiceProviders(namespace).Watch(context.TODO(), options)
+				return client.KubeBindV1alpha1().APIServiceProviders(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubebindv1alpha1.ServiceProvider{},
+		&kubebindv1alpha1.APIServiceProvider{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *serviceProviderInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredServiceProviderInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *aPIServiceProviderInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredAPIServiceProviderInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *serviceProviderInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubebindv1alpha1.ServiceProvider{}, f.defaultInformer)
+func (f *aPIServiceProviderInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&kubebindv1alpha1.APIServiceProvider{}, f.defaultInformer)
 }
 
-func (f *serviceProviderInformer) Lister() v1alpha1.ServiceProviderLister {
-	return v1alpha1.NewServiceProviderLister(f.Informer().GetIndexer())
+func (f *aPIServiceProviderInformer) Lister() v1alpha1.APIServiceProviderLister {
+	return v1alpha1.NewAPIServiceProviderLister(f.Informer().GetIndexer())
 }

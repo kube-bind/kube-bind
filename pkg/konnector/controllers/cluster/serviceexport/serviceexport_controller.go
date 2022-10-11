@@ -48,9 +48,9 @@ const (
 func NewController(
 	consumerSecretRefKey, providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
-	serviceExportInformer bindinformers.ServiceExportInformer,
-	serviceExportResourceInformer bindinformers.ServiceExportResourceInformer,
-	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister],
+	serviceExportInformer bindinformers.APIServiceExportInformer,
+	serviceExportResourceInformer bindinformers.APIServiceExportResourceInformer,
+	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -89,28 +89,28 @@ func NewController(
 		serviceBindingInformer: serviceBindingInformer,
 
 		reconciler: reconciler{
-			listServiceBinding: func(export string) ([]*kubebindv1alpha1.ServiceBinding, error) {
+			listServiceBinding: func(export string) ([]*kubebindv1alpha1.APIServiceBinding, error) {
 				objs, err := serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByServiceBindingKubeconfigSecret, consumerSecretRefKey)
 				if err != nil {
 					return nil, err
 				}
-				var bindings []*kubebindv1alpha1.ServiceBinding
+				var bindings []*kubebindv1alpha1.APIServiceBinding
 				for _, obj := range objs {
-					binding := obj.(*kubebindv1alpha1.ServiceBinding)
+					binding := obj.(*kubebindv1alpha1.APIServiceBinding)
 					if binding.Spec.Export == export {
 						bindings = append(bindings, binding)
 					}
 				}
 				return bindings, nil
 			},
-			getServiceExportResource: func(name string) (*kubebindv1alpha1.ServiceExportResource, error) {
-				return serviceExportResourceInformer.Lister().ServiceExportResources(providerNamespace).Get(name)
+			getServiceExportResource: func(name string) (*kubebindv1alpha1.APIServiceExportResource, error) {
+				return serviceExportResourceInformer.Lister().APIServiceExportResources(providerNamespace).Get(name)
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.ServiceExport, *kubebindv1alpha1.ServiceExportSpec, *kubebindv1alpha1.ServiceExportStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.ServiceExport] {
-				return providerBindClient.KubeBindV1alpha1().ServiceExports(ns)
+		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceExport, *kubebindv1alpha1.APIServiceExportSpec, *kubebindv1alpha1.APIServiceExportStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceExport] {
+				return providerBindClient.KubeBindV1alpha1().APIServiceExports(ns)
 			},
 		),
 	}
@@ -146,27 +146,27 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.ServiceExportSpec, *kubebindv1alpha1.ServiceExportStatus]
+type Resource = committer.Resource[*kubebindv1alpha1.APIServiceExportSpec, *kubebindv1alpha1.APIServiceExportStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // controller reconciles ServiceExports.
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
-	// consumerSecretRefKey is the namespace/name value of the ServiceBinding kubeconfig secret reference.
+	// consumerSecretRefKey is the namespace/name value of the APIServiceBinding kubeconfig secret reference.
 	consumerSecretRefKey string
 	providerNamespace    string
 
 	providerBindClient  bindclient.Interface
 	apiextensionsClient apiextensionsclient.Interface
 
-	serviceExportLister  bindlisters.ServiceExportLister
+	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
 
-	serviceExportResourceLister  bindlisters.ServiceExportResourceLister
+	serviceExportResourceLister  bindlisters.APIServiceExportResourceLister
 	serviceExportResourceIndexer cache.Indexer
 
-	serviceBindingInformer dynamic.Informer[bindlisters.ServiceBindingLister]
+	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister]
 
 	reconciler
 
@@ -180,12 +180,12 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	logger.V(2).Info("queueing ServiceExport", "key", key)
+	logger.V(2).Info("queueing APIServiceExport", "key", key)
 	c.queue.Add(key)
 }
 
 func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) {
-	binding, ok := obj.(*kubebindv1alpha1.ServiceBinding)
+	binding, ok := obj.(*kubebindv1alpha1.APIServiceBinding)
 	if !ok {
 		runtime.HandleError(fmt.Errorf("unexpected type %T", obj))
 		return
@@ -195,7 +195,7 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 	}
 
 	key := c.providerNamespace + "/" + binding.Spec.Export
-	logger.V(2).Info("queueing ServiceExport", "key", key, "reason", "ServiceBinding", "ServiceBindingKey", binding.Name)
+	logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceBinding", "ServiceBindingKey", binding.Name)
 	c.queue.Add(key)
 }
 
@@ -221,9 +221,9 @@ func (c *controller) enqueueServiceExportResource(logger klog.Logger, obj interf
 		return
 	}
 	for _, obj := range exports {
-		export := obj.(*kubebindv1alpha1.ServiceExport)
+		export := obj.(*kubebindv1alpha1.APIServiceExport)
 		key := c.providerNamespace + "/" + export.Name
-		logger.V(2).Info("queueing ServiceExport", "key", key, "reason", "ServiceExportResource", "ServiceExportResourceKey", serKey)
+		logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceExportResource", "ServiceExportResourceKey", serKey)
 		c.queue.Add(key)
 	}
 }
@@ -298,11 +298,11 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.serviceExportLister.ServiceExports(ns).Get(name)
+	obj, err := c.serviceExportLister.APIServiceExports(ns).Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		logger.Error(err, "ServiceExport disappeared")
+		logger.Error(err, "APIServiceExport disappeared")
 		return nil
 	}
 

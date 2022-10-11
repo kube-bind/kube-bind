@@ -47,7 +47,7 @@ const (
 // NewController returns a new controller deleting old ServiceNamespaces.
 func NewController(
 	config *rest.Config,
-	serviceNamespaceInformer bindinformers.ServiceNamespaceInformer,
+	serviceNamespaceInformer bindinformers.APIServiceNamespaceInformer,
 	namespaceInformer dynamic.Informer[corelisters.NamespaceLister],
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
@@ -79,11 +79,11 @@ func NewController(
 
 		getNamespace: namespaceInformer.Lister().Get,
 
-		getServiceNamespace: func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error) {
-			return serviceNamespaceInformer.Lister().ServiceNamespaces(ns).Get(name)
+		getServiceNamespace: func(ns, name string) (*kubebindv1alpha1.APIServiceNamespace, error) {
+			return serviceNamespaceInformer.Lister().APIServiceNamespaces(ns).Get(name)
 		},
 		deleteServiceNamespace: func(ctx context.Context, ns, name string) error {
-			return bindClient.KubeBindV1alpha1().ServiceNamespaces(ns).Delete(ctx, name, metav1.DeleteOptions{})
+			return bindClient.KubeBindV1alpha1().APIServiceNamespaces(ns).Delete(ctx, name, metav1.DeleteOptions{})
 		},
 	}
 
@@ -103,7 +103,7 @@ func NewController(
 }
 
 // controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
-// the ServiceNamespace is deleted.
+// the APIServiceNamespace is deleted.
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
@@ -112,11 +112,11 @@ type controller struct {
 
 	namespaceInformer dynamic.Informer[corelisters.NamespaceLister]
 
-	serviceNamespaceLister  bindlisters.ServiceNamespaceLister
+	serviceNamespaceLister  bindlisters.APIServiceNamespaceLister
 	serviceNamespaceIndexer cache.Indexer
 
 	getNamespace           func(name string) (*corev1.Namespace, error)
-	getServiceNamespace    func(ns, name string) (*kubebindv1alpha1.ServiceNamespace, error)
+	getServiceNamespace    func(ns, name string) (*kubebindv1alpha1.APIServiceNamespace, error)
 	deleteServiceNamespace func(ctx context.Context, ns, name string) error
 }
 
@@ -127,7 +127,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		return
 	}
 
-	logger.V(2).Info("queueing ServiceNamespace", "key", key)
+	logger.V(2).Info("queueing APIServiceNamespace", "key", key)
 	c.queue.Add(key)
 }
 
@@ -138,7 +138,7 @@ func (c *controller) enqueueNamespace(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	logger.V(2).Info("queueing ServiceNamespace", "key", key, "reason", "Namespace", "NamespaceKey", key)
+	logger.V(2).Info("queueing APIServiceNamespace", "key", key, "reason", "Namespace", "NamespaceKey", key)
 	c.queue.Add(key)
 }
 

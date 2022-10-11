@@ -17,8 +17,8 @@ limitations under the License.
 package cmd
 
 import (
-	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -31,6 +31,7 @@ import (
 	kubernetesclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	logsv1 "k8s.io/component-base/logs/api/v1"
+	_ "k8s.io/component-base/logs/json/register"
 	"k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
@@ -60,6 +61,13 @@ func New() *cobra.Command {
 			}
 
 			ctx := genericapiserver.SetupSignalContext()
+
+			ver := version.Get().GitVersion
+			if i := strings.Index(ver, "bind-"); i != -1 {
+				ver = ver[i+5:] // example: v1.25.2+kubectl-bind-v0.0.7-52-g8fee0baeaff3aa
+			}
+			logging := klog.FromContext(ctx)
+			logging.Info("Starting konnector", "version", ver)
 
 			// install/upgrade CRDs
 			cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{
@@ -112,7 +120,7 @@ func New() *cobra.Command {
 			kubeBindSynced := bindInformers.WaitForCacheSync(ctx.Done())
 			apiextensionsSynced := apiextensionsInformers.WaitForCacheSync(ctx.Done())
 
-			klog.FromContext(context.Background()).Info("local informers are synced",
+			logging.Info("local informers are synced",
 				"kubeSynced", fmt.Sprintf("%v", kubeSynced),
 				"kubeBindSynced", fmt.Sprintf("%v", kubeBindSynced),
 				"apiextensionsSynced", fmt.Sprintf("%v", apiextensionsSynced),

@@ -25,6 +25,10 @@ The kube-bind prototype is following this manifesto from the linked talk:
 
 ![kube-bind manifesto](docs/images/manifesto.png)
 
+## Technical Overview
+
+<img alt="overview" width="800px" src="./docs/images/overview.png"></img>
+
 ## Usage
 
 To run the current backend, there must be an OIDC issuer installed in place to do the

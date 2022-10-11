@@ -19,21 +19,26 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	kubeinformers "k8s.io/client-go/informers"
 	kubernetesclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	logsv1 "k8s.io/component-base/logs/api/v1"
+	_ "k8s.io/component-base/logs/json/register"
 	"k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
 	konnectoroptions "github.com/kube-bind/kube-bind/cmd/konnector/options"
+	"github.com/kube-bind/kube-bind/deploy/crd"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions"
 	"github.com/kube-bind/kube-bind/pkg/konnector"
@@ -58,7 +63,14 @@ func New() *cobra.Command {
 
 			ctx := genericapiserver.SetupSignalContext()
 
-			// construct informer factories
+			ver := version.Get().GitVersion
+			if i := strings.Index(ver, "bind-"); i != -1 {
+				ver = ver[i+5:] // example: v1.25.2+kubectl-bind-v0.0.7-52-g8fee0baeaff3aa
+			}
+			logger := klog.FromContext(ctx)
+			logger.Info("Starting konnector", "version", ver)
+
+			// create clients
 			cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{
 				ExplicitPath: options.KubeConfigPath,
 			}, nil).ClientConfig()
@@ -77,6 +89,16 @@ func New() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			// install/upgrade CRDs
+			if err := crd.Create(ctx,
+				apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
+				metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "servicebindings"},
+			); err != nil {
+				return err
+			}
+
+			// construct informer factories
 			kubeInformers := kubeinformers.NewSharedInformerFactory(kubeClient, time.Minute*30)
 			bindInformers := bindinformers.NewSharedInformerFactory(bindClient, time.Minute*30)
 			apiextensionsInformers := apiextensionsinformers.NewSharedInformerFactory(apiextensionsClient, time.Minute*30)
@@ -93,23 +115,27 @@ func New() *cobra.Command {
 				return err
 			}
 
-			// start informer factories
-			kubeInformers.Start(ctx.Done())
-			bindInformers.Start(ctx.Done())
-			apiextensionsInformers.Start(ctx.Done())
-			kubeSynced := kubeInformers.WaitForCacheSync(ctx.Done())
-			kubeBindSynced := bindInformers.WaitForCacheSync(ctx.Done())
-			apiextensionsSynced := apiextensionsInformers.WaitForCacheSync(ctx.Done())
+			logger.Info("trying to acquire the lock")
+			lock := NewLock(kubeClient, options.LeaseLockNamespace, options.LeaseLockName, options.LeaseLockIdentity)
+			runLeaderElection(ctx, lock, options.LeaseLockIdentity, func(ctx context.Context) {
+				// start informer factories
+				logger.Info("starting informers")
+				kubeInformers.Start(ctx.Done())
+				bindInformers.Start(ctx.Done())
+				apiextensionsInformers.Start(ctx.Done())
+				kubeSynced := kubeInformers.WaitForCacheSync(ctx.Done())
+				kubeBindSynced := bindInformers.WaitForCacheSync(ctx.Done())
+				apiextensionsSynced := apiextensionsInformers.WaitForCacheSync(ctx.Done())
 
-			klog.FromContext(context.Background()).Info("local informers are synced",
-				"kubeSynced", fmt.Sprintf("%v", kubeSynced),
-				"kubeBindSynced", fmt.Sprintf("%v", kubeBindSynced),
-				"apiextensionsSynced", fmt.Sprintf("%v", apiextensionsSynced),
-			)
+				logger.Info("local informers are synced",
+					"kubeSynced", fmt.Sprintf("%v", kubeSynced),
+					"kubeBindSynced", fmt.Sprintf("%v", kubeBindSynced),
+					"apiextensionsSynced", fmt.Sprintf("%v", apiextensionsSynced),
+				)
 
-			go k.Start(ctx, 2)
-
-			<-ctx.Done()
+				logger.Info("starting konnector controller")
+				k.Start(ctx, 2)
+			})
 
 			return nil
 		},

@@ -147,15 +147,6 @@ spec:
                   the status.
                 format: date-time
                 type: string
-              phase:
-                default: Pending
-                description: phase represents the phase of the service binding. It
-                  is set by the service provider.
-                enum:
-                - Connected
-                - Pending
-                - Timeout
-                type: string
             type: object
         required:
         - spec

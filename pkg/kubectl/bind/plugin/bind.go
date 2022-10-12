@@ -47,7 +47,7 @@ type BindOptions struct {
 	*base.Options
 
 	// url is the argument accepted by the command. It contains the
-	// reference to where an APIService exists.
+	// reference to where an BindingProvider exists.
 	url string
 }
 
@@ -161,13 +161,13 @@ func (b *BindOptions) serviceBinding(ctx context.Context) error {
 		return fmt.Errorf("expected apiVersion kube-bind.io/v1alpha1, got %q", obj.APIVersion)
 	}
 
-	if obj.Kind != "APIService" {
-		return fmt.Errorf("expected kind APIService, got %q", obj.Kind)
+	if obj.Kind != "BindingProvider" {
+		return fmt.Errorf("expected kind BindingProvider, got %q", obj.Kind)
 	}
 
-	var apiService kubebindv1alpha1.APIService
+	var apiService kubebindv1alpha1.BindingProvider
 	if err := yaml.Unmarshal(body, &apiService); err != nil {
-		return fmt.Errorf("failed to unmashal response from %s as APIService: %w", b.url, err)
+		return fmt.Errorf("failed to unmashal response from %s as BindingProvider: %w", b.url, err)
 	}
 
 	fmt.Fprint(b.Out, string(body))

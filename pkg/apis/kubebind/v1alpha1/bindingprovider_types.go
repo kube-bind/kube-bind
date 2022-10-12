@@ -18,40 +18,43 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
-// APIService is a non-CRUD resource that is returned by the server before
-// authentication.
+// BindingProvider is a non-CRUD resource that is returned by the server before
+// authentication. It specifies which authentication flows the provider supports.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type APIService struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	// spec specifies how an API service from a service provider should be bound in the
-	// local consumer cluster.
-	Spec APIServiceSpec `json:"spec"`
-
-	// status contains reconciliation information for a service binding.
-	Status APIServiceStatus `json:"status,omitempty"`
-}
-
-type APIServiceSpec struct {
-}
-
-type APIServiceStatus struct {
-	// conditions is a list of conditions that apply to the APIServiceBinding.
-	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
-}
-
-// APIServiceList is a list of APIServices.
-//
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type APIServiceList struct {
+type BindingProvider struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
 
-	Items []APIService `json:"items"`
+	// providerPrettyName is the name of the provider that is displayed to the user.
+	ProviderPrettyName string `json:"providerPrettyName"`
+
+	// authenticationMethods is a list of authentication methods supported by the
+	// service provider.
+	AuthenticationMethods []AuthenticationMethod `json:"authenticationMethod,omitempty"`
+}
+
+type AuthenticationMethod struct {
+	// method is the name of the authentication method. The follow methods are supported:
+	//
+	// - "OAuth2CodeGrant"
+	//
+	// The list is ordered by preference by the service provider. The consumer should
+	// try to use the first method in the list that matches the capabilities of the
+	// client environment (e.g. does the client support a web browser) and the
+	// flags provided by the user.
+	//
+	// +required
+	Method string `json:"method,omitempty"`
+
+	// OAuth2CodeGrant is the configuration for the OAuth2 code grant flow.
+	OAuth2CodeGrant *OAuth2CodeGrant `json:"oauth2CodeGrant,omitempty"`
+}
+
+type OAuth2CodeGrant struct {
+	// authorizationURL is the URL to the authorization endpoint.
+	//
+	// +required
+	AuthorizationURL string `json:"authorizationURL,omitempty"`
 }

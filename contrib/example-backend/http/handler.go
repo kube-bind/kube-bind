@@ -28,6 +28,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
+	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
 type handler struct {
@@ -36,14 +37,34 @@ type handler struct {
 	client *http.Client
 
 	kubeManager *kubernetes.Manager
+
+	clusterName string
 }
 
-func NewHandler(provider *oidcServiceProvider, mgr *kubernetes.Manager) (*handler, error) {
+func NewHandler(provider *oidcServiceProvider, mgr *kubernetes.Manager, clusterName string) (*handler, error) {
 	return &handler{
 		oidc:        provider,
 		client:      http.DefaultClient,
 		kubeManager: mgr,
+		clusterName: clusterName,
 	}, nil
+}
+
+func (h *handler) handleServiceExport(c echo2.Context) error {
+	serviceProvider := &v1alpha1.ServiceProvider{
+		Spec: v1alpha1.ServiceProviderSpec{
+			AuthenticatedClientURL: "http://localhost:8080/authorize",
+			ProviderPrettyName:     "MangoDB.Inc",
+		},
+	}
+
+	blob, err := json.Marshal(serviceProvider)
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	return c.Blob(http.StatusOK, "application/json", blob)
 }
 
 func (h *handler) handleAuthorize(c echo2.Context) error {
@@ -110,7 +131,7 @@ func (h *handler) handleCallback(c echo2.Context) error {
 		return nil
 	}
 
-	_, err = h.oidc.OIDCProviderConfig(nil).Exchange(context.TODO(), code)
+	token, err := h.oidc.OIDCProviderConfig(nil).Exchange(context.TODO(), code)
 	if err != nil {
 		http.Error(c.Response(), fmt.Sprintf("failed to get token: %v", err), http.StatusInternalServerError)
 		c.Logger().Error(err)
@@ -122,7 +143,7 @@ func (h *handler) handleCallback(c echo2.Context) error {
 		c.Logger().Error(err)
 	}
 
-	redirectURL := fmt.Sprintf("%s?session_id=%s&kubeconfig=%s",
-		authCode.RedirectURL, authCode.SessionID, kfg)
+	redirectURL := fmt.Sprintf("%s?cluster_name=%s&session_id=%s&kubeconfig=%s&access_token=%s",
+		authCode.RedirectURL, h.clusterName, authCode.SessionID, kfg, token.AccessToken)
 	return c.Redirect(301, redirectURL)
 }

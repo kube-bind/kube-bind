@@ -23,28 +23,26 @@ import (
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin"
+	"github.com/kube-bind/kube-bind/pkg/kubectl/bind-apiservice/plugin"
 )
 
 var (
-	// TODO: add other examples related to permission claim commands.
-	bindExampleUses = `
-	# binds to the given remote API service
-	%[1]s bind apiservice https://mangodb.com/exports
+	bindAPIServiceExampleUses = `
+	# bind to a remote API service. Use kubectl bind to create the APIBindingRequest interactively. 
+	%[1]s apiservice --token-file filename -f apiservice-binding-request.yaml
+
+	# bind to a remote API service from a https source.
+	%[1]s apiservice --token-file token https://some-url/apiservice-binding-request.yaml
 	`
 )
 
 func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
-	opts := plugin.NewBindOptions(streams)
+	opts := plugin.NewBindAPIServiceOptions(streams)
 	cmd := &cobra.Command{
-		Use:          "bind",
-		Short:        "Bind different remote types into the current cluster.",
-		Example:      fmt.Sprintf(bindExampleUses, "kubectl"),
+		Use:          "apiservice https://<url-to-a-APIBindingRequest>|-f <file-to-a-APIBindingRequest>",
+		Short:        "Bind to a remote API service",
+		Example:      fmt.Sprintf(bindAPIServiceExampleUses, "kubectl bind"),
 		SilenceUsage: true,
-		Args: func(cmd *cobra.Command, args []string) error {
-			// if no subcommand is specified, only a URL, this is fine.
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return cmd.Help()

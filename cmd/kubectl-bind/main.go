@@ -24,19 +24,28 @@ import (
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/cmd"
+	apiservicecmd "github.com/kube-bind/kube-bind/pkg/kubectl/bind-apiservice/cmd"
+	bindcmd "github.com/kube-bind/kube-bind/pkg/kubectl/bind/cmd"
 )
 
 func main() {
-	flags := pflag.NewFlagSet("kubectl-kcp", pflag.ExitOnError)
+	flags := pflag.NewFlagSet("kubectl-bind", pflag.ExitOnError)
 	pflag.CommandLine = flags
 
-	cmd, err := cmd.New(genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr})
+	bindCmd, err := bindcmd.New(genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v", err)
 		os.Exit(1)
 	}
-	if err := cmd.Execute(); err != nil {
+
+	apiserviceCmd, err := apiservicecmd.New(genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v", err)
+		os.Exit(1)
+	}
+	bindCmd.AddCommand(apiserviceCmd)
+
+	if err := bindCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

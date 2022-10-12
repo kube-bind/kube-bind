@@ -49,7 +49,7 @@ type ServiceBindingSessionSpec struct {
 
 	// AccessToken is the token that kubectl bind might use in the future when binding to another service from the same
 	// service provider
-	AccessToken LocalSecretKeyRef `json:"accessToken"`
+	AccessTokenRef LocalSecretKeyRef `json:"accessToken"`
 }
 
 // ServiceBindingSessionStatus stores status information about a service binding session request.

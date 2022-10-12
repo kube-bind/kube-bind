@@ -15,3 +15,42 @@ limitations under the License.
 */
 
 package resources
+
+import (
+	"context"
+	"fmt"
+	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
+
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// EnsureServiceBindingSession create service provider session object after a successful bind authentication.
+func EnsureServiceBindingSession(ctx context.Context, clusterName, authSecretName, sessionID, namespace string, client bindclient.Interface) (string, error) {
+	serviceBindingSessionName := fmt.Sprintf("%s-service-binding-session", clusterName)
+	serviceBindingSession := &kubebindv1alpha1.ServiceBindingSession{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceBindingSessionName,
+			Namespace: namespace,
+		},
+		Spec: kubebindv1alpha1.ServiceBindingSessionSpec{
+			SessionID: sessionID,
+			KubeconfigSecretRef: kubebindv1alpha1.LocalSecretKeyRef{
+				Name: authSecretName,
+				Key:  "kubeconfig",
+			},
+			AccessTokenRef: kubebindv1alpha1.LocalSecretKeyRef{
+				Name: authSecretName,
+				Key:  "accessToken",
+			},
+		},
+	}
+
+	_, err := client.KubeBindV1alpha1().ServiceBindingSessions(namespace).Create(ctx, serviceBindingSession, metav1.CreateOptions{})
+	if err != nil && !errors.IsAlreadyExists(err) {
+		return "", err
+	}
+
+	return serviceBindingSessionName, nil
+}

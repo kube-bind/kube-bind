@@ -20,23 +20,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/kube-bind/kube-bind/pkg/authenticator"
+	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
+	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
+	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin/resources"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	kubeclient "k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/yaml"
-
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	"github.com/kube-bind/kube-bind/pkg/authenticator"
-	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
-	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin/resources"
 )
 
 // BindOptions contains the options for creating an APIBinding.
@@ -142,9 +137,21 @@ func (b *BindOptions) serviceBinding(clusterName, sessionID, kubeconfig, accessT
 	}
 
 	authSecret, err := resources.EnsureServiceBindingAuthData(context.TODO(),
-		clusterName, kubeconfig, sessionID, namespace, client)
+		clusterName, kubeconfig, accessToken, namespace, client)
 	if err != nil {
 		return err
 	}
 
+	bindClient, err := bindclient.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+
+	_, err = resources.EnsureServiceBindingSession(context.TODO(),
+		clusterName, authSecret, sessionID, namespace, bindClient)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

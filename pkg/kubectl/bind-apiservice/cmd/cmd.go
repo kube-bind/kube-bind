@@ -23,47 +23,41 @@ import (
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin"
+	"github.com/kube-bind/kube-bind/pkg/kubectl/bind-apiservice/plugin"
 )
 
 var (
-	bindExampleUses = `
-	# select a kube-bind.io compatible service from the given URL, e.g. an API service.
-	%[1]s bind https://mangodb.com/exports
-
-	# authenticate and configure the services to bind, but don't actually bind them.
-	%[1]s bind https://mangodb.com/exports --dry-run -o yaml > apiservice-binding-request.yaml
-
-	# bind to to remote API service as configured above and actually bind to it. 
-	%[1]s bind apiservice --token-file filename -f apiservice-binding-request.yaml
+	bindAPIServiceExampleUses = `
+	# bind to to remote API service. Use kubectl bind to get the APIBindingRequest. 
+	%[1]s apiservice --token-file filename -f apiservice-binding-request.yaml
 
 	# bind to the given remote API service from a https source.
-	%[1]s bind apiservice --token-file token https://some-url/apiservice-binding-request.yaml
-    `
+	%[1]s apiservice --token-file token https://some-url/apiservice-binding-request.yaml
+	`
 )
 
 func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
-	bindOpts := plugin.NewBindOptions(streams)
+	opts := plugin.NewBindAPIServiceOptions(streams)
 	cmd := &cobra.Command{
-		Use:          "bind",
-		Short:        "Bind different remote types into the current cluster.",
-		Example:      fmt.Sprintf(bindExampleUses, "kubectl"),
+		Use:          "apiservice https://<url-to-a-APIBindingRequest>|-f <file-to-a-APIBindingRequest>",
+		Short:        "Bind to a remote API service",
+		Example:      fmt.Sprintf(bindAPIServiceExampleUses, "kubectl bind"),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return cmd.Help()
 			}
-			if err := bindOpts.Complete(args); err != nil {
+			if err := opts.Complete(args); err != nil {
 				return err
 			}
 
-			if err := bindOpts.Validate(); err != nil {
+			if err := opts.Validate(); err != nil {
 				return err
 			}
 
-			return bindOpts.Run(cmd.Context())
+			return opts.Run(cmd.Context())
 		},
 	}
-
+	opts.BindFlags(cmd)
 	return cmd, nil
 }

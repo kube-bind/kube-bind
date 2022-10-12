@@ -30,13 +30,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kube-bind/kube-bind/deploy/konnector"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/authenticator"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
@@ -122,23 +118,6 @@ func (b *BindOptions) Run(ctx context.Context) error {
 	}
 
 	if err := auth.Execute(ctx); err != nil {
-		return err
-	}
-
-	// bootstrap the konnector
-	cfg, err := b.ClientConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
-	client, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return err
-	}
-	if err := konnector.Bootstrap(ctx, discoveryClient, client, sets.NewString()); err != nil {
 		return err
 	}
 

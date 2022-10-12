@@ -79,7 +79,7 @@ func newBackendOptions() *backendOpts {
 	flag.StringVar(&opts.oidcIssuerURL, "oidc-issuer-url", "", "Callback URL for OpenID responses.")
 	flag.StringVar(&opts.kubeconfig, "kubeconfig", "", "path to a kubeconfig. Only required if out-of-cluster.")
 	flag.StringVar(&opts.namespace, "namespace", "kube-system", "the namespace where the biding resources are created at.")
-	flag.StringVar(&opts.clusterName, "cluster-name", "", "the name of the cluster where kube-bind apis will run.")
+	flag.StringVar(&opts.clusterName, "cluster-name", "kind-cluster", "the name of the cluster where kube-bind apis will run.")
 
 	klog.InitFlags(nil)
 	flag.Set("v", "2") // nolint:errcheck
@@ -118,7 +118,7 @@ func main() {
 		klog.Fatalf("error building kubernetes manager: %v", err)
 	}
 
-	handler, err := examplehttp.NewHandler(oidcProvider, mgr)
+	handler, err := examplehttp.NewHandler(oidcProvider, mgr, opts.clusterName)
 	if err != nil {
 		klog.Fatalf("error building the http handler: %v", err)
 	}

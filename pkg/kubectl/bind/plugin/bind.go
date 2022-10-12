@@ -34,6 +34,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/deploy/konnector"
 	"github.com/kube-bind/kube-bind/pkg/authenticator"
+	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin/resources"
 )
@@ -158,9 +159,21 @@ func (b *BindOptions) serviceBinding(clusterName, sessionID, kubeconfig, accessT
 	}
 
 	authSecret, err := resources.EnsureServiceBindingAuthData(context.TODO(),
-		clusterName, kubeconfig, sessionID, namespace, client)
+		clusterName, kubeconfig, accessToken, namespace, client)
 	if err != nil {
 		return err
 	}
 
+	bindClient, err := bindclient.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+
+	_, err = resources.EnsureServiceBindingSession(context.TODO(),
+		clusterName, authSecret, sessionID, namespace, bindClient)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

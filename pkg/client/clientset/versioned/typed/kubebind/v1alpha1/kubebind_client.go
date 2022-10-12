@@ -31,6 +31,7 @@ type KubeBindV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	ClusterBindingsGetter
 	ServiceBindingsGetter
+	ServiceBindingSessionsGetter
 	ServiceExportsGetter
 	ServiceExportResourcesGetter
 	ServiceNamespacesGetter
@@ -48,6 +49,10 @@ func (c *KubeBindV1alpha1Client) ClusterBindings(namespace string) ClusterBindin
 
 func (c *KubeBindV1alpha1Client) ServiceBindings() ServiceBindingInterface {
 	return newServiceBindings(c)
+}
+
+func (c *KubeBindV1alpha1Client) ServiceBindingSessions(namespace string) ServiceBindingSessionInterface {
+	return newServiceBindingSessions(c, namespace)
 }
 
 func (c *KubeBindV1alpha1Client) ServiceExports(namespace string) ServiceExportInterface {

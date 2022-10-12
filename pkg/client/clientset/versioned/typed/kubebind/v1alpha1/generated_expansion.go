@@ -22,6 +22,8 @@ type ClusterBindingExpansion interface{}
 
 type ServiceBindingExpansion interface{}
 
+type ServiceBindingSessionExpansion interface{}
+
 type ServiceExportExpansion interface{}
 
 type ServiceExportResourceExpansion interface{}

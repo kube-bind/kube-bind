@@ -37,6 +37,10 @@ func (c *FakeKubeBindV1alpha1) ServiceBindings() v1alpha1.ServiceBindingInterfac
 	return &FakeServiceBindings{c}
 }
 
+func (c *FakeKubeBindV1alpha1) ServiceBindingSessions(namespace string) v1alpha1.ServiceBindingSessionInterface {
+	return &FakeServiceBindingSessions{c, namespace}
+}
+
 func (c *FakeKubeBindV1alpha1) ServiceExports(namespace string) v1alpha1.ServiceExportInterface {
 	return &FakeServiceExports{c, namespace}
 }

@@ -28,6 +28,8 @@ type Interface interface {
 	ClusterBindings() ClusterBindingInformer
 	// ServiceBindings returns a ServiceBindingInformer.
 	ServiceBindings() ServiceBindingInformer
+	// ServiceBindingSessions returns a ServiceBindingSessionInformer.
+	ServiceBindingSessions() ServiceBindingSessionInformer
 	// ServiceExports returns a ServiceExportInformer.
 	ServiceExports() ServiceExportInformer
 	// ServiceExportResources returns a ServiceExportResourceInformer.
@@ -57,6 +59,11 @@ func (v *version) ClusterBindings() ClusterBindingInformer {
 // ServiceBindings returns a ServiceBindingInformer.
 func (v *version) ServiceBindings() ServiceBindingInformer {
 	return &serviceBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceBindingSessions returns a ServiceBindingSessionInformer.
+func (v *version) ServiceBindingSessions() ServiceBindingSessionInformer {
+	return &serviceBindingSessionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // ServiceExports returns a ServiceExportInformer.

@@ -26,6 +26,9 @@ import (
 const (
 	// ClusterBindingConditionSecretValid is set when the secret is valid.
 	ClusterBindingConditionSecretValid = "SecretValid"
+
+	// ClusterBindingConditionSecretValid is set when the secret is valid.
+	ClusterBindingConditionHealthy = "Healthy"
 )
 
 // ClusterBinding represents a bound consumer class. It lives in a service provider cluster
@@ -104,21 +107,6 @@ type ClusterBindingSpec struct {
 	ServiceProviderSpec runtime.RawExtension `json:"serviceProviderSpec,omitempty"`
 }
 
-// ClusterBindingPhase stores the phase of a cluster binding.
-//
-// +kubebuilder:validation:Enum=Connected;Pending;Timeout
-type ClusterBindingPhase string
-
-const (
-	// ClusterConnected means the service is connected and has sent a heartbeat recently.
-	ClusterConnected ClusterBindingPhase = "Connected"
-	// ClusterPending is the phase before the konnector has sent a heartbeat the first time.
-	ClusterPending ClusterBindingPhase = "Pending"
-	// ClusterTimeout is the phase when the konnector has not sent a heartbeat for a long time
-	// and the service considers this cluster as unhealthy.
-	ClusterTimeout ClusterBindingPhase = "Timeout"
-)
-
 // ClusterBindingStatus stores status information about a service binding. It is
 // updated by both the konnector and the service provider.
 type ClusterBindingStatus struct {
@@ -130,12 +118,6 @@ type ClusterBindingStatus struct {
 	// konnector is not unhealthy if it does not receive a heartbeat within
 	// this time.
 	HeartbeatInterval metav1.Duration `json:"heartbeatInterval,omitempty"`
-
-	// phase represents the phase of the service binding. It is set by the
-	// service provider.
-	//
-	// +kubebuilder:default=Pending
-	Phase ClusterBindingPhase `json:"phase"`
 
 	// conditions is a list of conditions that apply to the ClusterBinding. It is
 	// updated by the konnector and the service provider.

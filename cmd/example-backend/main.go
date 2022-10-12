@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexport"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexportresource"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicenamespace"
@@ -70,12 +71,13 @@ func init() {
 
 func newBackendOptions() *backendOpts {
 	opts := &backendOpts{}
+
 	flag.StringVar(&opts.listenIP, "listen-ip", "127.0.0.1", "The host IP where the backend is running")
 	flag.IntVar(&opts.listenPort, "listen-port", 8080, "The host port where the backend is running")
 	flag.StringVar(&opts.oidcIssuerClientID, "oidc-issuer-client-id", "", "Issuer client ID")
 	flag.StringVar(&opts.oidcIssuerClientSecret, "oidc-issuer-client-secret", "", "OpenID client secret")
 	flag.StringVar(&opts.oidcIssuerURL, "oidc-issuer-url", "", "Callback URL for OpenID responses.")
-	flag.StringVar(&opts.kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"), "path to a kubeconfig. Only required if out-of-cluster.")
+	flag.StringVar(&opts.kubeconfig, "kubeconfig", "", "path to a kubeconfig. Only required if out-of-cluster.")
 	flag.StringVar(&opts.namespace, "namespace", "kube-system", "the namespace where the biding resources are created at.")
 	flag.StringVar(&opts.clusterName, "cluster-name", "", "the name of the cluster where kube-bind apis will run.")
 
@@ -103,7 +105,9 @@ func main() {
 		klog.Fatalf("error building the oidc provider: %v", err)
 	}
 
-	cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{ExplicitPath: opts.kubeconfig}, nil).ClientConfig()
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	rules.ExplicitPath = opts.kubeconfig
+	cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, nil).ClientConfig()
 	if err != nil {
 		klog.Fatalf("error building kubeconfig: %v", err)
 	}
@@ -142,6 +146,13 @@ func main() {
 	apiextensionInformers := apiextensionsinformers.NewSharedInformerFactory(apiextensionClient, time.Minute*30)
 
 	// construct controllers
+	clusterBindingCtrl, err := clusterbinding.NewController(
+		cfg,
+		bindInformers.KubeBind().V1alpha1().ClusterBindings(),
+	)
+	if err != nil {
+		klog.Fatalf("error building cluster binding controller: %v", err)
+	}
 	servicenamespaceCtrl, err := servicenamespace.NewController(cfg,
 		bindInformers.KubeBind().V1alpha1().APIServiceNamespaces(),
 		bindInformers.KubeBind().V1alpha1().ClusterBindings(),
@@ -179,6 +190,7 @@ func main() {
 	apiextensionInformers.WaitForCacheSync(ctx.Done())
 
 	// start controllers
+	go clusterBindingCtrl.Start(ctx, 1)
 	go servicenamespaceCtrl.Start(ctx, 1)
 	go serviceexportCtrl.Start(ctx, 1)
 	go serviceexportresourceCtrl.Start(ctx, 1)

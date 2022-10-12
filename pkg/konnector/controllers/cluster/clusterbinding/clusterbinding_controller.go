@@ -404,7 +404,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 		c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.APIServiceBinding) {
 			conditions.MarkFalse(
 				binding,
-				kubebindv1alpha1.APIServiceBindingConditionInformersSynced,
+				kubebindv1alpha1.APIServiceBindingConditionHeartbeating,
 				"ClusterBindingUpdateFailed",
 				conditionsapi.ConditionSeverityWarning,
 				"Failed to update service provider ClusterBinding: %v", err,

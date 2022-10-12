@@ -45,8 +45,6 @@ func NewOptions() *Options {
 	opts := &Options{
 		Logs: logs,
 
-		KubeConfigPath: os.Getenv("KUBECONFIG"),
-
 		LeaseLockName:      "kube-bind",
 		LeaseLockNamespace: os.Getenv("POD_NAMESPACE"),
 		LeaseLockIdentity:  os.Getenv("POD_NAME"),

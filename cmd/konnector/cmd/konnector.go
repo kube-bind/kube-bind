@@ -71,9 +71,9 @@ func New() *cobra.Command {
 			logger.Info("Starting konnector", "version", ver)
 
 			// create clients
-			cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{
-				ExplicitPath: options.KubeConfigPath,
-			}, nil).ClientConfig()
+			rules := clientcmd.NewDefaultClientConfigLoadingRules()
+			rules.ExplicitPath = options.KubeConfigPath
+			cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, nil).ClientConfig()
 			if err != nil {
 				return err
 			}

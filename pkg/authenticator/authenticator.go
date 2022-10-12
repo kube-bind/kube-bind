@@ -36,10 +36,10 @@ type defaultAuthenticator struct {
 	server  *echo.Echo
 	port    int
 	timeout time.Duration
-	action  func(context.Context) error
+	action  func(string, string, string, string) error
 }
 
-func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context) error) (Authenticator, error) {
+func NewDefaultAuthenticator(timeout time.Duration, action func(clusterName, sessionID, kubeconfig, accessToken string) error) (Authenticator, error) {
 	if timeout == 0 {
 		timeout = 2 * time.Second
 	}
@@ -50,6 +50,7 @@ func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context)
 	}
 
 	server := echo.New()
+	server.HideBanner = true
 	server.GET("/", defaultAuthenticator.actionWrapper())
 	defaultAuthenticator.server = server
 
@@ -85,8 +86,12 @@ func (d *defaultAuthenticator) Endpoint(context.Context) string {
 
 func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 	return func(c echo.Context) error {
-		c.Get("token")
-		if err := d.action(context.TODO()); err != nil {
+		clusterBindingName := c.Param("cluster_name")
+		sessionID := c.Param("service")
+		kfg := c.Param("kubeconfig")
+		accessToken := c.Param("access_token")
+
+		if err := d.action(clusterBindingName, sessionID, kfg, accessToken); err != nil {
 			return err
 		}
 

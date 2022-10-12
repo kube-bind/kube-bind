@@ -30,13 +30,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kube-bind/kube-bind/deploy/konnector"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/authenticator"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
@@ -47,7 +43,7 @@ type BindOptions struct {
 	*base.Options
 
 	// url is the argument accepted by the command. It contains the
-	// reference to where an APIService exists.
+	// reference to where an BindingProvider exists.
 	url string
 }
 
@@ -125,23 +121,6 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return err
 	}
 
-	// bootstrap the konnector
-	cfg, err := b.ClientConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
-	client, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return err
-	}
-	if err := konnector.Bootstrap(ctx, discoveryClient, client, sets.NewString()); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -161,13 +140,13 @@ func (b *BindOptions) serviceBinding(ctx context.Context) error {
 		return fmt.Errorf("expected apiVersion kube-bind.io/v1alpha1, got %q", obj.APIVersion)
 	}
 
-	if obj.Kind != "APIService" {
-		return fmt.Errorf("expected kind APIService, got %q", obj.Kind)
+	if obj.Kind != "BindingProvider" {
+		return fmt.Errorf("expected kind BindingProvider, got %q", obj.Kind)
 	}
 
-	var apiService kubebindv1alpha1.APIService
+	var apiService kubebindv1alpha1.BindingProvider
 	if err := yaml.Unmarshal(body, &apiService); err != nil {
-		return fmt.Errorf("failed to unmashal response from %s as APIService: %w", b.url, err)
+		return fmt.Errorf("failed to unmashal response from %s as BindingProvider: %w", b.url, err)
 	}
 
 	fmt.Fprint(b.Out, string(body))

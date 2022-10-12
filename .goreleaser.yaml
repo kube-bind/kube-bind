@@ -17,10 +17,29 @@ builds:
     goarch: ppc64le
   - goos: windows
     goarch: ppc64le
+- id: "kubectl-bind-apiservice"
+  main: ./cmd/kubectl-bind-apiservice
+  binary: bin/kubectl-bind-apiservice
+  ldflags:
+  - "{{ .Env.LDFLAGS }}"
+  goos:
+  - linux
+  - darwin
+  - windows
+  goarch:
+  - amd64
+  - arm64
+  - ppc64le
+  ignore:
+  - goos: darwin
+    goarch: ppc64le
+  - goos: windows
+    goarch: ppc64le
 archives:
 - id: kubectl-bind
   builds:
   - kubectl-bind
+  - kubectl-bind-apiservice
   name_template: "kubectl-bind_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 release:
   draft: true

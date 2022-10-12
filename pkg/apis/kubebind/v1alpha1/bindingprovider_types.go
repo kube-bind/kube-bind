@@ -27,11 +27,20 @@ import (
 type BindingProvider struct {
 	metav1.TypeMeta `json:",inline"`
 
-	// providerPrettyName is the name of the provider that is displayed to the user.
+	// providerPrettyName is the name of the provider that is displayed to the user, e.g:
+	// MangoDB Inc.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	ProviderPrettyName string `json:"providerPrettyName"`
 
 	// authenticationMethods is a list of authentication methods supported by the
 	// service provider.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	AuthenticationMethods []AuthenticationMethod `json:"authenticationMethod,omitempty"`
 }
 
@@ -46,6 +55,8 @@ type AuthenticationMethod struct {
 	// flags provided by the user.
 	//
 	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=OAuth2CodeGrant
 	Method string `json:"method,omitempty"`
 
 	// OAuth2CodeGrant is the configuration for the OAuth2 code grant flow.
@@ -53,8 +64,11 @@ type AuthenticationMethod struct {
 }
 
 type OAuth2CodeGrant struct {
-	// authorizationURL is the URL to the authorization endpoint.
+	// authenticatedURL is the service provider url that the service consumer will use to authenticate against
+	// the service provider in case of using OIDC mode made, e.g: www.mangodb.com/kubernetes/authorize.
 	//
 	// +required
-	AuthorizationURL string `json:"authorizationURL,omitempty"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	AuthenticatedURL string `json:"authenticatedURL"`
 }

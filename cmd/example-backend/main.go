@@ -75,7 +75,7 @@ func newBackendOptions() *backendOpts {
 	flag.StringVar(&opts.oidcIssuerClientID, "oidc-issuer-client-id", "", "Issuer client ID")
 	flag.StringVar(&opts.oidcIssuerClientSecret, "oidc-issuer-client-secret", "", "OpenID client secret")
 	flag.StringVar(&opts.oidcIssuerURL, "oidc-issuer-url", "", "Callback URL for OpenID responses.")
-	flag.StringVar(&opts.kubeconfig, "kubeconfig", os.Getenv("KUBECONFIG"), "path to a kubeconfig. Only required if out-of-cluster.")
+	flag.StringVar(&opts.kubeconfig, "kubeconfig", "", "path to a kubeconfig. Only required if out-of-cluster.")
 	flag.StringVar(&opts.namespace, "namespace", "kube-system", "the namespace where the biding resources are created at.")
 	flag.StringVar(&opts.clusterName, "cluster-name", "", "the name of the cluster where kube-bind apis will run.")
 
@@ -103,7 +103,9 @@ func main() {
 		klog.Fatalf("error building the oidc provider: %v", err)
 	}
 
-	cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(&clientcmd.ClientConfigLoadingRules{ExplicitPath: opts.kubeconfig}, nil).ClientConfig()
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	rules.ExplicitPath = opts.kubeconfig
+	cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, nil).ClientConfig()
 	if err != nil {
 		klog.Fatalf("error building kubeconfig: %v", err)
 	}

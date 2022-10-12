@@ -20,26 +20,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
-	"sigs.k8s.io/yaml"
+	kubeclient "k8s.io/client-go/kubernetes"
 
 	"github.com/kube-bind/kube-bind/deploy/konnector"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/authenticator"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
+	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin/resources"
 )
 
 // BindOptions contains the options for creating an APIBinding.
@@ -95,30 +91,30 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return err
 	}
 
-	sessionID := rand.String(rand.IntnRange(10, 15))
-
 	auth, err := authenticator.NewDefaultAuthenticator(1*time.Minute, b.serviceBinding)
 	if err != nil {
 		return err
 	}
 
-	url, err := url.Parse(b.url)
+	exportURL, err := url.Parse(b.url)
 	if err != nil {
 		return err // should never happen because we test this in Validate()
 	}
 
-	values := url.Query()
-	values.Add("redirect_url", auth.Endpoint(ctx))
-	values.Add("session_id", sessionID)
-
-	url.RawQuery = values.Encode()
-	resp, err := http.Get(url.String())
+	authURL, err := fetchAuthenticationRoute(exportURL.String())
 	if err != nil {
-		return fmt.Errorf("failed to get %s: %w", url, err)
+		return fmt.Errorf("failed to fetch authentication url: %v", err)
 	}
 
-	if err := resp.Body.Close(); err != nil {
-		return fmt.Errorf("failed to close body: %v", err)
+	parsedAuthURL, err := url.Parse(authURL)
+	if err != nil {
+		return fmt.Errorf("failed to parse auth url: %v", err)
+	}
+
+	sessionID := rand.String(rand.IntnRange(20, 30))
+
+	if err := authenticate(parsedAuthURL, auth.Endpoint(ctx), sessionID); err != nil {
+		return err
 	}
 
 	if err := auth.Execute(ctx); err != nil {
@@ -145,32 +141,26 @@ func (b *BindOptions) Run(ctx context.Context) error {
 	return nil
 }
 
-func (b *BindOptions) serviceBinding(ctx context.Context) error {
-	body, err := io.ReadAll(nil)
+func (b *BindOptions) serviceBinding(clusterName, sessionID, kubeconfig, accessToken string) error {
+	config, err := b.ClientConfig.ClientConfig()
 	if err != nil {
-		return fmt.Errorf("failed to read body from %s: %w", b.url, err)
+		return err
 	}
 
-	var obj metav1.PartialObjectMetadata
-	if err := yaml.Unmarshal(body, &obj); err != nil {
-		return fmt.Errorf("failed to unmashal response from %s (%q): %w", b.url, strings.ReplaceAll(string(body[:40]), "\n", "\\n"), err)
+	client, err := kubeclient.NewForConfig(config)
+	if err != nil {
+		return err
 	}
 
-	// TODO: generalize this, with scheme, and potentially forking into kubectl-bind-<lower(kind)>
-	if obj.APIVersion != "kube-bind.io/v1alpha1" {
-		return fmt.Errorf("expected apiVersion kube-bind.io/v1alpha1, got %q", obj.APIVersion)
+	namespace, _, err := b.ClientConfig.Namespace()
+	if err != nil {
+		return err
 	}
 
-	if obj.Kind != "APIService" {
-		return fmt.Errorf("expected kind APIService, got %q", obj.Kind)
+	authSecret, err := resources.EnsureServiceBindingAuthData(context.TODO(),
+		clusterName, kubeconfig, sessionID, namespace, client)
+	if err != nil {
+		return err
 	}
 
-	var apiService kubebindv1alpha1.APIService
-	if err := yaml.Unmarshal(body, &apiService); err != nil {
-		return fmt.Errorf("failed to unmashal response from %s as APIService: %w", b.url, err)
-	}
-
-	fmt.Fprint(b.Out, string(body))
-
-	return nil
 }

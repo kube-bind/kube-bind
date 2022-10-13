@@ -30,6 +30,7 @@ import (
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	kubeinformers "k8s.io/client-go/informers"
 	kubernetesclient "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 	_ "k8s.io/component-base/logs/json/register"
@@ -77,6 +78,9 @@ func New() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			cfg = rest.CopyConfig(cfg)
+			cfg = rest.AddUserAgent(cfg, "kube-bind-konnector")
+
 			bindClient, err := bindclient.NewForConfig(cfg)
 			if err != nil {
 				return err

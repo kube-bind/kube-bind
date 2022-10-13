@@ -35,7 +35,6 @@ type KubeBindV1alpha1Interface interface {
 	APIServiceNamespacesGetter
 	APIServiceProvidersGetter
 	ClusterBindingsGetter
-	ServiceBindingSessionsGetter
 }
 
 // KubeBindV1alpha1Client is used to interact with features provided by the kube-bind.io group.
@@ -65,10 +64,6 @@ func (c *KubeBindV1alpha1Client) APIServiceProviders(namespace string) APIServic
 
 func (c *KubeBindV1alpha1Client) ClusterBindings(namespace string) ClusterBindingInterface {
 	return newClusterBindings(c, namespace)
-}
-
-func (c *KubeBindV1alpha1Client) ServiceBindingSessions(namespace string) ServiceBindingSessionInterface {
-	return newServiceBindingSessions(c, namespace)
 }
 
 // NewForConfig creates a new KubeBindV1alpha1Client for the given config.

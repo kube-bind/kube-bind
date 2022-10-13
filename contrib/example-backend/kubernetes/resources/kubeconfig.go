@@ -32,51 +32,44 @@ import (
 
 func GenerateKubeconfig(ctx context.Context,
 	client kubernetes.Interface,
-	host, clusterName, secretName, ns string,
+	host, ns, secretName string,
 ) (*corev1.Secret, error) {
 	kfg, err := client.CoreV1().Secrets(ns).Get(ctx, ClusterBindingKubeConfig, v1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			var secret *corev1.Secret
-			if err := wait.PollImmediateWithContext(ctx, 5*time.Second, 20*time.Second, func(ctx context.Context) (done bool, err error) {
+			if err := wait.PollImmediateWithContext(ctx, 500*time.Millisecond, 10*time.Second, func(ctx context.Context) (done bool, err error) {
 				secret, err = client.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
-				if secret != nil {
-					if secret.Data["token"] != nil && secret.Data["ca.crt"] != nil {
-						return true, nil
-					}
-
+				if err != nil && !errors.IsNotFound(err) {
+					return false, err
+				} else if errors.IsNotFound(err) {
 					return false, nil
 				}
-
-				if err != nil && errors.IsNotFound(err) {
-					return false, nil
-				}
-
-				return false, err
+				return secret.Data["token"] != nil && secret.Data["ca.crt"] != nil, nil
 			}); err != nil {
 				return nil, err
 			}
 
-			cfg := api.Config{}
-			cfg.Clusters = map[string]*api.Cluster{
-				clusterName: {
-					Server:                   host,
-					CertificateAuthorityData: secret.Data["ca.crt"],
+			cfg := api.Config{
+				Clusters: map[string]*api.Cluster{
+					"provider": {
+						Server:                   host,
+						CertificateAuthorityData: secret.Data["ca.crt"],
+					},
 				},
-			}
-
-			cfg.Contexts = map[string]*api.Context{
-				"default": {
-					Cluster:   clusterName,
-					Namespace: ns,
-					AuthInfo:  "default",
+				Contexts: map[string]*api.Context{
+					"default": {
+						Cluster:   "provider",
+						Namespace: ns,
+						AuthInfo:  "default",
+					},
 				},
-			}
-			cfg.CurrentContext = "default"
-			cfg.AuthInfos = map[string]*api.AuthInfo{
-				"default": {
-					Token: string(secret.Data["token"]),
+				AuthInfos: map[string]*api.AuthInfo{
+					"default": {
+						Token: string(secret.Data["token"]),
+					},
 				},
+				CurrentContext: "default",
 			}
 
 			kubeconfig, err := clientcmd.Write(cfg)

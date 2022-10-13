@@ -25,17 +25,32 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateNamespace(ctx context.Context, ns string, client kubernetes.Interface) error {
+const (
+	IdentityAnnotationKey = "example-backend.kube-bind.io/identity"
+)
+
+func CreateNamespace(ctx context.Context, client kubernetes.Interface, generateName, id string) (*corev1.Namespace, error) {
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: ns,
+			GenerateName: generateName,
+			Annotations: map[string]string{
+				IdentityAnnotationKey: id,
+			},
 		},
 	}
 
-	_, err := client.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
+	ns, err := client.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
 	if err != nil && !errors.IsAlreadyExists(err) {
-		return err
+		return nil, err
+	} else if errors.IsAlreadyExists(err) {
+		ns, err := client.CoreV1().Namespaces().Get(ctx, namespace.Name, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		if ns.Annotations[IdentityAnnotationKey] != id {
+			return nil, errors.NewAlreadyExists(corev1.Resource("namespace"), ns.Name)
+		}
 	}
 
-	return nil
+	return ns, err
 }

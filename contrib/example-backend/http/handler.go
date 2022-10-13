@@ -17,7 +17,6 @@ limitations under the License.
 package http
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -35,48 +34,50 @@ import (
 type handler struct {
 	oidc *oidcServiceProvider
 
+	backendCallbackURL string
+	providerPrettyName string
+
 	client *http.Client
 
 	kubeManager *kubernetes.Manager
-
-	clusterName string
 }
 
-func NewHandler(provider *oidcServiceProvider, mgr *kubernetes.Manager, clusterName string) (*handler, error) {
+func NewHandler(provider *oidcServiceProvider, backendCallbackURL, providerPrettyName string, mgr *kubernetes.Manager) (*handler, error) {
 	return &handler{
-		oidc:        provider,
-		client:      http.DefaultClient,
-		kubeManager: mgr,
-		clusterName: clusterName,
+		oidc:               provider,
+		backendCallbackURL: backendCallbackURL,
+		providerPrettyName: providerPrettyName,
+		client:             http.DefaultClient,
+		kubeManager:        mgr,
 	}, nil
 }
 
 func (h *handler) handleServiceExport(c echo2.Context) error {
 	serviceProvider := &v1alpha1.APIServiceProvider{
 		Spec: v1alpha1.APIServiceProviderSpec{
-			AuthenticatedClientURL: "http://ec2-18-196-160-160.eu-central-1.compute.amazonaws.com/authorize",
-			ProviderPrettyName:     "MangoDB.Inc",
+			AuthenticatedClientURL: h.backendCallbackURL,
+			ProviderPrettyName:     h.providerPrettyName,
 		},
 	}
 
-	blob, err := json.Marshal(serviceProvider)
+	bs, err := json.Marshal(serviceProvider)
 	if err != nil {
 		c.Logger().Error(err)
 		return err
 	}
 
-	return c.Blob(http.StatusOK, "application/json", blob)
+	return c.Blob(http.StatusOK, "application/json", bs)
 }
 
 func (h *handler) handleAuthorize(c echo2.Context) error {
-	var scopes = []string{"openid", "profile", "email", "offline_access"}
-	code := &resources.AuthCode{}
-	code.RedirectURL = c.QueryParam("redirect_url")
-	code.SessionID = c.QueryParam("session_id")
-
-	if err := h.kubeManager.SaveUserData(context.TODO(), code); err != nil {
-		c.Logger().Error(err)
-		return err
+	scopes := []string{"openid", "profile", "email", "offline_access"}
+	code := &resources.AuthCode{
+		RedirectURL: c.QueryParam("redirect_url"),
+		SessionID:   c.QueryParam("session_id"),
+	}
+	if code.RedirectURL == "" || code.SessionID == "" {
+		http.Error(c.Response(), "missing redirect_url or session_id", http.StatusBadRequest)
+		return nil
 	}
 
 	dataCode, err := json.Marshal(code)
@@ -86,16 +87,13 @@ func (h *handler) handleAuthorize(c echo2.Context) error {
 	}
 
 	encoded := base64.StdEncoding.EncodeToString(dataCode)
-
 	authURL := h.oidc.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
-
 	return c.Redirect(http.StatusSeeOther, authURL)
 }
 
+// handleCallback handle the authorization redirect callback from OAuth2 auth flow.
 func (h *handler) handleCallback(c echo2.Context) error {
-	// Authorization redirect callback from OAuth2 auth flow.
 	if errMsg := c.FormValue("error"); errMsg != "" {
-
 		http.Error(c.Response(), errMsg+": "+c.FormValue("error_description"), http.StatusBadRequest)
 		return errors.New(errMsg)
 	}
@@ -106,12 +104,6 @@ func (h *handler) handleCallback(c echo2.Context) error {
 	}
 
 	state := c.FormValue("state")
-	sessionIDSecret, err := h.kubeManager.FetchUserData(context.TODO())
-	if err != nil {
-		c.Logger().Error(err)
-		return err
-	}
-
 	decode, err := base64.StdEncoding.DecodeString(state)
 	if err != nil {
 		c.Logger().Error(err)
@@ -124,30 +116,23 @@ func (h *handler) handleCallback(c echo2.Context) error {
 		return err
 	}
 
-	secretData := sessionIDSecret.Data[authCode.SessionID]
+	// TODO: sign state and verify that it is not faked by the oauth provider
 
-	if secretData == nil {
-		http.Error(c.Response(), "unexpected state", http.StatusBadRequest)
-		c.Logger().Error(err)
-		return nil
-	}
-
-	_, err = h.oidc.OIDCProviderConfig(nil).Exchange(context.TODO(), code)
-	if err != nil {
+	if _, err := h.oidc.OIDCProviderConfig(nil).Exchange(c.Request().Context(), code); err != nil {
 		http.Error(c.Response(), fmt.Sprintf("failed to get token: %v", err), http.StatusInternalServerError)
 		c.Logger().Error(err)
 		return err
 	}
 
-	kfg, err := h.kubeManager.HandleResources(context.TODO())
+	kfg, err := h.kubeManager.HandleResources(c.Request().Context(), authCode.SessionID)
 	if err != nil {
 		c.Logger().Error(err)
+		return err
 	}
 
 	authResponse := resources.AuthResponse{
-		SessionID:   authCode.SessionID,
-		Kubeconfig:  kfg,
-		ClusterName: h.clusterName,
+		SessionID:  authCode.SessionID,
+		Kubeconfig: kfg,
 	}
 
 	payload, err := json.Marshal(authResponse)

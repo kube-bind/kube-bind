@@ -17,133 +17,101 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"time"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	kubeinformers "k8s.io/client-go/informers"
 	kubernetesclient "k8s.io/client-go/kubernetes"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/cmd/example-backend/options"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexport"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexportresource"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicenamespace"
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions"
 )
-
-type backendOpts struct {
-	listenIP   string
-	listenPort int
-
-	// at the moment there is no TLS configs but should be added later on.
-	oidcIssuerClientID     string
-	oidcIssuerClientSecret string
-	oidcIssuerURL          string
-
-	kubeconfig  string
-	clusterName string
-	namespace   string
-}
-
-var (
-	scheme = runtime.NewScheme()
-)
-
-func init() {
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
-	utilruntime.Must(kubebindv1alpha1.AddToScheme(scheme))
-}
-
-func newBackendOptions() *backendOpts {
-	opts := &backendOpts{}
-
-	flag.StringVar(&opts.listenIP, "listen-ip", "127.0.0.1", "The host IP where the backend is running")
-	flag.IntVar(&opts.listenPort, "listen-port", 8080, "The host port where the backend is running")
-	flag.StringVar(&opts.oidcIssuerClientID, "oidc-issuer-client-id", "", "Issuer client ID")
-	flag.StringVar(&opts.oidcIssuerClientSecret, "oidc-issuer-client-secret", "", "OpenID client secret")
-	flag.StringVar(&opts.oidcIssuerURL, "oidc-issuer-url", "", "Callback URL for OpenID responses.")
-	flag.StringVar(&opts.kubeconfig, "kubeconfig", "", "path to a kubeconfig. Only required if out-of-cluster.")
-	flag.StringVar(&opts.namespace, "namespace", "kube-system", "the namespace where the biding resources are created at.")
-	flag.StringVar(&opts.clusterName, "cluster-name", "kind-cluster", "the name of the cluster where kube-bind apis will run.")
-
-	klog.InitFlags(nil)
-	flag.Set("v", "2") // nolint:errcheck
-
-	flag.Parse()
-
-	return opts
-}
 
 func main() {
 	ctx := genericapiserver.SetupSignalContext()
 	defer klog.Flush()
 
-	opts := newBackendOptions()
-	oidcRedirect := fmt.Sprintf("http://%s:%v/callback", opts.listenIP, opts.listenPort)
-
-	oidcProvider, err := examplehttp.NewOIDCServiceProvider(opts.oidcIssuerClientID,
-		opts.oidcIssuerClientSecret,
-		oidcRedirect,
-		opts.oidcIssuerURL)
-
-	if err != nil {
-		klog.Fatalf("error building the oidc provider: %v", err)
+	opts := options.NewOptions()
+	if err := opts.Complete(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
+		os.Exit(1)
+	}
+	if err := opts.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
+		os.Exit(1)
 	}
 
+	// setup rest client
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	rules.ExplicitPath = opts.kubeconfig
+	rules.ExplicitPath = opts.KubeConfig
 	cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, nil).ClientConfig()
 	if err != nil {
-		klog.Fatalf("error building kubeconfig: %v", err)
+		klog.Fatalf("Error building kubeconfig: %s", err.Error())
+		os.Exit(1)
 	}
-	cfg.UserAgent = rest.DefaultKubernetesUserAgent()
-
-	mgr, err := examplekube.NewKubernetesManager(cfg, opts.clusterName, opts.namespace)
-	if err != nil {
-		klog.Fatalf("error building kubernetes manager: %v", err)
-	}
-
-	handler, err := examplehttp.NewHandler(oidcProvider, mgr, opts.clusterName)
-	if err != nil {
-		klog.Fatalf("error building the http handler: %v", err)
-	}
-
-	server, err := examplehttp.NewServer(opts.listenIP, opts.listenPort, handler)
-	if err != nil {
-		klog.Fatalf("failed to start the server: %v", err)
-	}
+	cfg = rest.CopyConfig(cfg)
+	cfg = rest.AddUserAgent(cfg, "kube-bind-example-backend")
 
 	// construct informer factories
 	bindClient, err := bindclient.NewForConfig(cfg)
 	if err != nil {
-		klog.Fatalf("error building bind client: %v", err)
+		fmt.Fprintf(os.Stderr, "Error building bind client: %v", err) // nolint: errcheck
+		os.Exit(1)
 	}
 	kubeClient, err := kubernetesclient.NewForConfig(cfg)
 	if err != nil {
-		klog.Fatalf("error building kubernetes client: %v", err)
+		fmt.Fprintf(os.Stderr, "Error building kubernetes client: %v", err) // nolint: errcheck
+		os.Exit(1)
 	}
 	apiextensionClient, err := apiextensionsclient.NewForConfig(cfg)
 	if err != nil {
-		klog.Fatalf("error building apiextension client: %v", err)
+		fmt.Fprintf(os.Stderr, "Error building apiextension client: %v", err) // nolint: errcheck
+		os.Exit(1)
 	}
 	kubeInformers := kubeinformers.NewSharedInformerFactory(kubeClient, time.Minute*30)
 	bindInformers := bindinformers.NewSharedInformerFactory(bindClient, time.Minute*30)
 	apiextensionInformers := apiextensionsinformers.NewSharedInformerFactory(apiextensionClient, time.Minute*30)
+
+	// setup oidc backend
+	oidcProvider, err := examplehttp.NewOIDCServiceProvider(
+		opts.OIDC.IssuerClientID,
+		opts.OIDC.IssuerClientSecret,
+		opts.OIDC.CallbackURL,
+		opts.OIDC.IssuerURL,
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error setting up OIDC: %v", err) // nolint: errcheck
+		os.Exit(1)
+	}
+	mgr, err := examplekube.NewKubernetesManager(opts.NamespacePrefix, cfg, kubeInformers.Core().V1().Namespaces())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error setting up Kubernetes Manager: %v", err) // nolint: errcheck
+		os.Exit(1)
+	}
+	handler, err := examplehttp.NewHandler(oidcProvider, opts.OIDC.CallbackURL, opts.PrettyName, mgr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error setting up HTTP Handler: %v", err) // nolint: errcheck
+		os.Exit(1)
+	}
+	server, err := examplehttp.NewServer(opts.ListenIP, opts.ListenPort, handler)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error setting up HTTP Server: %v", err) // nolint: errcheck
+		os.Exit(1)
+	}
 
 	// construct controllers
 	clusterBindingCtrl, err := clusterbinding.NewController(
@@ -151,7 +119,8 @@ func main() {
 		bindInformers.KubeBind().V1alpha1().ClusterBindings(),
 	)
 	if err != nil {
-		klog.Fatalf("error building cluster binding controller: %v", err)
+		fmt.Fprintf(os.Stderr, "Error setting up ClusterBinding Controller: %v", err) // nolint: errcheck
+		os.Exit(1)
 	}
 	servicenamespaceCtrl, err := servicenamespace.NewController(cfg,
 		bindInformers.KubeBind().V1alpha1().APIServiceNamespaces(),
@@ -162,7 +131,8 @@ func main() {
 		kubeInformers.Rbac().V1().RoleBindings(),
 	)
 	if err != nil {
-		klog.Fatalf("error building the APIServiceNamespace controller: %v", err)
+		fmt.Fprintf(os.Stderr, "Error setting up APIServiceNamespace Controller: %v", err) // nolint: errcheck
+		os.Exit(1)
 	}
 	serviceexportCtrl, err := serviceexport.NewController(cfg,
 		bindInformers.KubeBind().V1alpha1().APIServiceExports(),
@@ -170,14 +140,16 @@ func main() {
 		apiextensionInformers.Apiextensions().V1().CustomResourceDefinitions(),
 	)
 	if err != nil {
-		klog.Fatalf("error building the APIServiceExport controller: %v", err)
+		fmt.Fprintf(os.Stderr, "Error setting up APIServiceExport Controller: %v", err) // nolint: errcheck
+		os.Exit(1)
 	}
 	serviceexportresourceCtrl, err := serviceexportresource.NewController(cfg,
 		bindInformers.KubeBind().V1alpha1().APIServiceExports(),
 		bindInformers.KubeBind().V1alpha1().APIServiceExportResources(),
 	)
 	if err != nil {
-		klog.Fatalf("error building the APIServiceExport controller: %v", err)
+		fmt.Fprintf(os.Stderr, "Error setting up APIServiceExportResource Controller: %v", err) // nolint: errcheck
+		os.Exit(1)
 	}
 
 	// start informer factories

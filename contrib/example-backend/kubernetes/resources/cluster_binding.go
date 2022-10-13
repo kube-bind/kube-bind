@@ -26,7 +26,7 @@ import (
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 )
 
-func CreateClusterBinding(ctx context.Context, client bindclient.Interface, name, ns string) error {
+func CreateClusterBinding(ctx context.Context, client bindclient.Interface, ns, name string) error {
 	_, err := client.KubeBindV1alpha1().ClusterBindings(ns).Get(ctx, ClusterBindingName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {

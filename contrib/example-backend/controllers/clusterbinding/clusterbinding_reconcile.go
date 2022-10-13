@@ -47,9 +47,9 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.Clu
 			kubebindv1alpha1.ClusterBindingConditionHealthy,
 			"HeartbeatTimeout",
 			conditionsapi.ConditionSeverityError,
-			"Heartbeat timeout: expected heartbeat within %s, but last one has been %s ago",
+			"Heartbeat timeout: expected heartbeat within %s, but last one has been at %s",
 			export.Status.HeartbeatInterval.Duration,
-			ago,
+			export.Status.LastHeartbeatTime.Time, // do not put "ago" here. It will hotloop.
 		)
 	} else if ago < time.Second*10 {
 		conditions.MarkFalse(export,

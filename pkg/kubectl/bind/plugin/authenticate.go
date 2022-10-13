@@ -41,7 +41,7 @@ func fetchAuthenticationRoute(url string) (string, error) {
 		return "", err
 	}
 
-	data := &kubebindv1alpha1.ServiceProvider{}
+	data := &kubebindv1alpha1.APIServiceProvider{}
 	if err := json.Unmarshal(blob, data); err != nil {
 		return "", err
 	}

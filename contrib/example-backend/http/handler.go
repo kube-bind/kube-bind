@@ -51,8 +51,8 @@ func NewHandler(provider *oidcServiceProvider, mgr *kubernetes.Manager, clusterN
 }
 
 func (h *handler) handleServiceExport(c echo2.Context) error {
-	serviceProvider := &v1alpha1.ServiceProvider{
-		Spec: v1alpha1.ServiceProviderSpec{
+	serviceProvider := &v1alpha1.APIServiceProvider{
+		Spec: v1alpha1.APIServiceProviderSpec{
 			AuthenticatedClientURL: "http://localhost:8080/authorize",
 			ProviderPrettyName:     "MangoDB.Inc",
 		},

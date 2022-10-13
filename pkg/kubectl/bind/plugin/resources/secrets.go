@@ -28,7 +28,7 @@ import (
 
 // EnsureServiceBindingAuthData create a secret which contains the service binding authenticated data such as
 // the binding session id and the kubeconfig of the service provider cluster.
-func EnsureServiceBindingAuthData(ctx context.Context, clusterName, kubeconfig, accessToken, namespace string, clientset *kubeclient.Clientset) (string, error) {
+func EnsureServiceBindingAuthData(ctx context.Context, clusterName, kubeconfig, sessionID, namespace string, clientset *kubeclient.Clientset) (string, error) {
 	secretName := fmt.Sprintf("%s-kubeconfig", clusterName)
 	kfgSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -36,8 +36,8 @@ func EnsureServiceBindingAuthData(ctx context.Context, clusterName, kubeconfig, 
 			Namespace: namespace,
 		},
 		Data: map[string][]byte{
-			"kubeconfig":  []byte(kubeconfig),
-			"accessToken": []byte(accessToken),
+			"kubeconfig": []byte(kubeconfig),
+			"sessionID":  []byte(sessionID),
 		},
 	}
 

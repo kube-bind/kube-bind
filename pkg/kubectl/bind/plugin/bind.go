@@ -141,7 +141,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 	return nil
 }
 
-func (b *BindOptions) serviceBinding(clusterName, sessionID, kubeconfig, accessToken string) error {
+func (b *BindOptions) serviceBinding(clusterName, sessionID, kubeconfig string) error {
 	config, err := b.ClientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -158,7 +158,7 @@ func (b *BindOptions) serviceBinding(clusterName, sessionID, kubeconfig, accessT
 	}
 
 	_, err = resources.EnsureServiceBindingAuthData(context.TODO(),
-		clusterName, kubeconfig, accessToken, namespace, client)
+		clusterName, kubeconfig, sessionID, namespace, client)
 	if err != nil {
 		return err
 	}

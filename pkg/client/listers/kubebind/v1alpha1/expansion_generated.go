@@ -61,3 +61,11 @@ type ClusterBindingListerExpansion interface{}
 // ClusterBindingNamespaceListerExpansion allows custom methods to be added to
 // ClusterBindingNamespaceLister.
 type ClusterBindingNamespaceListerExpansion interface{}
+
+// ServiceBindingSessionListerExpansion allows custom methods to be added to
+// ServiceBindingSessionLister.
+type ServiceBindingSessionListerExpansion interface{}
+
+// ServiceBindingSessionNamespaceListerExpansion allows custom methods to be added to
+// ServiceBindingSessionNamespaceLister.
+type ServiceBindingSessionNamespaceListerExpansion interface{}

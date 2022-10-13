@@ -29,3 +29,5 @@ type APIServiceNamespaceExpansion interface{}
 type APIServiceProviderExpansion interface{}
 
 type ClusterBindingExpansion interface{}
+
+type ServiceBindingSessionExpansion interface{}

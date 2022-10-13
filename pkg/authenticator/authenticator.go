@@ -18,13 +18,15 @@ package authenticator
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net"
 	"time"
 
 	"github.com/labstack/echo/v4"
 
-	"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 )
 
 type Authenticator interface {
@@ -36,12 +38,12 @@ type defaultAuthenticator struct {
 	server  *echo.Echo
 	port    int
 	timeout time.Duration
-	action  func(string, string, string, string) error
+	action  func(string, string, string) error
 }
 
-func NewDefaultAuthenticator(timeout time.Duration, action func(clusterName, sessionID, kubeconfig, accessToken string) error) (Authenticator, error) {
+func NewDefaultAuthenticator(timeout time.Duration, action func(clusterName, sessionID, kubeconfig string) error) (Authenticator, error) {
 	if timeout == 0 {
-		timeout = 2 * time.Second
+		timeout = 5 * time.Second
 	}
 
 	defaultAuthenticator := &defaultAuthenticator{
@@ -74,10 +76,12 @@ func NewDefaultAuthenticator(timeout time.Duration, action func(clusterName, ses
 }
 
 func (d *defaultAuthenticator) Execute(ctx context.Context) error {
-	return wait.PollImmediateWithContext(ctx, d.timeout, d.timeout,
-		func(ctx context.Context) (done bool, err error) {
-			return false, d.server.Start(fmt.Sprintf("localhost:%v", d.port))
-		})
+	go func() {
+		time.Sleep(5 * time.Second)
+		d.server.Server.Close()
+	}()
+
+	return d.server.Start(fmt.Sprintf("localhost:%v", d.port))
 }
 
 func (d *defaultAuthenticator) Endpoint(context.Context) string {
@@ -86,17 +90,27 @@ func (d *defaultAuthenticator) Endpoint(context.Context) string {
 
 func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 	return func(c echo.Context) error {
-		clusterBindingName := c.Param("cluster_name")
-		sessionID := c.Param("service")
-		kfg := c.Param("kubeconfig")
-		accessToken := c.Param("access_token")
+		authData := c.QueryParam("auth_response")
 
-		if err := d.action(clusterBindingName, sessionID, kfg, accessToken); err != nil {
+		decode, err := base64.StdEncoding.DecodeString(authData)
+		if err != nil {
+			c.Logger().Error(err)
 			return err
 		}
 
-		fmt.Fprintf(c.Response(), "<h1>Successfully Authentication! Please head back to the command line</h1>")
-		time.Sleep(10 * time.Second)
-		return d.server.Server.Close()
+		authResponse := &resources.AuthResponse{}
+		if err := json.Unmarshal(decode, authResponse); err != nil {
+			return err
+		}
+
+		if err := d.action(authResponse.ClusterName, authResponse.SessionID, string(authResponse.Kubeconfig)); err != nil {
+			return err
+		}
+
+		if _, err := c.Response().Write([]byte("<h1>Successfully Authentication! Please head back to the command line</h1>")); err != nil {
+			return err
+		}
+
+		return nil
 	}
 }

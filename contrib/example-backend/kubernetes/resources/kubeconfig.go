@@ -59,7 +59,7 @@ func GenerateKubeconfig(ctx context.Context,
 
 			cfg := api.Config{}
 			cfg.Clusters = map[string]*api.Cluster{
-				"": {
+				clusterName: {
 					Server:                   host,
 					CertificateAuthorityData: secret.Data["ca.crt"],
 				},

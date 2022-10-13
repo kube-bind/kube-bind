@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	echo2 "github.com/labstack/echo/v4"
 
@@ -53,7 +54,7 @@ func NewHandler(provider *oidcServiceProvider, mgr *kubernetes.Manager, clusterN
 func (h *handler) handleServiceExport(c echo2.Context) error {
 	serviceProvider := &v1alpha1.APIServiceProvider{
 		Spec: v1alpha1.APIServiceProviderSpec{
-			AuthenticatedClientURL: "http://localhost:8080/authorize",
+			AuthenticatedClientURL: "http://ec2-18-196-160-160.eu-central-1.compute.amazonaws.com/authorize",
 			ProviderPrettyName:     "MangoDB.Inc",
 		},
 	}
@@ -131,7 +132,7 @@ func (h *handler) handleCallback(c echo2.Context) error {
 		return nil
 	}
 
-	token, err := h.oidc.OIDCProviderConfig(nil).Exchange(context.TODO(), code)
+	_, err = h.oidc.OIDCProviderConfig(nil).Exchange(context.TODO(), code)
 	if err != nil {
 		http.Error(c.Response(), fmt.Sprintf("failed to get token: %v", err), http.StatusInternalServerError)
 		c.Logger().Error(err)
@@ -143,7 +144,34 @@ func (h *handler) handleCallback(c echo2.Context) error {
 		c.Logger().Error(err)
 	}
 
-	redirectURL := fmt.Sprintf("%s?cluster_name=%s&session_id=%s&kubeconfig=%s&access_token=%s",
-		authCode.RedirectURL, h.clusterName, authCode.SessionID, kfg, token.AccessToken)
-	return c.Redirect(301, redirectURL)
+	authResponse := resources.AuthResponse{
+		SessionID:   authCode.SessionID,
+		Kubeconfig:  kfg,
+		ClusterName: h.clusterName,
+	}
+
+	payload, err := json.Marshal(authResponse)
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	encoded := base64.StdEncoding.EncodeToString(payload)
+
+	parsedAuthURL, err := url.Parse(authCode.RedirectURL)
+	if err != nil {
+		return fmt.Errorf("failed to parse auth url: %v", err)
+	}
+
+	values := parsedAuthURL.Query()
+	values.Add("auth_response", encoded)
+
+	parsedAuthURL.RawQuery = values.Encode()
+
+	if err := c.Redirect(301, parsedAuthURL.String()); err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	return nil
 }

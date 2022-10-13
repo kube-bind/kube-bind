@@ -31,3 +31,13 @@ type AuthCode struct {
 	RedirectURL string
 	SessionID   string
 }
+
+// AuthResponse contains the authentication data which is needed to connect to the service provider
+// cluster.
+// TODO: think about replace the cluster name with an identity which represents the cluster instead of the cluster name
+// TODO: think about adding a URL of the requested service provider as well to distinguish the service that is being served
+type AuthResponse struct {
+	SessionID   string
+	Kubeconfig  []byte
+	ClusterName string
+}

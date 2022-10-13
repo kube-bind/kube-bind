@@ -36,6 +36,8 @@ type Interface interface {
 	APIServiceProviders() APIServiceProviderInformer
 	// ClusterBindings returns a ClusterBindingInformer.
 	ClusterBindings() ClusterBindingInformer
+	// ServiceBindingSessions returns a ServiceBindingSessionInformer.
+	ServiceBindingSessions() ServiceBindingSessionInformer
 }
 
 type version struct {
@@ -77,4 +79,9 @@ func (v *version) APIServiceProviders() APIServiceProviderInformer {
 // ClusterBindings returns a ClusterBindingInformer.
 func (v *version) ClusterBindings() ClusterBindingInformer {
 	return &clusterBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceBindingSessions returns a ServiceBindingSessionInformer.
+func (v *version) ServiceBindingSessions() ServiceBindingSessionInformer {
+	return &serviceBindingSessionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

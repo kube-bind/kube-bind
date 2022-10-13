@@ -44,6 +44,7 @@ func NewServer(address string, port int, handler *handler) (*server, error) {
 		router:  router,
 	}
 
+	server.router.GET("/export", server.handler.handleServiceExport)
 	server.router.GET("/authorize", server.handler.handleAuthorize)
 	server.router.GET("/callback", server.handler.handleCallback)
 

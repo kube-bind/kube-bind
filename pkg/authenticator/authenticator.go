@@ -18,7 +18,10 @@ package authenticator
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"net"
 	"time"
 
@@ -36,10 +39,10 @@ type defaultAuthenticator struct {
 	server  *echo.Echo
 	port    int
 	timeout time.Duration
-	action  func(string, string, string, string) error
+	action  func(string, string, string) error
 }
 
-func NewDefaultAuthenticator(timeout time.Duration, action func(clusterName, sessionID, kubeconfig, accessToken string) error) (Authenticator, error) {
+func NewDefaultAuthenticator(timeout time.Duration, action func(clusterName, sessionID, kubeconfig string) error) (Authenticator, error) {
 	if timeout == 0 {
 		timeout = 2 * time.Second
 	}
@@ -86,17 +89,29 @@ func (d *defaultAuthenticator) Endpoint(context.Context) string {
 
 func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 	return func(c echo.Context) error {
-		clusterBindingName := c.Param("cluster_name")
-		sessionID := c.Param("service")
-		kfg := c.Param("kubeconfig")
-		accessToken := c.Param("access_token")
+		authData := c.QueryParam("auth_response")
 
-		if err := d.action(clusterBindingName, sessionID, kfg, accessToken); err != nil {
+		decode, err := base64.StdEncoding.DecodeString(authData)
+		if err != nil {
+			c.Logger().Error(err)
 			return err
 		}
 
-		fmt.Fprintf(c.Response(), "<h1>Successfully Authentication! Please head back to the command line</h1>")
-		time.Sleep(10 * time.Second)
-		return d.server.Server.Close()
+		authResponse := &resources.AuthResponse{}
+		if err := json.Unmarshal(decode, authResponse); err != nil {
+			return err
+		}
+
+		if err := d.action(authResponse.ClusterName, authResponse.SessionID, string(authResponse.Kubeconfig)); err != nil {
+			return err
+		}
+
+		time.Sleep(5 * time.Second)
+		d.server.Server.Close()
+		if _, err := fmt.Fprintf(c.Response(), "<h1>Successfully Authentication! Please head back to the command line</h1>"); err != nil {
+			return err
+		}
+
+		return nil
 	}
 }

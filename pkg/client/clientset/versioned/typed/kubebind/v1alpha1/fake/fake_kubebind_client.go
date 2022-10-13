@@ -53,10 +53,6 @@ func (c *FakeKubeBindV1alpha1) ClusterBindings(namespace string) v1alpha1.Cluste
 	return &FakeClusterBindings{c, namespace}
 }
 
-func (c *FakeKubeBindV1alpha1) ServiceBindingSessions(namespace string) v1alpha1.ServiceBindingSessionInterface {
-	return &FakeServiceBindingSessions{c, namespace}
-}
-
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeKubeBindV1alpha1) RESTClient() rest.Interface {

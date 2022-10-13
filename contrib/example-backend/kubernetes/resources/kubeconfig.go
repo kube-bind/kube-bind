@@ -32,7 +32,7 @@ import (
 
 func GenerateKubeconfig(ctx context.Context,
 	client kubernetes.Interface,
-	host, secretName, ns string,
+	host, clusterName, secretName, ns string,
 ) (*corev1.Secret, error) {
 	kfg, err := client.CoreV1().Secrets(ns).Get(ctx, ClusterBindingKubeConfig, v1.GetOptions{})
 	if err != nil {
@@ -59,7 +59,7 @@ func GenerateKubeconfig(ctx context.Context,
 
 			cfg := api.Config{}
 			cfg.Clusters = map[string]*api.Cluster{
-				"": {
+				clusterName: {
 					Server:                   host,
 					CertificateAuthorityData: secret.Data["ca.crt"],
 				},
@@ -67,7 +67,7 @@ func GenerateKubeconfig(ctx context.Context,
 
 			cfg.Contexts = map[string]*api.Context{
 				"default": {
-					Cluster:   "",
+					Cluster:   clusterName,
 					Namespace: ns,
 					AuthInfo:  "default",
 				},

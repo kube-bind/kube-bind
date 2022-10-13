@@ -107,7 +107,9 @@ func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 			return err
 		}
 
-		c.Response().Write([]byte("<h1>Successfully Authentication! Please head back to the command line</h1>"))
+		if _, err := c.Response().Write([]byte("<h1>Successfully Authentication! Please head back to the command line</h1>")); err != nil {
+			return err
+		}
 
 		return nil
 	}

@@ -33,6 +33,9 @@ var (
 
 	# bind to a remote API service from a https source.
 	%[1]s apiservice --token-file token https://some-url/apiservice-binding-request.yaml
+
+    # bind to a API service directly without any remote agent or service provider.
+	%[1]s apiservice --remote-kubeconfig filename -n namespace resources.group/v1
 	`
 )
 

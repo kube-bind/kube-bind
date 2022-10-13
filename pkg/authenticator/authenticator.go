@@ -21,13 +21,14 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"net"
 	"time"
 
 	"github.com/labstack/echo/v4"
 
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 )
 
 type Authenticator interface {
@@ -106,12 +107,12 @@ func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 			return err
 		}
 
-		time.Sleep(5 * time.Second)
-		d.server.Server.Close()
 		if _, err := fmt.Fprintf(c.Response(), "<h1>Successfully Authentication! Please head back to the command line</h1>"); err != nil {
 			return err
 		}
 
+		time.Sleep(5 * time.Second)
+		d.server.Server.Close()
 		return nil
 	}
 }

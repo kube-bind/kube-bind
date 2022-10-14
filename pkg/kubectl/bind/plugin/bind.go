@@ -91,7 +91,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return err
 	}
 
-	auth, err := authenticator.NewDefaultAuthenticator(1*time.Minute, b.serviceBinding)
+	auth, err := authenticator.NewDefaultAuthenticator(10*time.Minute, b.serviceBinding)
 	if err != nil {
 		return err
 	}
@@ -101,19 +101,14 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return err // should never happen because we test this in Validate()
 	}
 
-	authURL, err := fetchAuthenticationRoute(exportURL.String())
+	provider, err := fetchAuthenticationRoute(exportURL.String())
 	if err != nil {
 		return fmt.Errorf("failed to fetch authentication url: %v", err)
 	}
 
-	parsedAuthURL, err := url.Parse(authURL)
-	if err != nil {
-		return fmt.Errorf("failed to parse auth url: %v", err)
-	}
-
 	sessionID := rand.String(rand.IntnRange(20, 30))
 
-	if err := authenticate(parsedAuthURL, auth.Endpoint(ctx), sessionID); err != nil {
+	if err := authenticate(provider, auth.Endpoint(ctx), sessionID); err != nil {
 		return err
 	}
 

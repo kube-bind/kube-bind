@@ -22,6 +22,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
@@ -29,15 +30,19 @@ import (
 )
 
 func CreateAPIServiceExport(ctx context.Context, client bindclient.Interface, serviceExport cache.Indexer, ns, resource, group string) error {
+	logging := klog.FromContext(ctx)
+
 	exports, err := serviceExport.ByIndex(indexers.ServiceExportByServiceExportResource, indexers.ServiceExportByServiceExportResourceKey(ns, resource, group))
 	if err != nil {
 		return fmt.Errorf("failed to get service export for resource %s.%s: %w", resource, group, err)
 	}
 
 	if len(exports) > 0 {
+		logging.Info("Service export already exists", "name", resource+"."+group)
 		return nil
 	}
 
+	logging.Info("Creating service export", "name", resource+"."+group)
 	_, err = client.KubeBindV1alpha1().APIServiceExports(ns).Create(ctx, &kubebindv1alpha1.APIServiceExport{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      resource + "." + group,

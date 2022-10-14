@@ -71,7 +71,7 @@ func (r *reconciler) ensureValidServiceExport(ctx context.Context, binding *kube
 		conditions.MarkFalse(
 			binding,
 			kubebindv1alpha1.APIServiceBindingConditionConnected,
-			"ServiceExportNotFound",
+			"APIServiceExportNotFound",
 			conditionsapi.ConditionSeverityError,
 			"APIServiceExport %s not found on the service provider cluster. Rerun kubectl bind for repair.",
 			binding.Spec.Export,

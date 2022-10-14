@@ -38,10 +38,10 @@ type defaultAuthenticator struct {
 	server  *echo.Echo
 	port    int
 	timeout time.Duration
-	action  func(ctx context.Context, sessionID string, kubeconfig, resource, group, id, export string) error
+	action  func(context.Context, *resources.AuthResponse) error
 }
 
-func NewDefaultAuthenticator(timeout time.Duration, action func(ctx context.Context, sessionID, kubeconfig, resource, group, id, export string) error) (Authenticator, error) {
+func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context, *resources.AuthResponse) error) (Authenticator, error) {
 	if timeout == 0 {
 		timeout = 5 * time.Second
 	}
@@ -92,6 +92,8 @@ func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 	return func(c echo.Context) error {
 		authData := c.QueryParam("auth_response")
 
+		fmt.Printf("Got callback\n")
+
 		decode, err := base64.StdEncoding.DecodeString(authData)
 		if err != nil {
 			c.Logger().Error(err)
@@ -103,13 +105,15 @@ func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 			return err
 		}
 
-		if err := d.action(c.Request().Context(), authResponse.SessionID, string(authResponse.Kubeconfig), authResponse.Resource, authResponse.Group, authResponse.ID, authResponse.Export); err != nil {
+		if err := d.action(c.Request().Context(), authResponse); err != nil {
 			return err
 		}
 
 		if _, err := c.Response().Write([]byte("<h1>Successfully Authentication! Please head back to the command line</h1>")); err != nil {
 			return err
 		}
+
+		d.server.Server.Close() // nolint:errcheck
 
 		return nil
 	}

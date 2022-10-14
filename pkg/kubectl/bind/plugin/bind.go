@@ -21,20 +21,24 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	kubeclient "k8s.io/client-go/kubernetes"
 
+	backendresources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/deploy/konnector"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/authenticator"
@@ -99,19 +103,18 @@ func (b *BindOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	apiextensionsClient, err := apiextensionsclient.NewForConfig(config)
+	if err != nil {
+		return err
+	}
 	bindClient, err := bindclient.NewForConfig(config)
 	if err != nil {
 		return err
 	}
 
-	var group, resource, clusterID, kubeConfig, exportName string
-	auth, err := authenticator.NewDefaultAuthenticator(10*time.Minute, func(ctx context.Context, sessionID, kcfg, r, g, id, export string) error {
-		group = g
-		resource = r
-		id = id
-		kubeConfig = kcfg
-		exportName = export
-
+	var response *backendresources.AuthResponse
+	auth, err := authenticator.NewDefaultAuthenticator(10*time.Minute, func(ctx context.Context, resp *backendresources.AuthResponse) error {
+		response = resp
 		return nil
 	})
 	if err != nil {
@@ -134,9 +137,13 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return err
 	}
 
-	if err := auth.Execute(ctx); err != nil {
+	if err := auth.Execute(ctx); err != nil && !strings.Contains(err.Error(), "Server closed") {
 		return err
+	} else if response == nil {
+		return fmt.Errorf("authentication timeout")
 	}
+
+	fmt.Printf("Successfully authenticated to %s\n", exportURL.String())
 
 	// bootstrap the konnector
 	dynamicClient, err := dynamic.NewForConfig(config)
@@ -150,53 +157,133 @@ func (b *BindOptions) Run(ctx context.Context) error {
 	if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, sets.NewString()); err != nil {
 		return err
 	}
+	first := true
+	wait.PollImmediateInfiniteWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+		_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			if first {
+				fmt.Print("Waiting for the konnector to be ready")
+				first = false
+			} else {
+				fmt.Print(".")
+			}
+		}
+		return err == nil, nil
+	}) // nolint:errcheck
 
-	// create the binding
+	// create the namespace
 	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "kube-bind",
 		},
 	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
+	} else if err == nil {
+		fmt.Printf("Created kube-binding namespace.\n")
 	}
+
+	// look for secret of the given identity
 	secrets, err := kubeClient.CoreV1().Secrets("kube-bind").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
 	var secretName string
 	for _, s := range secrets.Items {
-		if s.Annotations[resources.ClusterIDAnnotationKey] == clusterID {
-			fmt.Printf("Found existing secret kube-bind/%s for identity %s\n", s.Name, clusterID)
+		if s.Annotations[resources.ClusterIDAnnotationKey] == response.ID {
 			secretName = s.Name
 			break
 		}
 	}
+
+	// check for existing CRD
+	crd, err := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, response.Resource+"."+response.Group, metav1.GetOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
 	if secretName == "" {
-		fmt.Printf("Creating secret kube-bind/%s for identity %s\n", clusterID, clusterID)
-		secretName, err = resources.EnsureServiceBindingAuthData(ctx, sessionID, clusterID, kubeConfig, "kube-bind", kubeClient)
+		if err == nil {
+			return fmt.Errorf("CRD %s.%s already exists and is not from this service provider", response.Resource, response.Group)
+		}
+
+		fmt.Printf("Creating secret for identity %s\n", response.ID)
+		secretName, err = resources.EnsureServiceBindingAuthData(ctx, string(response.Kubeconfig), response.ID, "kube-bind", "", kubeClient)
+		if err != nil {
+			return err
+		}
+	} else if err == nil {
+		fmt.Printf("Found existing CRD %s. Checking owner.\n", crd.Name)
+
+		// check if the CRD is owner-refed by the APIServiceBinding
+		for _, ref := range crd.OwnerReferences {
+			parts := strings.SplitN(ref.APIVersion, "/", 2)
+			if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
+				continue
+			}
+
+			existing, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Get(ctx, ref.Name, metav1.GetOptions{})
+			if err != nil && !apierrors.IsNotFound(err) {
+				return err
+			} else if apierrors.IsNotFound(err) {
+				continue
+			}
+
+			if existing.Spec.KubeconfigSecretRef.Namespace == "kube-bind" && existing.Spec.KubeconfigSecretRef.Name == secretName {
+				fmt.Printf("Updating credentials for existing APIServiceBinding %s\n", existing.Name)
+				_, err = resources.EnsureServiceBindingAuthData(ctx, string(response.Kubeconfig), response.ID, "kube-bind", secretName, kubeClient)
+				return err
+			}
+		}
+		return fmt.Errorf("found existing CustomResourceDefinition %s not from this service provider", response.ID)
+	} else {
+		fmt.Printf("Updating credentials\n")
+		secretName, err = resources.EnsureServiceBindingAuthData(ctx, string(response.Kubeconfig), response.ID, "kube-bind", secretName, kubeClient)
 		if err != nil {
 			return err
 		}
 	}
-	_, err = bindClient.KubeBindV1alpha1().APIServiceBindings().Create(ctx, &kubebindv1alpha1.APIServiceBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      resource + "." + group,
-			Namespace: "kube-bind",
-		},
-		Spec: kubebindv1alpha1.APIServiceBindingSpec{
-			KubeconfigSecretRef: kubebindv1alpha1.ClusterSecretKeyRef{
-				LocalSecretKeyRef: kubebindv1alpha1.LocalSecretKeyRef{
-					Name: secretName,
-					Key:  "kubeconfig",
-				},
+
+	// create new APIServiceBinding.
+	first = true
+	if err := wait.PollInfinite(1*time.Second, func() (bool, error) {
+		if !first {
+			first = false
+			fmt.Print(".")
+		}
+		_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Create(ctx, &kubebindv1alpha1.APIServiceBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      response.Resource + "." + response.Group,
 				Namespace: "kube-bind",
 			},
-			Export: exportName,
-		},
-	}, metav1.CreateOptions{})
-	if err != nil {
+			Spec: kubebindv1alpha1.APIServiceBindingSpec{
+				KubeconfigSecretRef: kubebindv1alpha1.ClusterSecretKeyRef{
+					LocalSecretKeyRef: kubebindv1alpha1.LocalSecretKeyRef{
+						Name: secretName,
+						Key:  "kubeconfig",
+					},
+					Namespace: "kube-bind",
+				},
+				Export: response.Export,
+			},
+		}, metav1.CreateOptions{})
+		if err != nil && !apierrors.IsAlreadyExists(err) {
+			return false, err
+		} else if apierrors.IsAlreadyExists(err) {
+			existing, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Get(ctx, response.Resource+"."+response.Group, metav1.GetOptions{})
+			if err != nil {
+				return false, nil
+			}
+			if existing.Spec.KubeconfigSecretRef.Namespace == "kube-bind" && existing.Spec.KubeconfigSecretRef.Name == secretName {
+				return true, nil
+			}
+			return false, fmt.Errorf("APIServiceBinding %s.%s already exists, but from different provider", response.Resource, response.Group)
+		}
+
+		return true, nil
+	}); err != nil {
+		fmt.Println()
 		return err
 	}
+	fmt.Printf("\nCreated APIServiceBinding %s.%s\n", response.Resource, response.Group)
 
 	return nil
 }

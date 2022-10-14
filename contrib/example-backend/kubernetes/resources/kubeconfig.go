@@ -59,7 +59,7 @@ func GenerateKubeconfig(ctx context.Context,
 				},
 				Contexts: map[string]*api.Context{
 					"default": {
-						Cluster:   "provider",
+						Cluster:   "default",
 						Namespace: ns,
 						AuthInfo:  "default",
 					},

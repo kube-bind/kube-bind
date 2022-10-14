@@ -108,6 +108,7 @@ func main() {
 	}
 	mgr, err := examplekube.NewKubernetesManager(
 		opts.NamespacePrefix,
+		opts.PrettyName,
 		cfg,
 		kubeInformers.Core().V1().Namespaces(),
 		bindInformers.KubeBind().V1alpha1().APIServiceExports(),

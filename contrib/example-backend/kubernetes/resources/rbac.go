@@ -24,9 +24,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeclient "k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 )
 
 func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns string) (*corev1.ServiceAccount, error) {
+	logger := klog.FromContext(ctx)
+
 	sa, err := client.CoreV1().ServiceAccounts(ns).Get(ctx, ClusterAdminName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -37,6 +40,7 @@ func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns s
 				},
 			}
 
+			logger.Info("Creating service account", "name", sa.Name)
 			return client.CoreV1().ServiceAccounts(ns).Create(ctx, sa, metav1.CreateOptions{})
 		}
 	}
@@ -45,12 +49,12 @@ func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns s
 }
 
 func CreateAdminClusterRoleBinding(ctx context.Context, client kubeclient.Interface, ns string) error {
-	_, err := client.RbacV1().ClusterRoleBindings().Get(ctx, ClusterAdminName, metav1.GetOptions{})
+	_, err := client.RbacV1().ClusterRoleBindings().Get(ctx, ns, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: ClusterAdminName,
+					Name: "kubebind-" + ns,
 				},
 				Subjects: []rbacv1.Subject{
 					{

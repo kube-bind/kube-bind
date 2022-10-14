@@ -26,6 +26,7 @@ import (
 	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 
 	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
@@ -35,7 +36,8 @@ import (
 )
 
 type Manager struct {
-	namespacePrefix string
+	namespacePrefix    string
+	providerPrettyName string
 
 	clusterConfig *rest.Config
 
@@ -50,7 +52,7 @@ type Manager struct {
 }
 
 func NewKubernetesManager(
-	namespacePrefix string,
+	namespacePrefix, providerPrettyName string,
 	config *rest.Config,
 	namespaceInformer corev1informers.NamespaceInformer,
 	exportInformer bindinformers.APIServiceExportInformer,
@@ -68,7 +70,8 @@ func NewKubernetesManager(
 	}
 
 	m := &Manager{
-		namespacePrefix: namespacePrefix,
+		namespacePrefix:    namespacePrefix,
+		providerPrettyName: providerPrettyName,
 
 		clusterConfig: config,
 
@@ -94,12 +97,16 @@ func NewKubernetesManager(
 }
 
 func (m *Manager) HandleResources(ctx context.Context, identity, resource, group string) ([]byte, error) {
+	logger := klog.FromContext(ctx).WithValues("identity", identity, "resource", resource, "group", group)
+	ctx = klog.NewContext(ctx, logger)
+
 	// try to find an existing namespace by annotation, or create a new one.
 	nss, err := m.namespaceIndexer.ByIndex(NamespacesByIdentity, identity)
 	if err != nil {
 		return nil, err
 	}
 	if len(nss) > 1 {
+		logger.Error(fmt.Errorf("found multiple namespaces for identity %q", identity), "found multiple namespaces for identity")
 		return nil, fmt.Errorf("found multiple namespaces for identity %q", identity)
 	}
 	var ns string
@@ -107,11 +114,14 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		ns = nss[0].(*corev1.Namespace).Name
 	} else {
 		nsObj, err := kuberesources.CreateNamespace(ctx, m.kubeClient, m.namespacePrefix, identity)
+		logger.Info("Created namespace", "namespace", nsObj.Name)
 		if err != nil {
 			return nil, err
 		}
 		ns = nsObj.Name
 	}
+	logger = logger.WithValues("namespace", ns)
+	ctx = klog.NewContext(ctx, logger)
 
 	sa, err := kuberesources.CreateServiceAccount(ctx, m.kubeClient, ns)
 	if err != nil {
@@ -132,7 +142,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		return nil, err
 	}
 
-	if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, sa.Name); err != nil {
+	if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, sa.Name, m.providerPrettyName); err != nil {
 		return nil, err
 	}
 

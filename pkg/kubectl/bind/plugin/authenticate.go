@@ -18,43 +18,62 @@ package plugin
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+
+	"github.com/mdp/qrterminal/v3"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/util"
 )
 
-func fetchAuthenticationRoute(url string) (string, error) {
+func fetchAuthenticationRoute(url string) (*kubebindv1alpha1.APIServiceProvider, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	blob, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if err := resp.Body.Close(); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	data := &kubebindv1alpha1.APIServiceProvider{}
-	if err := json.Unmarshal(blob, data); err != nil {
-		return "", err
+	provider := &kubebindv1alpha1.APIServiceProvider{}
+	if err := json.Unmarshal(blob, provider); err != nil {
+		return nil, err
 	}
 
-	return data.Spec.AuthenticatedClientURL, nil
+	return provider, nil
 }
 
-func authenticate(parsedAuthURL *url.URL, authEndpoint, sessionID string) error {
-	values := parsedAuthURL.Query()
-	values.Add("redirect_url", authEndpoint)
-	values.Add("session_id", sessionID)
+func authenticate(provider *kubebindv1alpha1.APIServiceProvider, authEndpoint, sessionID string) error {
+	u, err := url.Parse(provider.Spec.AuthenticatedClientURL)
+	if err != nil {
+		return fmt.Errorf("failed to parse auth url: %v", err)
+	}
 
-	parsedAuthURL.RawQuery = values.Encode()
+	values := u.Query()
+	values.Add("u", authEndpoint)
+	values.Add("s", sessionID)
+	u.RawQuery = values.Encode()
 
-	return util.OpenBrowser(parsedAuthURL.String())
+	fmt.Printf("\nTo authenticate, visit %s in your browser or scan the QRCode below:\n\n", u.String())
+
+	// TODO(sttts): callback backend, not 127.0.0.1
+	config := qrterminal.Config{
+		Level:     qrterminal.L,
+		Writer:    os.Stdout,
+		BlackChar: qrterminal.WHITE,
+		WhiteChar: qrterminal.BLACK,
+		QuietZone: 2,
+	}
+	qrterminal.GenerateWithConfig(u.String(), config)
+
+	return nil
 }

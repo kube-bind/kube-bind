@@ -92,8 +92,8 @@ func (h *handler) handleServiceExport(c echo2.Context) error {
 func (h *handler) handleAuthorize(c echo2.Context) error {
 	scopes := []string{"openid", "profile", "email", "offline_access"}
 	code := &resources.AuthCode{
-		RedirectURL: c.QueryParam("redirect_url"),
-		SessionID:   c.QueryParam("session_id"),
+		RedirectURL: c.QueryParam("u"),
+		SessionID:   c.QueryParam("s"),
 	}
 	if code.RedirectURL == "" || code.SessionID == "" {
 		http.Error(c.Response(), "missing redirect_url or session_id", http.StatusBadRequest)

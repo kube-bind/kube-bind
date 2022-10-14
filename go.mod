@@ -7,6 +7,7 @@ require (
 	github.com/evanphx/json-patch v4.12.0+incompatible
 	github.com/google/go-cmp v0.5.8
 	github.com/labstack/echo/v4 v4.9.0
+	github.com/mdp/qrterminal/v3 v3.0.0
 	github.com/onsi/gomega v1.20.1
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/pflag v1.0.5
@@ -126,6 +127,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/gengo v0.0.0-20211129171323-c02415ce4185 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
+	rsc.io/qr v0.2.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.32 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect

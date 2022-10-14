@@ -21,6 +21,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/pflag"
+
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	genericapiserver "k8s.io/apiserver/pkg/server"
@@ -45,7 +47,14 @@ func main() {
 	ctx := genericapiserver.SetupSignalContext()
 	defer klog.Flush()
 
+	fs := pflag.NewFlagSet("example-backend", pflag.ContinueOnError)
+
 	opts := options.NewOptions()
+	opts.AddFlags(fs)
+	if err := fs.Parse(os.Args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
+		os.Exit(1)
+	}
 	if err := opts.Complete(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
 		os.Exit(1)
@@ -102,7 +111,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error setting up Kubernetes Manager: %v", err) // nolint: errcheck
 		os.Exit(1)
 	}
-	handler, err := examplehttp.NewHandler(oidcProvider, opts.OIDC.CallbackURL, opts.PrettyName, mgr)
+	handler, err := examplehttp.NewHandler(
+		oidcProvider,
+		opts.OIDC.CallbackURL,
+		opts.PrettyName,
+		mgr,
+		apiextensionInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),
+	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error setting up HTTP Handler: %v", err) // nolint: errcheck
 		os.Exit(1)

@@ -71,6 +71,10 @@ func (options *Options) Complete() error {
 		return err
 	}
 
+	if options.OIDC.CallbackURL == "" {
+		options.OIDC.CallbackURL = fmt.Sprintf("http://%s:%d/callback", options.ListenIP, options.ListenPort)
+	}
+
 	return nil
 }
 

@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	echo2 "github.com/labstack/echo/v4"
 
@@ -91,6 +92,18 @@ func (h *handler) handleAuthorize(c echo2.Context) error {
 	return c.Redirect(http.StatusSeeOther, authURL)
 }
 
+func parseJWT(p string) ([]byte, error) {
+	parts := strings.Split(p, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("oidc: malformed jwt, expected 3 parts got %d", len(parts))
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("oidc: malformed jwt payload: %v", err)
+	}
+	return payload, nil
+}
+
 // handleCallback handle the authorization redirect callback from OAuth2 auth flow.
 func (h *handler) handleCallback(c echo2.Context) error {
 	if errMsg := c.FormValue("error"); errMsg != "" {
@@ -118,13 +131,39 @@ func (h *handler) handleCallback(c echo2.Context) error {
 
 	// TODO: sign state and verify that it is not faked by the oauth provider
 
-	if _, err := h.oidc.OIDCProviderConfig(nil).Exchange(c.Request().Context(), code); err != nil {
+	token, err := h.oidc.OIDCProviderConfig(nil).Exchange(c.Request().Context(), code)
+	if err != nil {
 		http.Error(c.Response(), fmt.Sprintf("failed to get token: %v", err), http.StatusInternalServerError)
 		c.Logger().Error(err)
 		return err
 	}
+	jwtStr, ok := token.Extra("id_token").(string)
+	if !ok {
+		http.Error(c.Response(), fmt.Sprintf("failed to get ID token: %v", err), http.StatusInternalServerError)
+		err := fmt.Errorf("invalid id token: %v", token.Extra("id_token"))
+		c.Logger().Error(err)
+		return err
+	}
 
-	kfg, err := h.kubeManager.HandleResources(c.Request().Context(), authCode.SessionID)
+	jwt, err := parseJWT(jwtStr)
+	if !ok {
+		http.Error(c.Response(), fmt.Sprintf("failed to parse JWT: %v", err), http.StatusInternalServerError)
+		err := fmt.Errorf("invalid id token: %v", token.Extra("id_token"))
+		c.Logger().Error(err)
+		return err
+	}
+
+	var idToken struct {
+		Subject string `json:"sub"`
+	}
+
+	if err := json.Unmarshal(jwt, &idToken); err != nil {
+		http.Error(c.Response(), fmt.Sprintf("failed to parse ID token: %v", err), http.StatusInternalServerError)
+		c.Logger().Error(fmt.Errorf("invalid id token: %v", jwt))
+		return err
+	}
+
+	kfg, err := h.kubeManager.HandleResources(c.Request().Context(), idToken.Subject)
 	if err != nil {
 		c.Logger().Error(err)
 		return err

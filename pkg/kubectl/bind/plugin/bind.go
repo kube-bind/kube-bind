@@ -25,6 +25,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -33,7 +36,9 @@ import (
 	kubeclient "k8s.io/client-go/kubernetes"
 
 	"github.com/kube-bind/kube-bind/deploy/konnector"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/authenticator"
+	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin/resources"
 )
@@ -86,12 +91,29 @@ func (b *BindOptions) Validate() error {
 
 // Run starts the binding process.
 func (b *BindOptions) Run(ctx context.Context) error {
-	_, err := b.ClientConfig.ClientConfig()
+	config, err := b.ClientConfig.ClientConfig()
+	if err != nil {
+		return err
+	}
+	kubeClient, err := kubeclient.NewForConfig(config)
+	if err != nil {
+		return err
+	}
+	bindClient, err := bindclient.NewForConfig(config)
 	if err != nil {
 		return err
 	}
 
-	auth, err := authenticator.NewDefaultAuthenticator(10*time.Minute, b.serviceBinding)
+	var group, resource, clusterID, kubeConfig, exportName string
+	auth, err := authenticator.NewDefaultAuthenticator(10*time.Minute, func(ctx context.Context, sessionID, kcfg, r, g, id, export string) error {
+		group = g
+		resource = r
+		id = id
+		kubeConfig = kcfg
+		exportName = export
+
+		return nil
+	})
 	if err != nil {
 		return err
 	}
@@ -117,47 +139,64 @@ func (b *BindOptions) Run(ctx context.Context) error {
 	}
 
 	// bootstrap the konnector
-	cfg, err := b.ClientConfig.ClientConfig()
+	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return err
 	}
-	client, err := dynamic.NewForConfig(cfg)
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
 	if err != nil {
 		return err
 	}
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return err
-	}
-	if err := konnector.Bootstrap(ctx, discoveryClient, client, sets.NewString()); err != nil {
+	if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, sets.NewString()); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (b *BindOptions) serviceBinding(ctx context.Context, sessionID, kubeconfig string) error {
-	config, err := b.ClientConfig.ClientConfig()
+	// create the binding
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "kube-bind",
+		},
+	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
+		return err
+	}
+	secrets, err := kubeClient.CoreV1().Secrets("kube-bind").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
-
-	client, err := kubeclient.NewForConfig(config)
+	var secretName string
+	for _, s := range secrets.Items {
+		if s.Annotations[resources.ClusterIDAnnotationKey] == clusterID {
+			fmt.Printf("Found existing secret kube-bind/%s for identity %s\n", s.Name, clusterID)
+			secretName = s.Name
+			break
+		}
+	}
+	if secretName == "" {
+		fmt.Printf("Creating secret kube-bind/%s for identity %s\n", clusterID, clusterID)
+		secretName, err = resources.EnsureServiceBindingAuthData(ctx, sessionID, clusterID, kubeConfig, "kube-bind", kubeClient)
+		if err != nil {
+			return err
+		}
+	}
+	_, err = bindClient.KubeBindV1alpha1().APIServiceBindings().Create(ctx, &kubebindv1alpha1.APIServiceBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      resource + "." + group,
+			Namespace: "kube-bind",
+		},
+		Spec: kubebindv1alpha1.APIServiceBindingSpec{
+			KubeconfigSecretRef: kubebindv1alpha1.ClusterSecretKeyRef{
+				LocalSecretKeyRef: kubebindv1alpha1.LocalSecretKeyRef{
+					Name: secretName,
+					Key:  "kubeconfig",
+				},
+				Namespace: "kube-bind",
+			},
+			Export: exportName,
+		},
+	}, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
-
-	ns, _, err := b.ClientConfig.Namespace()
-	if err != nil {
-		return err
-	}
-
-	_, err = resources.EnsureServiceBindingAuthData(ctx, sessionID, kubeconfig, ns, client)
-	if err != nil {
-		return err
-	}
-
-	// TODO: create the ServiceBinding
 
 	return nil
 }

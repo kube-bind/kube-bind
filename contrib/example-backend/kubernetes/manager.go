@@ -76,7 +76,7 @@ func NewKubernetesManager(namespacePrefix string, config *rest.Config, namespace
 	return m, nil
 }
 
-func (m *Manager) HandleResources(ctx context.Context, identity string) ([]byte, error) {
+func (m *Manager) HandleResources(ctx context.Context, identity, resource, group string) ([]byte, error) {
 	// try to find an existing namespace by annotation, or create a new one.
 	nss, err := m.namespaceIndexer.ByIndex(NamespacesByIdentity, identity)
 	if err != nil {

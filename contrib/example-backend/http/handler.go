@@ -182,12 +182,47 @@ func (h *handler) handleCallback(c echo2.Context) error {
 		return err
 	}
 
-	kfg, err := h.kubeManager.HandleResources(c.Request().Context(), idToken.Subject)
+	// here go to /resources, with cookie set
+
+	return nil
+}
+
+func (h *handler) handleResources(c echo2.Context) error {
+	crds, err := h.apiextensionsLister.List(labels.Everything())
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+	sort.SliceStable(crds, func(i, j int) bool {
+		return crds[i].Name < crds[j].Name
+	})
+
+	bs := bytes.Buffer{}
+	if err := resourcesTemplate.Execute(&bs, struct {
+		CRDs []*apiextensionsv1.CustomResourceDefinition
+	}{
+		CRDs: crds,
+	}); err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	c.HTMLBlob(http.StatusOK, bs.Bytes()) // nolint: errcheck
+
+	return nil
+}
+
+func (h *handler) handleBind(c echo2.Context) error {
+	// get query params
+
+	kfg, err := h.kubeManager.HandleResources(c.Request().Context(), "placeholder" /*idToken.Subject*/, "resource", "group")
 	if err != nil {
 		c.Logger().Error(err)
 		return err
 	}
 
+	// callback client with access token and kubeconfig
+	authCode := &resources.AuthCode{} // TODO: get this from cookie
 	authResponse := resources.AuthResponse{
 		SessionID:  authCode.SessionID,
 		Kubeconfig: kfg,
@@ -215,31 +250,6 @@ func (h *handler) handleCallback(c echo2.Context) error {
 		c.Logger().Error(err)
 		return err
 	}
-
-	return nil
-}
-
-func (h *handler) handleResources(c echo2.Context) error {
-	crds, err := h.apiextensionsLister.List(labels.Everything())
-	if err != nil {
-		c.Logger().Error(err)
-		return err
-	}
-	sort.SliceStable(crds, func(i, j int) bool {
-		return crds[i].Name < crds[j].Name
-	})
-
-	bs := bytes.Buffer{}
-	if err := resourcesTemplate.Execute(&bs, struct {
-		CRDs []*apiextensionsv1.CustomResourceDefinition
-	}{
-		CRDs: crds,
-	}); err != nil {
-		c.Logger().Error(err)
-		return err
-	}
-
-	c.HTMLBlob(http.StatusOK, bs.Bytes()) // nolint: errcheck
 
 	return nil
 }

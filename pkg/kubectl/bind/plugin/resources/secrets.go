@@ -25,13 +25,20 @@ import (
 	kubeclient "k8s.io/client-go/kubernetes"
 )
 
+const (
+	ClusterIDAnnotationKey = "kube-bind.io/cluster-id"
+)
+
 // EnsureServiceBindingAuthData create a secret which contains the service binding authenticated data such as
 // the binding session id and the kubeconfig of the service provider cluster.
-func EnsureServiceBindingAuthData(ctx context.Context, kubeconfig, sessionID, ns string, client kubeclient.Interface) (string, error) {
+func EnsureServiceBindingAuthData(ctx context.Context, kubeconfig, sessionID, clusterID, ns string, client kubeclient.Interface) (string, error) {
 	kfgSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "provider-kubeconfig",
 			Namespace: ns,
+			Annotations: map[string]string{
+				ClusterIDAnnotationKey: clusterID,
+			},
 		},
 		Data: map[string][]byte{
 			"kubeconfig": []byte(kubeconfig),

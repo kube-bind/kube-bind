@@ -30,6 +30,7 @@ import (
 	"time"
 
 	echo2 "github.com/labstack/echo/v4"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -259,10 +260,15 @@ func (h *handler) handleBind(c echo2.Context) error {
 	}
 
 	// callback client with access token and kubeconfig
+	group := c.Request().URL.Query().Get("group")
+	resource := c.Request().URL.Query().Get("resource")
 	authResponse := resources.AuthResponse{
 		SessionID:  state.SessionID,
 		ID:         idToken.Issuer + "/" + idToken.Subject,
 		Kubeconfig: kfg,
+		Group:      group,
+		Resource:   resource,
+		Export:     resource + "." + group,
 	}
 
 	payload, err := json.Marshal(authResponse)

@@ -38,10 +38,10 @@ type defaultAuthenticator struct {
 	server  *echo.Echo
 	port    int
 	timeout time.Duration
-	action  func(ctx context.Context, sessionID string, kubeconfig string) error
+	action  func(ctx context.Context, sessionID string, kubeconfig, resource, group, id, export string) error
 }
 
-func NewDefaultAuthenticator(timeout time.Duration, action func(ctx context.Context, sessionID, kubeconfig string) error) (Authenticator, error) {
+func NewDefaultAuthenticator(timeout time.Duration, action func(ctx context.Context, sessionID, kubeconfig, resource, group, id, export string) error) (Authenticator, error) {
 	if timeout == 0 {
 		timeout = 5 * time.Second
 	}
@@ -103,7 +103,7 @@ func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 			return err
 		}
 
-		if err := d.action(c.Request().Context(), authResponse.SessionID, string(authResponse.Kubeconfig)); err != nil {
+		if err := d.action(c.Request().Context(), authResponse.SessionID, string(authResponse.Kubeconfig), authResponse.Resource, authResponse.Group, authResponse.ID, authResponse.Export); err != nil {
 			return err
 		}
 

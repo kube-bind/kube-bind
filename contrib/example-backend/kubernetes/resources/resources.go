@@ -36,7 +36,9 @@ type AuthCode struct {
 // TODO: think about replace the cluster name with an identity which represents the cluster instead of the cluster name
 // TODO: think about adding a URL of the requested service provider as well to distinguish the service that is being served
 type AuthResponse struct {
-	SessionID  string
-	ID         string
-	Kubeconfig []byte
+	SessionID       string
+	ID              string
+	Kubeconfig      []byte
+	Resource, Group string
+	Export          string
 }

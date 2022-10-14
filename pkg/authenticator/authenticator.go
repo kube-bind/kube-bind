@@ -77,7 +77,7 @@ func NewDefaultAuthenticator(timeout time.Duration, action func(ctx context.Cont
 
 func (d *defaultAuthenticator) Execute(ctx context.Context) error {
 	go func() {
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Minute)
 		d.server.Server.Close()
 	}()
 

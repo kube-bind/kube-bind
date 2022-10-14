@@ -18,7 +18,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -28,12 +27,11 @@ import (
 
 // EnsureServiceBindingAuthData create a secret which contains the service binding authenticated data such as
 // the binding session id and the kubeconfig of the service provider cluster.
-func EnsureServiceBindingAuthData(ctx context.Context, clusterName, kubeconfig, sessionID, namespace string, clientset *kubeclient.Clientset) (string, error) {
-	secretName := fmt.Sprintf("%s-kubeconfig", clusterName)
+func EnsureServiceBindingAuthData(ctx context.Context, kubeconfig, sessionID, ns string, client kubeclient.Interface) (string, error) {
 	kfgSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: namespace,
+			Name:      "provider-kubeconfig",
+			Namespace: ns,
 		},
 		Data: map[string][]byte{
 			"kubeconfig": []byte(kubeconfig),
@@ -41,10 +39,9 @@ func EnsureServiceBindingAuthData(ctx context.Context, clusterName, kubeconfig, 
 		},
 	}
 
-	_, err := clientset.CoreV1().Secrets(namespace).Create(ctx, kfgSecret, metav1.CreateOptions{})
-	if err != nil && !errors.IsAlreadyExists(err) {
+	if _, err := client.CoreV1().Secrets(ns).Create(ctx, kfgSecret, metav1.CreateOptions{}); err != nil && !errors.IsAlreadyExists(err) {
 		return "", err
 	}
 
-	return secretName, nil
+	return kfgSecret.Name, nil
 }

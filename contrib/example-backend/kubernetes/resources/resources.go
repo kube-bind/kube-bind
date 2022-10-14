@@ -20,7 +20,6 @@ const (
 	ServiceAccountTokenType       = "kubernetes.io/service-account-token"
 	ServiceAccountTokenAnnotation = "kubernetes.io/service-account.name"
 	ClusterAdminName              = "kubebind-cluster-admin"
-	SessionIDs                    = "session-ids"
 	ClusterBindingName            = "cluster"
 	ClusterBindingKubeConfig      = "cluster-admin-kubeconfig"
 )
@@ -37,7 +36,6 @@ type AuthCode struct {
 // TODO: think about replace the cluster name with an identity which represents the cluster instead of the cluster name
 // TODO: think about adding a URL of the requested service provider as well to distinguish the service that is being served
 type AuthResponse struct {
-	SessionID   string
-	Kubeconfig  []byte
-	ClusterName string
+	SessionID  string
+	Kubeconfig []byte
 }

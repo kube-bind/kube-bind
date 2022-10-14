@@ -17,19 +17,31 @@ limitations under the License.
 package http
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	htmltemplate "html/template"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	echo2 "github.com/labstack/echo/v4"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/template"
 	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+)
+
+var (
+	resourcesTemplate = htmltemplate.Must(htmltemplate.New("resource").Parse(mustRead(template.Files.ReadFile, "resources.gohtml")))
 )
 
 type handler struct {
@@ -38,18 +50,25 @@ type handler struct {
 	backendCallbackURL string
 	providerPrettyName string
 
-	client *http.Client
+	client              *http.Client
+	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister
 
 	kubeManager *kubernetes.Manager
 }
 
-func NewHandler(provider *oidcServiceProvider, backendCallbackURL, providerPrettyName string, mgr *kubernetes.Manager) (*handler, error) {
+func NewHandler(
+	provider *oidcServiceProvider,
+	backendCallbackURL, providerPrettyName string,
+	mgr *kubernetes.Manager,
+	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,
+) (*handler, error) {
 	return &handler{
-		oidc:               provider,
-		backendCallbackURL: backendCallbackURL,
-		providerPrettyName: providerPrettyName,
-		client:             http.DefaultClient,
-		kubeManager:        mgr,
+		oidc:                provider,
+		backendCallbackURL:  backendCallbackURL,
+		providerPrettyName:  providerPrettyName,
+		client:              http.DefaultClient,
+		kubeManager:         mgr,
+		apiextensionsLister: apiextensionsLister,
 	}, nil
 }
 
@@ -198,4 +217,37 @@ func (h *handler) handleCallback(c echo2.Context) error {
 	}
 
 	return nil
+}
+
+func (h *handler) handleResources(c echo2.Context) error {
+	crds, err := h.apiextensionsLister.List(labels.Everything())
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+	sort.SliceStable(crds, func(i, j int) bool {
+		return crds[i].Name < crds[j].Name
+	})
+
+	bs := bytes.Buffer{}
+	if err := resourcesTemplate.Execute(&bs, struct {
+		CRDs []*apiextensionsv1.CustomResourceDefinition
+	}{
+		CRDs: crds,
+	}); err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	c.HTMLBlob(http.StatusOK, bs.Bytes()) // nolint: errcheck
+
+	return nil
+}
+
+func mustRead(f func(name string) ([]byte, error), name string) string {
+	bs, err := f(name)
+	if err != nil {
+		panic(err)
+	}
+	return string(bs)
 }

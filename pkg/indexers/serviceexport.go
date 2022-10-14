@@ -33,9 +33,13 @@ func IndexServiceExportByServiceExportResource(obj interface{}) ([]string, error
 
 	grs := []string{}
 	for _, gr := range export.Spec.Resources {
-		grs = append(grs, export.Namespace+"/"+gr.Resource+"."+gr.Group)
+		grs = append(grs, ServiceExportByServiceExportResourceKey(export.Namespace, gr.Resource, gr.Group))
 	}
 	return grs, nil
+}
+
+func ServiceExportByServiceExportResourceKey(ns, resource, group string) string {
+	return ns + "/" + resource + "." + group
 }
 
 func IndexServiceExportByCustomResourceDefinition(obj interface{}) ([]string, error) {

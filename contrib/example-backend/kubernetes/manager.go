@@ -29,6 +29,8 @@ import (
 
 	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
+	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
+	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 )
 
@@ -42,9 +44,17 @@ type Manager struct {
 
 	namespaceLister  corev1listers.NamespaceLister
 	namespaceIndexer cache.Indexer
+
+	exportLister  bindlisters.APIServiceExportLister
+	exportIndexer cache.Indexer
 }
 
-func NewKubernetesManager(namespacePrefix string, config *rest.Config, namespaceInformer corev1informers.NamespaceInformer) (*Manager, error) {
+func NewKubernetesManager(
+	namespacePrefix string,
+	config *rest.Config,
+	namespaceInformer corev1informers.NamespaceInformer,
+	exportInformer bindinformers.APIServiceExportInformer,
+) (*Manager, error) {
 	config = rest.CopyConfig(config)
 	config = rest.AddUserAgent(config, "kube-bind-example-backend-kubernetes-manager")
 
@@ -67,10 +77,17 @@ func NewKubernetesManager(namespacePrefix string, config *rest.Config, namespace
 
 		namespaceLister:  namespaceInformer.Lister(),
 		namespaceIndexer: namespaceInformer.Informer().GetIndexer(),
+
+		exportLister:  exportInformer.Lister(),
+		exportIndexer: exportInformer.Informer().GetIndexer(),
 	}
 
 	indexers.AddIfNotPresentOrDie(m.namespaceIndexer, cache.Indexers{
 		NamespacesByIdentity: IndexNamespacesByIdentity,
+	})
+
+	indexers.AddIfNotPresentOrDie(m.namespaceIndexer, cache.Indexers{
+		indexers.ServiceExportByServiceExportResource: indexers.IndexServiceExportByServiceExportResource,
 	})
 
 	return m, nil
@@ -116,6 +133,10 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 	}
 
 	if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, sa.Name); err != nil {
+		return nil, err
+	}
+
+	if err := kuberesources.CreateAPIServiceExport(ctx, m.bindClient, m.exportIndexer, ns, resource, group); err != nil {
 		return nil, err
 	}
 

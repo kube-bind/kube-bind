@@ -106,7 +106,12 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error setting up OIDC: %v", err) // nolint: errcheck
 		os.Exit(1)
 	}
-	mgr, err := examplekube.NewKubernetesManager(opts.NamespacePrefix, cfg, kubeInformers.Core().V1().Namespaces())
+	mgr, err := examplekube.NewKubernetesManager(
+		opts.NamespacePrefix,
+		cfg,
+		kubeInformers.Core().V1().Namespaces(),
+		bindInformers.KubeBind().V1alpha1().APIServiceExports(),
+	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error setting up Kubernetes Manager: %v", err) // nolint: errcheck
 		os.Exit(1)

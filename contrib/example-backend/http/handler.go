@@ -27,13 +27,14 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+	"time"
 
 	echo2 "github.com/labstack/echo/v4"
-
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/kube-bind/kube-bind/contrib/example-backend/cookie"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/template"
@@ -49,6 +50,9 @@ type handler struct {
 
 	backendCallbackURL string
 	providerPrettyName string
+
+	cookieName   string
+	cookieExpire time.Duration
 
 	client              *http.Client
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister
@@ -152,13 +156,13 @@ func (h *handler) handleCallback(c echo2.Context) error {
 
 	token, err := h.oidc.OIDCProviderConfig(nil).Exchange(c.Request().Context(), code)
 	if err != nil {
-		http.Error(c.Response(), fmt.Sprintf("failed to get token: %v", err), http.StatusInternalServerError)
+		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
 		c.Logger().Error(err)
 		return err
 	}
 	jwtStr, ok := token.Extra("id_token").(string)
 	if !ok {
-		http.Error(c.Response(), fmt.Sprintf("failed to get ID token: %v", err), http.StatusInternalServerError)
+		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
 		err := fmt.Errorf("invalid id token: %v", token.Extra("id_token"))
 		c.Logger().Error(err)
 		return err
@@ -166,25 +170,37 @@ func (h *handler) handleCallback(c echo2.Context) error {
 
 	jwt, err := parseJWT(jwtStr)
 	if !ok {
-		http.Error(c.Response(), fmt.Sprintf("failed to parse JWT: %v", err), http.StatusInternalServerError)
+		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
 		err := fmt.Errorf("invalid id token: %v", token.Extra("id_token"))
 		c.Logger().Error(err)
 		return err
 	}
 
-	var idToken struct {
-		Subject string `json:"sub"`
+	sessionCookie := cookie.SessionState{
+		CreatedAt:    time.Now(),
+		ExpiresOn:    token.Expiry,
+		AccessToken:  token.AccessToken,
+		IDToken:      string(jwt),
+		RefreshToken: token.RefreshToken,
+		RedirectURL:  authCode.RedirectURL,
+		SessionID:    authCode.SessionID,
 	}
 
-	if err := json.Unmarshal(jwt, &idToken); err != nil {
-		http.Error(c.Response(), fmt.Sprintf("failed to parse ID token: %v", err), http.StatusInternalServerError)
+	b, err := sessionCookie.Encode()
+	if err != nil {
+		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
 		c.Logger().Error(fmt.Errorf("invalid id token: %v", jwt))
 		return err
 	}
 
-	// here go to /resources, with cookie set
+	c.SetCookie(cookie.MakeCookie(
+		c.Request(),
+		"kube-bind",
+		b,
+		time.Duration(1)*time.Hour),
+	)
 
-	return nil
+	return c.Redirect(302, "/resources")
 }
 
 func (h *handler) handleResources(c echo2.Context) error {
@@ -213,7 +229,28 @@ func (h *handler) handleResources(c echo2.Context) error {
 }
 
 func (h *handler) handleBind(c echo2.Context) error {
-	// get query params
+	ck, err := c.Cookie("kube-bind")
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	state, err := cookie.Decode(ck.Value)
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	var idToken struct {
+		Subject string `json:"sub"`
+		Issuer  string `json:"iss"`
+	}
+
+	if err := json.Unmarshal([]byte(state.IDToken), &idToken); err != nil {
+		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
+		c.Logger().Error(fmt.Errorf("invalid id token: %v", state.IDToken))
+		return err
+	}
 
 	kfg, err := h.kubeManager.HandleResources(c.Request().Context(), "placeholder" /*idToken.Subject*/, "resource", "group")
 	if err != nil {
@@ -222,9 +259,9 @@ func (h *handler) handleBind(c echo2.Context) error {
 	}
 
 	// callback client with access token and kubeconfig
-	authCode := &resources.AuthCode{} // TODO: get this from cookie
 	authResponse := resources.AuthResponse{
-		SessionID:  authCode.SessionID,
+		SessionID:  state.SessionID,
+		ID:         idToken.Issuer + "/" + idToken.Subject,
 		Kubeconfig: kfg,
 	}
 
@@ -236,7 +273,7 @@ func (h *handler) handleBind(c echo2.Context) error {
 
 	encoded := base64.StdEncoding.EncodeToString(payload)
 
-	parsedAuthURL, err := url.Parse(authCode.RedirectURL)
+	parsedAuthURL, err := url.Parse(state.RedirectURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse auth url: %v", err)
 	}

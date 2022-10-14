@@ -37,5 +37,6 @@ type AuthCode struct {
 // TODO: think about adding a URL of the requested service provider as well to distinguish the service that is being served
 type AuthResponse struct {
 	SessionID  string
+	ID         string
 	Kubeconfig []byte
 }

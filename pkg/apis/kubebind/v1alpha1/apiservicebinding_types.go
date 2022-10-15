@@ -88,7 +88,17 @@ type APIServiceBindingSpec struct {
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="export is immutable"
 	Export string `json:"export"`
+
+	// agentFree set to true means that this binding is self-managed, i.e. on the
+	// provider side the ClusterBinding, APIResourceExport and APIServiceExportResources
+	// are managed by the consumer cluster konnector agent. This requires extended
+	// permissions on the provider side.
+	//
+	// +optional
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="agentFree is immutable"
+	AgentFree bool `json:"agentFree"`
 
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
 	//

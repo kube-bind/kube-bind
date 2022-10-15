@@ -61,10 +61,10 @@ func NewController(
 	namespaceInformer coreinformers.NamespaceInformer,
 	roleInformer rbacinformers.RoleInformer,
 	roleBindingInformer rbacinformers.RoleBindingInformer,
-) (*controller, error) {
+) (*Controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
-	logger := klog.Background().WithValues("controller", controllerName)
+	logger := klog.Background().WithValues("Controller", controllerName)
 
 	config = rest.CopyConfig(config)
 	config = rest.AddUserAgent(config, controllerName)
@@ -78,7 +78,7 @@ func NewController(
 		return nil, err
 	}
 
-	c := &controller{
+	c := &Controller{
 		queue: queue,
 
 		bindClient: bindClient,
@@ -214,9 +214,9 @@ func NewController(
 type Resource = committer.Resource[*kubebindv1alpha1.APIServiceNamespaceSpec, *kubebindv1alpha1.APIServiceNamespaceStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
-// controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
+// Controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
 // the APIServiceNamespace is deleted.
-type controller struct {
+type Controller struct {
 	queue workqueue.RateLimitingInterface
 
 	bindClient bindclient.Interface
@@ -245,7 +245,7 @@ type controller struct {
 	commit CommitFunc
 }
 
-func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -256,7 +256,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueClusterBinding(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueClusterBinding(logger klog.Logger, obj interface{}) {
 	cbKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -284,7 +284,7 @@ func (c *controller) enqueueClusterBinding(logger klog.Logger, obj interface{}) 
 	}
 }
 
-func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	seKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -312,7 +312,7 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	}
 }
 
-func (c *controller) enqueueNamespace(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueNamespace(logger klog.Logger, obj interface{}) {
 	nsKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -335,14 +335,14 @@ func (c *controller) enqueueNamespace(logger klog.Logger, obj interface{}) {
 }
 
 // Start starts the controller, which stops when ctx.Done() is closed.
-func (c *controller) Start(ctx context.Context, numThreads int) {
+func (c *Controller) Start(ctx context.Context, numThreads int) {
 	defer runtime.HandleCrash()
 	defer c.queue.ShutDown()
 
-	logger := klog.FromContext(ctx).WithValues("controller", controllerName)
+	logger := klog.FromContext(ctx).WithValues("Controller", controllerName)
 
-	logger.Info("Starting controller")
-	defer logger.Info("Shutting down controller")
+	logger.Info("Starting Controller")
+	defer logger.Info("Shutting down Controller")
 
 	for i := 0; i < numThreads; i++ {
 		go wait.UntilWithContext(ctx, c.startWorker, time.Second)
@@ -351,14 +351,14 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 	<-ctx.Done()
 }
 
-func (c *controller) startWorker(ctx context.Context) {
+func (c *Controller) startWorker(ctx context.Context) {
 	defer runtime.HandleCrash()
 
 	for c.processNextWorkItem(ctx) {
 	}
 }
 
-func (c *controller) processNextWorkItem(ctx context.Context) bool {
+func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
 	k, quit := c.queue.Get()
 	if quit {
@@ -375,7 +375,7 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	defer c.queue.Done(key)
 
 	if err := c.process(ctx, key); err != nil {
-		runtime.HandleError(fmt.Errorf("%q controller failed to sync %q, err: %w", controllerName, key, err))
+		runtime.HandleError(fmt.Errorf("%q Controller failed to sync %q, err: %w", controllerName, key, err))
 		c.queue.AddRateLimited(key)
 		return true
 	}
@@ -383,7 +383,7 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	return true
 }
 
-func (c *controller) process(ctx context.Context, key string) error {
+func (c *Controller) process(ctx context.Context, key string) error {
 	snsNamespace, snsName, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)

@@ -54,7 +54,7 @@ var noCacheHeaders = map[string]string{
 }
 
 type handler struct {
-	oidc *oidcServiceProvider
+	oidc *OIDCServiceProvider
 
 	backendCallbackURL string
 	providerPrettyName string
@@ -66,7 +66,7 @@ type handler struct {
 }
 
 func NewHandler(
-	provider *oidcServiceProvider,
+	provider *OIDCServiceProvider,
 	backendCallbackURL, providerPrettyName string,
 	mgr *kubernetes.Manager,
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,

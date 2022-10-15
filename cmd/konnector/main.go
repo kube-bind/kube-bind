@@ -19,13 +19,15 @@ package main
 import (
 	"os"
 
+	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/component-base/cli"
 
 	"github.com/kube-bind/kube-bind/cmd/konnector/cmd"
 )
 
 func main() {
-	syncerCommand := cmd.New()
+	ctx := genericapiserver.SetupSignalContext()
+	syncerCommand := cmd.New(ctx)
 	code := cli.Run(syncerCommand)
 	os.Exit(code)
 }

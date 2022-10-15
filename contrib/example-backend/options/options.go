@@ -29,6 +29,9 @@ type Options struct {
 	Logs *logs.Options
 	OIDC *OIDC
 
+	ExtraOptions
+}
+type ExtraOptions struct {
 	ListenIP   string
 	ListenPort int
 
@@ -36,6 +39,17 @@ type Options struct {
 
 	NamespacePrefix string
 	PrettyName      string
+}
+
+type completedOptions struct {
+	Logs *logs.Options
+	OIDC *OIDC
+
+	ExtraOptions
+}
+
+type CompletedOptions struct {
+	*completedOptions
 }
 
 func NewOptions() *Options {
@@ -47,11 +61,13 @@ func NewOptions() *Options {
 		Logs: logs,
 		OIDC: NewOIDC(),
 
-		ListenIP:   "127.0.0.1",
-		ListenPort: 8080,
+		ExtraOptions: ExtraOptions{
+			ListenIP:   "127.0.0.1",
+			ListenPort: 8080,
 
-		NamespacePrefix: "cluster",
-		PrettyName:      "Example Backend",
+			NamespacePrefix: "cluster",
+			PrettyName:      "Example Backend",
+		},
 	}
 }
 
@@ -66,19 +82,25 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.PrettyName, "pretty-name", options.PrettyName, "Pretty name for the backend")
 }
 
-func (options *Options) Complete() error {
+func (options *Options) Complete() (*CompletedOptions, error) {
 	if err := options.OIDC.Complete(); err != nil {
-		return err
+		return nil, err
 	}
 
 	if options.OIDC.CallbackURL == "" {
 		options.OIDC.CallbackURL = fmt.Sprintf("http://%s:%d/callback", options.ListenIP, options.ListenPort)
 	}
 
-	return nil
+	return &CompletedOptions{
+		completedOptions: &completedOptions{
+			Logs:         options.Logs,
+			OIDC:         options.OIDC,
+			ExtraOptions: options.ExtraOptions,
+		},
+	}, nil
 }
 
-func (options *Options) Validate() error {
+func (options *CompletedOptions) Validate() error {
 	if options.ListenIP == "" {
 		return fmt.Errorf("listen IP cannot be empty")
 	}

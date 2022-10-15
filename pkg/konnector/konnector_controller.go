@@ -57,10 +57,10 @@ func New(
 	secretInformer coreinformers.SecretInformer,
 	namespaceInformer coreinformers.NamespaceInformer,
 	crdInformer crdinformers.CustomResourceDefinitionInformer,
-) (*controller, error) {
+) (*Controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
-	logger := klog.Background().WithValues("controller", controllerName)
+	logger := klog.Background().WithValues("Controller", controllerName)
 
 	consumerConfig = rest.CopyConfig(consumerConfig)
 	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
@@ -78,7 +78,7 @@ func New(
 	namespaceDynamicInformer := dynamic.NewDynamicInformer[corelisters.NamespaceLister](namespaceInformer)
 	serviceBindingDynamicInformer := dynamic.NewDynamicInformer[bindlisters.APIServiceBindingLister](serviceBindingInformer)
 	crdDynamicInformer := dynamic.NewDynamicInformer[apiextensionslisters.CustomResourceDefinitionLister](crdInformer)
-	c := &controller{
+	c := &Controller{
 		queue: queue,
 
 		consumerConfig: consumerConfig,
@@ -166,10 +166,10 @@ type GenericController interface {
 	Start(ctx context.Context, numThreads int)
 }
 
-// controller is the top-level controller watching ServiceBindings and
+// Controller is the top-level Controller watching ServiceBindings and
 // service provider credentials, and then starts APIServiceBinding controllers
 // dynamically.
-type controller struct {
+type Controller struct {
 	queue workqueue.RateLimitingInterface
 
 	consumerConfig *rest.Config
@@ -188,7 +188,7 @@ type controller struct {
 	commit CommitFunc
 }
 
-func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -199,7 +199,7 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueSecret(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueSecret(logger klog.Logger, obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -232,14 +232,14 @@ func (c *controller) enqueueSecret(logger klog.Logger, obj interface{}) {
 }
 
 // Start starts the konnector. It does block.
-func (k *controller) Start(ctx context.Context, numThreads int) {
+func (k *Controller) Start(ctx context.Context, numThreads int) {
 	defer runtime.HandleCrash()
 	defer k.queue.ShutDown()
 
-	logger := klog.FromContext(ctx).WithValues("controller", controllerName)
+	logger := klog.FromContext(ctx).WithValues("Controller", controllerName)
 
-	logger.Info("Starting controller")
-	defer logger.Info("Shutting down controller")
+	logger.Info("Starting Controller")
+	defer logger.Info("Shutting down Controller")
 
 	for i := 0; i < numThreads; i++ {
 		go wait.UntilWithContext(ctx, k.startWorker, time.Second)
@@ -250,14 +250,14 @@ func (k *controller) Start(ctx context.Context, numThreads int) {
 	<-ctx.Done()
 }
 
-func (c *controller) startWorker(ctx context.Context) {
+func (c *Controller) startWorker(ctx context.Context) {
 	defer runtime.HandleCrash()
 
 	for c.processNextWorkItem(ctx) {
 	}
 }
 
-func (c *controller) processNextWorkItem(ctx context.Context) bool {
+func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
 	k, quit := c.queue.Get()
 	if quit {
@@ -274,7 +274,7 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	defer c.queue.Done(key)
 
 	if err := c.process(ctx, key); err != nil {
-		runtime.HandleError(fmt.Errorf("%q controller failed to sync %q, err: %w", controllerName, key, err))
+		runtime.HandleError(fmt.Errorf("%q Controller failed to sync %q, err: %w", controllerName, key, err))
 		c.queue.AddRateLimited(key)
 		return true
 	}
@@ -282,7 +282,7 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	return true
 }
 
-func (c *controller) process(ctx context.Context, key string) error {
+func (c *Controller) process(ctx context.Context, key string) error {
 	_, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)

@@ -113,6 +113,7 @@ func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 			return err
 		}
 
+		time.Sleep(2 * time.Second)
 		d.server.Server.Close() // nolint:errcheck
 
 		return nil

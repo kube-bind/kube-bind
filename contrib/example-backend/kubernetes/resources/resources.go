@@ -19,26 +19,24 @@ package resources
 const (
 	ServiceAccountTokenType       = "kubernetes.io/service-account-token"
 	ServiceAccountTokenAnnotation = "kubernetes.io/service-account.name"
-	ClusterAdminName              = "kubebind-cluster-admin"
+	ClusterAdminName              = "cluster-admin"
 	ClusterBindingName            = "cluster"
-	ClusterBindingKubeConfig      = "cluster-admin-kubeconfig"
 )
 
 // AuthCode represents the data that are needed to complete the full authentication workflow.
 // TODO: We should come up with something more standarized but this is good enough for now.
 type AuthCode struct {
-	RedirectURL string
-	SessionID   string
+	RedirectURL string `json:"redirectURL"`
+	SessionID   string `json:"sid"`
 }
 
 // AuthResponse contains the authentication data which is needed to connect to the service provider
 // cluster.
-// TODO: think about replace the cluster name with an identity which represents the cluster instead of the cluster name
-// TODO: think about adding a URL of the requested service provider as well to distinguish the service that is being served
 type AuthResponse struct {
-	SessionID       string
-	ID              string
-	Kubeconfig      []byte
-	Resource, Group string
-	Export          string
+	SessionID  string `json:"sid"`
+	ID         string `json:"id"`
+	Kubeconfig []byte `json:"kubeconfig"`
+	Resource   string `json:"resource"`
+	Group      string `json:"group"`
+	Export     string `json:"export"`
 }

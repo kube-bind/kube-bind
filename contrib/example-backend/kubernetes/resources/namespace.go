@@ -18,6 +18,7 @@ package resources
 
 import (
 	"context"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -30,6 +31,9 @@ const (
 )
 
 func CreateNamespace(ctx context.Context, client kubernetes.Interface, generateName, id string) (*corev1.Namespace, error) {
+	if !strings.HasSuffix(generateName, "-") {
+		generateName = generateName + "-"
+	}
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: generateName,

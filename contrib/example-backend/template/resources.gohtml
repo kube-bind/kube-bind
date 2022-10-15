@@ -12,7 +12,7 @@
   </head>
   <body>
     <div class="card-deck text-center">
-      {{range .CRDs}}
+      {{$sid := .SessionID}}{{range .CRDs}}
       <div class="card box-shadow" style="width:18rem; min-width:18rem; max-width:18rem; margin-bottom: 2rem;">
         <div class="card-header"><h4>{{.Spec.Names.Singular}}</h4></div>
         <ul class="list-group list-group-flush">
@@ -20,7 +20,7 @@
           <li class="list-group-item">Scope: {{.Spec.Scope}}</li>
         </ul>
         <div class="card-body">
-          <a href="/bind?resource={{.Spec.Names.Plural}}&group={{.Spec.Group}}" class="btn btn-lg btn-block btn-primary">Bind</a>
+          <a href="/bind?s={{$sid}}&resource={{.Spec.Names.Plural}}&group={{.Spec.Group}}" class="btn btn-lg btn-block btn-primary">Bind</a>
         </div>
       </div>
       {{end}}

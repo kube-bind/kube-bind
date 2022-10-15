@@ -52,9 +52,6 @@ type handler struct {
 	backendCallbackURL string
 	providerPrettyName string
 
-	cookieName   string
-	cookieExpire time.Duration
-
 	client              *http.Client
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister
 
@@ -80,7 +77,7 @@ func NewHandler(
 func (h *handler) handleServiceExport(c echo2.Context) error {
 	serviceProvider := &v1alpha1.APIServiceProvider{
 		Spec: v1alpha1.APIServiceProviderSpec{
-			AuthenticatedClientURL: h.backendCallbackURL,
+			AuthenticatedClientURL: fmt.Sprintf("http://%s/authorize", c.Request().Host), // TODO: support https
 			ProviderPrettyName:     h.providerPrettyName,
 		},
 	}
@@ -170,6 +167,11 @@ func (h *handler) handleCallback(c echo2.Context) error {
 	}
 
 	jwt, err := parseJWT(jwtStr)
+	if err != nil {
+		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
+		c.Logger().Error(err)
+		return err
+	}
 	if !ok {
 		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
 		err := fmt.Errorf("invalid id token: %v", token.Extra("id_token"))
@@ -196,12 +198,12 @@ func (h *handler) handleCallback(c echo2.Context) error {
 
 	c.SetCookie(cookie.MakeCookie(
 		c.Request(),
-		"kube-bind",
+		"kube-bind-"+authCode.SessionID,
 		b,
 		time.Duration(1)*time.Hour),
 	)
 
-	return c.Redirect(302, "/resources")
+	return c.Redirect(302, "/resources?s="+authCode.SessionID)
 }
 
 func (h *handler) handleResources(c echo2.Context) error {
@@ -216,9 +218,11 @@ func (h *handler) handleResources(c echo2.Context) error {
 
 	bs := bytes.Buffer{}
 	if err := resourcesTemplate.Execute(&bs, struct {
-		CRDs []*apiextensionsv1.CustomResourceDefinition
+		SessionID string
+		CRDs      []*apiextensionsv1.CustomResourceDefinition
 	}{
-		CRDs: crds,
+		SessionID: c.Request().URL.Query().Get("s"),
+		CRDs:      crds,
 	}); err != nil {
 		c.Logger().Error(err)
 		return err
@@ -230,7 +234,7 @@ func (h *handler) handleResources(c echo2.Context) error {
 }
 
 func (h *handler) handleBind(c echo2.Context) error {
-	ck, err := c.Cookie("kube-bind")
+	ck, err := c.Cookie("kube-bind-" + c.Request().URL.Query().Get("s"))
 	if err != nil {
 		c.Logger().Error(err)
 		return err
@@ -246,22 +250,21 @@ func (h *handler) handleBind(c echo2.Context) error {
 		Subject string `json:"sub"`
 		Issuer  string `json:"iss"`
 	}
-
 	if err := json.Unmarshal([]byte(state.IDToken), &idToken); err != nil {
 		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
 		c.Logger().Error(fmt.Errorf("invalid id token: %v", state.IDToken))
 		return err
 	}
 
-	kfg, err := h.kubeManager.HandleResources(c.Request().Context(), "placeholder" /*idToken.Subject*/, "resource", "group")
+	group := c.Request().URL.Query().Get("group")
+	resource := c.Request().URL.Query().Get("resource")
+	kfg, err := h.kubeManager.HandleResources(c.Request().Context(), idToken.Subject, resource, group)
 	if err != nil {
 		c.Logger().Error(err)
 		return err
 	}
 
 	// callback client with access token and kubeconfig
-	group := c.Request().URL.Query().Get("group")
-	resource := c.Request().URL.Query().Get("resource")
 	authResponse := resources.AuthResponse{
 		SessionID:  state.SessionID,
 		ID:         idToken.Issuer + "/" + idToken.Subject,

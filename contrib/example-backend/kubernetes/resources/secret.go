@@ -25,16 +25,16 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateSASecret(ctx context.Context, client kubernetes.Interface, ns string) (*corev1.Secret, error) {
-	secret, err := client.CoreV1().Secrets(ns).Get(ctx, ClusterAdminName, metav1.GetOptions{})
+func CreateSASecret(ctx context.Context, client kubernetes.Interface, ns, saName string) (*corev1.Secret, error) {
+	secret, err := client.CoreV1().Secrets(ns).Get(ctx, saName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			secret = &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ClusterAdminName,
+					Name:      saName,
 					Namespace: ns,
 					Annotations: map[string]string{
-						ServiceAccountTokenAnnotation: ClusterAdminName,
+						ServiceAccountTokenAnnotation: saName,
 					},
 				},
 				Type: ServiceAccountTokenType,

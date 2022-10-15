@@ -27,71 +27,80 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/clientcmd/api"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/util/retry"
 )
 
 func GenerateKubeconfig(ctx context.Context,
 	client kubernetes.Interface,
-	host, ns, secretName string,
+	host, ns, saSecretName string,
 ) (*corev1.Secret, error) {
-	kfg, err := client.CoreV1().Secrets(ns).Get(ctx, ClusterBindingKubeConfig, v1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			var secret *corev1.Secret
-			if err := wait.PollImmediateWithContext(ctx, 500*time.Millisecond, 10*time.Second, func(ctx context.Context) (done bool, err error) {
-				secret, err = client.CoreV1().Secrets(ns).Get(ctx, secretName, v1.GetOptions{})
-				if err != nil && !errors.IsNotFound(err) {
-					return false, err
-				} else if errors.IsNotFound(err) {
-					return false, nil
-				}
-				return secret.Data["token"] != nil && secret.Data["ca.crt"] != nil, nil
-			}); err != nil {
-				return nil, err
-			}
-
-			cfg := api.Config{
-				Clusters: map[string]*api.Cluster{
-					"provider": {
-						Server:                   host,
-						CertificateAuthorityData: secret.Data["ca.crt"],
-					},
-				},
-				Contexts: map[string]*api.Context{
-					"default": {
-						Cluster:   "provider",
-						Namespace: ns,
-						AuthInfo:  "default",
-					},
-				},
-				AuthInfos: map[string]*api.AuthInfo{
-					"default": {
-						Token: string(secret.Data["token"]),
-					},
-				},
-				CurrentContext: "default",
-			}
-
-			kubeconfig, err := clientcmd.Write(cfg)
-			if err != nil {
-				return nil, fmt.Errorf("failed to encode kubeconfig: %w", err)
-			}
-
-			kfg = &corev1.Secret{
-				ObjectMeta: v1.ObjectMeta{
-					Name:      "cluster-admin-kubeconfig",
-					Namespace: ns,
-				},
-			}
-
-			kfg.Data = map[string][]byte{}
-			kfg.Data["kubeconfig"] = kubeconfig
-
-			return client.CoreV1().Secrets(ns).Create(ctx, kfg, v1.CreateOptions{})
+	var saSecret *corev1.Secret
+	if err := wait.PollImmediateWithContext(ctx, 500*time.Millisecond, 10*time.Second, func(ctx context.Context) (done bool, err error) {
+		saSecret, err = client.CoreV1().Secrets(ns).Get(ctx, saSecretName, v1.GetOptions{})
+		if err != nil && !errors.IsNotFound(err) {
+			return false, err
+		} else if errors.IsNotFound(err) {
+			return false, nil
 		}
-
+		return saSecret.Data["token"] != nil && saSecret.Data["ca.crt"] != nil, nil
+	}); err != nil {
 		return nil, err
 	}
 
-	return kfg, nil
+	cfg := clientcmdapi.Config{
+		Clusters: map[string]*clientcmdapi.Cluster{
+			"default": {
+				Server:                   host,
+				CertificateAuthorityData: saSecret.Data["ca.crt"],
+			},
+		},
+		Contexts: map[string]*clientcmdapi.Context{
+			"default": {
+				Cluster:   "default",
+				Namespace: ns,
+				AuthInfo:  "default",
+			},
+		},
+		AuthInfos: map[string]*clientcmdapi.AuthInfo{
+			"default": {
+				Token: string(saSecret.Data["token"]),
+			},
+		},
+		CurrentContext: "default",
+	}
+
+	kubeconfig, err := clientcmd.Write(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode kubeconfig: %w", err)
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "kubeconfig",
+			Namespace: ns,
+		},
+		Data: map[string][]byte{
+			"kubeconfig": kubeconfig,
+		},
+	}
+	if secret, err := client.CoreV1().Secrets(ns).Create(ctx, secret, v1.CreateOptions{}); err != nil && !errors.IsAlreadyExists(err) {
+		return nil, err
+	} else if err == nil {
+		return secret, nil
+	}
+
+	var updated *corev1.Secret
+	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		existing, err := client.CoreV1().Secrets(ns).Get(ctx, secret.Name, v1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		existing.Data = secret.Data
+		updated, err = client.CoreV1().Secrets(ns).Update(ctx, existing, v1.UpdateOptions{})
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	return updated, nil
 }

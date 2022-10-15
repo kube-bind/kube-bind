@@ -59,12 +59,14 @@ and that you have at least one k8s cluster. Take a look at the backend option in
 ```shell
 $ make build
 $ bin/example-backend \
-  --namespace=[whatever-namespace|default kube-system] \
   --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
   --oidc-issuer-client-id=kube-bind \
   --oidc-issuer-url=http://127.0.0.1:5556/dex \
-  --cluster-name=[k8s-clustername]
+  --oidc-callback-url=http://127.0.0.1:8080/callback \
+  --pretty-name="BigCorp.com" \
+  --namespace-prefix="kubd-bind-" 
 ```
+
 where `ZXhhbXBsZS1hcHAtc2VjcmV0` matches the value of the dex config file.
 
 * browse to `http://127.0.0.1:8080/authorize` in a browser.

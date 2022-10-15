@@ -28,13 +28,27 @@ import (
 )
 
 type Options struct {
+	Logs *logs.Options
+
+	ExtraOptions
+}
+
+type ExtraOptions struct {
 	KubeConfigPath string
 
 	LeaseLockName      string
 	LeaseLockNamespace string
 	LeaseLockIdentity  string
+}
 
+type completedOptions struct {
 	Logs *logs.Options
+
+	ExtraOptions
+}
+
+type CompletedOptions struct {
+	*completedOptions
 }
 
 func NewOptions() *Options {
@@ -45,9 +59,11 @@ func NewOptions() *Options {
 	opts := &Options{
 		Logs: logs,
 
-		LeaseLockName:      "kube-bind",
-		LeaseLockNamespace: os.Getenv("POD_NAMESPACE"),
-		LeaseLockIdentity:  os.Getenv("POD_NAME"),
+		ExtraOptions: ExtraOptions{
+			LeaseLockName:      "kube-bind",
+			LeaseLockNamespace: os.Getenv("POD_NAMESPACE"),
+			LeaseLockIdentity:  os.Getenv("POD_NAME"),
+		},
 	}
 
 	if opts.LeaseLockNamespace == "" {
@@ -65,14 +81,19 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.LeaseLockNamespace, "lease-namespace", options.LeaseLockNamespace, "Name of lease lock namespace")
 }
 
-func (options *Options) Complete() error {
+func (options *Options) Complete() (*CompletedOptions, error) {
 	if options.LeaseLockIdentity == "" {
 		options.LeaseLockIdentity = fmt.Sprintf("%d", rand.Int31())
 	}
 
-	return nil
+	return &CompletedOptions{
+		completedOptions: &completedOptions{
+			Logs:         options.Logs,
+			ExtraOptions: options.ExtraOptions,
+		},
+	}, nil
 }
 
-func (options *Options) Validate() error {
+func (options *CompletedOptions) Validate() error {
 	return nil
 }

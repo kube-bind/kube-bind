@@ -23,7 +23,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type oidcServiceProvider struct {
+type OIDCServiceProvider struct {
 	clientID     string
 	clientSecret string
 	redirectURI  string
@@ -33,13 +33,13 @@ type oidcServiceProvider struct {
 	provider *oidc.Provider
 }
 
-func NewOIDCServiceProvider(clientID, clientSecret, redirectURI, issuerURL string) (*oidcServiceProvider, error) {
+func NewOIDCServiceProvider(clientID, clientSecret, redirectURI, issuerURL string) (*OIDCServiceProvider, error) {
 	provider, err := oidc.NewProvider(context.TODO(), issuerURL)
 	if err != nil {
 		return nil, err
 	}
 
-	return &oidcServiceProvider{
+	return &OIDCServiceProvider{
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		redirectURI:  redirectURI,
@@ -49,7 +49,7 @@ func NewOIDCServiceProvider(clientID, clientSecret, redirectURI, issuerURL strin
 	}, nil
 }
 
-func (o *oidcServiceProvider) OIDCProviderConfig(scopes []string) *oauth2.Config {
+func (o *OIDCServiceProvider) OIDCProviderConfig(scopes []string) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     o.clientID,
 		ClientSecret: o.clientSecret,

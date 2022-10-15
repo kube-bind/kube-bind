@@ -18,52 +18,29 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	genericapiserver "k8s.io/apiserver/pkg/server"
-	kubeinformers "k8s.io/client-go/informers"
-	kubernetesclient "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 	_ "k8s.io/component-base/logs/json/register"
 	"k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
-	konnectoroptions "github.com/kube-bind/kube-bind/cmd/konnector/options"
-	"github.com/kube-bind/kube-bind/deploy/crd"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions"
 	"github.com/kube-bind/kube-bind/pkg/konnector"
+	konnectoroptions "github.com/kube-bind/kube-bind/pkg/konnector/options"
 )
 
-func New() *cobra.Command {
+func New(ctx context.Context) *cobra.Command {
 	options := konnectoroptions.NewOptions()
 	cmd := &cobra.Command{
 		Use:   "konnector",
 		Short: "Connect remote API services to local APIs",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// setup logging first
 			if err := logsv1.ValidateAndApply(options.Logs, nil); err != nil {
 				return err
 			}
-			if err := options.Complete(); err != nil {
-				return err
-			}
-
-			if err := options.Validate(); err != nil {
-				return err
-			}
-
-			ctx := genericapiserver.SetupSignalContext()
-
 			ver := version.Get().GitVersion
 			if i := strings.Index(ver, "bind-"); i != -1 {
 				ver = ver[i+5:] // example: v1.25.2+kubectl-bind-v0.0.7-52-g8fee0baeaff3aa
@@ -71,80 +48,34 @@ func New() *cobra.Command {
 			logger := klog.FromContext(ctx)
 			logger.Info("Starting konnector", "version", ver)
 
-			// create clients
-			rules := clientcmd.NewDefaultClientConfigLoadingRules()
-			rules.ExplicitPath = options.KubeConfigPath
-			cfg, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, nil).ClientConfig()
+			// setup server
+			completed, err := options.Complete()
 			if err != nil {
 				return err
 			}
-			cfg = rest.CopyConfig(cfg)
-			cfg = rest.AddUserAgent(cfg, "kube-bind-konnector")
-
-			bindClient, err := bindclient.NewForConfig(cfg)
+			if err := completed.Validate(); err != nil {
+				return err
+			}
+			config, err := konnector.NewConfig(completed)
 			if err != nil {
 				return err
 			}
-			kubeClient, err := kubernetesclient.NewForConfig(cfg)
+			server, err := konnector.NewServer(config)
 			if err != nil {
 				return err
 			}
-			apiextensionsClient, err := apiextensionsclient.NewForConfig(cfg)
-			if err != nil {
-				return err
-			}
-
-			// install/upgrade CRDs
-			if err := crd.Create(ctx,
-				apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
-				metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiservicebindings"},
-			); err != nil {
-				return err
-			}
-
-			// construct informer factories
-			kubeInformers := kubeinformers.NewSharedInformerFactory(kubeClient, time.Minute*30)
-			bindInformers := bindinformers.NewSharedInformerFactory(bindClient, time.Minute*30)
-			apiextensionsInformers := apiextensionsinformers.NewSharedInformerFactory(apiextensionsClient, time.Minute*30)
-
-			// construct controllers
-			k, err := konnector.New(
-				cfg,
-				bindInformers.KubeBind().V1alpha1().APIServiceBindings(),
-				kubeInformers.Core().V1().Secrets(), // TODO(sttts): watch individual secrets for security and memory consumption
-				kubeInformers.Core().V1().Namespaces(),
-				apiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
-			)
-			if err != nil {
-				return err
-			}
+			server.OptionallyStartInformers(ctx) // hot standby
 
 			logger.Info("trying to acquire the lock")
-			lock := NewLock(kubeClient, options.LeaseLockNamespace, options.LeaseLockName, options.LeaseLockIdentity)
+			lock := NewLock(config.KubeClient, options.LeaseLockNamespace, options.LeaseLockName, options.LeaseLockIdentity)
 			runLeaderElection(ctx, lock, options.LeaseLockIdentity, func(ctx context.Context) {
-				// start informer factories
-				logger.Info("starting informers")
-				kubeInformers.Start(ctx.Done())
-				bindInformers.Start(ctx.Done())
-				apiextensionsInformers.Start(ctx.Done())
-				kubeSynced := kubeInformers.WaitForCacheSync(ctx.Done())
-				kubeBindSynced := bindInformers.WaitForCacheSync(ctx.Done())
-				apiextensionsSynced := apiextensionsInformers.WaitForCacheSync(ctx.Done())
-
-				logger.Info("local informers are synced",
-					"kubeSynced", fmt.Sprintf("%v", kubeSynced),
-					"kubeBindSynced", fmt.Sprintf("%v", kubeBindSynced),
-					"apiextensionsSynced", fmt.Sprintf("%v", apiextensionsSynced),
-				)
-
 				logger.Info("starting konnector controller")
-				k.Start(ctx, 2)
+				err = server.Run(ctx)
 			})
 
-			return nil
+			return err
 		},
 	}
-
 	options.AddFlags(cmd.Flags())
 
 	if v := version.Get().String(); len(v) == 0 {

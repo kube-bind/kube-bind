@@ -22,7 +22,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type server struct {
+type Server struct {
 	address string
 	port    int
 
@@ -31,13 +31,13 @@ type server struct {
 	router *echo.Echo
 }
 
-func NewServer(address string, port int, handler *handler) (*server, error) {
+func NewServer(address string, port int, handler *handler) (*Server, error) {
 	if address == "" || port == 0 {
 		return nil, fmt.Errorf("server address or port cannot be empty")
 	}
 	router := echo.New()
 
-	server := &server{
+	server := &Server{
 		address: address,
 		port:    port,
 		handler: handler,
@@ -53,6 +53,6 @@ func NewServer(address string, port int, handler *handler) (*server, error) {
 	return server, nil
 }
 
-func (s *server) Start() {
+func (s *Server) Start() {
 	s.router.Logger.Fatal(s.router.Start(fmt.Sprintf("%v:%v", s.address, s.port)))
 }

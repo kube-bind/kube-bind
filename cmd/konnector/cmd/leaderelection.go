@@ -57,12 +57,12 @@ func runLeaderElection(ctx context.Context, lock *resourcelock.LeaseLock, id str
 			OnStoppedLeading: func() {
 				logger.Info("no longer the leader, staying inactive.")
 			},
-			OnNewLeader: func(current_id string) {
-				if current_id == id {
+			OnNewLeader: func(currentID string) {
+				if currentID == id {
 					logger.Info("still the leader!")
 					return
 				}
-				logger.Info("new leader", "id", current_id)
+				logger.Info("new leader", "id", currentID)
 			},
 		},
 	})

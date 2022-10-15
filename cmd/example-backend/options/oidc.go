@@ -37,7 +37,7 @@ func (options *OIDC) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.IssuerClientID, "oidc-issuer-client-id", options.IssuerClientID, "Issuer client ID")
 	fs.StringVar(&options.IssuerClientSecret, "oidc-issuer-client-secret", options.IssuerClientSecret, "OpenID client secret")
 	fs.StringVar(&options.IssuerURL, "oidc-issuer-url", options.IssuerURL, "Callback URL for OpenID responses.")
-	fs.StringVar(&options.CallbackURL, "callback-url", options.CallbackURL, "OpenID callback URL")
+	fs.StringVar(&options.CallbackURL, "oidc-callback-url", options.CallbackURL, "OpenID callback URL")
 }
 
 func (options *OIDC) Complete() error {

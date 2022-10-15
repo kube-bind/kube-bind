@@ -21,7 +21,6 @@ const (
 	ServiceAccountTokenAnnotation = "kubernetes.io/service-account.name"
 	ClusterAdminName              = "cluster-admin"
 	ClusterBindingName            = "cluster"
-	ClusterBindingKubeConfig      = "cluster-admin-kubeconfig"
 )
 
 // AuthCode represents the data that are needed to complete the full authentication workflow.

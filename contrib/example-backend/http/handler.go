@@ -46,6 +46,13 @@ var (
 	resourcesTemplate = htmltemplate.Must(htmltemplate.New("resource").Parse(mustRead(template.Files.ReadFile, "resources.gohtml")))
 )
 
+// See https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching?hl=en
+var noCacheHeaders = map[string]string{
+	"Expires":         time.Unix(0, 0).Format(time.RFC1123),
+	"Cache-Control":   "no-cache, no-store, must-revalidate, max-age=0",
+	"X-Accel-Expires": "0", // https://www.nginx.com/resources/wiki/start/topics/examples/x-accel/
+}
+
 type handler struct {
 	oidc *oidcServiceProvider
 
@@ -91,7 +98,17 @@ func (h *handler) handleServiceExport(c echo2.Context) error {
 	return c.Blob(http.StatusOK, "application/json", bs)
 }
 
+// prepareNoCache prepares headers for preventing browser caching.
+func prepareNoCache(w http.ResponseWriter) {
+	// Set NoCache headers
+	for k, v := range noCacheHeaders {
+		w.Header().Set(k, v)
+	}
+}
+
 func (h *handler) handleAuthorize(c echo2.Context) error {
+	prepareNoCache(c.Response())
+
 	scopes := []string{"openid", "profile", "email", "offline_access"}
 	code := &resources.AuthCode{
 		RedirectURL: c.QueryParam("u"),
@@ -110,7 +127,7 @@ func (h *handler) handleAuthorize(c echo2.Context) error {
 
 	encoded := base64.StdEncoding.EncodeToString(dataCode)
 	authURL := h.oidc.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
-	return c.Redirect(http.StatusSeeOther, authURL)
+	return c.Redirect(http.StatusFound, authURL)
 }
 
 func parseJWT(p string) ([]byte, error) {
@@ -198,15 +215,17 @@ func (h *handler) handleCallback(c echo2.Context) error {
 
 	c.SetCookie(cookie.MakeCookie(
 		c.Request(),
-		"kube-bind-"+authCode.SessionID,
+		"kube-bind",
 		b,
 		time.Duration(1)*time.Hour),
 	)
 
-	return c.Redirect(302, "/resources?s="+authCode.SessionID)
+	return c.Redirect(http.StatusFound, "/resources")
 }
 
 func (h *handler) handleResources(c echo2.Context) error {
+	prepareNoCache(c.Response())
+
 	crds, err := h.apiextensionsLister.List(labels.Everything())
 	if err != nil {
 		c.Logger().Error(err)
@@ -216,12 +235,24 @@ func (h *handler) handleResources(c echo2.Context) error {
 		return crds[i].Name < crds[j].Name
 	})
 
+	ck, err := c.Cookie("kube-bind")
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
+	state, err := cookie.Decode(ck.Value)
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+
 	bs := bytes.Buffer{}
 	if err := resourcesTemplate.Execute(&bs, struct {
 		SessionID string
 		CRDs      []*apiextensionsv1.CustomResourceDefinition
 	}{
-		SessionID: c.Request().URL.Query().Get("s"),
+		SessionID: state.SessionID,
 		CRDs:      crds,
 	}); err != nil {
 		c.Logger().Error(err)
@@ -234,7 +265,9 @@ func (h *handler) handleResources(c echo2.Context) error {
 }
 
 func (h *handler) handleBind(c echo2.Context) error {
-	ck, err := c.Cookie("kube-bind-" + c.Request().URL.Query().Get("s"))
+	prepareNoCache(c.Response())
+
+	ck, err := c.Cookie("kube-bind")
 	if err != nil {
 		c.Logger().Error(err)
 		return err

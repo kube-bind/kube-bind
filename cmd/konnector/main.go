@@ -23,6 +23,7 @@ import (
 	"k8s.io/component-base/cli"
 
 	"github.com/kube-bind/kube-bind/cmd/konnector/cmd"
+	genericapiserver "k8s.io/apiserver/pkg/server"
 )
 
 func main() {

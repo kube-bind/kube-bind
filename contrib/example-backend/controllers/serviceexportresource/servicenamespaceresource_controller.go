@@ -48,7 +48,7 @@ func NewController(
 	config *rest.Config,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 	serviceExportResourceInformer bindinformers.APIServiceExportResourceInformer,
-) (*controller, error) {
+) (*Controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
 	logger := klog.Background().WithValues("controller", controllerName)
@@ -61,7 +61,7 @@ func NewController(
 		return nil, err
 	}
 
-	c := &controller{
+	c := &Controller{
 		queue: queue,
 
 		bindClient: bindClient,
@@ -130,9 +130,9 @@ func NewController(
 type Resource = committer.Resource[*kubebindv1alpha1.APIServiceExportResourceSpec, *kubebindv1alpha1.APIServiceExportResourceStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
-// controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
+// Controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
 // the APIServiceNamespace is deleted.
-type controller struct {
+type Controller struct {
 	queue workqueue.RateLimitingInterface
 
 	bindClient bindclient.Interface
@@ -148,7 +148,7 @@ type controller struct {
 	commit CommitFunc
 }
 
-func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -159,7 +159,7 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueServiceExportResource(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceExportResource(logger klog.Logger, obj interface{}) {
 	serKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -177,7 +177,7 @@ func (c *controller) enqueueServiceExportResource(logger klog.Logger, obj interf
 }
 
 // Start starts the controller, which stops when ctx.Done() is closed.
-func (c *controller) Start(ctx context.Context, numThreads int) {
+func (c *Controller) Start(ctx context.Context, numThreads int) {
 	defer runtime.HandleCrash()
 	defer c.queue.ShutDown()
 
@@ -193,14 +193,14 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 	<-ctx.Done()
 }
 
-func (c *controller) startWorker(ctx context.Context) {
+func (c *Controller) startWorker(ctx context.Context) {
 	defer runtime.HandleCrash()
 
 	for c.processNextWorkItem(ctx) {
 	}
 }
 
-func (c *controller) processNextWorkItem(ctx context.Context) bool {
+func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
 	k, quit := c.queue.Get()
 	if quit {
@@ -225,7 +225,7 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	return true
 }
 
-func (c *controller) process(ctx context.Context, key string) error {
+func (c *Controller) process(ctx context.Context, key string) error {
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)

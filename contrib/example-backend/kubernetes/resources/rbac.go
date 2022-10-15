@@ -54,7 +54,7 @@ func CreateAdminClusterRoleBinding(ctx context.Context, client kubeclient.Interf
 		if errors.IsNotFound(err) {
 			clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "kubebind-" + ns,
+					Name: "kube-bind-" + ns,
 				},
 				Subjects: []rbacv1.Subject{
 					{

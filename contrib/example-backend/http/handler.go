@@ -167,6 +167,11 @@ func (h *handler) handleCallback(c echo2.Context) error {
 	}
 
 	jwt, err := parseJWT(jwtStr)
+	if err != nil {
+		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
+		c.Logger().Error(err)
+		return err
+	}
 	if !ok {
 		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
 		err := fmt.Errorf("invalid id token: %v", token.Extra("id_token"))

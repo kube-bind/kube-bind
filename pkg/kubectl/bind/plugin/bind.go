@@ -158,7 +158,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return err
 	}
 	first := true
-	wait.PollImmediateInfiniteWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	if err := wait.PollImmediateInfiniteWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().List(ctx, metav1.ListOptions{})
 		if err != nil {
 			if first {
@@ -169,7 +169,9 @@ func (b *BindOptions) Run(ctx context.Context) error {
 			}
 		}
 		return err == nil, nil
-	}) // nolint:errcheck
+	}); err != nil {
+		return err
+	}
 
 	// create the namespace
 	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{

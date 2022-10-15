@@ -17,42 +17,61 @@ limitations under the License.
 package http
 
 import (
-	"fmt"
+	"context"
+	"net"
+	"net/http"
+	"strconv"
 
-	"github.com/labstack/echo/v4"
+	"github.com/gorilla/mux"
+
+	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
 )
 
 type Server struct {
-	address string
-	port    int
-
-	handler *handler
-
-	router *echo.Echo
+	options  *options.Serve
+	listener net.Listener
+	Router   *mux.Router
 }
 
-func NewServer(address string, port int, handler *handler) (*Server, error) {
-	if address == "" || port == 0 {
-		return nil, fmt.Errorf("server address or port cannot be empty")
-	}
-	router := echo.New()
-
+func NewServer(options *options.Serve) (*Server, error) {
 	server := &Server{
-		address: address,
-		port:    port,
-		handler: handler,
-		router:  router,
+		options: options,
+		Router:  mux.NewRouter(),
 	}
 
-	server.router.GET("/export", server.handler.handleServiceExport)
-	server.router.GET("/resources", server.handler.handleResources)
-	server.router.GET("/bind", server.handler.handleBind)
-	server.router.GET("/authorize", server.handler.handleAuthorize)
-	server.router.GET("/callback", server.handler.handleCallback)
+	if options.Listener == nil {
+		var err error
+		server.listener, err = net.Listen("tcp", net.JoinHostPort(options.ListenIP, strconv.Itoa(options.ListenPort)))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		server.listener = options.Listener
+	}
 
 	return server, nil
 }
 
-func (s *Server) Start() {
-	s.router.Logger.Fatal(s.router.Start(fmt.Sprintf("%v:%v", s.address, s.port)))
+func (s *Server) Addr() net.Addr {
+	return s.listener.Addr()
+}
+
+func (s *Server) Start(ctx context.Context) error {
+	server := &http.Server{
+		Handler: s.Router,
+	}
+	go func() {
+		<-ctx.Done()
+		server.Close() // nolint:errcheck
+	}()
+
+	go func() {
+		if s.options.KeyFile == "" {
+			server.Serve(s.listener) // nolint:errcheck
+		} else {
+			server.ServeTLS(s.listener, s.options.CertFile, s.options.KeyFile) // nolint:errcheck
+		}
+	}()
+
+	return nil
 }

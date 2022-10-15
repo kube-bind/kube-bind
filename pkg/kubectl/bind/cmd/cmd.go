@@ -57,10 +57,10 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 				return err
 			}
 
-			return opts.Run(cmd.Context())
+			return opts.Run(cmd.Context(), nil)
 		},
 	}
-	opts.BindFlags(cmd)
+	opts.AddCmdFlags(cmd)
 
 	return cmd, nil
 }

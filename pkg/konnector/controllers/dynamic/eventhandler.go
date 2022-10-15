@@ -107,9 +107,8 @@ func (i *dynamicInformer[L]) Lister() L {
 }
 
 func (i *dynamicSharedIndexInformer) AddDynamicEventHandler(ctx context.Context, handlerName string, handler cache.ResourceEventHandler) {
-	handlerName = fmt.Sprintf("%s-%d", handlerName, i.counter)
-
 	i.lock.Lock()
+	handlerName = fmt.Sprintf("%s-%d", handlerName, i.counter)
 	i.handlers[handlerName] = handler
 	i.counter++ // make unique
 	i.lock.Unlock()

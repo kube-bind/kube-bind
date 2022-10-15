@@ -14,20 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package framework
 
 import (
 	"os"
-
-	genericapiserver "k8s.io/apiserver/pkg/server"
-	"k8s.io/component-base/cli"
-
-	"github.com/kube-bind/kube-bind/cmd/konnector/cmd"
+	"path/filepath"
+	"runtime"
 )
 
-func main() {
-	ctx := genericapiserver.SetupSignalContext()
-	syncerCommand := cmd.New(ctx)
-	code := cli.Run(syncerCommand)
-	os.Exit(code)
+var (
+	WorkDir = os.Getenv("WORK_DIR")
+)
+
+func init() {
+	if WorkDir == "" {
+		_, f, _, _ := runtime.Caller(0)
+		WorkDir = filepath.Clean(filepath.Join(f, "..", "..", "..", "..", ".kube-bind"))
+	}
 }

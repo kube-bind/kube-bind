@@ -14,20 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package framework
 
 import (
-	"os"
+	"testing"
+	"time"
 
-	genericapiserver "k8s.io/apiserver/pkg/server"
-	"k8s.io/component-base/cli"
+	"github.com/headzoo/surf/browser"
+	"github.com/stretchr/testify/require"
 
-	"github.com/kube-bind/kube-bind/cmd/konnector/cmd"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-func main() {
-	ctx := genericapiserver.SetupSignalContext()
-	syncerCommand := cmd.New(ctx)
-	code := cli.Run(syncerCommand)
-	os.Exit(code)
+func BrowerEventuallyAtPath(t *testing.T, browser *browser.Browser, path string) {
+	require.Eventuallyf(t, func() bool {
+		if browser.Url().Path == path {
+			t.Logf("Browser is at %s", browser.Url())
+			return true
+		}
+		t.Logf("Waiting for browser to be at %s, current URL: %s", path, browser.Url())
+		return false
+	}, wait.ForeverTestTimeout, time.Millisecond*100, "Browser is not at path %s", path)
 }

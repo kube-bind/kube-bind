@@ -29,11 +29,12 @@ import (
 	"strings"
 	"time"
 
-	echo2 "github.com/labstack/echo/v4"
+	"github.com/gorilla/mux"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/cookie"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
@@ -58,6 +59,7 @@ type handler struct {
 
 	backendCallbackURL string
 	providerPrettyName string
+	testingAutoSelect  string
 
 	client              *http.Client
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister
@@ -67,7 +69,7 @@ type handler struct {
 
 func NewHandler(
 	provider *OIDCServiceProvider,
-	backendCallbackURL, providerPrettyName string,
+	backendCallbackURL, providerPrettyName, testingAutoSelect string,
 	mgr *kubernetes.Manager,
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,
 ) (*handler, error) {
@@ -75,27 +77,40 @@ func NewHandler(
 		oidc:                provider,
 		backendCallbackURL:  backendCallbackURL,
 		providerPrettyName:  providerPrettyName,
+		testingAutoSelect:   testingAutoSelect,
 		client:              http.DefaultClient,
 		kubeManager:         mgr,
 		apiextensionsLister: apiextensionsLister,
 	}, nil
 }
 
-func (h *handler) handleServiceExport(c echo2.Context) error {
+func (h *handler) AddRoutes(mux *mux.Router) {
+	mux.HandleFunc("/export", h.handleServiceExport).Methods("GET")
+	mux.HandleFunc("/resources", h.handleResources).Methods("GET")
+	mux.HandleFunc("/bind", h.handleBind).Methods("GET")
+	mux.HandleFunc("/authorize", h.handleAuthorize).Methods("GET")
+	mux.HandleFunc("/callback", h.handleCallback).Methods("GET")
+}
+
+func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
+	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
+
 	serviceProvider := &v1alpha1.APIServiceProvider{
 		Spec: v1alpha1.APIServiceProviderSpec{
-			AuthenticatedClientURL: fmt.Sprintf("http://%s/authorize", c.Request().Host), // TODO: support https
+			AuthenticatedClientURL: fmt.Sprintf("http://%s/authorize", r.Host), // TODO: support https
 			ProviderPrettyName:     h.providerPrettyName,
 		},
 	}
 
 	bs, err := json.Marshal(serviceProvider)
 	if err != nil {
-		c.Logger().Error(err)
-		return err
+		logger.Error(err, "failed to marshal service provider")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	return c.Blob(http.StatusOK, "application/json", bs)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bs) // nolint:errcheck
 }
 
 // prepareNoCache prepares headers for preventing browser caching.
@@ -106,28 +121,30 @@ func prepareNoCache(w http.ResponseWriter) {
 	}
 }
 
-func (h *handler) handleAuthorize(c echo2.Context) error {
-	prepareNoCache(c.Response())
+func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
+	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
 
 	scopes := []string{"openid", "profile", "email", "offline_access"}
 	code := &resources.AuthCode{
-		RedirectURL: c.QueryParam("u"),
-		SessionID:   c.QueryParam("s"),
+		RedirectURL: r.URL.Query().Get("u"),
+		SessionID:   r.URL.Query().Get("s"),
 	}
 	if code.RedirectURL == "" || code.SessionID == "" {
-		http.Error(c.Response(), "missing redirect_url or session_id", http.StatusBadRequest)
-		return nil
+		logger.Error(errors.New("missing redirect url or session id"), "failed to authorize")
+		http.Error(w, "missing redirect_url or session_id", http.StatusBadRequest)
+		return
 	}
 
 	dataCode, err := json.Marshal(code)
 	if err != nil {
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to marshal auth code", "error", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	encoded := base64.StdEncoding.EncodeToString(dataCode)
 	authURL := h.oidc.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
-	return c.Redirect(http.StatusFound, authURL)
+	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
 func parseJWT(p string) ([]byte, error) {
@@ -143,57 +160,67 @@ func parseJWT(p string) ([]byte, error) {
 }
 
 // handleCallback handle the authorization redirect callback from OAuth2 auth flow.
-func (h *handler) handleCallback(c echo2.Context) error {
-	if errMsg := c.FormValue("error"); errMsg != "" {
-		http.Error(c.Response(), errMsg+": "+c.FormValue("error_description"), http.StatusBadRequest)
-		return errors.New(errMsg)
+func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
+	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
+
+	if errMsg := r.Form.Get("error"); errMsg != "" {
+		logger.Info("failed to authorize", "error", errMsg)
+		http.Error(w, errMsg+": "+r.Form.Get("error_description"), http.StatusBadRequest)
+		return
 	}
-	code := c.FormValue("code")
+	code := r.Form.Get("code")
 	if code == "" {
-		http.Error(c.Response(), fmt.Sprintf("no code in request: %q", c.Request().Form), http.StatusBadRequest)
-		return nil
+		code = r.URL.Query().Get("code")
+	}
+	if code == "" {
+		logger.Info("no code in request", "error", "missing code")
+		http.Error(w, fmt.Sprintf("no code in request: %q", r.Form), http.StatusBadRequest)
+		return
 	}
 
-	state := c.FormValue("state")
+	state := r.Form.Get("state")
+	if state == "" {
+		state = r.URL.Query().Get("state")
+	}
 	decode, err := base64.StdEncoding.DecodeString(state)
 	if err != nil {
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to decode state", "error", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	authCode := &resources.AuthCode{}
 	if err := json.Unmarshal(decode, authCode); err != nil {
-		c.Logger().Error(err)
-		return err
+		logger.Info("faile to unmarshal authCode", "error", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	// TODO: sign state and verify that it is not faked by the oauth provider
 
-	token, err := h.oidc.OIDCProviderConfig(nil).Exchange(c.Request().Context(), code)
+	token, err := h.oidc.OIDCProviderConfig(nil).Exchange(r.Context(), code)
 	if err != nil {
-		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to exchange token", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 	jwtStr, ok := token.Extra("id_token").(string)
 	if !ok {
-		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
-		err := fmt.Errorf("invalid id token: %v", token.Extra("id_token"))
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to get id_token from token", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
 	jwt, err := parseJWT(jwtStr)
 	if err != nil {
-		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to parse jwt", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 	if !ok {
-		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
-		err := fmt.Errorf("invalid id token: %v", token.Extra("id_token"))
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to get id_token from token", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
 	sessionCookie := cookie.SessionState{
@@ -208,75 +235,76 @@ func (h *handler) handleCallback(c echo2.Context) error {
 
 	b, err := sessionCookie.Encode()
 	if err != nil {
-		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
-		c.Logger().Error(fmt.Errorf("invalid id token: %v", jwt))
-		return err
+		logger.Info("failed to encode session cookie", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
-	c.SetCookie(cookie.MakeCookie(
-		c.Request(),
-		"kube-bind",
+	http.SetCookie(w, cookie.MakeCookie(
+		r,
+		"kube-bind-"+authCode.SessionID,
 		b,
 		time.Duration(1)*time.Hour),
 	)
 
-	return c.Redirect(http.StatusFound, "/resources")
+	http.Redirect(w, r, "/resources?s="+authCode.SessionID, http.StatusFound)
 }
 
-func (h *handler) handleResources(c echo2.Context) error {
-	prepareNoCache(c.Response())
+func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
+	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
+
+	prepareNoCache(w)
+
+	if h.testingAutoSelect != "" {
+		parts := strings.SplitN(h.testingAutoSelect, ".", 2)
+		http.Redirect(w, r, "/resources/"+parts[0]+"/"+parts[1], http.StatusFound)
+		return
+	}
 
 	crds, err := h.apiextensionsLister.List(labels.Everything())
 	if err != nil {
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to list crds", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 	sort.SliceStable(crds, func(i, j int) bool {
 		return crds[i].Name < crds[j].Name
 	})
-
-	ck, err := c.Cookie("kube-bind")
-	if err != nil {
-		c.Logger().Error(err)
-		return err
-	}
-
-	state, err := cookie.Decode(ck.Value)
-	if err != nil {
-		c.Logger().Error(err)
-		return err
-	}
 
 	bs := bytes.Buffer{}
 	if err := resourcesTemplate.Execute(&bs, struct {
 		SessionID string
 		CRDs      []*apiextensionsv1.CustomResourceDefinition
 	}{
-		SessionID: state.SessionID,
+		SessionID: r.URL.Query().Get("s"),
 		CRDs:      crds,
 	}); err != nil {
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to execute template", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
-	c.HTMLBlob(http.StatusOK, bs.Bytes()) // nolint: errcheck
-
-	return nil
+	w.Header().Set("Content-Type", "text/html")
+	w.Write(bs.Bytes()) // nolint:errcheck
 }
 
-func (h *handler) handleBind(c echo2.Context) error {
-	prepareNoCache(c.Response())
+func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
+	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
 
-	ck, err := c.Cookie("kube-bind")
+	prepareNoCache(w)
+
+	ck, err := r.Cookie("kube-bind-" + r.URL.Query().Get("s"))
 	if err != nil {
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to get session cookie", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
 	state, err := cookie.Decode(ck.Value)
 	if err != nil {
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to decode session cookie", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
 	var idToken struct {
@@ -284,17 +312,18 @@ func (h *handler) handleBind(c echo2.Context) error {
 		Issuer  string `json:"iss"`
 	}
 	if err := json.Unmarshal([]byte(state.IDToken), &idToken); err != nil {
-		http.Error(c.Response(), "internal error", http.StatusInternalServerError)
-		c.Logger().Error(fmt.Errorf("invalid id token: %v", state.IDToken))
-		return err
+		logger.Info("failed to unmarshal id token", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
-	group := c.Request().URL.Query().Get("group")
-	resource := c.Request().URL.Query().Get("resource")
-	kfg, err := h.kubeManager.HandleResources(c.Request().Context(), idToken.Subject, resource, group)
+	group := r.URL.Query().Get("group")
+	resource := r.URL.Query().Get("resource")
+	kfg, err := h.kubeManager.HandleResources(r.Context(), idToken.Subject, resource, group)
 	if err != nil {
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to handle resources", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
 	// callback client with access token and kubeconfig
@@ -309,15 +338,18 @@ func (h *handler) handleBind(c echo2.Context) error {
 
 	payload, err := json.Marshal(authResponse)
 	if err != nil {
-		c.Logger().Error(err)
-		return err
+		logger.Info("failed to marshal auth response", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
 	encoded := base64.StdEncoding.EncodeToString(payload)
 
 	parsedAuthURL, err := url.Parse(state.RedirectURL)
 	if err != nil {
-		return fmt.Errorf("failed to parse auth url: %v", err)
+		logger.Info("failed to parse redirect url", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
 	values := parsedAuthURL.Query()
@@ -325,12 +357,7 @@ func (h *handler) handleBind(c echo2.Context) error {
 
 	parsedAuthURL.RawQuery = values.Encode()
 
-	if err := c.Redirect(301, parsedAuthURL.String()); err != nil {
-		c.Logger().Error(err)
-		return err
-	}
-
-	return nil
+	http.Redirect(w, r, parsedAuthURL.String(), http.StatusFound)
 }
 
 func mustRead(f func(name string) ([]byte, error), name string) string {

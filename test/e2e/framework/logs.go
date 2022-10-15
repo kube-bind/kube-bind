@@ -14,20 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package framework
 
 import (
 	"os"
 
-	genericapiserver "k8s.io/apiserver/pkg/server"
-	"k8s.io/component-base/cli"
+	"github.com/spf13/pflag"
 
-	"github.com/kube-bind/kube-bind/cmd/konnector/cmd"
+	"k8s.io/component-base/logs"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 )
 
-func main() {
-	ctx := genericapiserver.SetupSignalContext()
-	syncerCommand := cmd.New(ctx)
-	code := cli.Run(syncerCommand)
-	os.Exit(code)
+func init() {
+	logs := logs.NewOptions()
+	logs.Verbosity = logsv1.VerbosityLevel(2)
+	logsv1.AddFlags(logs, pflag.CommandLine)
+	if err := pflag.CommandLine.Parse(os.Args); err != nil {
+		panic(err)
+	}
+	if err := logsv1.ValidateAndApply(logs, nil); err != nil {
+		panic(err)
+	}
 }

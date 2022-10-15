@@ -19,6 +19,7 @@ package backend
 import (
 	"context"
 	"fmt"
+	"net"
 
 	"k8s.io/klog/v2"
 
@@ -52,12 +53,21 @@ func NewServer(config *Config) (*Server, error) {
 		Config: config,
 	}
 
-	// setup oidc backend
 	var err error
+	s.WebServer, err = examplehttp.NewServer(config.Options.Serve)
+	if err != nil {
+		return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
+	}
+
+	// setup oidc backend
+	callback := config.Options.OIDC.CallbackURL
+	if callback == "" {
+		callback = fmt.Sprintf("http://%s/callback", s.WebServer.Addr().String())
+	}
 	s.OIDC, err = examplehttp.NewOIDCServiceProvider(
 		config.Options.OIDC.IssuerClientID,
 		config.Options.OIDC.IssuerClientSecret,
-		config.Options.OIDC.CallbackURL,
+		callback,
 		config.Options.OIDC.IssuerURL,
 	)
 	if err != nil {
@@ -75,18 +85,16 @@ func NewServer(config *Config) (*Server, error) {
 	}
 	handler, err := examplehttp.NewHandler(
 		s.OIDC,
-		config.Options.OIDC.CallbackURL,
+		callback,
 		config.Options.PrettyName,
+		config.Options.TestingAutoSelect,
 		s.Kubernetes,
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)
 	}
-	s.WebServer, err = examplehttp.NewServer(config.Options.ListenIP, config.Options.ListenPort, handler)
-	if err != nil {
-		return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
-	}
+	handler.AddRoutes(s.WebServer.Router)
 
 	// construct controllers
 	s.ClusterBinding, err = clusterbinding.NewController(
@@ -148,6 +156,10 @@ func (s *Server) OptionallyStartInformers(ctx context.Context) {
 	)
 }
 
+func (s *Server) Addr() net.Addr {
+	return s.WebServer.Addr()
+}
+
 func (s *Server) Run(ctx context.Context) error {
 	// start controllers
 	go s.Controllers.ServiceExportResource.Start(ctx, 1)
@@ -158,7 +170,5 @@ func (s *Server) Run(ctx context.Context) error {
 	go func() {
 		<-ctx.Done()
 	}()
-	s.WebServer.Start()
-
-	return nil
+	return s.WebServer.Start(ctx)
 }

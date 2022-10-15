@@ -79,7 +79,7 @@ func GenerateKubeconfig(ctx context.Context,
 
 			kfg = &corev1.Secret{
 				ObjectMeta: v1.ObjectMeta{
-					Name:      "cluster-admin-kubeconfig",
+					Name:      "kubeconfig",
 					Namespace: ns,
 				},
 			}

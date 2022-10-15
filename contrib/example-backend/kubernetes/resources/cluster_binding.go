@@ -26,7 +26,7 @@ import (
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 )
 
-func CreateClusterBinding(ctx context.Context, client bindclient.Interface, ns, name, providerPrettyName string) error {
+func CreateClusterBinding(ctx context.Context, client bindclient.Interface, ns, secretName, providerPrettyName string) error {
 	_, err := client.KubeBindV1alpha1().ClusterBindings(ns).Get(ctx, ClusterBindingName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -38,7 +38,7 @@ func CreateClusterBinding(ctx context.Context, client bindclient.Interface, ns, 
 				Spec: kubebindv1alpha1.ClusterBindingSpec{
 					ProviderPrettyName: providerPrettyName,
 					KubeconfigSecretRef: kubebindv1alpha1.LocalSecretKeyRef{
-						Name: name,
+						Name: secretName,
 						Key:  "kubeconfig",
 					},
 				},

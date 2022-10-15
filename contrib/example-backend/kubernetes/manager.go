@@ -132,7 +132,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		return nil, err
 	}
 
-	saSecret, err := kuberesources.CreateSASecret(ctx, m.kubeClient, ns)
+	saSecret, err := kuberesources.CreateSASecret(ctx, m.kubeClient, ns, sa.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		return nil, err
 	}
 
-	if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, sa.Name, m.providerPrettyName); err != nil {
+	if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, kfgSecret.Name, m.providerPrettyName); err != nil {
 		return nil, err
 	}
 

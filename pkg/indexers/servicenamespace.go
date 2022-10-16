@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	ServiceNamespaceByNamespace = "ByNamespace"
+	ServiceNamespaceByNamespace = "ServiceNamespaceByNamespace"
 )
 
 func IndexServiceNamespaceByNamespace(obj interface{}) ([]string, error) {

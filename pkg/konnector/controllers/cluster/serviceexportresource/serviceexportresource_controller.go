@@ -59,6 +59,9 @@ func NewController(
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
+	consumerConfig = rest.CopyConfig(consumerConfig)
+	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
+
 	providerConfig = rest.CopyConfig(providerConfig)
 	providerConfig = rest.AddUserAgent(providerConfig, controllerName)
 

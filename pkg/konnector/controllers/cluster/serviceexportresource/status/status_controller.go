@@ -48,7 +48,6 @@ const (
 // NewController returns a new controller reconciling status of upstream to downstream.
 func NewController(
 	gvr schema.GroupVersionResource,
-	namespaced bool,
 	providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
 	consumerDynamicInformer, providerDynamicInformer informers.GenericInformer,
@@ -93,8 +92,6 @@ func NewController(
 		serviceNamespaceInformer: serviceNamespaceInformer,
 
 		reconciler: reconciler{
-			namespaced: namespaced,
-
 			getServiceNamespace: func(upstreamNamespace string) (*kubebindv1alpha1.APIServiceNamespace, error) {
 				sns, err := serviceNamespaceInformer.Informer().GetIndexer().ByIndex(indexers.ServiceNamespaceByNamespace, upstreamNamespace)
 				if err != nil {
@@ -117,31 +114,27 @@ func NewController(
 		},
 	}
 
-	providerDynamicInformer.Informer().AddEventHandler(cache.FilteringResourceEventHandler{
-		FilterFunc: func(obj interface{}) bool {
-			if !namespaced {
-				return true
-			}
-			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err != nil {
-				return false
-			}
-			ns, _, err := cache.SplitMetaNamespaceKey(key)
-			if err != nil {
-				return false
-			}
-			return ns == providerNamespace
+	consumerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueConsumer(logger, obj)
 		},
-		Handler: cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				c.enqueueUnstructured(logger, obj)
-			},
-			UpdateFunc: func(_, newObj interface{}) {
-				c.enqueueUnstructured(logger, newObj)
-			},
-			DeleteFunc: func(obj interface{}) {
-				c.enqueueUnstructured(logger, obj)
-			},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueConsumer(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueConsumer(logger, obj)
+		},
+	})
+
+	providerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueProvider(logger, obj)
+		},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueProvider(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueProvider(logger, obj)
 		},
 	})
 
@@ -168,22 +161,69 @@ type controller struct {
 	reconciler
 }
 
-func (c *controller) enqueueUnstructured(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
+	ns, _, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	if ns != "" {
+		sns, err := c.serviceNamespaceInformer.Informer().GetIndexer().ByIndex(indexers.ServiceNamespaceByNamespace, ns)
+		if err != nil {
+			runtime.HandleError(err)
+			return
+		}
+		for _, obj := range sns {
+			sns := obj.(*kubebindv1alpha1.APIServiceNamespace)
+			if sns.Namespace == c.providerNamespace {
+				logger.V(2).Info("queueing Unstructured", "key", key)
+				c.queue.Add(key)
+				return
+			}
+		}
+		logger.V(3).Info("skipping because consumer mismatch", "key", key)
+	}
+}
 
-	logger.V(2).Info("queueing Unstructured", "key", key)
-	c.queue.Add(key)
+func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
+	upstreamKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	ns, name, err := cache.SplitMetaNamespaceKey(upstreamKey)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	if ns != "" {
+		sn, err := c.serviceNamespaceInformer.Lister().APIServiceNamespaces(ns).Get(name)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				runtime.HandleError(err)
+			}
+			return
+		}
+		if sn.Namespace == c.providerNamespace && sn.Status.Namespace != "" {
+			key := fmt.Sprintf("%s/%s", sn.Status.Namespace, name)
+			logger.V(2).Info("queueing Unstructured", "key", key)
+			c.queue.Add(key)
+			return
+		}
+		return
+	}
+
+	logger.V(2).Info("queueing Unstructured", "key", upstreamKey)
+	c.queue.Add(upstreamKey)
 }
 
 func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
-	if !c.namespaced {
-		return // ignore
-	}
-
 	snKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -298,8 +338,13 @@ func (c *controller) process(ctx context.Context, key string) error {
 	} else if errors.IsNotFound(err) {
 		logger.V(2).Info("Upstream object disappeared")
 
-		if _, err := c.removeDownstreamFinalizer(ctx, obj); err != nil {
+		downstream, err := c.consumerDynamicLister.Namespace(ns).Get(name)
+		if err != nil && !errors.IsNotFound(err) {
 			return err
+		} else if err == nil {
+			if _, err := c.removeDownstreamFinalizer(ctx, downstream); err != nil {
+				return err
+			}
 		}
 
 		return nil

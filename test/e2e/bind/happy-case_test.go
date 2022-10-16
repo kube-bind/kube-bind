@@ -151,7 +151,7 @@ spec:
 					obj, err := providerClient.Namespace(upstreamNS).Get(ctx, "test", metav1.GetOptions{})
 					require.NoError(t, err)
 					unstructured.SetNestedField(obj.Object, "Running", "status", "phase") // nolint: errcheck
-					_, err = providerClient.Namespace(upstreamNS).Update(ctx, obj, metav1.UpdateOptions{})
+					_, err = providerClient.Namespace(upstreamNS).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
 					return err
 				})
 				require.NoError(t, err)
@@ -171,7 +171,7 @@ spec:
 				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 					obj, err := providerClient.Namespace(upstreamNS).Get(ctx, "test", metav1.GetOptions{})
 					require.NoError(t, err)
-					unstructured.SetNestedField(obj.Object, "Shared", "spec", "tier")
+					unstructured.SetNestedField(obj.Object, "Shared", "spec", "tier") // nolint: errcheck
 					_, err = providerClient.Namespace(upstreamNS).Update(ctx, obj, metav1.UpdateOptions{})
 					return err
 				})

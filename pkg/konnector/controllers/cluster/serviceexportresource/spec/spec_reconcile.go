@@ -173,7 +173,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		unstructured.RemoveNestedField(upstream.Object, "spec")
 	}
 
-	logger.Info("Updating downstream object")
+	logger.Info("Updating update object")
 	upstream.SetManagedFields(nil) // server side apply does not want this
 	if _, err := r.updateProviderObject(ctx, upstream); err != nil {
 		return err

@@ -180,7 +180,8 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 	specCtrl, err := spec.NewController(
 		gvr,
 		r.providerNamespace,
-		r.consumerConfig, r.providerConfig,
+		r.consumerConfig,
+		r.providerConfig,
 		consumerInf.ForResource(gvr),
 		providerInf.ForResource(gvr),
 		r.serviceNamespaceInformer,
@@ -191,7 +192,6 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 	}
 	statusCtrl, err := status.NewController(
 		gvr,
-		resource.Spec.Scope == apiextensionsv1.NamespaceScoped,
 		r.providerNamespace,
 		r.consumerConfig,
 		r.providerConfig,

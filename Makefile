@@ -206,11 +206,13 @@ dex/bin/dex: dex
 		make
 
 $(DEX):
+	mkdir -p $(TOOLS_DIR)
 	git clone --branch $(DEX_VER) --depth 1 https://github.com/dexidp/dex $(TOOLS_DIR)/dex-clone-$(DEX_VER)
 	cd $(TOOLS_DIR)/dex-clone-$(DEX_VER) && make build
 	cp -a $(TOOLS_DIR)/dex-clone-$(DEX_VER)/bin/dex $(DEX)
 
 $(KCP):
+	mkdir -p $(TOOLS_DIR)
 	curl --fail --retry 3 -L "https://github.com/kcp-dev/kcp/releases/download/$(KCP_VER)/kcp_$(KCP_VER:v%=%)_$(OS)_$(ARCH).tar.gz" | \
 	tar xz -C "$(TOOLS_DIR)" --strip-components="1" bin/kcp
 	mv $(TOOLS_DIR)/kcp $(KCP)

@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -47,6 +48,9 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 		Example:      fmt.Sprintf(bindAPIServiceExampleUses, "kubectl bind"),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
+			fmt.Fprintf(streams.ErrOut, yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")+"\n\n") // nolint: errcheck
+
 			if len(args) == 0 {
 				return cmd.Help()
 			}

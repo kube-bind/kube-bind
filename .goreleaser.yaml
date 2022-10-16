@@ -27,7 +27,7 @@ release:
   mode: keep-existing
 
 krews:
-- name: kubectl-bind
+- name: bind
   ids:
   - kubectl-bind
   index:

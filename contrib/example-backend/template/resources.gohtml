@@ -20,7 +20,7 @@
           <li class="list-group-item">Scope: {{.Spec.Scope}}</li>
         </ul>
         <div class="card-body">
-          <a href="/bind?s={{$sid}}&resource={{.Spec.Names.Plural}}&group={{.Spec.Group}}" class="btn btn-lg btn-block btn-primary">Bind</a>
+          <a href="/bind?s={{$sid}}&resource={{.Spec.Names.Plural}}&group={{.Spec.Group}}" class="btn btn-lg btn-block btn-primary {{.Spec.Names.Plural}}">Bind</a>
         </div>
       </div>
       {{end}}

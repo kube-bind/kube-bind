@@ -14,20 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package indexers
+package framework
 
 import (
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	"testing"
+	"time"
+
+	"github.com/headzoo/surf/browser"
+	"github.com/stretchr/testify/require"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
-const (
-	ServiceNamespaceByNamespace = "ServiceNamespaceByNamespace"
-)
-
-func IndexServiceNamespaceByNamespace(obj interface{}) ([]string, error) {
-	sn, ok := obj.(*kubebindv1alpha1.APIServiceNamespace)
-	if !ok || sn.Status.Namespace == "" {
-		return nil, nil
-	}
-	return []string{sn.Status.Namespace}, nil
+func BrowerEventuallyAtPath(t *testing.T, browser *browser.Browser, path string) {
+	require.Eventuallyf(t, func() bool {
+		if browser.Url().Path == path {
+			t.Logf("Browser is at %s", browser.Url())
+			return true
+		}
+		t.Logf("Waiting for browser to be at %s, current URL: %s", path, browser.Url())
+		return false
+	}, wait.ForeverTestTimeout, time.Millisecond*100, "Browser is not at path %s", path)
 }

@@ -14,20 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package indexers
+package framework
 
 import (
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	"os"
+	"path/filepath"
+	"runtime"
 )
 
-const (
-	ServiceNamespaceByNamespace = "ServiceNamespaceByNamespace"
+var (
+	WorkDir = os.Getenv("WORK_DIR")
 )
 
-func IndexServiceNamespaceByNamespace(obj interface{}) ([]string, error) {
-	sn, ok := obj.(*kubebindv1alpha1.APIServiceNamespace)
-	if !ok || sn.Status.Namespace == "" {
-		return nil, nil
+func init() {
+	if WorkDir == "" {
+		_, f, _, _ := runtime.Caller(0)
+		WorkDir = filepath.Clean(filepath.Join(f, "..", "..", "..", "..", ".kube-bind"))
 	}
-	return []string{sn.Status.Namespace}, nil
 }

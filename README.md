@@ -2,6 +2,8 @@
 
 # kube-bind
 
+### Disclaimer: work in progress and not ready for production use. 
+
 kube-bind is a prototype project with the goal to establish a new extension model for Kubernetes clusters:
 
 - APIs should be bindable into a cluster and operated by a service provider

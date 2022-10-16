@@ -29,8 +29,6 @@ import (
 )
 
 type reconciler struct {
-	namespaced bool
-
 	getServiceNamespace func(upstreamNamespace string) (*kubebindv1alpha1.APIServiceNamespace, error)
 
 	getConsumerObject          func(ns, name string) (*unstructured.Unstructured, error)
@@ -66,24 +64,25 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 
 	downstream, err := r.getConsumerObject(ns, obj.GetName())
 	if err != nil && !errors.IsNotFound(err) {
+		logger.Info("failed to get downstream object", "error", err, "downstreamNamespace", ns, "downstreamName", obj.GetName())
 		return err
 	} else if errors.IsNotFound(err) {
 		// downstream is gone. Delete upstream too. Note that we cannot rely on the spec controller because
 		// due to konnector restart it might have missed the deletion event.
-		logger.Info("Deleting upstream object because downstream is gone")
+		logger.Info("Deleting upstream object because downstream is gone", "downstreamNamespace", ns, "downstreamName", obj.GetName())
 		if err := r.deleteProviderObject(ctx, obj.GetNamespace(), obj.GetName()); err != nil {
 			return err
 		}
 		return nil
 	}
 
+	orig := downstream
+	downstream = downstream.DeepCopy()
 	status, found, err := unstructured.NestedFieldNoCopy(obj.Object, "status")
 	if err != nil {
 		runtime.HandleError(err)
 		return nil // nothing we can do here
 	}
-
-	orig := downstream.DeepCopy()
 	if found {
 		if err := unstructured.SetNestedField(downstream.Object, status, "status"); err != nil {
 			runtime.HandleError(err)
@@ -93,7 +92,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		unstructured.RemoveNestedField(downstream.Object, "status")
 	}
 	if !reflect.DeepEqual(orig, downstream) {
-		logger.Info("Updating downstream object")
+		logger.Info("Updating downstream object status", "downstreamNamespace", ns, "downstreamName", obj.GetName())
 		if _, err := r.updateConsumerObjectStatus(ctx, downstream); err != nil {
 			return err
 		}

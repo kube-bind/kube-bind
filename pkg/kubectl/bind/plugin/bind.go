@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	kubeclient "k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 
 	backendresources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/deploy/konnector"
@@ -53,7 +54,10 @@ type BindOptions struct {
 
 	// url is the argument accepted by the command. It contains the
 	// reference to where an APIService exists.
-	url string
+	URL string
+
+	// skipKonnector skips the deployment of the konnector.
+	SkipKonnector bool
 }
 
 // NewBindOptions returns new BindOptions.
@@ -63,9 +67,11 @@ func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 	}
 }
 
-// BindFlags binds fields to cmd's flagset.
-func (b *BindOptions) BindFlags(cmd *cobra.Command) {
+// AddCmdFlags binds fields to cmd's flagset.
+func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 	b.Options.BindFlags(cmd)
+
+	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", false, "Skip the deployment of the konnector")
 }
 
 // Complete ensures all fields are initialized.
@@ -75,26 +81,28 @@ func (b *BindOptions) Complete(args []string) error {
 	}
 
 	if len(args) > 0 {
-		b.url = args[0]
+		b.URL = args[0]
 	}
 	return nil
 }
 
 // Validate validates the BindOptions are complete and usable.
 func (b *BindOptions) Validate() error {
-	if b.url == "" {
+	if b.URL == "" {
 		return errors.New("url is required as an argument") // should not happen because we validate that before
 	}
 
-	if _, err := url.Parse(b.url); err != nil {
-		return fmt.Errorf("invalid url %q: %w", b.url, err)
+	if _, err := url.Parse(b.URL); err != nil {
+		return fmt.Errorf("invalid url %q: %w", b.URL, err)
 	}
 
 	return b.Options.Validate()
 }
 
 // Run starts the binding process.
-func (b *BindOptions) Run(ctx context.Context) error {
+func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
+	logger := klog.FromContext(ctx).WithValues("command", "bind", "url", b.URL)
+
 	config, err := b.ClientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -121,19 +129,19 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return err
 	}
 
-	exportURL, err := url.Parse(b.url)
+	exportURL, err := url.Parse(b.URL)
 	if err != nil {
 		return err // should never happen because we test this in Validate()
 	}
 
 	provider, err := fetchAuthenticationRoute(exportURL.String())
 	if err != nil {
-		return fmt.Errorf("failed to fetch authentication url: %v", err)
+		return fmt.Errorf("failed to fetch authentication url %q: %v", exportURL, err)
 	}
 
 	sessionID := rand.String(rand.IntnRange(20, 30))
 
-	if err := authenticate(provider, auth.Endpoint(ctx), sessionID); err != nil {
+	if err := authenticate(provider, auth.Endpoint(ctx), sessionID, urlCh); err != nil {
 		return err
 	}
 
@@ -143,7 +151,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 		return fmt.Errorf("authentication timeout")
 	}
 
-	fmt.Printf("Successfully authenticated to %s\n", exportURL.String())
+	fmt.Fprintf(b.IOStreams.Out, "Successfully authenticated to %s\n", exportURL.String()) // nolint: errcheck
 
 	// bootstrap the konnector
 	dynamicClient, err := dynamic.NewForConfig(config)
@@ -154,18 +162,22 @@ func (b *BindOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, sets.NewString()); err != nil {
-		return err
+	if !b.SkipKonnector {
+		logger.V(1).Info("Deploying konnector")
+		if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, sets.NewString()); err != nil {
+			return err
+		}
 	}
 	first := true
 	if err := wait.PollImmediateInfiniteWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().List(ctx, metav1.ListOptions{})
 		if err != nil {
+			logger.V(2).Info("Waiting for APIServiceBindings to be served", "error", err, "host", bindClient.RESTClient())
 			if first {
-				fmt.Print("Waiting for the konnector to be ready")
+				fmt.Fprint(b.IOStreams.Out, "Waiting for the konnector to be ready") // nolint: errcheck
 				first = false
 			} else {
-				fmt.Print(".")
+				fmt.Fprint(b.IOStreams.Out, ".") // nolint: errcheck
 			}
 		}
 		return err == nil, nil
@@ -181,7 +193,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	} else if err == nil {
-		fmt.Printf("Created kube-binding namespace.\n")
+		fmt.Fprintf(b.IOStreams.Out, "Created kube-binding namespace.\n") // nolint: errcheck
 	}
 
 	// look for secret of the given identity
@@ -207,13 +219,13 @@ func (b *BindOptions) Run(ctx context.Context) error {
 			return fmt.Errorf("CRD %s.%s already exists and is not from this service provider", response.Resource, response.Group)
 		}
 
-		fmt.Printf("Creating secret for identity %s\n", response.ID)
+		fmt.Fprintf(b.IOStreams.Out, "Creating secret for identity %s\n", response.ID) // nolint: errcheck
 		secretName, err = resources.EnsureServiceBindingAuthData(ctx, string(response.Kubeconfig), response.ID, "kube-bind", "", kubeClient)
 		if err != nil {
 			return err
 		}
 	} else if err == nil {
-		fmt.Printf("Found existing CRD %s. Checking owner.\n", crd.Name)
+		fmt.Fprintf(b.IOStreams.Out, "Found existing CRD %s. Checking owner.\n", crd.Name) // noline: errcheck
 
 		// check if the CRD is owner-refed by the APIServiceBinding
 		for _, ref := range crd.OwnerReferences {
@@ -230,14 +242,14 @@ func (b *BindOptions) Run(ctx context.Context) error {
 			}
 
 			if existing.Spec.KubeconfigSecretRef.Namespace == "kube-bind" && existing.Spec.KubeconfigSecretRef.Name == secretName {
-				fmt.Printf("Updating credentials for existing APIServiceBinding %s\n", existing.Name)
+				fmt.Fprintf(b.IOStreams.Out, "Updating credentials for existing APIServiceBinding %s\n", existing.Name) // nolint: errcheck
 				_, err = resources.EnsureServiceBindingAuthData(ctx, string(response.Kubeconfig), response.ID, "kube-bind", secretName, kubeClient)
 				return err
 			}
 		}
 		return fmt.Errorf("found existing CustomResourceDefinition %s not from this service provider", response.ID)
 	} else {
-		fmt.Printf("Updating credentials\n")
+		fmt.Fprintf(b.IOStreams.Out, "Updating credentials\n") // noilnt: errcheck
 		secretName, err = resources.EnsureServiceBindingAuthData(ctx, string(response.Kubeconfig), response.ID, "kube-bind", secretName, kubeClient)
 		if err != nil {
 			return err
@@ -249,7 +261,7 @@ func (b *BindOptions) Run(ctx context.Context) error {
 	if err := wait.PollInfinite(1*time.Second, func() (bool, error) {
 		if !first {
 			first = false
-			fmt.Print(".")
+			fmt.Fprint(b.IOStreams.Out, ".") // nolint: errcheck
 		}
 		_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Create(ctx, &kubebindv1alpha1.APIServiceBinding{
 			ObjectMeta: metav1.ObjectMeta{
@@ -282,10 +294,10 @@ func (b *BindOptions) Run(ctx context.Context) error {
 
 		return true, nil
 	}); err != nil {
-		fmt.Println()
+		fmt.Fprintln(b.IOStreams.Out, "") // nolint: errcheck
 		return err
 	}
-	fmt.Printf("\nCreated APIServiceBinding %s.%s\n", response.Resource, response.Group)
+	fmt.Fprintf(b.IOStreams.Out, "\nCreated APIServiceBinding %s.%s\n", response.Resource, response.Group) // nolint: errcheck
 
 	return nil
 }

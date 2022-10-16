@@ -49,7 +49,8 @@ func EnsureServiceBindingAuthData(ctx context.Context, kubeconfig, clusterID, ns
 			},
 		}
 
-		if _, err := client.CoreV1().Secrets(ns).Create(ctx, secret, metav1.CreateOptions{}); err != nil {
+		secret, err := client.CoreV1().Secrets(ns).Create(ctx, secret, metav1.CreateOptions{})
+		if err != nil {
 			return "", err
 		}
 		fmt.Printf("Created secret %s/%s\n", ns, secret.Name)

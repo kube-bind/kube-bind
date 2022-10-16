@@ -41,6 +41,7 @@ import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
@@ -136,13 +137,25 @@ func NewController(
 
 	consumerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			c.enqueueUnstructured(logger, obj)
+			c.enqueueConsumer(logger, obj)
 		},
 		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueUnstructured(logger, newObj)
+			c.enqueueConsumer(logger, newObj)
 		},
 		DeleteFunc: func(obj interface{}) {
-			c.enqueueUnstructured(logger, obj)
+			c.enqueueConsumer(logger, obj)
+		},
+	})
+
+	providerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueProvider(logger, obj)
+		},
+		UpdateFunc: func(_, newObj interface{}) {
+			c.enqueueProvider(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueProvider(logger, obj)
 		},
 	})
 
@@ -167,7 +180,7 @@ type controller struct {
 	reconciler
 }
 
-func (c *controller) enqueueUnstructured(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -176,6 +189,42 @@ func (c *controller) enqueueUnstructured(logger klog.Logger, obj interface{}) {
 
 	logger.V(2).Info("queueing Unstructured", "key", key)
 	c.queue.Add(key)
+}
+
+func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
+	upstreamKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	ns, name, err := cache.SplitMetaNamespaceKey(upstreamKey)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	if ns != "" {
+		sns, err := c.serviceNamespaceInformer.Informer().GetIndexer().ByIndex(indexers.ServiceNamespaceByNamespace, ns)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				runtime.HandleError(err)
+			}
+			return
+		}
+		for _, obj := range sns {
+			sn := obj.(*kubebindv1alpha1.APIServiceNamespace)
+			if sn.Namespace == c.providerNamespace {
+				key := fmt.Sprintf("%s/%s", sn.Name, name)
+				logger.V(2).Info("queueing Unstructured", "key", key)
+				c.queue.Add(key)
+				return
+			}
+		}
+		return
+	}
+
+	logger.V(2).Info("queueing Unstructured", "key", upstreamKey)
+	c.queue.Add(upstreamKey)
 }
 
 func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
@@ -283,7 +332,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		logger.V(2).Info("Upstream object disappeared")
+		logger.V(2).Info("Downstream object disappeared")
 		return nil
 	}
 

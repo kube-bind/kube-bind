@@ -26,24 +26,25 @@ import (
 )
 
 type Options struct {
-	Logs *logs.Options
-	OIDC *OIDC
+	Logs  *logs.Options
+	OIDC  *OIDC
+	Serve *Serve
 
 	ExtraOptions
 }
 type ExtraOptions struct {
-	ListenIP   string
-	ListenPort int
-
 	KubeConfig string
 
 	NamespacePrefix string
 	PrettyName      string
+
+	TestingAutoSelect string
 }
 
 type completedOptions struct {
-	Logs *logs.Options
-	OIDC *OIDC
+	Logs  *logs.Options
+	OIDC  *OIDC
+	Serve *Serve
 
 	ExtraOptions
 }
@@ -58,13 +59,11 @@ func NewOptions() *Options {
 	logs.Verbosity = logsv1.VerbosityLevel(2)
 
 	return &Options{
-		Logs: logs,
-		OIDC: NewOIDC(),
+		Logs:  logs,
+		OIDC:  NewOIDC(),
+		Serve: NewServe(),
 
 		ExtraOptions: ExtraOptions{
-			ListenIP:   "127.0.0.1",
-			ListenPort: 8080,
-
 			NamespacePrefix: "cluster",
 			PrettyName:      "Example Backend",
 		},
@@ -74,39 +73,35 @@ func NewOptions() *Options {
 func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	logsv1.AddFlags(options.Logs, fs)
 	options.OIDC.AddFlags(fs)
+	options.Serve.AddFlags(fs)
 
-	fs.StringVar(&options.ListenIP, "listen-ip", options.ListenIP, "The host IP where the backend is running")
-	fs.IntVar(&options.ListenPort, "listen-port", options.ListenPort, "The host port where the backend is running")
 	fs.StringVar(&options.KubeConfig, "kubeconfig", options.KubeConfig, "path to a kubeconfig. Only required if out-of-cluster")
 	fs.StringVar(&options.NamespacePrefix, "namespace-prefix", options.NamespacePrefix, "The prefix to use for cluster namespaces")
 	fs.StringVar(&options.PrettyName, "pretty-name", options.PrettyName, "Pretty name for the backend")
+
+	fs.StringVar(&options.TestingAutoSelect, "testing-auto-select", options.TestingAutoSelect, "<resource>.<group> that is automatically selected on th bind screen for testing")
+	fs.MarkHidden("testing-auto-select") // nolint: errcheck
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {
 	if err := options.OIDC.Complete(); err != nil {
 		return nil, err
 	}
-
-	if options.OIDC.CallbackURL == "" {
-		options.OIDC.CallbackURL = fmt.Sprintf("http://%s:%d/callback", options.ListenIP, options.ListenPort)
+	if err := options.Serve.Complete(); err != nil {
+		return nil, err
 	}
 
 	return &CompletedOptions{
 		completedOptions: &completedOptions{
 			Logs:         options.Logs,
 			OIDC:         options.OIDC,
+			Serve:        options.Serve,
 			ExtraOptions: options.ExtraOptions,
 		},
 	}, nil
 }
 
 func (options *CompletedOptions) Validate() error {
-	if options.ListenIP == "" {
-		return fmt.Errorf("listen IP cannot be empty")
-	}
-	if options.ListenPort == 0 {
-		return fmt.Errorf("listen port cannot be empty")
-	}
 	if options.NamespacePrefix == "" {
 		return fmt.Errorf("namespace prefix cannot be empty")
 	}

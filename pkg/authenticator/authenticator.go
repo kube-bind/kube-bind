@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -53,7 +54,7 @@ func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context,
 
 	server := echo.New()
 	server.HideBanner = true
-	server.GET("/", defaultAuthenticator.actionWrapper())
+	server.GET("/callback", defaultAuthenticator.actionWrapper())
 	defaultAuthenticator.server = server
 
 	address, err := net.ResolveTCPAddr("tcp", "localhost:0")
@@ -81,11 +82,11 @@ func (d *defaultAuthenticator) Execute(ctx context.Context) error {
 		d.server.Server.Close()
 	}()
 
-	return d.server.Start(fmt.Sprintf("localhost:%v", d.port))
+	return d.server.Start(net.JoinHostPort("localhost", strconv.Itoa(d.port)))
 }
 
 func (d *defaultAuthenticator) Endpoint(context.Context) string {
-	return fmt.Sprintf("http://localhost:%v", d.port)
+	return fmt.Sprintf("http://%s/callback", net.JoinHostPort("localhost", strconv.Itoa(d.port)))
 }
 
 func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
@@ -113,8 +114,10 @@ func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 			return err
 		}
 
-		time.Sleep(2 * time.Second)
-		d.server.Server.Close() // nolint:errcheck
+		go func() {
+			time.Sleep(5 * time.Second)
+			d.server.Server.Close() // nolint:errcheck
+		}()
 
 		return nil
 	}

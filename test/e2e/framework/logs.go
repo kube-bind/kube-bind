@@ -14,20 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package indexers
+package framework
 
 import (
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	"os"
+
+	"github.com/spf13/pflag"
+
+	"k8s.io/component-base/logs"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 )
 
-const (
-	ServiceNamespaceByNamespace = "ServiceNamespaceByNamespace"
-)
-
-func IndexServiceNamespaceByNamespace(obj interface{}) ([]string, error) {
-	sn, ok := obj.(*kubebindv1alpha1.APIServiceNamespace)
-	if !ok || sn.Status.Namespace == "" {
-		return nil, nil
+func init() {
+	logs := logs.NewOptions()
+	logs.Verbosity = logsv1.VerbosityLevel(2)
+	logsv1.AddFlags(logs, pflag.CommandLine)
+	if err := pflag.CommandLine.Parse(os.Args); err != nil {
+		panic(err)
 	}
-	return []string{sn.Status.Namespace}, nil
+	if err := logsv1.ValidateAndApply(logs, nil); err != nil {
+		panic(err)
+	}
 }

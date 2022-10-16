@@ -137,7 +137,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		return nil, err
 	}
 
-	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig.Host, ns, saSecret.Name)
+	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig, ns, saSecret.Name)
 	if err != nil {
 		return nil, err
 	}

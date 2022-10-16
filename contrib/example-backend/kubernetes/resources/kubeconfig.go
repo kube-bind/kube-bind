@@ -26,6 +26,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/retry"
@@ -33,7 +34,8 @@ import (
 
 func GenerateKubeconfig(ctx context.Context,
 	client kubernetes.Interface,
-	host, ns, saSecretName string,
+	clusterConfig *rest.Config,
+	ns, saSecretName string,
 ) (*corev1.Secret, error) {
 	var saSecret *corev1.Secret
 	if err := wait.PollImmediateWithContext(ctx, 500*time.Millisecond, 10*time.Second, func(ctx context.Context) (done bool, err error) {
@@ -51,8 +53,8 @@ func GenerateKubeconfig(ctx context.Context,
 	cfg := clientcmdapi.Config{
 		Clusters: map[string]*clientcmdapi.Cluster{
 			"default": {
-				Server:                   host,
-				CertificateAuthorityData: saSecret.Data["ca.crt"],
+				Server:                   clusterConfig.Host,
+				CertificateAuthorityData: clusterConfig.CAData,
 			},
 		},
 		Contexts: map[string]*clientcmdapi.Context{

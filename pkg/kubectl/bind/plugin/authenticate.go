@@ -52,7 +52,7 @@ func fetchAuthenticationRoute(url string) (*kubebindv1alpha1.APIServiceProvider,
 	return provider, nil
 }
 
-func authenticate(provider *kubebindv1alpha1.APIServiceProvider, authEndpoint, sessionID string) error {
+func authenticate(provider *kubebindv1alpha1.APIServiceProvider, authEndpoint, sessionID string, urlCh chan<- string) error {
 	u, err := url.Parse(provider.Spec.AuthenticatedClientURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse auth url: %v", err)
@@ -74,6 +74,10 @@ func authenticate(provider *kubebindv1alpha1.APIServiceProvider, authEndpoint, s
 		QuietZone: 2,
 	}
 	qrterminal.GenerateWithConfig(u.String(), config)
+
+	if urlCh != nil {
+		urlCh <- u.String()
+	}
 
 	return nil
 }

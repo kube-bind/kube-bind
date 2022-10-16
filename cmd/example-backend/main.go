@@ -79,4 +79,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
 		os.Exit(1)
 	}
+	fmt.Printf("Listening on port %s\n", server.Addr())
+
+	<-ctx.Done()
 }

@@ -6,6 +6,8 @@ coverage.*
 .DS_Store
 .env
 *.kubeconfig
+.kcp
+.kube-bind
 /dist
 /hack/tools
 /build

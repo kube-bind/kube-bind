@@ -62,6 +62,14 @@ LOGCHECK_BIN := logcheck
 LOGCHECK := $(TOOLS_GOBIN_DIR)/$(LOGCHECK_BIN)-$(LOGCHECK_VER)
 export LOGCHECK # so hack scripts can use it
 
+KCP_VER := v0.9.1
+KCP_BIN := kcp
+KCP := $(TOOLS_GOBIN_DIR)/$(KCP_BIN)-$(KCP_VER)
+
+DEX_VER := v2.35.2
+DEX_BIN := dex
+DEX := $(TOOLS_GOBIN_DIR)/$(DEX_BIN)-$(DEX_VER)
+
 ARCH := $(shell go env GOARCH)
 OS := $(shell go env GOOS)
 
@@ -191,14 +199,38 @@ endif
 COUNT ?= 1
 E2E_PARALLELISM ?= 1
 
+dex:
+		git clone https://github.com/dexidp/dex.git
+dex/bin/dex: dex
+		cd dex
+		make
+
+$(DEX):
+	mkdir -p $(TOOLS_DIR)
+	git clone --branch $(DEX_VER) --depth 1 https://github.com/dexidp/dex $(TOOLS_DIR)/dex-clone-$(DEX_VER)
+	cd $(TOOLS_DIR)/dex-clone-$(DEX_VER) && make build
+	cp -a $(TOOLS_DIR)/dex-clone-$(DEX_VER)/bin/dex $(DEX)
+
+$(KCP):
+	mkdir -p $(TOOLS_DIR)
+	curl --fail --retry 3 -L "https://github.com/kcp-dev/kcp/releases/download/$(KCP_VER)/kcp_$(KCP_VER:v%=%)_$(OS)_$(ARCH).tar.gz" | \
+	tar xz -C "$(TOOLS_DIR)" --strip-components="1" bin/kcp
+	mv $(TOOLS_DIR)/kcp $(KCP)
+
 .PHONY: test-e2e
 ifdef USE_GOTESTSUM
 test-e2e: $(GOTESTSUM)
 endif
 test-e2e: TEST_ARGS ?=
+test-e2e: WORK_DIR ?= .
 test-e2e: WHAT ?= ./test/e2e...
-test-e2e: build-all ## run e2e tests
-	NO_GORUN=1 GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) $(WHAT) $(TEST_ARGS)
+test-e2e: $(KCP) $(DEX) build-all
+	mkdir .kcp
+	$(DEX) serve hack/dex-config-dev.yaml 2>&1 & DEX_PID=$$!; \
+	$(KCP) start &>.kcp/kcp.log & KCP_PID=$$!; \
+	trap 'kill -TERM $$DEX_PID $$KCP_PID; rm -rf .kcp' TERM INT EXIT && \
+	echo "Waiting for kcp to be ready (check .kcp/kcp.log)." && while ! KUBECONFIG=.kcp/admin.kubeconfig kubectl get --raw /readyz &>/dev/null; do sleep 1; echo -n "."; done && echo && \
+	KUBECONFIG=$$PWD/.kcp/admin.kubeconfig GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) $(WHAT) $(TEST_ARGS)
 
 .PHONY: test
 ifdef USE_GOTESTSUM

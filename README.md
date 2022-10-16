@@ -71,6 +71,4 @@ $ bin/example-backend \
 
 where `ZXhhbXBsZS1hcHAtc2VjcmV0` matches the value of the dex config file.
 
-* browse to `http://127.0.0.1:8080/authorize` in a browser.
-* login with the "Example" connector.
-* you are redirected by to the backend.
+* with a KUBECONFIG against another cluster (a consumer cluster) bind a service: `kubectl bind https://127.0.0.1:8080/export`.

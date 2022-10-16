@@ -142,23 +142,24 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		return nil
 	}
 
+	r.lock.Lock()
 	c, found := r.syncContext[resource.Name]
 	if found {
 		if c.generation == resource.Generation {
+			r.lock.Unlock()
 			conditions.MarkTrue(resource, kubebindv1alpha1.APIServiceExportResourrceConditionSyncing)
 			return nil // all as expected
 		}
 
 		// technically, we could be less aggressive here if nothing big changed in the resource, e.g. just schemas. But ¯\_(ツ)_/¯
 
-		r.lock.Lock()
 		if c, found := r.syncContext[resource.Name]; found {
 			logger.V(1).Info("Stopping APIServiceExportResource sync", "reason", "GenerationChanged", "generation", resource.Generation)
 			c.cancel()
 			delete(r.syncContext, resource.Name)
 		}
-		r.lock.Unlock()
 	}
+	r.lock.Unlock()
 
 	// start a new syncer
 

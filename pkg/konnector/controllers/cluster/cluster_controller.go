@@ -278,7 +278,8 @@ func (c *controller) updateServiceBindings(ctx context.Context, update func(*kub
 	}
 	for _, obj := range objs {
 		binding := obj.(*kubebindv1alpha1.APIServiceBinding)
-		orig := binding.DeepCopy()
+		orig := binding
+		binding = binding.DeepCopy()
 		update(binding)
 		if !reflect.DeepEqual(binding.Status.Conditions, orig.Status.Conditions) {
 			logger.V(2).Info("updating service binding", "binding", binding.Name)

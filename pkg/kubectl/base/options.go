@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// Options contains options common to most CLI plugins, including settings for connecting to kcp (kubeconfig, etc).
+// Options contains options common to most CLI plugins.
 type Options struct {
 	// OptOutOfDefaultKubectlFlags indicates that the standard kubectl/kubeconfig-related flags should not be bound
 	// by default.

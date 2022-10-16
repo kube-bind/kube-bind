@@ -283,7 +283,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		logger.V(2).Info("Upstream object disappeared")
+		logger.V(2).Info("Downstream object disappeared")
 		return nil
 	}
 

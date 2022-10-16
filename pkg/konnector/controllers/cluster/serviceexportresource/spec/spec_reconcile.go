@@ -174,6 +174,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 	}
 
 	logger.Info("Updating downstream object")
+	upstream.SetManagedFields(nil) // server side apply does not want this
 	if _, err := r.updateProviderObject(ctx, upstream); err != nil {
 		return err
 	}

@@ -18,8 +18,6 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 // BindingProvider is a non-CRUD resource that is returned by the server before
@@ -73,38 +71,4 @@ type OAuth2CodeGrant struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
 	AuthenticatedURL string `json:"authenticatedURL"`
-}
-
-// APIService is a non-CRUD resource that is returned by the server before
-// authentication.
-//
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type APIService struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	// spec specifies how an API service from a service provider should be bound in the
-	// local consumer cluster.
-	Spec APIServiceSpec `json:"spec"`
-
-	// status contains reconciliation information for a service binding.
-	Status APIServiceStatus `json:"status,omitempty"`
-}
-
-type APIServiceSpec struct {
-}
-
-type APIServiceStatus struct {
-	// conditions is a list of conditions that apply to the APIServiceBinding.
-	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
-}
-
-// APIServiceList is a list of APIServices.
-//
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type APIServiceList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []APIService `json:"items"`
 }

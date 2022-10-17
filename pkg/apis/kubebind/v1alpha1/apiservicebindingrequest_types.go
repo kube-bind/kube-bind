@@ -49,6 +49,22 @@ type APIServiceBindingRequest struct {
 	Status APIServiceBindingRequestStatus `json:"status,omitempty"`
 }
 
+// APIServiceBindingRequestResponse is like APIServiceBindingRequest but without
+// ObjectMeta, to avoid unwanted metadata fields being sent in the response.
+type APIServiceBindingRequestResponse struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// spec specifies how an API service from a service provider should be bound in the
+	// local consumer cluster.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Spec APIServiceBindingRequestSpec `json:"spec"`
+
+	// status contains reconciliation information for a service binding.
+	Status APIServiceBindingRequestStatus `json:"status,omitempty"`
+}
+
 func (in *APIServiceBindingRequest) GetConditions() conditionsapi.Conditions {
 	return in.Status.Conditions
 }
@@ -103,6 +119,10 @@ type APIServiceBindingRequestStatus struct {
 	// +kubebuilder:Default=Pending
 	// +kubebuilder:validation:Enum=Pending;Failed;Succeeded
 	Phase APIServiceBindingRequestPhase `json:"phase,omitempty"`
+
+	// export is the name of the APIServiceExport object that has been created
+	// for this binding request when phase is Succeeded.
+	Export string `json:"export,omitempty"`
 
 	// conditions is a list of conditions that apply to the ClusterBinding. It is
 	// updated by the konnector and the service provider.

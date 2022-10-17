@@ -33,15 +33,15 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/cookie"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
-	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/template"
-	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
 var (
@@ -96,15 +96,16 @@ func (h *handler) AddRoutes(mux *mux.Router) {
 func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
 
-	provider := &v1alpha1.BindingProvider{
-		TypeMeta: v1.TypeMeta{
-			APIVersion: v1alpha1.GroupVersion,
+	provider := &kubebindv1alpha1.BindingProvider{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: kubebindv1alpha1.GroupVersion,
+			Kind:       "BindingProvider",
 		},
 		ProviderPrettyName: "example-backend",
-		AuthenticationMethods: []v1alpha1.AuthenticationMethod{
+		AuthenticationMethods: []kubebindv1alpha1.AuthenticationMethod{
 			{
 				Method: "OAuth2CodeGrant",
-				OAuth2CodeGrant: &v1alpha1.OAuth2CodeGrant{
+				OAuth2CodeGrant: &kubebindv1alpha1.OAuth2CodeGrant{
 					AuthenticatedURL: fmt.Sprintf("http://%s/authorize", r.Host),
 				},
 			},
@@ -134,7 +135,7 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
 
 	scopes := []string{"openid", "profile", "email", "offline_access"}
-	code := &resources.AuthCode{
+	code := &AuthCode{
 		RedirectURL: r.URL.Query().Get("u"),
 		SessionID:   r.URL.Query().Get("s"),
 	}
@@ -198,7 +199,7 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authCode := &resources.AuthCode{}
+	authCode := &AuthCode{}
 	if err := json.Unmarshal(decode, authCode); err != nil {
 		logger.Info("faile to unmarshal authCode", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -335,17 +336,45 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// callback client with access token and kubeconfig
-	authResponse := resources.AuthResponse{
-		SessionID:  state.SessionID,
-		ID:         idToken.Issuer + "/" + idToken.Subject,
-		Kubeconfig: kfg,
-		Group:      group,
-		Resource:   resource,
-		Export:     resource + "." + group,
+	request := kubebindv1alpha1.APIServiceBindingRequestResponse{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "APIServiceBindingRequest",
+		},
+		Spec: kubebindv1alpha1.APIServiceBindingRequestSpec{
+			Resources: []kubebindv1alpha1.APIServiceBindingRequestResource{
+				{GroupResource: kubebindv1alpha1.GroupResource{Group: group, Resource: resource}},
+			},
+		},
 	}
 
-	payload, err := json.Marshal(authResponse)
+	// callback response
+	authResponse := CodeGrantCallbackResponse{
+		SessionID: state.SessionID,
+		ID:        idToken.Issuer + "/" + idToken.Subject,
+	}
+	authResponseBytes, err := json.Marshal(&authResponse)
+	if err != nil {
+		logger.Info("failed to marshal auth response", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	requestBytes, err := json.Marshal(&request)
+	if err != nil {
+		logger.Info("failed to marshal request", "error", err)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	response := kubebindv1alpha1.BindingResponse{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "BindingResponse",
+		},
+		Authentication: &runtime.RawExtension{Raw: authResponseBytes},
+		Kubeconfig:     kfg,
+		Requests:       []runtime.RawExtension{{Raw: requestBytes}},
+	}
+	payload, err := json.Marshal(&response)
 	if err != nil {
 		logger.Info("failed to marshal auth response", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -362,7 +391,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	}
 
 	values := parsedAuthURL.Query()
-	values.Add("auth_response", encoded)
+	values.Add("response", encoded)
 
 	parsedAuthURL.RawQuery = values.Encode()
 

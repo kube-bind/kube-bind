@@ -26,10 +26,6 @@ jobs:
     - name: Set LDFLAGS
       run: echo LDFLAGS="$(make ldflags)" >> $GITHUB_ENV
 
-    - name: Build
-      run: |
-        go build ./cmd/konnector
-
     # Build ko from HEAD, build and push an image tagged with the commit SHA,
     # then keylessly sign it with cosign.
     - name: Publish and sign image

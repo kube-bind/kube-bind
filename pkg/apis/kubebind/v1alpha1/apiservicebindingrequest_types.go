@@ -19,16 +19,24 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
-// APIServiceBindingRequest is posted to the URL in spec.url to establish
-// a binding on the service provider side. The service provider will create
-// a ClusterBinding, APIServiceExports and return a kubeconfig to the namespace
-// (with the namespace set in the current context) they are in.
+// APIServiceBindingRequest is represents a request session of kubectl-bind-apiservice.
 //
+// The service provider can prune these objects after some time.
+//
+// +crd
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type=="Ready")].status`,priority=0
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
 type APIServiceBindingRequest struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// spec specifies how an API service from a service provider should be bound in the
 	// local consumer cluster.
@@ -41,44 +49,72 @@ type APIServiceBindingRequest struct {
 	Status APIServiceBindingRequestStatus `json:"status,omitempty"`
 }
 
-type APIServiceBindingRequestSpec struct {
-	// url is the URL this request should be posted.
-	//
-	// +required
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Fomat=url
-	// +kubebuilder:validation:MinLength=1
-	URL string `json:"url"`
+func (in *APIServiceBindingRequest) GetConditions() conditionsapi.Conditions {
+	return in.Status.Conditions
+}
 
-	// bindings specifies the list of bindings to create. It is expected that,
-	// on success of the request, the service provider will create equally named
-	// APIServiceExports. The client is not expected to bind to any other exports
-	// than those listed here.
+func (in *APIServiceBindingRequest) SetConditions(conditions conditionsapi.Conditions) {
+	in.Status.Conditions = conditions
+}
+
+type APIServiceBindingRequestSpec struct {
+	// parameters holds service provider specific parameters for this binding
+	// request.
+	Parameters *runtime.RawExtension `json:"parameters,omitempty"`
+
+	// resources is a list of resources that should be exported.
 	//
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
-	Bindings []APIServiceBindingRequestBinding `json:"bindings"`
+	Resources []APIServiceBindingRequestResource `json:"resources"`
 }
 
-type APIServiceBindingRequestBinding struct {
-	// Name is the name of the ServiceBinding to create.
-	//
-	// +required
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name"`
+type APIServiceBindingRequestResource struct {
+	GroupResource `json:",inline"`
 
-	// parameters is a service-provider specific object that contains the parameters
-	// to create the given ServiceBinding.
-	Parameters runtime.RawExtension `json:"parameters,omitempty"`
+	// versions is a list of versions that should be exported. If this is empty
+	// a sensible default is chosen by the service provider.
+	Versions []string `json:"versions,omitempty"`
 }
+
+type APIServiceBindingRequestPhase string
+
+const (
+	// APIServiceBindingRequestPhasePending indicates that the service binding
+	// is in progress.
+	APIServiceBindingRequestPhasePending APIServiceBindingRequestPhase = "Pending"
+	// APIServiceBindingRequestPhaseFailed indicates that the service binding
+	// has failed. It will not resume.
+	APIServiceBindingRequestPhaseFailed APIServiceBindingRequestPhase = "Failed"
+	// APIServiceBindingRequestPhaseSucceeded indicates that the service binding
+	// has succeeded. The corresponding APIServiceExport have been created and
+	// are ready.
+	APIServiceBindingRequestPhaseSucceeded APIServiceBindingRequestPhase = "Succeeded"
+)
 
 type APIServiceBindingRequestStatus struct {
-	// kubeConfig is the kubeconfig to access the service provider cluster. It is
-	// expected that this kubeconfig in its current context points to the namespace
-	// that holds ServiceExports and the ClusterBinding object.
+	// phase is the current phase of the binding request. It starts in Pending
+	// and transitions to Succeeded or Failed. See the condition for detailed
+	// information.
 	//
-	// TODO: think about how this would look like with a bound service account token.
-	KubeConfig []byte `json:"kubeConfig,omitempty"`
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:Default=Pending
+	// +kubebuilder:validation:Enum=Pending;Failed;Succeeded
+	Phase APIServiceBindingRequestPhase `json:"phase,omitempty"`
+
+	// conditions is a list of conditions that apply to the ClusterBinding. It is
+	// updated by the konnector and the service provider.
+	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
+}
+
+// APIServiceBindingRequestList is the list of APIServiceBindingRequest.
+//
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+type APIServiceBindingRequestList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []APIServiceBindingRequest `json:"items"`
 }

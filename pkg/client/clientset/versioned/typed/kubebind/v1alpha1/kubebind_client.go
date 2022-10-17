@@ -30,6 +30,7 @@ import (
 type KubeBindV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	APIServiceBindingsGetter
+	APIServiceBindingRequestsGetter
 	APIServiceExportsGetter
 	APIServiceExportResourcesGetter
 	APIServiceNamespacesGetter
@@ -43,6 +44,10 @@ type KubeBindV1alpha1Client struct {
 
 func (c *KubeBindV1alpha1Client) APIServiceBindings() APIServiceBindingInterface {
 	return newAPIServiceBindings(c)
+}
+
+func (c *KubeBindV1alpha1Client) APIServiceBindingRequests(namespace string) APIServiceBindingRequestInterface {
+	return newAPIServiceBindingRequests(c, namespace)
 }
 
 func (c *KubeBindV1alpha1Client) APIServiceExports(namespace string) APIServiceExportInterface {

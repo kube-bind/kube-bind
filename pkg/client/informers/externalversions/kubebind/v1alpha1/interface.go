@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// APIServiceBindings returns a APIServiceBindingInformer.
 	APIServiceBindings() APIServiceBindingInformer
+	// APIServiceBindingRequests returns a APIServiceBindingRequestInformer.
+	APIServiceBindingRequests() APIServiceBindingRequestInformer
 	// APIServiceExports returns a APIServiceExportInformer.
 	APIServiceExports() APIServiceExportInformer
 	// APIServiceExportResources returns a APIServiceExportResourceInformer.
@@ -50,6 +52,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // APIServiceBindings returns a APIServiceBindingInformer.
 func (v *version) APIServiceBindings() APIServiceBindingInformer {
 	return &aPIServiceBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceBindingRequests returns a APIServiceBindingRequestInformer.
+func (v *version) APIServiceBindingRequests() APIServiceBindingRequestInformer {
+	return &aPIServiceBindingRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // APIServiceExports returns a APIServiceExportInformer.

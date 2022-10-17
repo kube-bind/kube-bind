@@ -20,6 +20,8 @@ package v1alpha1
 
 type APIServiceBindingExpansion interface{}
 
+type APIServiceBindingRequestExpansion interface{}
+
 type APIServiceExportExpansion interface{}
 
 type APIServiceExportResourceExpansion interface{}

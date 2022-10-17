@@ -134,9 +134,13 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return err // should never happen because we test this in Validate()
 	}
 
-	provider, err := fetchAuthenticationRoute(exportURL.String())
+	provider, err := getProvider(exportURL.String())
 	if err != nil {
 		return fmt.Errorf("failed to fetch authentication url %q: %v", exportURL, err)
+	}
+
+	if provider.APIVersion != kubebindv1alpha1.GroupVersion {
+		return fmt.Errorf("unsupported binding provider version: %q", provider.APIVersion)
 	}
 
 	sessionID := rand.String(rand.IntnRange(20, 30))

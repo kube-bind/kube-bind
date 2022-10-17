@@ -18,6 +18,7 @@ package plugin
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,7 +30,7 @@ import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
-func fetchAuthenticationRoute(url string) (*kubebindv1alpha1.APIServiceProvider, error) {
+func getProvider(url string) (*kubebindv1alpha1.BindingProvider, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -44,7 +45,7 @@ func fetchAuthenticationRoute(url string) (*kubebindv1alpha1.APIServiceProvider,
 		return nil, err
 	}
 
-	provider := &kubebindv1alpha1.APIServiceProvider{}
+	provider := &kubebindv1alpha1.BindingProvider{}
 	if err := json.Unmarshal(blob, provider); err != nil {
 		return nil, err
 	}
@@ -52,8 +53,19 @@ func fetchAuthenticationRoute(url string) (*kubebindv1alpha1.APIServiceProvider,
 	return provider, nil
 }
 
-func authenticate(provider *kubebindv1alpha1.APIServiceProvider, authEndpoint, sessionID string, urlCh chan<- string) error {
-	u, err := url.Parse(provider.Spec.AuthenticatedClientURL)
+func authenticate(provider *kubebindv1alpha1.BindingProvider, authEndpoint, sessionID string, urlCh chan<- string) error {
+	var oauth2Method *kubebindv1alpha1.OAuth2CodeGrant
+	for _, m := range provider.AuthenticationMethods {
+		if m.Method == "OAuth2CodeGrant" {
+			oauth2Method = m.OAuth2CodeGrant
+			break
+		}
+	}
+	if oauth2Method == nil {
+		return errors.New("server does not support OAuth2 code grant flow")
+	}
+
+	u, err := url.Parse(oauth2Method.AuthenticatedURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse auth url: %v", err)
 	}

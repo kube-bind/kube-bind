@@ -33,6 +33,7 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/klog/v2"
 
@@ -95,16 +96,24 @@ func (h *handler) AddRoutes(mux *mux.Router) {
 func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
 
-	serviceProvider := &v1alpha1.APIServiceProvider{
-		Spec: v1alpha1.APIServiceProviderSpec{
-			AuthenticatedClientURL: fmt.Sprintf("http://%s/authorize", r.Host), // TODO: support https
-			ProviderPrettyName:     h.providerPrettyName,
+	provider := &v1alpha1.BindingProvider{
+		TypeMeta: v1.TypeMeta{
+			APIVersion: v1alpha1.GroupVersion,
+		},
+		ProviderPrettyName: "example-backend",
+		AuthenticationMethods: []v1alpha1.AuthenticationMethod{
+			{
+				Method: "OAuth2CodeGrant",
+				OAuth2CodeGrant: &v1alpha1.OAuth2CodeGrant{
+					AuthenticatedURL: fmt.Sprintf("http://%s/authorize", r.Host),
+				},
+			},
 		},
 	}
 
-	bs, err := json.Marshal(serviceProvider)
+	bs, err := json.Marshal(provider)
 	if err != nil {
-		logger.Error(err, "failed to marshal service provider")
+		logger.Error(err, "failed to marshal provider")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

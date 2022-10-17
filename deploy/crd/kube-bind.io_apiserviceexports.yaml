@@ -27,9 +27,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: APIServiceExport specifies an API service to exported to a consumer
-          cluster. The consumer cluster is defined by the ClusterBinding singleton
-          in the same namespace.
+        description: APIServiceExport specifies an API service to be exported to a
+          consumer cluster. The consumer cluster is defined by the ClusterBinding
+          singleton in the same namespace.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

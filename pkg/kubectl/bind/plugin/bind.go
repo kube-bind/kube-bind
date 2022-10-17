@@ -46,8 +46,8 @@ import (
 	"github.com/kube-bind/kube-bind/deploy/konnector"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
-	"github.com/kube-bind/kube-bind/pkg/kubectl/authenticator"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
+	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/authenticator"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin/resources"
 )
 

@@ -38,9 +38,16 @@ jobs:
         COSIGN_EXPERIMENTAL: 'true'
       run: |
         echo "${{ github.token }}" | ko login ghcr.io --username "${{ github.actor }}" --password-stdin
-        img=$(ko build --bare --platform=all -t latest -t ${{ github.sha }} ./cmd/konnector)
+        img=$(ko build --bare --platform=all -t latest -t ${{ github.sha }} -t ${{github.ref_name}} ./cmd/konnector)
         echo "built ${img}"
         cosign sign ${img} \
             -a sha=${{ github.sha }} \
+            -a ref=${{ github.ref }} \
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
+
+    - uses: actions/delete-package-versions@v3
+      with:
+        package-name: 'kube-bind'
+        min-versions-to-keep: 10
+        delete-only-pre-release-versions: "true"

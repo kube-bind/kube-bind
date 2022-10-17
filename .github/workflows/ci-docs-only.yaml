@@ -14,11 +14,12 @@ on:
       - ".goreleaser.yaml"
 
 jobs:
-  e2e:
-    name: e2e
+  go-test-e2e:
+    name: go-test-e2e
     runs-on: ubuntu-latest
     steps:
       - run: 'echo "No build required"'
+
   go-test:
     name: go-test
     runs-on: ubuntu-latest

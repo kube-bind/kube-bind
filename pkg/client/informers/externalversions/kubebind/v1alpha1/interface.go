@@ -32,8 +32,6 @@ type Interface interface {
 	APIServiceExportResources() APIServiceExportResourceInformer
 	// APIServiceNamespaces returns a APIServiceNamespaceInformer.
 	APIServiceNamespaces() APIServiceNamespaceInformer
-	// APIServiceProviders returns a APIServiceProviderInformer.
-	APIServiceProviders() APIServiceProviderInformer
 	// ClusterBindings returns a ClusterBindingInformer.
 	ClusterBindings() ClusterBindingInformer
 }
@@ -67,11 +65,6 @@ func (v *version) APIServiceExportResources() APIServiceExportResourceInformer {
 // APIServiceNamespaces returns a APIServiceNamespaceInformer.
 func (v *version) APIServiceNamespaces() APIServiceNamespaceInformer {
 	return &aPIServiceNamespaceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// APIServiceProviders returns a APIServiceProviderInformer.
-func (v *version) APIServiceProviders() APIServiceProviderInformer {
-	return &aPIServiceProviderInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // ClusterBindings returns a ClusterBindingInformer.

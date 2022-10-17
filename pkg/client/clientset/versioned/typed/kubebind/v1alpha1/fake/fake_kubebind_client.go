@@ -45,10 +45,6 @@ func (c *FakeKubeBindV1alpha1) APIServiceNamespaces(namespace string) v1alpha1.A
 	return &FakeAPIServiceNamespaces{c, namespace}
 }
 
-func (c *FakeKubeBindV1alpha1) APIServiceProviders(namespace string) v1alpha1.APIServiceProviderInterface {
-	return &FakeAPIServiceProviders{c, namespace}
-}
-
 func (c *FakeKubeBindV1alpha1) ClusterBindings(namespace string) v1alpha1.ClusterBindingInterface {
 	return &FakeClusterBindings{c, namespace}
 }

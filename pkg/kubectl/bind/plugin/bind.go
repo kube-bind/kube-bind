@@ -55,6 +55,11 @@ import (
 type BindOptions struct {
 	*base.Options
 
+	JSONYamlPrintFlags *genericclioptions.JSONYamlPrintFlags
+
+	OutputFormat string
+	DryRun       bool
+
 	// url is the argument accepted by the command. It contains the
 	// reference to where an APIService exists.
 	URL string
@@ -66,15 +71,19 @@ type BindOptions struct {
 // NewBindOptions returns new BindOptions.
 func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 	return &BindOptions{
-		Options: base.NewOptions(streams),
+		Options:            base.NewOptions(streams),
+		JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 	}
 }
 
 // AddCmdFlags binds fields to cmd's flagset.
 func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 	b.Options.BindFlags(cmd)
+	b.JSONYamlPrintFlags.AddFlags(cmd)
 
-	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", false, "Skip the deployment of the konnector")
+	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
+	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
+	cmd.Flags().StringVarP(&b.OutputFormat, "output", "o", b.OutputFormat, fmt.Sprintf("Output format for the requests returned from authentication. One of: %s", strings.Join(b.AllowedFormats(), ", ")))
 }
 
 // Complete ensures all fields are initialized.
@@ -97,6 +106,13 @@ func (b *BindOptions) Validate() error {
 
 	if _, err := url.Parse(b.URL); err != nil {
 		return fmt.Errorf("invalid url %q: %w", b.URL, err)
+	}
+
+	if allowed := sets.NewString(b.AllowedFormats()...); b.OutputFormat != "" && !allowed.Has(b.OutputFormat) {
+		return fmt.Errorf("invalid output format %q (allowed: %s)", b.OutputFormat, strings.Join(allowed.List(), ", "))
+	}
+	if b.DryRun && b.OutputFormat == "" {
+		return errors.New("output format is required when dry-run is enabled")
 	}
 
 	return b.Options.Validate()
@@ -150,7 +166,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 
 	sessionID := rand.String(rand.IntnRange(20, 30))
 
-	if err := authenticate(provider, auth.Endpoint(ctx), sessionID, urlCh); err != nil {
+	if err := b.authenticate(provider, auth.Endpoint(ctx), sessionID, urlCh); err != nil {
 		return err
 	}
 
@@ -160,7 +176,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return fmt.Errorf("authentication timeout")
 	}
 
-	fmt.Fprintf(b.IOStreams.Out, "Successfully authenticated to %s\n", exportURL.String()) // nolint: errcheck
+	fmt.Fprintf(b.IOStreams.ErrOut, "Successfully authenticated to %s\n", exportURL.String()) // nolint: errcheck
 
 	// verify the response
 	if gvk.GroupVersion() != kubebindv1alpha1.SchemeGroupVersion || gvk.Kind != "BindingResponse" {
@@ -182,7 +198,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}
 
 	// extract the requests
-	var apiRequests []*kubebindv1alpha1.APIServiceBindingRequest
+	var apiRequests []*kubebindv1alpha1.APIServiceBindingRequestResponse
 	for i, request := range bindingResponse.Requests {
 		var meta metav1.TypeMeta
 		if err := json.Unmarshal(request.Raw, &meta); err != nil {
@@ -191,11 +207,34 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		if got, expected := meta.APIVersion, kubebindv1alpha1.SchemeGroupVersion.String(); got != expected {
 			return fmt.Errorf("unexpected response: request #%d is not %s, got %s", i, expected, got)
 		}
-		var apiRequest kubebindv1alpha1.APIServiceBindingRequest
+		var apiRequest kubebindv1alpha1.APIServiceBindingRequestResponse
 		if err := json.Unmarshal(request.Raw, &apiRequest); err != nil {
 			return fmt.Errorf("failed to unmarshal api request #%d: %v", i+1, err)
 		}
 		apiRequests = append(apiRequests, &apiRequest)
+	}
+
+	// print the request
+	if b.OutputFormat != "" {
+		printer, err := b.ToPrinter()
+		if err != nil {
+			return err
+		}
+		first := true
+		for _, request := range apiRequests {
+			printer.PrintObj(request, b.IOStreams.Out) // nolint: errcheck
+
+			// TODO: this is a hack to separate the objects. Is there anything better in the printer?
+			if !first && b.OutputFormat == "yaml" {
+				fmt.Fprintln(b.IOStreams.Out, "---") // nolint: errcheck
+			}
+
+			first = false
+		}
+	}
+
+	if b.DryRun {
+		return nil
 	}
 
 	// bootstrap the konnector
@@ -219,10 +258,10 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		if err != nil {
 			logger.V(2).Info("Waiting for APIServiceBindings to be served", "error", err, "host", bindClient.RESTClient())
 			if first {
-				fmt.Fprint(b.IOStreams.Out, "Waiting for the konnector to be ready") // nolint: errcheck
+				fmt.Fprint(b.IOStreams.ErrOut, "Waiting for the konnector to be ready") // nolint: errcheck
 				first = false
 			} else {
-				fmt.Fprint(b.IOStreams.Out, ".") // nolint: errcheck
+				fmt.Fprint(b.IOStreams.ErrOut, ".") // nolint: errcheck
 			}
 		}
 		return err == nil, nil
@@ -238,7 +277,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	} else if err == nil {
-		fmt.Fprintf(b.IOStreams.Out, "Created kube-binding namespace.\n") // nolint: errcheck
+		fmt.Fprintf(b.IOStreams.ErrOut, "Created kube-binding namespace.\n") // nolint: errcheck
 	}
 
 	// look for secret of the given identity
@@ -266,13 +305,13 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 					return fmt.Errorf("CRD %s.%s already exists and is not from this service provider", resource.Resource, resource.Group)
 				}
 
-				fmt.Fprintf(b.IOStreams.Out, "Creating secret for identity %s\n", authResponse.ID) // nolint: errcheck
+				fmt.Fprintf(b.IOStreams.ErrOut, "Creating secret for identity %s\n", authResponse.ID) // nolint: errcheck
 				secretName, err = resources.EnsureServiceBindingAuthData(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", "", kubeClient)
 				if err != nil {
 					return err
 				}
 			} else if err == nil {
-				fmt.Fprintf(b.IOStreams.Out, "Found existing CRD %s. Checking owner.\n", crd.Name) // noline: errcheck
+				fmt.Fprintf(b.IOStreams.ErrOut, "Found existing CRD %s. Checking owner.\n", crd.Name) // noline: errcheck
 
 				// check if the CRD is owner-refed by the APIServiceBinding
 				for _, ref := range crd.OwnerReferences {
@@ -289,14 +328,14 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 					}
 
 					if existing.Spec.KubeconfigSecretRef.Namespace == "kube-bind" && existing.Spec.KubeconfigSecretRef.Name == secretName {
-						fmt.Fprintf(b.IOStreams.Out, "Updating credentials for existing APIServiceBinding %s\n", existing.Name) // nolint: errcheck
+						fmt.Fprintf(b.IOStreams.ErrOut, "Updating credentials for existing APIServiceBinding %s\n", existing.Name) // nolint: errcheck
 						_, err = resources.EnsureServiceBindingAuthData(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", secretName, kubeClient)
 						return err
 					}
 				}
 				return fmt.Errorf("found existing CustomResourceDefinition %s not from this service provider", authResponse.ID)
 			} else {
-				fmt.Fprintf(b.IOStreams.Out, "Updating credentials\n") // noilnt: errcheck
+				fmt.Fprintf(b.IOStreams.ErrOut, "Updating credentials\n") // noilnt: errcheck
 				secretName, err = resources.EnsureServiceBindingAuthData(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", secretName, kubeClient)
 				if err != nil {
 					return err
@@ -308,7 +347,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 			if err := wait.PollInfinite(1*time.Second, func() (bool, error) {
 				if !first {
 					first = false
-					fmt.Fprint(b.IOStreams.Out, ".") // nolint: errcheck
+					fmt.Fprint(b.IOStreams.ErrOut, ".") // nolint: errcheck
 				}
 				_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Create(ctx, &kubebindv1alpha1.APIServiceBinding{
 					ObjectMeta: metav1.ObjectMeta{
@@ -341,10 +380,10 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 
 				return true, nil
 			}); err != nil {
-				fmt.Fprintln(b.IOStreams.Out, "") // nolint: errcheck
+				fmt.Fprintln(b.IOStreams.ErrOut, "") // nolint: errcheck
 				return err
 			}
-			fmt.Fprintf(b.IOStreams.Out, "\nCreated APIServiceBinding %s.%s\n", resource.Resource, resource.Group) // nolint: errcheck
+			fmt.Fprintf(b.IOStreams.ErrOut, "\nCreated APIServiceBinding %s.%s\n", resource.Resource, resource.Group) // nolint: errcheck
 		}
 	}
 

@@ -57,8 +57,11 @@ type APIServiceBindingRequest struct {
 
 // APIServiceBindingRequestResponse is like APIServiceBindingRequest but without
 // ObjectMeta, to avoid unwanted metadata fields being sent in the response.
+//
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type APIServiceBindingRequestResponse struct {
 	metav1.TypeMeta `json:",inline"`
+	NameObjectMeta  `json:"metadata"`
 
 	// spec specifies how an API service from a service provider should be bound in the
 	// local consumer cluster.
@@ -69,6 +72,11 @@ type APIServiceBindingRequestResponse struct {
 
 	// status contains reconciliation information for a service binding.
 	Status APIServiceBindingRequestStatus `json:"status,omitempty"`
+}
+
+type NameObjectMeta struct {
+	// Name is the name of the object.
+	Name string `json:"name,omitempty"`
 }
 
 func (in *APIServiceBindingRequest) GetConditions() conditionsapi.Conditions {

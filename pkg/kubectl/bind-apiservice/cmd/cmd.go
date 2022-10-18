@@ -30,13 +30,13 @@ import (
 var (
 	bindAPIServiceExampleUses = `
 	# bind to a remote API service. Use kubectl bind to create the APIBindingRequest interactively. 
-	%[1]s apiservice --token-file filename -f apiservice-binding-request.yaml
+	%[1]s apiservice --remote-kubeconfig file -f apiservice-binding-request.yaml
 
-	# bind to a remote API service from a https source.
-	%[1]s apiservice --token-file token https://some-url/apiservice-binding-request.yaml
+	# bind to a remote API service via a request manifest from a https URL.
+	%[1]s apiservice --remote-kubeconfig file https://some-url.com/apiservice-binding-requests.yaml
 
     # bind to a API service directly without any remote agent or service provider.
-	%[1]s apiservice --remote-kubeconfig filename -n namespace resources.group/v1
+	%[1]s apiservice --remote-kubeconfig file -n remote-namespace resources.group/v1
 	`
 )
 

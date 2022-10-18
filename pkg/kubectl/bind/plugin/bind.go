@@ -40,6 +40,7 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	kubeclient "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/http"
@@ -237,6 +238,16 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return nil
 	}
 
+	// decode the kubeconfig to find the namespace
+	remoteConfig, err := clientcmd.Load(bindingResponse.Kubeconfig)
+	if err != nil {
+		return err
+	}
+	if _, found := remoteConfig.Contexts[remoteConfig.CurrentContext]; !found {
+		return fmt.Errorf("kubeconfig does not contain current context %q", remoteConfig.CurrentContext)
+	}
+	remoteNamespace := remoteConfig.Contexts[remoteConfig.CurrentContext].Namespace
+
 	// bootstrap the konnector
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
@@ -293,8 +304,26 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		}
 	}
 
-	// check for existing CRD
+	// create the requests
+	remoteRestClient, err := clientcmd.NewDefaultClientConfig(*remoteConfig, &clientcmd.ConfigOverrides{}).ClientConfig()
+	if err != nil {
+		return err
+	}
+	bindRemoteClient, err := bindclient.NewForConfig(remoteRestClient)
+	if err != nil {
+		return err
+	}
+	var createdRequests []*kubebindv1alpha1.APIServiceBindingRequest
 	for _, request := range apiRequests {
+		if created, err := b.createAPIServiceBinding(ctx, bindRemoteClient, remoteNamespace, request); err != nil {
+			return err
+		} else {
+			createdRequests = append(createdRequests, created)
+		}
+	}
+
+	// check for existing CRD
+	for _, request := range createdRequests {
 		for _, resource := range request.Spec.Resources {
 			crd, err := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, resource.Resource+"."+resource.Group, metav1.GetOptions{})
 			if err != nil && !apierrors.IsNotFound(err) {
@@ -362,7 +391,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 							},
 							Namespace: "kube-bind",
 						},
-						Export: resource.Resource + "." + resource.Group, // TODO: use APIServiceBindingRequest.status.export when splitting the commands
+						Export: request.Status.Export,
 					},
 				}, metav1.CreateOptions{})
 				if err != nil && !apierrors.IsAlreadyExists(err) {
@@ -388,4 +417,57 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}
 
 	return nil
+}
+
+func (b *BindOptions) createAPIServiceBinding(
+	ctx context.Context,
+	bindRemoteClient bindclient.Interface,
+	ns string,
+	response *kubebindv1alpha1.APIServiceBindingRequestResponse,
+) (*kubebindv1alpha1.APIServiceBindingRequest, error) {
+	// create request in the service provider cluster
+	request := &kubebindv1alpha1.APIServiceBindingRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: response.Name,
+		},
+		Spec: response.Spec,
+	}
+	if request.Name == "" {
+		request.GenerateName = "export-"
+	}
+	created, err := bindRemoteClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Create(ctx, request, metav1.CreateOptions{})
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return nil, err
+	} else if err != nil && request.Name == "" {
+		return nil, err
+	} else if err != nil {
+		request.GenerateName = request.Name + "-"
+		request.Name = ""
+		if created, err = bindRemoteClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Create(ctx, request, metav1.CreateOptions{}); err != nil {
+			return nil, err
+		}
+	}
+
+	// wait for the request to be Successful, Failed or deleted
+	var result *kubebindv1alpha1.APIServiceBindingRequest
+	if err := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
+		request, err := bindRemoteClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Get(ctx, created.Name, metav1.GetOptions{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			return false, err
+		} else if apierrors.IsNotFound(err) {
+			return false, fmt.Errorf("APIServiceBindingRequest %s was deleted by the service provider", created.Name)
+		}
+		if request.Status.Phase == kubebindv1alpha1.APIServiceBindingRequestPhaseSucceeded {
+			result = request
+			return true, nil
+		}
+		if request.Status.Phase == kubebindv1alpha1.APIServiceBindingRequestPhaseFailed {
+			return false, fmt.Errorf("binding request failed: %s", request.Status.TerminalMessage)
+		}
+		return false, nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

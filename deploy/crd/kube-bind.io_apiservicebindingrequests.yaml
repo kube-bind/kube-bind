@@ -52,6 +52,9 @@ spec:
                   for this binding request.
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+                x-kubernetes-validations:
+                - message: parameters are immutable
+                  rule: self == oldSelf
               resources:
                 description: resources is a list of resources that should be exported.
                 items:
@@ -80,6 +83,9 @@ spec:
                   type: object
                 minItems: 1
                 type: array
+                x-kubernetes-validations:
+                - message: resources are immutable
+                  rule: self == oldSelf
             required:
             - resources
             type: object
@@ -138,6 +144,7 @@ spec:
                   has been created for this binding request when phase is Succeeded.
                 type: string
               phase:
+                default: Pending
                 description: phase is the current phase of the binding request. It
                   starts in Pending and transitions to Succeeded or Failed. See the
                   condition for detailed information.
@@ -145,6 +152,10 @@ spec:
                 - Pending
                 - Failed
                 - Succeeded
+                type: string
+              terminalMessage:
+                description: terminalMessage is a human readable message that describes
+                  the reason for the current phase.
                 type: string
             type: object
         required:

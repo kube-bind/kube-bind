@@ -146,9 +146,5 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		return nil, err
 	}
 
-	if err := kuberesources.CreateAPIServiceExport(ctx, m.bindClient, m.exportIndexer, ns, resource, group); err != nil {
-		return nil, err
-	}
-
 	return kfgSecret.Data["kubeconfig"], nil
 }

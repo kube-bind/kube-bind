@@ -24,6 +24,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/clusterbinding"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicebindingrequest"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexport"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexportresource"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicenamespace"
@@ -46,6 +47,7 @@ type Controllers struct {
 	ServiceNamespace      *servicenamespace.Controller
 	ServiceExport         *serviceexport.Controller
 	ServiceExportResource *serviceexportresource.Controller
+	ServiceBindingRequest *servicebindingrequest.Controller
 }
 
 func NewServer(config *Config) (*Server, error) {
@@ -133,6 +135,14 @@ func NewServer(config *Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceExportResource Controller: %w", err)
 	}
+	s.ServiceBindingRequest, err = servicebindingrequest.NewController(
+		config.ClientConfig,
+		config.BindInformers.KubeBind().V1alpha1().APIServiceBindingRequests(),
+		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error setting up ServiceBindingRequest Controller: %w", err)
+	}
 
 	return s, nil
 }
@@ -166,6 +176,7 @@ func (s *Server) Run(ctx context.Context) error {
 	go s.Controllers.ServiceExport.Start(ctx, 1)
 	go s.Controllers.ServiceNamespace.Start(ctx, 1)
 	go s.Controllers.ClusterBinding.Start(ctx, 1)
+	go s.Controllers.ServiceBindingRequest.Start(ctx, 1)
 
 	go func() {
 		<-ctx.Done()

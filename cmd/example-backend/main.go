@@ -50,7 +50,7 @@ func main() {
 		ver = ver[i+5:] // example: v1.25.2+kubectl-bind-v0.0.7-52-g8fee0baeaff3aa
 	}
 	logger := klog.FromContext(ctx)
-	logger.Info("Starting konnector", "version", ver)
+	logger.Info("Starting example-backend", "version", ver)
 
 	// craate server
 	completed, err := options.Complete()

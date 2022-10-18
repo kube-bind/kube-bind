@@ -133,6 +133,10 @@ spec:
                   - type
                   type: object
                 type: array
+              export:
+                description: export is the name of the APIServiceExport object that
+                  has been created for this binding request when phase is Succeeded.
+                type: string
               phase:
                 description: phase is the current phase of the binding request. It
                   starts in Pending and transitions to Succeeded or Failed. See the

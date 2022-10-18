@@ -19,7 +19,6 @@ package authenticator
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net"
 	"strconv"
@@ -27,8 +26,22 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
+
+var (
+	kubebindSchema = runtime.NewScheme()
+	kubebindCodecs = serializer.NewCodecFactory(kubebindSchema)
+)
+
+func init() {
+	utilruntime.Must(kubebindv1alpha1.AddToScheme(kubebindSchema))
+}
 
 type Authenticator interface {
 	Endpoint(context.Context) string
@@ -39,10 +52,10 @@ type defaultAuthenticator struct {
 	server  *echo.Echo
 	port    int
 	timeout time.Duration
-	action  func(context.Context, *resources.AuthResponse) error
+	action  func(context.Context, schema.GroupVersionKind, runtime.Object) error
 }
 
-func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context, *resources.AuthResponse) error) (Authenticator, error) {
+func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context, schema.GroupVersionKind, runtime.Object) error) (Authenticator, error) {
 	if timeout == 0 {
 		timeout = 5 * time.Second
 	}
@@ -91,22 +104,22 @@ func (d *defaultAuthenticator) Endpoint(context.Context) string {
 
 func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 	return func(c echo.Context) error {
-		authData := c.QueryParam("auth_response")
+		authData := c.QueryParam("response")
 
 		fmt.Printf("Got callback\n")
 
-		decode, err := base64.StdEncoding.DecodeString(authData)
+		decoded, err := base64.StdEncoding.DecodeString(authData)
 		if err != nil {
 			c.Logger().Error(err)
 			return err
 		}
 
-		authResponse := &resources.AuthResponse{}
-		if err := json.Unmarshal(decode, authResponse); err != nil {
+		authResponse, gvk, err := kubebindCodecs.UniversalDeserializer().Decode(decoded, nil, nil)
+		if err != nil {
+			c.Logger().Error(err)
 			return err
 		}
-
-		if err := d.action(c.Request().Context(), authResponse); err != nil {
+		if err := d.action(c.Request().Context(), *gvk, authResponse); err != nil {
 			return err
 		}
 

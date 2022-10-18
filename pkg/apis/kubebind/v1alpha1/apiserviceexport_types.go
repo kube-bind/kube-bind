@@ -42,7 +42,7 @@ const (
 	APIServiceExportConditionResourcesInSync conditionsapi.ConditionType = "ResourcesInSync"
 )
 
-// APIServiceExport specifies an API service to exported to a consumer cluster. The
+// APIServiceExport specifies an API service to be exported to a consumer cluster. The
 // consumer cluster is defined by the ClusterBinding singleton in the same namespace.
 //
 // +crd

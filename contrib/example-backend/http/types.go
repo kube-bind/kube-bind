@@ -14,11 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package http
 
-const (
-	ServiceAccountTokenType       = "kubernetes.io/service-account-token"
-	ServiceAccountTokenAnnotation = "kubernetes.io/service-account.name"
-	ClusterAdminName              = "cluster-admin"
-	ClusterBindingName            = "cluster"
-)
+// AuthCode represents the data that are needed to complete the full authentication workflow.
+// TODO: We should come up with something more standarized but this is good enough for now.
+type AuthCode struct {
+	RedirectURL string `json:"redirectURL"`
+	SessionID   string `json:"sid"`
+}
+
+// CodeGrantCallbackResponse contains the authentication data which is passed back to the consumer
+// as part of the OIDC callback.
+type CodeGrantCallbackResponse struct {
+	SessionID string `json:"sid"`
+	ID        string `json:"id"`
+}

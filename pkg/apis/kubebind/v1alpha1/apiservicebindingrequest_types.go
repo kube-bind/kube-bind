@@ -23,6 +23,12 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
+const (
+	// APIServiceBindingRequestConditionExportsReady is set to true when the
+	// corresponding APIServiceExport is ready.
+	APIServiceBindingRequestConditionExportsReady conditionsapi.ConditionType = "ExportsReady"
+)
+
 // APIServiceBindingRequest is represents a request session of kubectl-bind-apiservice.
 //
 // The service provider can prune these objects after some time.
@@ -76,6 +82,8 @@ func (in *APIServiceBindingRequest) SetConditions(conditions conditionsapi.Condi
 type APIServiceBindingRequestSpec struct {
 	// parameters holds service provider specific parameters for this binding
 	// request.
+	//
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="parameters are immutable"
 	Parameters *runtime.RawExtension `json:"parameters,omitempty"`
 
 	// resources is a list of resources that should be exported.
@@ -83,6 +91,7 @@ type APIServiceBindingRequestSpec struct {
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceBindingRequestResource `json:"resources"`
 }
 

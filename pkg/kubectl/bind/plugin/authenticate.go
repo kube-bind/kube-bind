@@ -23,7 +23,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/mdp/qrterminal/v3"
 
@@ -53,7 +52,7 @@ func getProvider(url string) (*kubebindv1alpha1.BindingProvider, error) {
 	return provider, nil
 }
 
-func authenticate(provider *kubebindv1alpha1.BindingProvider, authEndpoint, sessionID string, urlCh chan<- string) error {
+func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, authEndpoint, sessionID string, urlCh chan<- string) error {
 	var oauth2Method *kubebindv1alpha1.OAuth2CodeGrant
 	for _, m := range provider.AuthenticationMethods {
 		if m.Method == "OAuth2CodeGrant" {
@@ -75,12 +74,12 @@ func authenticate(provider *kubebindv1alpha1.BindingProvider, authEndpoint, sess
 	values.Add("s", sessionID)
 	u.RawQuery = values.Encode()
 
-	fmt.Printf("\nTo authenticate, visit %s in your browser or scan the QRCode below:\n\n", u.String())
+	fmt.Fprintf(b.Options.ErrOut, "\nTo authenticate, visit %s in your browser or scan the QRCode below:\n\n", u.String()) // nolint: errcheck
 
 	// TODO(sttts): callback backend, not 127.0.0.1
 	config := qrterminal.Config{
 		Level:     qrterminal.L,
-		Writer:    os.Stdout,
+		Writer:    b.Options.ErrOut,
 		BlackChar: qrterminal.WHITE,
 		WhiteChar: qrterminal.BLACK,
 		QuietZone: 2,

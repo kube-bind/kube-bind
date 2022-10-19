@@ -87,6 +87,9 @@ func (in *APIServiceBindingRequest) SetConditions(conditions conditionsapi.Condi
 	in.Status.Conditions = conditions
 }
 
+// APIServiceBindingRequestSpec is the spec of a APIServiceBindingRequest.
+//
+// +kubebuilder:validation:XValidation:rule="has(oldSelf. parameters) == has(self. parameters)", message="parameters cannot be added or removed"
 type APIServiceBindingRequestSpec struct {
 	// parameters holds service provider specific parameters for this binding
 	// request.

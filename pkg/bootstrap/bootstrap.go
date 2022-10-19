@@ -82,7 +82,7 @@ func Bootstrap(ctx context.Context, discoveryClient discovery.DiscoveryInterface
 	}
 	return wait.PollImmediateInfiniteWithContext(ctx, time.Second, func(ctx context.Context) (bool, error) {
 		if err := CreateResourcesFromFS(ctx, dynamicClient, mapper, batteriesIncluded, fs, transformers...); err != nil {
-			klog.Infof("Failed to bootstrap resources, retrying: %v", err)
+			klog.V(1).Infof("Failed to bootstrap resources, retrying: %v", err)
 			// invalidate cache if resources not found
 			// xref: https://github.com/kcp-dev/kcp/issues/655
 			cache.Invalidate()
@@ -209,7 +209,7 @@ func createResourceFromFS(ctx context.Context, client dynamic.Interface, mapper 
 			}
 
 			if _, exists := existing.GetAnnotations()[annotationCreateOnlyKey]; exists {
-				klog.Infof(
+				klog.V(3).Infof(
 					"Skipping update of %s %s because it has the create-only annotation",
 					gvk,
 					qualifiedObjectName(existing),
@@ -222,14 +222,14 @@ func createResourceFromFS(ctx context.Context, client dynamic.Interface, mapper 
 			if _, err = client.Resource(m.Resource).Namespace(u.GetNamespace()).Update(ctx, u, metav1.UpdateOptions{}); err != nil {
 				return fmt.Errorf("could not update %s %s: %w", gvk.Kind, qualifiedObjectName(existing), err)
 			} else {
-				klog.Infof("Updated %s %s", gvk, qualifiedObjectName(existing))
+				klog.V(1).Infof("Updated %s %s", gvk, qualifiedObjectName(existing))
 				return nil
 			}
 		}
 		return err
 	}
 
-	klog.Infof("Bootstrapped %s %s", gvk.Kind, qualifiedObjectName(upserted))
+	klog.V(1).Infof("Bootstrapped %s %s", gvk.Kind, qualifiedObjectName(upserted))
 
 	return nil
 }

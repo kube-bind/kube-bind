@@ -50,10 +50,11 @@ type Authenticator interface {
 }
 
 type defaultAuthenticator struct {
-	server  *echo.Echo
-	port    int
-	timeout time.Duration
-	action  func(context.Context, schema.GroupVersionKind, runtime.Object) error
+	server     *echo.Echo
+	port       int
+	timeout    time.Duration
+	actionDone chan struct{}
+	action     func(context.Context, schema.GroupVersionKind, runtime.Object) error
 }
 
 func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context, schema.GroupVersionKind, runtime.Object) error) (Authenticator, error) {
@@ -62,8 +63,9 @@ func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context,
 	}
 
 	defaultAuthenticator := &defaultAuthenticator{
-		timeout: timeout,
-		action:  action,
+		timeout:    timeout,
+		action:     action,
+		actionDone: make(chan struct{}),
 	}
 
 	server := echo.New()
@@ -97,7 +99,14 @@ func (d *defaultAuthenticator) Execute(ctx context.Context) error {
 		d.server.Server.Close()
 	}()
 
-	return d.server.Start(net.JoinHostPort("localhost", strconv.Itoa(d.port)))
+	go d.server.Start(net.JoinHostPort("localhost", strconv.Itoa(d.port))) // nolint:errcheck
+
+	select {
+	case <-d.actionDone:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 func (d *defaultAuthenticator) Endpoint(context.Context) string {
@@ -106,6 +115,12 @@ func (d *defaultAuthenticator) Endpoint(context.Context) string {
 
 func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 	return func(c echo.Context) error {
+		select {
+		case <-d.actionDone:
+			return c.String(200, "Already authenticated")
+		default:
+		}
+
 		authData := c.QueryParam("response")
 
 		logger := klog.FromContext(c.Request().Context())
@@ -125,6 +140,7 @@ func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 		if err := d.action(c.Request().Context(), *gvk, authResponse); err != nil {
 			return err
 		}
+		close(d.actionDone)
 
 		if _, err := c.Response().Write([]byte("<h1>Successfully Authentication! Please head back to the command line</h1>")); err != nil {
 			return err

@@ -167,7 +167,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return err
 	}
 
-	if err := auth.Execute(ctx); err != nil && !strings.Contains(err.Error(), "Server closed") {
+	if err := auth.Execute(ctx); err != nil {
 		return err
 	} else if response == nil {
 		return fmt.Errorf("authentication timeout")

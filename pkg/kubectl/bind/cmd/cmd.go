@@ -18,14 +18,15 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 
 	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin"
-	logsv1 "k8s.io/component-base/logs/api/v1"
 )
 
 var (
@@ -53,7 +54,11 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 		Example:      fmt.Sprintf(bindExampleUses, "kubectl"),
 		SilenceUsage: true,
 		Args: func(cmd *cobra.Command, args []string) error {
-			// if no subcommand is specified, only a URL, this is fine.
+			for _, arg := range args {
+				if !strings.HasPrefix(arg, "http://") && !strings.HasPrefix(arg, "https://") {
+					return fmt.Errorf("unknown argument: %s", arg) // this will fall back to sub-commands
+				}
+			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {

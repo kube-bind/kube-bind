@@ -53,10 +53,7 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 				return err
 			}
 
-			yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
-			fmt.Fprintf(streams.ErrOut, yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")+"\n\n") // nolint: errcheck
-
-			if len(args) == 0 {
+			if len(args) > 1 {
 				return cmd.Help()
 			}
 			if err := opts.Complete(args); err != nil {
@@ -65,6 +62,11 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 
 			if err := opts.Validate(); err != nil {
 				return err
+			}
+
+			if !opts.NoBanner {
+				yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
+				fmt.Fprintf(streams.ErrOut, yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")+"\n\n") // nolint: errcheck
 			}
 
 			return opts.Run(cmd.Context())

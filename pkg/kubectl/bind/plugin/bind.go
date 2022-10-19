@@ -17,41 +17,34 @@ limitations under the License.
 package plugin
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
+	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/cli-runtime/pkg/printers"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
 	kubeclient "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
-	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/http"
-	"github.com/kube-bind/kube-bind/deploy/konnector"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/authenticator"
 )
@@ -77,7 +70,7 @@ func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 	opts := &BindOptions{
 		Options: base.NewOptions(streams),
 		Logs:    logs.NewOptions(),
-		Print:   genericclioptions.NewPrintFlags("bind"),
+		Print:   genericclioptions.NewPrintFlags("kubectl-bind"),
 	}
 
 	return opts
@@ -127,21 +120,11 @@ func (b *BindOptions) Validate() error {
 
 // Run starts the binding process.
 func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
-	logger := klog.FromContext(ctx).WithValues("command", "bind", "url", b.URL)
-
 	config, err := b.ClientConfig.ClientConfig()
 	if err != nil {
 		return err
 	}
 	kubeClient, err := kubeclient.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-	apiextensionsClient, err := apiextensionsclient.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-	bindClient, err := bindclient.NewForConfig(config)
 	if err != nil {
 		return err
 	}
@@ -221,6 +204,36 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		apiRequests = append(apiRequests, &apiRequest)
 	}
 
+	// create kube-bind namespace
+	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "kube-bind",
+		},
+	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
+		return err
+	} else if err == nil {
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Created kube-binding namespace.\n") // nolint: errcheck
+	}
+
+	// copy kubeconfig into local cluster
+	remoteHost, remoteNamespace, err := base.ParseRemoteKubeconfig(bindingResponse.Kubeconfig)
+	if err != nil {
+		return err
+	}
+	secretName, err := base.FindRemoteKubeconfig(ctx, kubeClient, remoteNamespace, remoteHost)
+	if err != nil {
+		return err
+	}
+	secret, created, err := base.EnsureKubeconfigSecret(ctx, string(bindingResponse.Kubeconfig), secretName, kubeClient)
+	if err != nil {
+		return err
+	}
+	if created {
+		fmt.Fprintf(b.Options.ErrOut, "Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+	} else {
+		fmt.Fprintf(b.Options.ErrOut, "Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+	}
+
 	// print the request in dry-run mode
 	if b.DryRun {
 		printer, err := b.Print.ToPrinter()
@@ -244,293 +257,44 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return nil
 	}
 
-	// decode the kubeconfig to find the namespace
-	remoteConfig, err := clientcmd.Load(bindingResponse.Kubeconfig)
+	// call sub-command for apiservices
+	executable, err := os.Executable()
 	if err != nil {
 		return err
 	}
-	if _, found := remoteConfig.Contexts[remoteConfig.CurrentContext]; !found {
-		return fmt.Errorf("kubeconfig does not contain current context %q", remoteConfig.CurrentContext)
-	}
-	remoteNamespace := remoteConfig.Contexts[remoteConfig.CurrentContext].Namespace
-
-	// bootstrap the konnector
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
-	if err != nil {
-		return err
-	}
-	if !b.SkipKonnector {
-		logger.V(1).Info("Deploying konnector")
-		if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, sets.NewString()); err != nil {
-			return err
-		}
-	}
-	first := true
-	if err := wait.PollImmediateInfiniteWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
-		_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			logger.V(2).Info("Waiting for APIServiceBindings to be served", "error", err, "host", bindClient.RESTClient())
-			if first {
-				fmt.Fprint(b.IOStreams.ErrOut, "Waiting for the konnector to be ready") // nolint: errcheck
-				first = false
-			} else {
-				fmt.Fprint(b.IOStreams.ErrOut, ".") // nolint: errcheck
-			}
-		}
-		return err == nil, nil
-	}); err != nil {
-		return err
-	}
-
-	// create the namespace
-	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "kube-bind",
-		},
-	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
-		return err
-	} else if err == nil {
-		fmt.Fprintf(b.IOStreams.ErrOut, "Created kube-binding namespace.\n") // nolint: errcheck
-	}
-
-	// look for secret of the given identity
-	secrets, err := kubeClient.CoreV1().Secrets("kube-bind").List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	var secretName string
-	for _, s := range secrets.Items {
-		if s.Annotations[ClusterIDAnnotationKey] == authResponse.ID {
-			secretName = s.Name
-			break
-		}
-	}
-
-	// create the requests
-	remoteRestClient, err := clientcmd.NewDefaultClientConfig(*remoteConfig, &clientcmd.ConfigOverrides{}).ClientConfig()
-	if err != nil {
-		return err
-	}
-	bindRemoteClient, err := bindclient.NewForConfig(remoteRestClient)
-	if err != nil {
-		return err
-	}
-	var createdRequests []*kubebindv1alpha1.APIServiceBindingRequest
 	for _, request := range apiRequests {
-		if created, err := b.createAPIServiceBinding(ctx, bindRemoteClient, remoteNamespace, request); err != nil {
-			return err
-		} else {
-			createdRequests = append(createdRequests, created)
-		}
-	}
-
-	// check for existing CRD
-	var bindingNames []string
-	for _, request := range createdRequests {
-		for _, resource := range request.Spec.Resources {
-			crd, err := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, resource.Resource+"."+resource.Group, metav1.GetOptions{})
-			if err != nil && !apierrors.IsNotFound(err) {
-				return err
-			}
-			if secretName == "" {
-				if err == nil {
-					return fmt.Errorf("CRD %s.%s already exists and is not from this service provider", resource.Resource, resource.Group)
-				}
-
-				fmt.Fprintf(b.IOStreams.ErrOut, "Creating secret for identity %s\n", authResponse.ID) // nolint: errcheck
-				secretName, err = b.ensureKubeconfigSecret(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", "", kubeClient)
-				if err != nil {
-					return err
-				}
-			} else if err == nil {
-				fmt.Fprintf(b.IOStreams.ErrOut, "Found existing CRD %s. Checking owner.\n", crd.Name) // noline: errcheck
-
-				// check if the CRD is owner-refed by the APIServiceBinding
-				for _, ref := range crd.OwnerReferences {
-					parts := strings.SplitN(ref.APIVersion, "/", 2)
-					if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
-						continue
-					}
-
-					existing, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Get(ctx, ref.Name, metav1.GetOptions{})
-					if err != nil && !apierrors.IsNotFound(err) {
-						return err
-					} else if apierrors.IsNotFound(err) {
-						continue
-					}
-
-					if existing.Spec.KubeconfigSecretRef.Namespace == "kube-bind" && existing.Spec.KubeconfigSecretRef.Name == secretName {
-						_, err = b.ensureKubeconfigSecret(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", secretName, kubeClient)
-						return err
-					}
-				}
-				return fmt.Errorf("found existing CustomResourceDefinition %s not from this service provider", authResponse.ID)
-			} else {
-				secretName, err = b.ensureKubeconfigSecret(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", secretName, kubeClient)
-				if err != nil {
-					return err
-				}
-			}
-
-			// create new APIServiceBinding.
-			first = true
-			if err := wait.PollInfinite(1*time.Second, func() (bool, error) {
-				if !first {
-					first = false
-					fmt.Fprint(b.IOStreams.ErrOut, ".") // nolint: errcheck
-				}
-				created, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Create(ctx, &kubebindv1alpha1.APIServiceBinding{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      resource.Resource + "." + resource.Group,
-						Namespace: "kube-bind",
-					},
-					Spec: kubebindv1alpha1.APIServiceBindingSpec{
-						KubeconfigSecretRef: kubebindv1alpha1.ClusterSecretKeyRef{
-							LocalSecretKeyRef: kubebindv1alpha1.LocalSecretKeyRef{
-								Name: secretName,
-								Key:  "kubeconfig",
-							},
-							Namespace: "kube-bind",
-						},
-
-						Export: request.Status.Export,
-					},
-				}, metav1.CreateOptions{})
-				if err != nil && !apierrors.IsAlreadyExists(err) {
-					return false, err
-				} else if apierrors.IsAlreadyExists(err) {
-					existing, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Get(ctx, resource.Resource+"."+resource.Group, metav1.GetOptions{})
-					if err != nil {
-						return false, nil
-					}
-					if existing.Spec.KubeconfigSecretRef.Namespace == "kube-bind" && existing.Spec.KubeconfigSecretRef.Name == secretName {
-						fmt.Fprintf(b.IOStreams.ErrOut, "Adopting APIServiceBinding %s.%s\n", resource.Resource, resource.Group) // nolint: errcheck
-						bindingNames = append(bindingNames, existing.Name)
-						return true, nil
-					}
-					return false, fmt.Errorf("APIServiceBinding %s.%s already exists, but from different provider", resource.Resource, resource.Group)
-				}
-
-				fmt.Fprintf(b.IOStreams.ErrOut, "Created APIServiceBinding %s.%s\n", resource.Resource, resource.Group) // nolint: errcheck
-				bindingNames = append(bindingNames, created.Name)
-				return true, nil
-			}); err != nil {
-				fmt.Fprintln(b.IOStreams.ErrOut, "") // nolint: errcheck
-				return err
-			}
-		}
-	}
-
-	// print list
-	var printer printers.ResourcePrinter
-	if b.Print.OutputFormat != nil && *b.Print.OutputFormat != "" {
-		printer, err = b.Print.ToPrinter()
+		bs, err := json.Marshal(request)
 		if err != nil {
 			return err
 		}
-		bindings := &kubebindv1alpha1.APIServiceBindingList{}
-		for _, name := range bindingNames {
-			binding, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Get(ctx, name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			bindings.Items = append(bindings.Items, *binding)
+
+		args := []string{
+			"apiservice",
+			"--remote-kubeconfig-namespace", secret.Namespace,
+			"--remote-kubeconfig-name", secret.Name,
+			"-f", "-",
 		}
-		return printer.PrintObj(bindings, b.IOStreams.Out)
-	}
+		if b.Print.OutputFormat != nil && *b.Print.OutputFormat != "" {
+			args = append(args, "--output", *b.Print.OutputFormat)
+		}
+		if b.Logs.Verbosity > 0 {
+			args = append(args, "-v", strconv.Itoa(int(b.Logs.Verbosity)))
+		}
+		if b.SkipKonnector {
+			args = append(args, "--skip-konnector")
+		}
 
-	return b.printTable(ctx, printer, config, bindingNames)
-}
+		// TODO: support passing through the base options
 
-func (b *BindOptions) printTable(ctx context.Context, printer printers.ResourcePrinter, config *rest.Config, bindingNames []string) error {
-	printer = printers.NewTablePrinter(printers.PrintOptions{
-		WithKind: true,
-		Kind:     kubebindv1alpha1.SchemeGroupVersion.WithKind("APIServiceBinding").GroupKind(),
-	})
-
-	tableConfig := rest.CopyConfig(config)
-	tableConfig.APIPath = "/apis"
-	tableConfig.ContentConfig.AcceptContentTypes = fmt.Sprintf("application/json;as=Table;v=%s;g=%s", metav1.SchemeGroupVersion.Version, metav1.GroupName)
-	tableConfig.GroupVersion = &kubebindv1alpha1.SchemeGroupVersion
-	scheme := runtime.NewScheme()
-	if err := metav1.AddMetaToScheme(scheme); err != nil {
-		return err
-	}
-	tableConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme)
-	tableClient, err := rest.RESTClientFor(tableConfig)
-	if err != nil {
-		return err
-	}
-
-	var bindingsTable metav1.Table
-	for _, name := range bindingNames {
-		var singularTable metav1.Table
-		if err := tableClient.Get().Resource("apiservicebindings").Name(name).Do(ctx).Into(&singularTable); err != nil {
+		fmt.Fprintf(b.Options.ErrOut, "Executing: %s %s\n", "kubectl bind", strings.Join(args, " ")) // nolint: errcheck
+		command := exec.CommandContext(ctx, executable, append(args, "--no-banner")...)
+		command.Stdin = bytes.NewReader(bs)
+		command.Stdout = b.Options.Out
+		command.Stderr = b.Options.ErrOut
+		if err := command.Run(); err != nil {
 			return err
 		}
-		if len(bindingsTable.Rows) == 0 {
-			bindingsTable = singularTable
-		} else {
-			bindingsTable.Rows = append(bindingsTable.Rows, singularTable.Rows...)
-		}
-	}
-	fmt.Fprintln(b.Options.ErrOut) // nolint: errcheck
-	return printer.PrintObj(&bindingsTable, b.IOStreams.Out)
-}
-
-func (b *BindOptions) createAPIServiceBinding(
-	ctx context.Context,
-	bindRemoteClient bindclient.Interface,
-	ns string,
-	response *kubebindv1alpha1.APIServiceBindingRequestResponse,
-) (*kubebindv1alpha1.APIServiceBindingRequest, error) {
-	// create request in the service provider cluster
-	request := &kubebindv1alpha1.APIServiceBindingRequest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: response.Name,
-		},
-		Spec: response.Spec,
-	}
-	if request.Name == "" {
-		request.GenerateName = "export-"
-	}
-	created, err := bindRemoteClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Create(ctx, request, metav1.CreateOptions{})
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return nil, err
-	} else if err != nil && request.Name == "" {
-		return nil, err
-	} else if err != nil {
-		request.GenerateName = request.Name + "-"
-		request.Name = ""
-		if created, err = bindRemoteClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Create(ctx, request, metav1.CreateOptions{}); err != nil {
-			return nil, err
-		}
 	}
 
-	// wait for the request to be Successful, Failed or deleted
-	var result *kubebindv1alpha1.APIServiceBindingRequest
-	if err := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
-		request, err := bindRemoteClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Get(ctx, created.Name, metav1.GetOptions{})
-		if err != nil && !apierrors.IsNotFound(err) {
-			return false, err
-		} else if apierrors.IsNotFound(err) {
-			return false, fmt.Errorf("APIServiceBindingRequest %s was deleted by the service provider", created.Name)
-		}
-		if request.Status.Phase == kubebindv1alpha1.APIServiceBindingRequestPhaseSucceeded {
-			result = request
-			return true, nil
-		}
-		if request.Status.Phase == kubebindv1alpha1.APIServiceBindingRequestPhaseFailed {
-			return false, fmt.Errorf("binding request failed: %s", request.Status.TerminalMessage)
-		}
-		return false, nil
-	}); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return nil
 }

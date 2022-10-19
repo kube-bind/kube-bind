@@ -76,7 +76,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 			export.Name = ""
 
 			logger.V(2).Info("Creation of service export failed, trying with a generated name", "namespace", export.Namespace, "name", export.Name)
-			if _, err = r.createServiceExport(ctx, export); err != nil {
+			if export, err = r.createServiceExport(ctx, export); err != nil {
 				return err
 			}
 		}
@@ -89,12 +89,11 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 	}
 
 	export, err := r.getServiceExport(req.Namespace, req.Status.Export)
-	export = export.DeepCopy()
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
 	} else if apierrors.IsNotFound(err) {
 		conditions.MarkFalse(
-			export,
+			req,
 			kubebindv1alpha1.APIServiceBindingRequestConditionExportReady,
 			"ServiceExportNotFound",
 			conditionsapi.ConditionSeverityError,
@@ -106,7 +105,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 
 	if c := conditions.Get(export, conditionsapi.ReadyCondition); c == nil {
 		conditions.MarkFalse(
-			export,
+			req,
 			kubebindv1alpha1.APIServiceBindingRequestConditionExportReady,
 			"Unknown",
 			conditionsapi.ConditionSeverityInfo,
@@ -116,7 +115,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 		return nil
 	} else if c.Status != corev1.ConditionTrue {
 		conditions.MarkFalse(
-			export,
+			req,
 			kubebindv1alpha1.APIServiceBindingRequestConditionExportReady,
 			c.Reason,
 			c.Severity,

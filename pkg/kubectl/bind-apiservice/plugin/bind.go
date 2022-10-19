@@ -32,6 +32,8 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
+	"k8s.io/component-base/logs"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kube-bind/kube-bind/deploy/konnector"
@@ -42,6 +44,7 @@ import (
 // BindAPIServiceOptions are the options for the kubectl-bind-apiservice command.
 type BindAPIServiceOptions struct {
 	Base *base.Options
+	Logs *logs.Options
 
 	token     string
 	tokenFile string
@@ -56,12 +59,14 @@ type BindAPIServiceOptions struct {
 func NewBindAPIServiceOptions(streams genericclioptions.IOStreams) *BindAPIServiceOptions {
 	return &BindAPIServiceOptions{
 		Base: base.NewOptions(streams),
+		Logs: logs.NewOptions(),
 	}
 }
 
 // BindFlags binds fields to cmd's flagset.
 func (b *BindAPIServiceOptions) BindFlags(cmd *cobra.Command) {
 	b.Base.BindFlags(cmd)
+	logsv1.AddFlags(b.Logs, cmd.Flags())
 
 	cmd.Flags().StringVar(&b.token, "token", b.token, "The bearer token to use to authenticate for a APIService binding request")
 	cmd.Flags().StringVar(&b.token, "token-file", b.token, "A file with the bearer token to use to authenticate for a APIService binding request")

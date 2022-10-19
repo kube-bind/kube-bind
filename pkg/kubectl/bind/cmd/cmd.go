@@ -25,6 +25,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 )
 
 var (
@@ -56,6 +57,10 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := logsv1.ValidateAndApply(opts.Logs, nil); err != nil {
+				return err
+			}
+
 			yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
 			fmt.Fprintf(streams.ErrOut, yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")+"\n\n") // nolint: errcheck
 

@@ -41,6 +41,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/component-base/logs"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/http"
@@ -55,6 +57,7 @@ import (
 // BindOptions contains the options for creating an APIBinding.
 type BindOptions struct {
 	*base.Options
+	Logs *logs.Options
 
 	JSONYamlPrintFlags *genericclioptions.JSONYamlPrintFlags
 
@@ -74,6 +77,7 @@ func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 	return &BindOptions{
 		Options:            base.NewOptions(streams),
 		JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
+		Logs:    logs.NewOptions(),
 	}
 }
 
@@ -81,6 +85,8 @@ func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 	b.Options.BindFlags(cmd)
 	b.JSONYamlPrintFlags.AddFlags(cmd)
+	logsv1.AddFlags(b.Logs, cmd.Flags())
+	b.Print.AddFlags(cmd)
 
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")

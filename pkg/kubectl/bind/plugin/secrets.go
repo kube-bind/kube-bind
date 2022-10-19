@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package plugin
 
 import (
 	"context"
@@ -31,10 +31,10 @@ const (
 	ClusterIDAnnotationKey = "kube-bind.io/cluster-id"
 )
 
-// EnsureServiceBindingAuthData create a secret which contains the service binding authenticated data such as
+// ensureKubeconfigSecret create a secret which contains the service binding authenticated data such as
 // the binding session id and the kubeconfig of the service provider cluster. If it is pre-existing, the kubeconfig
 // is updated.
-func EnsureServiceBindingAuthData(ctx context.Context, kubeconfig, clusterID, ns, name string, client kubeclient.Interface) (string, error) {
+func (b *BindOptions) ensureKubeconfigSecret(ctx context.Context, kubeconfig, clusterID, ns, name string, client kubeclient.Interface) (string, error) {
 	if name == "" {
 		secret := &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -53,13 +53,12 @@ func EnsureServiceBindingAuthData(ctx context.Context, kubeconfig, clusterID, ns
 		if err != nil {
 			return "", err
 		}
-		fmt.Printf("Created secret %s/%s\n", ns, secret.Name)
+		fmt.Fprintf(b.Options.ErrOut, "Created secret %s/%s for identity %s\n", ns, secret.Name, clusterID)
 		return secret.Name, nil
 	}
 
 	// update existing secret
 	var secret *corev1.Secret
-	fmt.Printf("Updating secret %s/%s\n", ns, name)
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		var err error
 		secret, err = client.CoreV1().Secrets(ns).Get(ctx, name, metav1.GetOptions{})
@@ -73,6 +72,7 @@ func EnsureServiceBindingAuthData(ctx context.Context, kubeconfig, clusterID, ns
 		if _, err := client.CoreV1().Secrets(ns).Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
+		fmt.Fprintf(b.Options.ErrOut, "Updated secret %s/%s for identity %s\n", ns, secret.Name, clusterID)
 		return nil
 	}); err != nil {
 		return "", err

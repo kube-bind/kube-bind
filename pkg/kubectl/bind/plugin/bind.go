@@ -33,13 +33,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	kubeclient "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
@@ -51,7 +54,6 @@ import (
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/authenticator"
-	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin/resources"
 )
 
 // BindOptions contains the options for creating an APIBinding.
@@ -59,10 +61,8 @@ type BindOptions struct {
 	*base.Options
 	Logs *logs.Options
 
-	JSONYamlPrintFlags *genericclioptions.JSONYamlPrintFlags
-
-	OutputFormat string
-	DryRun       bool
+	Print  *genericclioptions.PrintFlags
+	DryRun bool
 
 	// url is the argument accepted by the command. It contains the
 	// reference to where an APIService exists.
@@ -74,23 +74,23 @@ type BindOptions struct {
 
 // NewBindOptions returns new BindOptions.
 func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
-	return &BindOptions{
-		Options:            base.NewOptions(streams),
-		JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
+	opts := &BindOptions{
+		Options: base.NewOptions(streams),
 		Logs:    logs.NewOptions(),
+		Print:   genericclioptions.NewPrintFlags("bind"),
 	}
+
+	return opts
 }
 
 // AddCmdFlags binds fields to cmd's flagset.
 func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 	b.Options.BindFlags(cmd)
-	b.JSONYamlPrintFlags.AddFlags(cmd)
 	logsv1.AddFlags(b.Logs, cmd.Flags())
 	b.Print.AddFlags(cmd)
 
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
-	cmd.Flags().StringVarP(&b.OutputFormat, "output", "o", b.OutputFormat, fmt.Sprintf("Output format for the requests returned from authentication. One of: %s", strings.Join(b.AllowedFormats(), ", ")))
 }
 
 // Complete ensures all fields are initialized.
@@ -115,10 +115,10 @@ func (b *BindOptions) Validate() error {
 		return fmt.Errorf("invalid url %q: %w", b.URL, err)
 	}
 
-	if allowed := sets.NewString(b.AllowedFormats()...); b.OutputFormat != "" && !allowed.Has(b.OutputFormat) {
-		return fmt.Errorf("invalid output format %q (allowed: %s)", b.OutputFormat, strings.Join(allowed.List(), ", "))
+	if allowed := sets.NewString(b.Print.AllowedFormats()...); *b.Print.OutputFormat != "" && !allowed.Has(*b.Print.OutputFormat) {
+		return fmt.Errorf("invalid output format %q (allowed: %s)", *b.Print.OutputFormat, strings.Join(allowed.List(), ", "))
 	}
-	if b.DryRun && b.OutputFormat == "" {
+	if b.DryRun && *b.Print.OutputFormat == "" {
 		return errors.New("output format is required when dry-run is enabled")
 	}
 
@@ -221,9 +221,9 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		apiRequests = append(apiRequests, &apiRequest)
 	}
 
-	// print the request
-	if b.OutputFormat != "" {
-		printer, err := b.ToPrinter()
+	// print the request in dry-run mode
+	if b.DryRun {
+		printer, err := b.Print.ToPrinter()
 		if err != nil {
 			return err
 		}
@@ -232,7 +232,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 			printer.PrintObj(request, b.IOStreams.Out) // nolint: errcheck
 
 			// TODO: this is a hack to separate the objects. Is there anything better in the printer?
-			if !first && b.OutputFormat == "yaml" {
+			if !first && *b.Print.OutputFormat == "yaml" {
 				fmt.Fprintln(b.IOStreams.Out, "---") // nolint: errcheck
 			}
 
@@ -304,7 +304,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}
 	var secretName string
 	for _, s := range secrets.Items {
-		if s.Annotations[resources.ClusterIDAnnotationKey] == authResponse.ID {
+		if s.Annotations[ClusterIDAnnotationKey] == authResponse.ID {
 			secretName = s.Name
 			break
 		}
@@ -329,6 +329,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}
 
 	// check for existing CRD
+	var bindingNames []string
 	for _, request := range createdRequests {
 		for _, resource := range request.Spec.Resources {
 			crd, err := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, resource.Resource+"."+resource.Group, metav1.GetOptions{})
@@ -341,7 +342,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 				}
 
 				fmt.Fprintf(b.IOStreams.ErrOut, "Creating secret for identity %s\n", authResponse.ID) // nolint: errcheck
-				secretName, err = resources.EnsureServiceBindingAuthData(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", "", kubeClient)
+				secretName, err = b.ensureKubeconfigSecret(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", "", kubeClient)
 				if err != nil {
 					return err
 				}
@@ -363,15 +364,13 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 					}
 
 					if existing.Spec.KubeconfigSecretRef.Namespace == "kube-bind" && existing.Spec.KubeconfigSecretRef.Name == secretName {
-						fmt.Fprintf(b.IOStreams.ErrOut, "Updating credentials for existing APIServiceBinding %s\n", existing.Name) // nolint: errcheck
-						_, err = resources.EnsureServiceBindingAuthData(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", secretName, kubeClient)
+						_, err = b.ensureKubeconfigSecret(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", secretName, kubeClient)
 						return err
 					}
 				}
 				return fmt.Errorf("found existing CustomResourceDefinition %s not from this service provider", authResponse.ID)
 			} else {
-				fmt.Fprintf(b.IOStreams.ErrOut, "Updating credentials\n") // noilnt: errcheck
-				secretName, err = resources.EnsureServiceBindingAuthData(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", secretName, kubeClient)
+				secretName, err = b.ensureKubeconfigSecret(ctx, string(bindingResponse.Kubeconfig), authResponse.ID, "kube-bind", secretName, kubeClient)
 				if err != nil {
 					return err
 				}
@@ -384,7 +383,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 					first = false
 					fmt.Fprint(b.IOStreams.ErrOut, ".") // nolint: errcheck
 				}
-				_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Create(ctx, &kubebindv1alpha1.APIServiceBinding{
+				created, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Create(ctx, &kubebindv1alpha1.APIServiceBinding{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      resource.Resource + "." + resource.Group,
 						Namespace: "kube-bind",
@@ -397,6 +396,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 							},
 							Namespace: "kube-bind",
 						},
+
 						Export: request.Status.Export,
 					},
 				}, metav1.CreateOptions{})
@@ -408,21 +408,78 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 						return false, nil
 					}
 					if existing.Spec.KubeconfigSecretRef.Namespace == "kube-bind" && existing.Spec.KubeconfigSecretRef.Name == secretName {
+						fmt.Fprintf(b.IOStreams.ErrOut, "Adopting APIServiceBinding %s.%s\n", resource.Resource, resource.Group) // nolint: errcheck
+						bindingNames = append(bindingNames, existing.Name)
 						return true, nil
 					}
 					return false, fmt.Errorf("APIServiceBinding %s.%s already exists, but from different provider", resource.Resource, resource.Group)
 				}
 
+				fmt.Fprintf(b.IOStreams.ErrOut, "Created APIServiceBinding %s.%s\n", resource.Resource, resource.Group) // nolint: errcheck
+				bindingNames = append(bindingNames, created.Name)
 				return true, nil
 			}); err != nil {
 				fmt.Fprintln(b.IOStreams.ErrOut, "") // nolint: errcheck
 				return err
 			}
-			fmt.Fprintf(b.IOStreams.ErrOut, "\nCreated APIServiceBinding %s.%s\n", resource.Resource, resource.Group) // nolint: errcheck
 		}
 	}
 
-	return nil
+	// print list
+	var printer printers.ResourcePrinter
+	if b.Print.OutputFormat != nil && *b.Print.OutputFormat != "" {
+		printer, err = b.Print.ToPrinter()
+		if err != nil {
+			return err
+		}
+		bindings := &kubebindv1alpha1.APIServiceBindingList{}
+		for _, name := range bindingNames {
+			binding, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Get(ctx, name, metav1.GetOptions{})
+			if err != nil {
+				return err
+			}
+			bindings.Items = append(bindings.Items, *binding)
+		}
+		return printer.PrintObj(bindings, b.IOStreams.Out)
+	}
+
+	return b.printTable(ctx, printer, config, bindingNames)
+}
+
+func (b *BindOptions) printTable(ctx context.Context, printer printers.ResourcePrinter, config *rest.Config, bindingNames []string) error {
+	printer = printers.NewTablePrinter(printers.PrintOptions{
+		WithKind: true,
+		Kind:     kubebindv1alpha1.SchemeGroupVersion.WithKind("APIServiceBinding").GroupKind(),
+	})
+
+	tableConfig := rest.CopyConfig(config)
+	tableConfig.APIPath = "/apis"
+	tableConfig.ContentConfig.AcceptContentTypes = fmt.Sprintf("application/json;as=Table;v=%s;g=%s", metav1.SchemeGroupVersion.Version, metav1.GroupName)
+	tableConfig.GroupVersion = &kubebindv1alpha1.SchemeGroupVersion
+	scheme := runtime.NewScheme()
+	if err := metav1.AddMetaToScheme(scheme); err != nil {
+		return err
+	}
+	tableConfig.NegotiatedSerializer = serializer.NewCodecFactory(scheme)
+	tableClient, err := rest.RESTClientFor(tableConfig)
+	if err != nil {
+		return err
+	}
+
+	var bindingsTable metav1.Table
+	for _, name := range bindingNames {
+		var singularTable metav1.Table
+		if err := tableClient.Get().Resource("apiservicebindings").Name(name).Do(ctx).Into(&singularTable); err != nil {
+			return err
+		}
+		if len(bindingsTable.Rows) == 0 {
+			bindingsTable = singularTable
+		} else {
+			bindingsTable.Rows = append(bindingsTable.Rows, singularTable.Rows...)
+		}
+	}
+	fmt.Fprintln(b.Options.ErrOut) // nolint: errcheck
+	return printer.PrintObj(&bindingsTable, b.IOStreams.Out)
 }
 
 func (b *BindOptions) createAPIServiceBinding(

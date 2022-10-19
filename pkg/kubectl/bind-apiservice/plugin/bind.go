@@ -46,6 +46,10 @@ type BindAPIServiceOptions struct {
 	Base *base.Options
 	Logs *logs.Options
 
+	JSONYamlPrintFlags *genericclioptions.JSONYamlPrintFlags
+	OutputFormat       string
+	DryRun             bool
+
 	token     string
 	tokenFile string
 	file      string

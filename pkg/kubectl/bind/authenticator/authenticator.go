@@ -109,7 +109,7 @@ func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 		authData := c.QueryParam("response")
 
 		logger := klog.FromContext(c.Request().Context())
-		logger.V(2).Info("Received auth data: %s", authData)
+		logger.V(7).Info("Received auth data", "data", authData)
 
 		decoded, err := base64.StdEncoding.DecodeString(authData)
 		if err != nil {

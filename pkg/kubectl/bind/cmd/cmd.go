@@ -18,11 +18,13 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 
 	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin"
 )
@@ -30,8 +32,17 @@ import (
 var (
 	// TODO: add other examples related to permission claim commands.
 	bindExampleUses = `
-	# binds to the given remote API service
-	%[1]s bind apiservice https://mangodb.com/exports
+    # select a kube-bind.io compatible service from the given URL, e.g. an API service.
+	%[1]s bind https://mangodb.com/exports
+
+	# authenticate and configure the services to bind, but don't actually bind them.
+	%[1]s bind https://mangodb.com/exports --dry-run -o yaml > apiservice-binding-requests.yaml
+
+	# bind to a remote API service as configured above and actually bind to it, e.g. in GitOps automation.
+	%[1]s bind apiservice --remote-kubeconfig name -f apiservice-binding-requests.yaml
+
+	# bind to a remote API service via a request manifest from a https URL.
+	%[1]s bind apiservice --remote-kubeconfig name https://some-url.com/apiservice-binding-requests.yaml
 	`
 )
 
@@ -43,10 +54,18 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 		Example:      fmt.Sprintf(bindExampleUses, "kubectl"),
 		SilenceUsage: true,
 		Args: func(cmd *cobra.Command, args []string) error {
-			// if no subcommand is specified, only a URL, this is fine.
+			for _, arg := range args {
+				if !strings.HasPrefix(arg, "http://") && !strings.HasPrefix(arg, "https://") {
+					return fmt.Errorf("unknown argument: %s", arg) // this will fall back to sub-commands
+				}
+			}
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := logsv1.ValidateAndApply(opts.Logs, nil); err != nil {
+				return err
+			}
+
 			yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
 			fmt.Fprintf(streams.ErrOut, yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")+"\n\n") // nolint: errcheck
 

@@ -23,6 +23,12 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
+const (
+	// APIServiceBindingRequestConditionExportReady is set to true when the
+	// corresponding APIServiceExport is ready.
+	APIServiceBindingRequestConditionExportReady conditionsapi.ConditionType = "ExportReady"
+)
+
 // APIServiceBindingRequest is represents a request session of kubectl-bind-apiservice.
 //
 // The service provider can prune these objects after some time.
@@ -51,8 +57,11 @@ type APIServiceBindingRequest struct {
 
 // APIServiceBindingRequestResponse is like APIServiceBindingRequest but without
 // ObjectMeta, to avoid unwanted metadata fields being sent in the response.
+//
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type APIServiceBindingRequestResponse struct {
 	metav1.TypeMeta `json:",inline"`
+	NameObjectMeta  `json:"metadata"`
 
 	// spec specifies how an API service from a service provider should be bound in the
 	// local consumer cluster.
@@ -65,6 +74,11 @@ type APIServiceBindingRequestResponse struct {
 	Status APIServiceBindingRequestStatus `json:"status,omitempty"`
 }
 
+type NameObjectMeta struct {
+	// Name is the name of the object.
+	Name string `json:"name,omitempty"`
+}
+
 func (in *APIServiceBindingRequest) GetConditions() conditionsapi.Conditions {
 	return in.Status.Conditions
 }
@@ -73,9 +87,12 @@ func (in *APIServiceBindingRequest) SetConditions(conditions conditionsapi.Condi
 	in.Status.Conditions = conditions
 }
 
+// APIServiceBindingRequestSpec is the spec of a APIServiceBindingRequest.
 type APIServiceBindingRequestSpec struct {
 	// parameters holds service provider specific parameters for this binding
 	// request.
+	//
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="parameters are immutable"
 	Parameters *runtime.RawExtension `json:"parameters,omitempty"`
 
 	// resources is a list of resources that should be exported.
@@ -83,6 +100,7 @@ type APIServiceBindingRequestSpec struct {
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceBindingRequestResource `json:"resources"`
 }
 
@@ -94,6 +112,7 @@ type APIServiceBindingRequestResource struct {
 	Versions []string `json:"versions,omitempty"`
 }
 
+// APIServiceBindingRequestPhase describes the phase of a binding request.
 type APIServiceBindingRequestPhase string
 
 const (
@@ -116,9 +135,13 @@ type APIServiceBindingRequestStatus struct {
 	//
 	// +optional
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:Default=Pending
+	// +kubebuilder:default=Pending
 	// +kubebuilder:validation:Enum=Pending;Failed;Succeeded
 	Phase APIServiceBindingRequestPhase `json:"phase,omitempty"`
+
+	// terminalMessage is a human readable message that describes the reason
+	// for the current phase.
+	TerminalMessage string `json:"terminalMessage,omitempty"`
 
 	// export is the name of the APIServiceExport object that has been created
 	// for this binding request when phase is Succeeded.

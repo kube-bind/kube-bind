@@ -24,53 +24,75 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
+	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/component-base/logs"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/kube-bind/kube-bind/deploy/konnector"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
 )
 
 // BindAPIServiceOptions are the options for the kubectl-bind-apiservice command.
 type BindAPIServiceOptions struct {
-	Base *base.Options
+	Options *base.Options
+	Logs    *logs.Options
 
-	token     string
-	tokenFile string
-	file      string
+	JSONYamlPrintFlags *genericclioptions.JSONYamlPrintFlags
+	OutputFormat       string
+	Print              *genericclioptions.PrintFlags
 
-	// url is the argument accepted by the command
-	// reference to where an  exists.
+	remoteKubeconfigFile      string
+	remoteKubeconfigNamespace string
+	remoteKubeconfigName      string
+	remoteNamespace           string
+	file                      string
+
+	// skipKonnector skips the deployment of the konnector.
+	SkipKonnector bool
+	NoBanner      bool
+
 	url string
 }
 
 // NewBindAPIServiceOptions returns new BindAPIServiceOptions.
 func NewBindAPIServiceOptions(streams genericclioptions.IOStreams) *BindAPIServiceOptions {
 	return &BindAPIServiceOptions{
-		Base: base.NewOptions(streams),
+		Options: base.NewOptions(streams),
+		Logs:    logs.NewOptions(),
+		Print:   genericclioptions.NewPrintFlags("kubectl-bind-apiservice"),
 	}
 }
 
-// BindFlags binds fields to cmd's flagset.
-func (b *BindAPIServiceOptions) BindFlags(cmd *cobra.Command) {
-	b.Base.BindFlags(cmd)
+// AddCmdFlags binds fields to cmd's flagset.
+func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
+	b.Options.BindFlags(cmd)
+	logsv1.AddFlags(b.Logs, cmd.Flags())
+	b.Print.AddFlags(cmd)
 
-	cmd.Flags().StringVar(&b.token, "token", b.token, "The bearer token to use to authenticate for a APIService binding request")
-	cmd.Flags().StringVar(&b.token, "token-file", b.token, "A file with the bearer token to use to authenticate for a APIService binding request")
-	cmd.Flags().StringVarP(&b.token, "file", "f", b.token, "The bearer token to use to authenticate for a APIService binding request. Use - to read from stdin")
+	cmd.Flags().StringVar(&b.remoteKubeconfigFile, "remote-kubeconfig", b.remoteKubeconfigFile, "A file path for a kubeconfig file to connect to the service provider cluster")
+	cmd.Flags().StringVar(&b.remoteKubeconfigNamespace, "remote-kubeconfig-namespace", b.remoteKubeconfigNamespace, "The namespace of the remote kubeconfig secret to read from")
+	cmd.Flags().StringVar(&b.remoteKubeconfigName, "remote-kubeconfig-name", b.remoteKubeconfigNamespace, "The name of the remote kubeconfig secret to read from")
+	cmd.Flags().StringVarP(&b.file, "file", "f", b.file, "A file with an APIServiceBindingRequest manifest. Use - to read from stdin")
+	cmd.Flags().StringVar(&b.remoteNamespace, "remote-namespace", b.remoteNamespace, "The namespace in the remote cluster where the konnector is deployed")
+	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
+	cmd.Flags().BoolVar(&b.NoBanner, "no-banner", b.NoBanner, "Do not show the red banner")
+	cmd.Flags().MarkHidden("no-banner") // nolint:errcheck
 }
 
 // Complete ensures all fields are initialized.
 func (b *BindAPIServiceOptions) Complete(args []string) error {
-	if err := b.Base.Complete(); err != nil {
+	if err := b.Options.Complete(); err != nil {
 		return err
 	}
 
@@ -94,32 +116,39 @@ func (b *BindAPIServiceOptions) Validate() error {
 		}
 	}
 
-	if b.token == "" && b.tokenFile == "" {
-		return errors.New("token or token-file is required")
-	}
-	if b.token != "" && b.tokenFile != "" {
-		return errors.New("token and token-file are mutually exclusive")
+	if allowed := sets.NewString(b.Print.AllowedFormats()...); *b.Print.OutputFormat != "" && !allowed.Has(*b.Print.OutputFormat) {
+		return fmt.Errorf("invalid output format %q (allowed: %s)", *b.Print.OutputFormat, strings.Join(allowed.List(), ", "))
 	}
 
-	return b.Base.Validate()
+	if (b.remoteKubeconfigNamespace == "" && b.remoteKubeconfigName != "") ||
+		(b.remoteKubeconfigNamespace != "" && b.remoteKubeconfigName == "") {
+		return errors.New("remote-kubeconfig-namespace and remote-kubeconfig-name must be specified together")
+	}
+	if b.remoteKubeconfigFile == "" && b.remoteKubeconfigNamespace == "" && b.remoteKubeconfigName == "" {
+		return errors.New("remote-kubeconfig or remote-kubeconfig-namespace and remote-kubeconfig-name are required")
+	}
+	if b.file != "" && b.url != "" {
+		return errors.New("file and arguments are mutually exclusive")
+	}
+	if b.file == "" && b.url == "" {
+		return errors.New("file or arguments are required")
+	}
+
+	return b.Options.Validate()
 }
 
 // Run starts the binding process.
 func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
 	// nolint: staticcheck
-	cfg, err := b.Base.ClientConfig.ClientConfig()
+	config, err := b.Options.ClientConfig.ClientConfig()
 	if err != nil {
 		return err
 	}
 
-	if b.tokenFile != "" {
-		bs, err := os.ReadFile(b.tokenFile)
-		if err != nil {
-			return fmt.Errorf("failed to read token file %s: %w", b.tokenFile, err)
-		}
-		b.token = string(bs)
+	remoteKubeconfig, remoteNamespace, remoteConfig, err := b.getRemoteKubeconfig(ctx, config)
+	if err != nil {
+		return err
 	}
-
 	bs, err := b.getRequestManifest()
 	if err != nil {
 		return err
@@ -128,18 +157,68 @@ func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	result, err := b.postRequestManifest(request)
+	result, err := b.createServiceBindingRequest(ctx, remoteConfig, remoteNamespace, request)
 	if err != nil {
 		return err
 	}
-	if err := b.deployKonnector(ctx, cfg); err != nil {
+	if err := b.deployKonnector(ctx, config); err != nil {
 		return err
 	}
-	if err := b.createAPIServiceBindings(ctx, result, cfg); err != nil {
+	bindings, err := b.createAPIServiceBindings(ctx, config, result, remoteConfig.Host, remoteNamespace, remoteKubeconfig)
+	if err != nil {
 		return err
 	}
 
-	return nil
+	fmt.Fprintln(b.Options.ErrOut) // nolint: errcheck
+	return b.printTable(ctx, config, bindings)
+}
+
+func (b *BindAPIServiceOptions) getRemoteKubeconfig(ctx context.Context, config *rest.Config) (kubeconfig, ns string, remoteConfig *rest.Config, err error) {
+	var remoteKubeConfig *clientcmdapi.Config
+	if b.remoteKubeconfigFile != "" {
+		remoteKubeConfig, err = clientcmd.LoadFromFile(b.remoteKubeconfigFile)
+		if err != nil {
+			return "", "", nil, err
+		}
+	} else {
+		kubeClient, err := kubeclient.NewForConfig(config)
+		if err != nil {
+			return "", "", nil, err
+		}
+		secret, err := kubeClient.CoreV1().Secrets(b.remoteKubeconfigNamespace).Get(ctx, b.remoteKubeconfigName, metav1.GetOptions{})
+		if err != nil {
+			return "", "", nil, err
+		}
+		bs, found := secret.Data["kubeconfig"]
+		if !found {
+			return "", "", nil, fmt.Errorf("secret %s/%s does not contain a kubeconfig", b.remoteKubeconfigNamespace, b.remoteKubeconfigName)
+		}
+		remoteKubeConfig, err = clientcmd.Load(bs)
+		if err != nil {
+			return "", "", nil, err
+		}
+	}
+
+	c, found := remoteKubeConfig.Contexts[remoteKubeConfig.CurrentContext]
+	if !found {
+		return "", "", nil, fmt.Errorf("current context %q not found in remote kubeconfig", remoteKubeConfig.CurrentContext)
+	}
+	if b.remoteNamespace != "" {
+		c.Namespace = b.remoteNamespace
+	}
+	if c.Namespace == "" {
+		return "", "", nil, fmt.Errorf("remote namespace is required, either as flag or in the passed remote kubeconfig")
+	}
+	remoteConfig, err = clientcmd.NewDefaultClientConfig(*remoteKubeConfig, &clientcmd.ConfigOverrides{}).ClientConfig()
+	if err != nil {
+		return "", "", nil, err
+	}
+
+	remoteKubeconfig, err := clientcmd.Write(*remoteKubeConfig)
+	if err != nil {
+		return "", "", nil, err
+	}
+	return string(remoteKubeconfig), c.Namespace, remoteConfig, nil
 }
 
 func (b *BindAPIServiceOptions) getRequestManifest() ([]byte, error) {
@@ -155,7 +234,7 @@ func (b *BindAPIServiceOptions) getRequestManifest() ([]byte, error) {
 		}
 		return body, nil
 	} else if b.file == "-" {
-		body, err := io.ReadAll(b.Base.IOStreams.In)
+		body, err := io.ReadAll(b.Options.IOStreams.In)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read from stdin: %w", err)
 		}
@@ -181,35 +260,4 @@ func (b *BindAPIServiceOptions) unmarshalManifest(bs []byte) (*kubebindv1alpha1.
 		return nil, fmt.Errorf("invalid kind %q", request.Kind)
 	}
 	return &request, nil
-}
-
-func (b *BindAPIServiceOptions) postRequestManifest(request *kubebindv1alpha1.APIServiceBindingRequest) (*kubebindv1alpha1.APIServiceBindingRequest, error) {
-	// TODO(moath): implement posting the request manifest to endpoint
-	panic("not implemented")
-}
-
-// nolint: unused
-func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, result *kubebindv1alpha1.APIServiceBindingRequest, cfg *rest.Config) error {
-	// TODO(moath): create secret and service bindings
-	panic("not implemented")
-}
-
-// nolint: unused
-func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, cfg *rest.Config) error {
-	client, err := dynamic.NewForConfig(cfg)
-	if err != nil {
-		return err
-	}
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return err
-	}
-	if err := konnector.Bootstrap(ctx, discoveryClient, client, sets.NewString()); err != nil {
-		return err
-	}
-
-	// TODO: check health
-	// TODO: wait for APIServiceBinding API to be available
-
-	return nil
 }

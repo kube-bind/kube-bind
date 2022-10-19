@@ -19,6 +19,7 @@ package bind
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -72,7 +73,11 @@ func TestHappyCase(t *testing.T) {
 			step: func(t *testing.T) {
 				authURLCh := make(chan string, 1)
 				go simulateBrowser(t, authURLCh, "mangodbs")
-				framework.Bind(t, authURLCh, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
+				invocations := make(chan framework.SubCommandInvocation, 1)
+				framework.Bind(t, authURLCh, invocations, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
+				inv := <-invocations
+				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--skip-konnector", "--kubeconfig", consumerKubeconfig, "--no-banner"}, inv.Args)
+				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
 
 				t.Logf("Waiting for MangoDB CRD to be created on consumer side")
 				crdClient := framework.ApiextensionsClient(t, consumerConfig).ApiextensionsV1().CustomResourceDefinitions()
@@ -232,4 +237,17 @@ func toUnstructured(t *testing.T, manifest string) *unstructured.Unstructured {
 	require.NoError(t, err)
 
 	return &unstructured.Unstructured{Object: obj}
+}
+
+func requireEqualSlicePattern(t *testing.T, pattern []string, slice []string) {
+	t.Helper()
+
+	require.Equal(t, len(pattern), len(slice), "slice length doesn't match pattern length\n     got: %s\nexpected: %s", strings.Join(slice, " "), strings.Join(pattern, " "))
+
+	for i, s := range slice {
+		if pattern[i] == "*" {
+			continue
+		}
+		require.Equal(t, pattern[i], s, "slice doesn't match pattern at index %d\n     got: %s\nexpected: %s", i, strings.Join(slice, " "), strings.Join(pattern, " "))
+	}
 }

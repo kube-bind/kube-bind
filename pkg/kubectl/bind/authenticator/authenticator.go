@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
@@ -67,6 +68,7 @@ func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context,
 
 	server := echo.New()
 	server.HideBanner = true
+	server.HidePort = true
 	server.GET("/callback", defaultAuthenticator.actionWrapper())
 	defaultAuthenticator.server = server
 
@@ -106,7 +108,8 @@ func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
 	return func(c echo.Context) error {
 		authData := c.QueryParam("response")
 
-		fmt.Printf("Got callback\n")
+		logger := klog.FromContext(c.Request().Context())
+		logger.V(7).Info("Received auth data", "data", authData)
 
 		decoded, err := base64.StdEncoding.DecodeString(authData)
 		if err != nil {

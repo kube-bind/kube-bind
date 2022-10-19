@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	logsv1 "k8s.io/component-base/logs/api/v1"
 
 	"github.com/kube-bind/kube-bind/pkg/kubectl/bind-apiservice/plugin"
 )
@@ -30,13 +31,13 @@ import (
 var (
 	bindAPIServiceExampleUses = `
 	# bind to a remote API service. Use kubectl bind to create the APIBindingRequest interactively. 
-	%[1]s apiservice --token-file filename -f apiservice-binding-request.yaml
+	%[1]s apiservice --remote-kubeconfig file -f apiservice-binding-request.yaml
 
-	# bind to a remote API service from a https source.
-	%[1]s apiservice --token-file token https://some-url/apiservice-binding-request.yaml
+	# bind to a remote API service via a request manifest from a https URL.
+	%[1]s apiservice --remote-kubeconfig file https://some-url.com/apiservice-binding-requests.yaml
 
     # bind to a API service directly without any remote agent or service provider.
-	%[1]s apiservice --remote-kubeconfig filename -n namespace resources.group/v1
+	%[1]s apiservice --remote-kubeconfig file -n remote-namespace resources.group/v1
 	`
 )
 
@@ -48,10 +49,11 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 		Example:      fmt.Sprintf(bindAPIServiceExampleUses, "kubectl bind"),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
-			fmt.Fprintf(streams.ErrOut, yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")+"\n\n") // nolint: errcheck
+			if err := logsv1.ValidateAndApply(opts.Logs, nil); err != nil {
+				return err
+			}
 
-			if len(args) == 0 {
+			if len(args) > 1 {
 				return cmd.Help()
 			}
 			if err := opts.Complete(args); err != nil {
@@ -62,10 +64,15 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 				return err
 			}
 
+			if !opts.NoBanner {
+				yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
+				fmt.Fprintf(streams.ErrOut, yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")+"\n\n") // nolint: errcheck
+			}
+
 			return opts.Run(cmd.Context())
 		},
 	}
-	opts.BindFlags(cmd)
+	opts.AddCmdFlags(cmd)
 
 	return cmd, nil
 }

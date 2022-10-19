@@ -39,6 +39,18 @@ type reconciler struct {
 }
 
 func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
+	var errs []error
+
+	if err := r.ensureExportResources(ctx, export); err != nil {
+		errs = append(errs, err)
+	}
+
+	conditions.SetSummary(export)
+
+	return utilerrors.NewAggregate(errs)
+}
+
+func (r *reconciler) ensureExportResources(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
 	logger := klog.FromContext(ctx)
 	var errs []error
 

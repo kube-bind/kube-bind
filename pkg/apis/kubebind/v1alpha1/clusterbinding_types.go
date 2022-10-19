@@ -89,6 +89,7 @@ const (
 // ClusterBindingSpec represents the data in the newly created ClusterBinding.
 type ClusterBindingSpec struct {
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
+	//
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="kubeconfigSecretRef is immutable"

@@ -89,9 +89,6 @@ spec:
             required:
             - resources
             type: object
-            x-kubernetes-validations:
-            - message: parameters cannot be added or removed
-              rule: has(oldSelf. parameters) == has(self. parameters)
           status:
             description: status contains reconciliation information for a service
               binding.

@@ -74,8 +74,8 @@ func NewBindAPIServiceOptions(streams genericclioptions.IOStreams) *BindAPIServi
 	}
 }
 
-// BindFlags binds fields to cmd's flagset.
-func (b *BindAPIServiceOptions) BindFlags(cmd *cobra.Command) {
+// AddCmdFlags binds fields to cmd's flagset.
+func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 	b.Options.BindFlags(cmd)
 	logsv1.AddFlags(b.Logs, cmd.Flags())
 	b.Print.AddFlags(cmd)

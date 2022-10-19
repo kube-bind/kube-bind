@@ -63,6 +63,9 @@ type BindOptions struct {
 
 	// skipKonnector skips the deployment of the konnector.
 	SkipKonnector bool
+
+	// Runner is runs the command. It can be replaced in tests.
+	Runner func(cmd *exec.Cmd) error
 }
 
 // NewBindOptions returns new BindOptions.
@@ -71,6 +74,10 @@ func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 		Options: base.NewOptions(streams),
 		Logs:    logs.NewOptions(),
 		Print:   genericclioptions.NewPrintFlags("kubectl-bind"),
+
+		Runner: func(cmd *exec.Cmd) error {
+			return cmd.Run()
+		},
 	}
 
 	return opts
@@ -283,6 +290,9 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		if b.SkipKonnector {
 			args = append(args, "--skip-konnector")
 		}
+		if b.Options.Kubeconfig != "" {
+			args = append(args, "--kubeconfig", b.Options.Kubeconfig)
+		}
 
 		// TODO: support passing through the base options
 
@@ -291,7 +301,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		command.Stdin = bytes.NewReader(bs)
 		command.Stdout = b.Options.Out
 		command.Stderr = b.Options.ErrOut
-		if err := command.Run(); err != nil {
+		if err := b.Runner(command); err != nil {
 			return err
 		}
 	}

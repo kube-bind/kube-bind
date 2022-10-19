@@ -77,14 +77,16 @@ func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, a
 	fmt.Fprintf(b.Options.ErrOut, "\nTo authenticate, visit %s in your browser or scan the QRCode below:\n\n", u.String()) // nolint: errcheck
 
 	// TODO(sttts): callback backend, not 127.0.0.1
-	config := qrterminal.Config{
-		Level:     qrterminal.L,
-		Writer:    b.Options.ErrOut,
-		BlackChar: qrterminal.WHITE,
-		WhiteChar: qrterminal.BLACK,
-		QuietZone: 2,
+	if false {
+		config := qrterminal.Config{
+			Level:     qrterminal.L,
+			Writer:    b.Options.ErrOut,
+			BlackChar: qrterminal.WHITE,
+			WhiteChar: qrterminal.BLACK,
+			QuietZone: 2,
+		}
+		qrterminal.GenerateWithConfig(u.String(), config)
 	}
-	qrterminal.GenerateWithConfig(u.String(), config)
 
 	if urlCh != nil {
 		urlCh <- u.String()

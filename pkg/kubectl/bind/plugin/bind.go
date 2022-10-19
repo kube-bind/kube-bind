@@ -25,11 +25,11 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -66,6 +66,8 @@ type BindOptions struct {
 
 	// Runner is runs the command. It can be replaced in tests.
 	Runner func(cmd *exec.Cmd) error
+
+	flags *pflag.FlagSet
 }
 
 // NewBindOptions returns new BindOptions.
@@ -85,6 +87,8 @@ func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 
 // AddCmdFlags binds fields to cmd's flagset.
 func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
+	b.flags = cmd.Flags()
+
 	b.Options.BindFlags(cmd)
 	logsv1.AddFlags(b.Logs, cmd.Flags())
 	b.Print.AddFlags(cmd)
@@ -167,7 +171,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return err
 	}
 
-	if err := auth.Execute(ctx); err != nil && !strings.Contains(err.Error(), "Server closed") {
+	if err := auth.Execute(ctx); err != nil {
 		return err
 	} else if response == nil {
 		return fmt.Errorf("authentication timeout")
@@ -281,18 +285,11 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 			"--remote-kubeconfig-name", secret.Name,
 			"-f", "-",
 		}
-		if b.Print.OutputFormat != nil && *b.Print.OutputFormat != "" {
-			args = append(args, "--output", *b.Print.OutputFormat)
-		}
-		if b.Logs.Verbosity > 0 {
-			args = append(args, "-v", strconv.Itoa(int(b.Logs.Verbosity)))
-		}
-		if b.SkipKonnector {
-			args = append(args, "--skip-konnector")
-		}
-		if b.Options.Kubeconfig != "" {
-			args = append(args, "--kubeconfig", b.Options.Kubeconfig)
-		}
+		b.flags.VisitAll(func(flag *pflag.Flag) {
+			if flag.Changed && PassOnFlags.Has(flag.Name) {
+				args = append(args, "--"+flag.Name+"="+flag.Value.String())
+			}
+		})
 
 		// TODO: support passing through the base options
 

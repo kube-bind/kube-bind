@@ -117,7 +117,7 @@ func (r *reconciler) ensureClusterBindingConditions(ctx context.Context, cluster
 }
 
 func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *kubebindv1alpha1.ClusterBinding) error {
-	name := "kube-bind-" + clusterBinding.Namespace + "-cluster" // this will go away soon when we restrict the permissions
+	name := "kube-binder-" + clusterBinding.Namespace
 	role, err := r.getClusterRole(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get ClusterRole %s: %w", name, err)
@@ -172,7 +172,7 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *
 }
 
 func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBinding *kubebindv1alpha1.ClusterBinding) error {
-	name := "kube-bind-" + clusterBinding.Namespace + "-cluster" // this will go away soon when we restrict the permissions
+	name := "kube-binder-" + clusterBinding.Namespace
 	binding, err := r.getClusterRoleBinding(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get ClusterRoleBinding %s: %w", name, err)
@@ -200,7 +200,7 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBi
 			{
 				Kind:      "ServiceAccount",
 				Namespace: clusterBinding.Namespace,
-				Name:      clusterBinding.Spec.KubeconfigSecretRef.Name, // this is an example-backend invariant that the service account is equally named
+				Name:      kuberesources.ServiceAccountName,
 			},
 		},
 		RoleRef: rbacv1.RoleRef{

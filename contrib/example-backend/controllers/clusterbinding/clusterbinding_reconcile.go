@@ -213,7 +213,7 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBi
 		if _, err := r.createClusterRoleBinding(ctx, expected); err != nil {
 			return fmt.Errorf("failed to create ClusterRoleBinding %s: %w", expected.Name, err)
 		}
-	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) || !reflect.DeepEqual(binding.RoleRef, expected.RoleRef) {
+	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) {
 		binding = binding.DeepCopy()
 		binding.Subjects = expected.Subjects
 		// roleRef is immutable
@@ -253,7 +253,7 @@ func (r *reconciler) ensureRBACRoleBinding(ctx context.Context, clusterBinding *
 		if _, err := r.createRoleBinding(ctx, clusterBinding.Namespace, expected); err != nil {
 			return fmt.Errorf("failed to create RoleBinding %s: %w", expected.Name, err)
 		}
-	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) || !reflect.DeepEqual(binding.RoleRef, expected.RoleRef) {
+	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) {
 		binding = binding.DeepCopy()
 		binding.Subjects = expected.Subjects
 		// roleRef is immutable

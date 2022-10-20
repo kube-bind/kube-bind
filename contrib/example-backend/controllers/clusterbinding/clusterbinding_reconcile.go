@@ -47,7 +47,7 @@ type reconciler struct {
 	createClusterRoleBinding func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
 	updateClusterRoleBinding func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
 
-	getRoleBinding    func(name, namespace string) (*rbacv1.RoleBinding, error)
+	getRoleBinding    func(ms, name string) (*rbacv1.RoleBinding, error)
 	createRoleBinding func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
 	updateRoleBinding func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
 
@@ -226,7 +226,7 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBi
 }
 
 func (r *reconciler) ensureRBACRoleBinding(ctx context.Context, clusterBinding *kubebindv1alpha1.ClusterBinding) error {
-	binding, err := r.getRoleBinding("kube-binder", clusterBinding.Namespace)
+	binding, err := r.getRoleBinding(clusterBinding.Namespace, "kube-binder")
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get RoleBinding \"kube-bind\": %w", err)
 	}

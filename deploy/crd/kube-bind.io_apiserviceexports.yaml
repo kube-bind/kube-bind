@@ -84,9 +84,6 @@ spec:
                 - Cluster
                 - Namespaced
                 type: string
-                x-kubernetes-validations:
-                - message: Namespaced scope not yet supported
-                  rule: self != "Namespaced"
             required:
             - scope
             type: object

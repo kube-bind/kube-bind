@@ -32,6 +32,8 @@ import (
 )
 
 type reconciler struct {
+	scope kubebindv1alpha1.Scope
+
 	deleteServiceBindingRequest func(ctx context.Context, ns, name string) error
 
 	getServiceExport    func(ns, name string) (*kubebindv1alpha1.APIServiceExport, error)
@@ -61,7 +63,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 				Name:      req.Name,
 			},
 			Spec: kubebindv1alpha1.APIServiceExportSpec{
-				Scope: kubebindv1alpha1.ClusterScope, // TODO: implement namespace scope
+				Scope: r.scope,
 			},
 		}
 		for _, res := range req.Spec.Resources {

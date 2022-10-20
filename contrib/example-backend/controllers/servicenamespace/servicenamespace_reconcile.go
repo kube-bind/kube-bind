@@ -30,6 +30,8 @@ import (
 )
 
 type reconciler struct {
+	scope kubebindv1alpha1.Scope
+
 	getNamespace    func(name string) (*corev1.Namespace, error)
 	createNamespace func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error)
 	deleteNamespace func(ctx context.Context, name string) error
@@ -70,12 +72,14 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.APISer
 		}
 	}
 
-	if err := c.ensureRBACRole(ctx, nsName, sns); err != nil {
-		return fmt.Errorf("failed to ensure RBAC: %w", err)
-	}
+	if c.scope == kubebindv1alpha1.NamespacedScope {
+		if err := c.ensureRBACRole(ctx, nsName, sns); err != nil {
+			return fmt.Errorf("failed to ensure RBAC: %w", err)
+		}
 
-	if err := c.ensureRBACRoleBinding(ctx, nsName, sns); err != nil {
-		return fmt.Errorf("failed to ensure RBAC: %w", err)
+		if err := c.ensureRBACRoleBinding(ctx, nsName, sns); err != nil {
+			return fmt.Errorf("failed to ensure RBAC: %w", err)
+		}
 	}
 
 	if sns.Status.Namespace != nsName {
@@ -117,7 +121,9 @@ func (c *reconciler) ensureRBACRole(ctx context.Context, ns string, sns *kubebin
 			return fmt.Errorf("failed to create role %s/%s: %w", ns, objName, err)
 		}
 	} else if !reflect.DeepEqual(role.Rules, expected.Rules) {
-		if _, err := c.updateRole(ctx, expected); err != nil {
+		role = role.DeepCopy()
+		role.Rules = expected.Rules
+		if _, err := c.updateRole(ctx, role); err != nil {
 			return fmt.Errorf("failed to create role %s/%s: %w", ns, objName, err)
 		}
 	}
@@ -163,7 +169,10 @@ func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, ns string, sns *
 			return fmt.Errorf("failed to create role binding %s/%s: %w", ns, objName, err)
 		}
 	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) || !reflect.DeepEqual(binding.RoleRef, expected.RoleRef) {
-		if _, err := c.updateRoleBinding(ctx, expected); err != nil {
+		binding = binding.DeepCopy()
+		binding.Subjects = expected.Subjects
+		binding.RoleRef = expected.RoleRef
+		if _, err := c.updateRoleBinding(ctx, binding); err != nil {
 			return fmt.Errorf("failed to create role binding %s/%s: %w", ns, objName, err)
 		}
 	}

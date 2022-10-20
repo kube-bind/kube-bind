@@ -48,6 +48,7 @@ const (
 // creating corresponding APIServiceExports.
 func NewController(
 	config *rest.Config,
+	scope kubebindv1alpha1.Scope,
 	serviceBindingRequestInformer bindinformers.APIServiceBindingRequestInformer,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 ) (*Controller, error) {
@@ -80,6 +81,8 @@ func NewController(
 		serviceBindingRequestIndexer: serviceBindingRequestInformer.Informer().GetIndexer(),
 
 		reconciler: reconciler{
+			scope: scope,
+
 			deleteServiceBindingRequest: func(ctx context.Context, ns, name string) error {
 				return bindClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},

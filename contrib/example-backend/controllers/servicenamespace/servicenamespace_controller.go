@@ -55,6 +55,7 @@ const (
 // NewController returns a new controller for ServiceNamespaces.
 func NewController(
 	config *rest.Config,
+	scope kubebindv1alpha1.Scope,
 	serviceNamespaceInformer bindinformers.APIServiceNamespaceInformer,
 	clusterBindingInformer bindinformers.ClusterBindingInformer,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
@@ -103,6 +104,8 @@ func NewController(
 		roleBindingIndexer: roleBindingInformer.Informer().GetIndexer(),
 
 		reconciler: reconciler{
+			scope: scope,
+
 			getNamespace: namespaceInformer.Lister().Get,
 			createNamespace: func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error) {
 				return kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})

@@ -21,10 +21,19 @@ import (
 	"fmt"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kubeinformers "k8s.io/client-go/informers/core/v1"
+	rbacinformers "k8s.io/client-go/informers/rbac/v1"
+	kubeclient "k8s.io/client-go/kubernetes"
+	corelisters "k8s.io/client-go/listers/core/v1"
+	rbaclisters "k8s.io/client-go/listers/rbac/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -44,7 +53,12 @@ const (
 // NewController returns a new controller to reconcile ClusterBindings.
 func NewController(
 	config *rest.Config,
+	scope kubebindv1alpha1.Scope,
 	clusterBindingInformer bindinformers.ClusterBindingInformer,
+	serviceExportInformer bindinformers.APIServiceExportInformer,
+	clusterRoleInformer rbacinformers.ClusterRoleInformer,
+	clusterRoleBindingInformer rbacinformers.ClusterRoleBindingInformer,
+	namespaceInformer kubeinformers.NamespaceInformer,
 ) (*Controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -57,6 +71,10 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
+	kubeClient, err := kubeclient.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
 
 	c := &Controller{
 		queue: queue,
@@ -64,7 +82,45 @@ func NewController(
 		clusterBindingLister:  clusterBindingInformer.Lister(),
 		clusterBindingIndexer: clusterBindingInformer.Informer().GetIndexer(),
 
-		reconciler: reconciler{},
+		serviceExportLister:  serviceExportInformer.Lister(),
+		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
+
+		clusterRoleLister:  clusterRoleInformer.Lister(),
+		clusterRoleIndexer: clusterRoleInformer.Informer().GetIndexer(),
+
+		clusterRoleBindingLister:  clusterRoleBindingInformer.Lister(),
+		clusterRoleBindingIndexer: clusterRoleBindingInformer.Informer().GetIndexer(),
+
+		namespaceLister:  namespaceInformer.Lister(),
+		namespaceIndexer: namespaceInformer.Informer().GetIndexer(),
+
+		reconciler: reconciler{
+			scope: scope,
+			listServiceExports: func(ns string) ([]*kubebindv1alpha1.APIServiceExport, error) {
+				return serviceExportInformer.Lister().APIServiceExports(ns).List(labels.Everything())
+			},
+			getClusterRole: func(name string) (*rbacv1.ClusterRole, error) {
+				return clusterRoleInformer.Lister().Get(name)
+			},
+			createClusterRole: func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
+				return kubeClient.RbacV1().ClusterRoles().Create(ctx, binding, metav1.CreateOptions{})
+			},
+			updateClusterRole: func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
+				return kubeClient.RbacV1().ClusterRoles().Update(ctx, binding, metav1.UpdateOptions{})
+			},
+			getClusterRoleBinding: func(name string) (*rbacv1.ClusterRoleBinding, error) {
+				return clusterRoleBindingInformer.Lister().Get(name)
+			},
+			createClusterRoleBinding: func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
+				return kubeClient.RbacV1().ClusterRoleBindings().Create(ctx, binding, metav1.CreateOptions{})
+			},
+			updateClusterRoleBinding: func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
+				return kubeClient.RbacV1().ClusterRoleBindings().Update(ctx, binding, metav1.UpdateOptions{})
+			},
+			getNamespace: func(name string) (*v1.Namespace, error) {
+				return namespaceInformer.Lister().Get(name)
+			},
+		},
 
 		commit: committer.NewCommitter[*kubebindv1alpha1.ClusterBinding, *kubebindv1alpha1.ClusterBindingSpec, *kubebindv1alpha1.ClusterBindingStatus](
 			func(ns string) committer.Patcher[*kubebindv1alpha1.ClusterBinding] {
@@ -75,6 +131,18 @@ func NewController(
 
 	clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
+			c.enqueueClusterBinding(logger, obj)
+		},
+		UpdateFunc: func(old, newObj interface{}) {
+			c.enqueueClusterBinding(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueClusterBinding(logger, obj)
+		},
+	})
+
+	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
 		},
 		UpdateFunc: func(old, newObj interface{}) {
@@ -82,6 +150,30 @@ func NewController(
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
+		},
+	})
+
+	clusterRoleInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueClusterRole(logger, obj)
+		},
+		UpdateFunc: func(old, newObj interface{}) {
+			c.enqueueClusterRole(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueClusterRole(logger, obj)
+		},
+	})
+
+	clusterRoleBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueClusterRoleBinding(logger, obj)
+		},
+		UpdateFunc: func(old, newObj interface{}) {
+			c.enqueueClusterRoleBinding(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueClusterRoleBinding(logger, obj)
 		},
 	})
 
@@ -98,12 +190,24 @@ type Controller struct {
 	clusterBindingLister  bindlisters.ClusterBindingLister
 	clusterBindingIndexer cache.Indexer
 
+	serviceExportLister  bindlisters.APIServiceExportLister
+	serviceExportIndexer cache.Indexer
+
+	clusterRoleLister  rbaclisters.ClusterRoleLister
+	clusterRoleIndexer cache.Indexer
+
+	clusterRoleBindingLister  rbaclisters.ClusterRoleBindingLister
+	clusterRoleBindingIndexer cache.Indexer
+
+	namespaceLister  corelisters.NamespaceLister
+	namespaceIndexer cache.Indexer
+
 	reconciler
 
 	commit CommitFunc
 }
 
-func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueClusterBinding(logger klog.Logger, obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -111,6 +215,45 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	}
 
 	logger.V(2).Info("queueing ClusterBinding", "key", key)
+	c.queue.Add(key)
+}
+
+func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
+	seKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	ns, _, err := cache.SplitMetaNamespaceKey(seKey)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	key := ns + "/cluster"
+	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "APIServiceExport", "ServiceExportKey", seKey)
+	c.queue.Add(key)
+}
+
+func (c *Controller) enqueueClusterRole(logger klog.Logger, obj interface{}) {
+	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "ClusterRole", "ClusterRoleKey", key)
+	c.queue.Add(key)
+}
+
+func (c *Controller) enqueueClusterRoleBinding(logger klog.Logger, obj interface{}) {
+	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "ClusterRoleBinding", "ClusterRoleBindingKey", key)
 	c.queue.Add(key)
 }
 

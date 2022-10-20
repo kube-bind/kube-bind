@@ -138,9 +138,10 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	code := &AuthCode{
 		RedirectURL: r.URL.Query().Get("u"),
 		SessionID:   r.URL.Query().Get("s"),
+		ClusterID:   r.URL.Query().Get("c"),
 	}
-	if code.RedirectURL == "" || code.SessionID == "" {
-		logger.Error(errors.New("missing redirect url or session id"), "failed to authorize")
+	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {
+		logger.Error(errors.New("missing redirect url or session id or cluster id"), "failed to authorize")
 		http.Error(w, "missing redirect_url or session_id", http.StatusBadRequest)
 		return
 	}
@@ -241,6 +242,7 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 		RefreshToken: token.RefreshToken,
 		RedirectURL:  authCode.RedirectURL,
 		SessionID:    authCode.SessionID,
+		ClusterID:    authCode.ClusterID,
 	}
 
 	b, err := sessionCookie.Encode()
@@ -329,7 +331,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	group := r.URL.Query().Get("group")
 	resource := r.URL.Query().Get("resource")
-	kfg, err := h.kubeManager.HandleResources(r.Context(), idToken.Subject, resource, group)
+	kfg, err := h.kubeManager.HandleResources(r.Context(), idToken.Subject+"#"+state.ClusterID, resource, group)
 	if err != nil {
 		logger.Info("failed to handle resources", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)

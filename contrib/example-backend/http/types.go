@@ -21,6 +21,7 @@ package http
 type AuthCode struct {
 	RedirectURL string `json:"redirectURL"`
 	SessionID   string `json:"sid"`
+	ClusterID   string `json:"cid"`
 }
 
 // CodeGrantCallbackResponse contains the authentication data which is passed back to the consumer

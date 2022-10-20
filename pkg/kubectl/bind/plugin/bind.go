@@ -167,7 +167,20 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 
 	sessionID := rand.String(rand.IntnRange(20, 30))
 
-	if err := b.authenticate(provider, auth.Endpoint(ctx), sessionID, urlCh); err != nil {
+	ns, err := kubeClient.CoreV1().Namespaces().Get(ctx, "kube-bind", metav1.GetOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	} else if apierrors.IsNotFound(err) {
+		ns = &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "kube-bind",
+			},
+		}
+		if ns, err = kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
+			return err
+		}
+	}
+	if err := b.authenticate(provider, auth.Endpoint(ctx), sessionID, string(ns.UID), urlCh); err != nil {
 		return err
 	}
 

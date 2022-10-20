@@ -176,7 +176,7 @@ func (in *APIServiceBindingRequestResource) DeepCopy() *APIServiceBindingRequest
 func (in *APIServiceBindingRequestResponse) DeepCopyInto(out *APIServiceBindingRequestResponse) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.NameObjectMeta = in.NameObjectMeta
+	out.ObjectMeta = in.ObjectMeta
 	in.Spec.DeepCopyInto(&out.Spec)
 	in.Status.DeepCopyInto(&out.Status)
 	return

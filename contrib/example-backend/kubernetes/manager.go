@@ -128,10 +128,6 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		return nil, err
 	}
 
-	if err := kuberesources.CreateAdminClusterRoleBinding(ctx, m.kubeClient, ns); err != nil {
-		return nil, err
-	}
-
 	saSecret, err := kuberesources.CreateSASecret(ctx, m.kubeClient, ns, sa.Name)
 	if err != nil {
 		return nil, err

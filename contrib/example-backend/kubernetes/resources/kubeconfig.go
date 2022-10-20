@@ -79,7 +79,7 @@ func GenerateKubeconfig(ctx context.Context,
 
 	secret := &corev1.Secret{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      "kubeconfig",
+			Name:      saSecretName,
 			Namespace: ns,
 		},
 		Data: map[string][]byte{

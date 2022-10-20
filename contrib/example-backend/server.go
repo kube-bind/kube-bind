@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"net"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/clusterbinding"
@@ -28,6 +30,7 @@ import (
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexport"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexportresource"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicenamespace"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/deploy"
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
@@ -107,6 +110,7 @@ func NewServer(config *Config) (*Server, error) {
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
 		config.KubeInformers.Rbac().V1().ClusterRoles(),
 		config.KubeInformers.Rbac().V1().ClusterRoleBindings(),
+		config.KubeInformers.Rbac().V1().RoleBindings(),
 		config.KubeInformers.Core().V1().Namespaces(),
 	)
 	if err != nil {
@@ -179,6 +183,15 @@ func (s *Server) Addr() net.Addr {
 }
 
 func (s *Server) Run(ctx context.Context) error {
+	dynamicClient, err := dynamic.NewForConfig(s.Config.ClientConfig)
+	if err != nil {
+		return err
+	}
+
+	if err := deploy.Bootstrap(ctx, s.Config.KubeClient.Discovery(), dynamicClient, sets.NewString()); err != nil {
+		return err
+	}
+
 	// start controllers
 	go s.Controllers.ServiceExportResource.Start(ctx, 1)
 	go s.Controllers.ServiceExport.Start(ctx, 1)

@@ -58,6 +58,7 @@ func NewController(
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 	clusterRoleInformer rbacinformers.ClusterRoleInformer,
 	clusterRoleBindingInformer rbacinformers.ClusterRoleBindingInformer,
+	roleBindingInformer rbacinformers.RoleBindingInformer,
 	namespaceInformer kubeinformers.NamespaceInformer,
 ) (*Controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
@@ -119,6 +120,15 @@ func NewController(
 			},
 			getNamespace: func(name string) (*v1.Namespace, error) {
 				return namespaceInformer.Lister().Get(name)
+			},
+			createRoleBinding: func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+				return kubeClient.RbacV1().RoleBindings(ns).Create(ctx, binding, metav1.CreateOptions{})
+			},
+			updateRoleBinding: func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+				return kubeClient.RbacV1().RoleBindings(ns).Update(ctx, binding, metav1.UpdateOptions{})
+			},
+			getRoleBinding: func(namespace, name string) (*rbacv1.RoleBinding, error) {
+				return roleBindingInformer.Lister().RoleBindings(namespace).Get(name)
 			},
 		},
 

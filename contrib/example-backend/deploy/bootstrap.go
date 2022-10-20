@@ -14,11 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package deploy
 
-const (
-	ServiceAccountTokenType       = "kubernetes.io/service-account-token"
-	ServiceAccountTokenAnnotation = "kubernetes.io/service-account.name"
-	ServiceAccountName            = "kube-bind"
-	ClusterBindingName            = "cluster"
+import (
+	"context"
+	"embed"
+
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
+
+	"github.com/kube-bind/kube-bind/pkg/bootstrap"
 )
+
+//go:embed *.yaml
+var raw embed.FS
+
+func Bootstrap(ctx context.Context, discoveryClient discovery.DiscoveryInterface, dynamicClient dynamic.Interface, batteriesIncluded sets.String) error {
+	return bootstrap.Bootstrap(ctx, discoveryClient, dynamicClient, batteriesIncluded, raw)
+}

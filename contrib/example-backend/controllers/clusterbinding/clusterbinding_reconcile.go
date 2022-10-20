@@ -47,6 +47,10 @@ type reconciler struct {
 	createClusterRoleBinding func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
 	updateClusterRoleBinding func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
 
+	getRoleBinding    func(name, namespace string) (*rbacv1.RoleBinding, error)
+	createRoleBinding func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+	updateRoleBinding func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+
 	getNamespace func(name string) (*corev1.Namespace, error)
 }
 
@@ -54,6 +58,9 @@ func (r *reconciler) reconcile(ctx context.Context, clusterBinding *kubebindv1al
 	var errs []error
 
 	if err := r.ensureClusterBindingConditions(ctx, clusterBinding); err != nil {
+		errs = append(errs, err)
+	}
+	if err := r.ensureRBACRoleBinding(ctx, clusterBinding); err != nil {
 		errs = append(errs, err)
 	}
 	if err := r.ensureRBACClusterRole(ctx, clusterBinding); err != nil {
@@ -212,6 +219,46 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBi
 		// roleRef is immutable
 		if _, err := r.updateClusterRoleBinding(ctx, binding); err != nil {
 			return fmt.Errorf("failed to create ClusterRoleBinding %s: %w", expected.Namespace, err)
+		}
+	}
+
+	return nil
+}
+
+func (r *reconciler) ensureRBACRoleBinding(ctx context.Context, clusterBinding *kubebindv1alpha1.ClusterBinding) error {
+	binding, err := r.getRoleBinding("kube-binder", clusterBinding.Namespace)
+	if err != nil && !errors.IsNotFound(err) {
+		return fmt.Errorf("failed to get RoleBinding \"kube-bind\": %w", err)
+	}
+
+	expected := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "kube-binder",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      clusterBinding.Spec.KubeconfigSecretRef.Name,
+				Namespace: clusterBinding.Namespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "kube-binder",
+		},
+	}
+
+	if binding == nil {
+		if _, err := r.createRoleBinding(ctx, clusterBinding.Namespace, expected); err != nil {
+			return fmt.Errorf("failed to create RoleBinding %s: %w", expected.Name, err)
+		}
+	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) || !reflect.DeepEqual(binding.RoleRef, expected.RoleRef) {
+		binding = binding.DeepCopy()
+		binding.Subjects = expected.Subjects
+		// roleRef is immutable
+		if _, err := r.updateRoleBinding(ctx, clusterBinding.Namespace, binding); err != nil {
+			return fmt.Errorf("failed to create RoleBinding %s: %w", expected.Namespace, err)
 		}
 	}
 

@@ -148,7 +148,7 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
-	serviceresourcebindingCtrl, err := serviceexportresource.NewController(
+	serviceexportresourceCtrl, err := serviceexportresource.NewController(
 		consumerSecretRefKey,
 		providerNamespace,
 		consumerConfig,
@@ -180,7 +180,7 @@ func NewController(
 		namespacedeletionCtrl:      namespacedeletionCtrl,
 		serviceexportCtrl:          serviceexportCtrl,
 		servicebindingCtrl:         servicebindingCtrl,
-		serviceresourcebindingCtrl: serviceresourcebindingCtrl,
+		serviceresourcebindingCtrl: serviceexportresourceCtrl,
 	}, nil
 }
 

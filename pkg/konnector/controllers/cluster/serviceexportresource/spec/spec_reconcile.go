@@ -112,10 +112,11 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		unstructured.RemoveNestedField(upstream.Object, "status")
 
 		logger.Info("Creating upstream object")
-		if _, err := r.createProviderObject(ctx, upstream); err != nil {
+		if _, err := r.createProviderObject(ctx, upstream); err != nil && !errors.IsAlreadyExists(err) {
 			return err
+		} else if errors.IsAlreadyExists(err) {
+			logger.Info("Upstream object already exists. Waiting for requeue.") // the upstream object will lead to a requeue
 		}
-		return nil
 	}
 
 	// here the upstream already exists. Update everything but the status.

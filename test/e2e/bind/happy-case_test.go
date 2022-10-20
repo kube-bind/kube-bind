@@ -34,11 +34,24 @@ import (
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/yaml"
 
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	providerfixtures "github.com/kube-bind/kube-bind/test/e2e/bind/fixtures/provider"
 	"github.com/kube-bind/kube-bind/test/e2e/framework"
 )
 
-func TestHappyCase(t *testing.T) {
+func TestClusterScoped(t *testing.T) {
+	t.Parallel()
+
+	testHappyCase(t, kubebindv1alpha1.ClusterScope)
+}
+
+func TestNamespacedScoped(t *testing.T) {
+	t.Parallel()
+
+	testHappyCase(t, kubebindv1alpha1.NamespacedScope)
+}
+
+func testHappyCase(t *testing.T, scope kubebindv1alpha1.Scope) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
@@ -49,7 +62,7 @@ func TestHappyCase(t *testing.T) {
 	providerfixtures.Bootstrap(t, framework.DiscoveryClient(t, providerConfig), framework.DynamicClient(t, providerConfig), nil)
 
 	t.Logf("Starting backend with random port")
-	addr, _ := framework.StartBackend(t, providerConfig, "--kubeconfig="+providerKubeconfig, "--listen-port=0")
+	addr, _ := framework.StartBackend(t, providerConfig, "--kubeconfig="+providerKubeconfig, "--listen-port=0", "--consumer-scope="+string(scope))
 
 	t.Logf("Creating consumer workspace and starting konnector")
 	consumerConfig, consumerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithGenerateName("test-happy-case-consumer"))

@@ -24,6 +24,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -86,9 +87,9 @@ func NewController(
 		reconciler: reconciler{
 			consumerSecretRefKey:     consumerSecretRefKey,
 			providerNamespace:        providerNamespace,
+			serviceNamespaceInformer: dynamicServiceNamespaceInformer,
 			consumerConfig:           consumerConfig,
 			providerConfig:           providerConfig,
-			serviceNamespaceInformer: dynamicServiceNamespaceInformer,
 
 			syncContext: map[string]syncContext{},
 
@@ -97,6 +98,9 @@ func NewController(
 			},
 			getServiceBinding: func(name string) (*kubebindv1alpha1.APIServiceBinding, error) {
 				return serviceBindingInformer.Lister().Get(name)
+			},
+			getServiceExport: func(name string) (*kubebindv1alpha1.APIServiceExport, error) {
+				return providerBindClient.KubeBindV1alpha1().APIServiceExports(providerNamespace).Get(context.TODO(), name, metav1.GetOptions{})
 			},
 		},
 

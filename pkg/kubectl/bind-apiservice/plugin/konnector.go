@@ -98,7 +98,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 				if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, konnectorImage); err != nil {
 					return err
 				}
-			} else {
+			} else if bindSemVer.LT(konnectorSemVer) {
 				fmt.Fprintf(b.Options.ErrOut, "Newer konnector %s installed. To downgrade to %s use --downgrade-konnector.\n", konnectorVersion, bindVersion) // nolint: errcheck
 			}
 		} else {

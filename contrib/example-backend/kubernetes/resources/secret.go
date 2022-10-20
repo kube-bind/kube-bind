@@ -23,9 +23,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 )
 
 func CreateSASecret(ctx context.Context, client kubernetes.Interface, ns, saName string) (*corev1.Secret, error) {
+	logger := klog.FromContext(ctx)
+
 	secret, err := client.CoreV1().Secrets(ns).Get(ctx, saName, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -40,6 +43,7 @@ func CreateSASecret(ctx context.Context, client kubernetes.Interface, ns, saName
 				Type: ServiceAccountTokenType,
 			}
 
+			logger.V(1).Info("Creating service account secret", "name", secret.Name)
 			return client.CoreV1().Secrets(ns).Create(ctx, secret, metav1.CreateOptions{})
 		}
 

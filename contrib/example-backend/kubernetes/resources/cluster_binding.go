@@ -20,12 +20,15 @@ import (
 	"context"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 )
 
 func CreateClusterBinding(ctx context.Context, client bindclient.Interface, ns, secretName, providerPrettyName string) error {
+	logger := klog.FromContext(ctx)
+
 	clusterBinding := &kubebindv1alpha1.ClusterBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ClusterBindingName,
@@ -40,6 +43,7 @@ func CreateClusterBinding(ctx context.Context, client bindclient.Interface, ns, 
 		},
 	}
 
+	logger.V(3).Info("Creating ClusterBinding")
 	_, err := client.KubeBindV1alpha1().ClusterBindings(ns).Create(ctx, clusterBinding, metav1.CreateOptions{})
 	return err
 }

@@ -29,6 +29,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/utils/pointer"
 
+	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
@@ -233,12 +234,12 @@ func (r *reconciler) ensureRBACRoleBinding(ctx context.Context, clusterBinding *
 
 	expected := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "kube-binder",
+			Name: kuberesources.ServiceAccountName,
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      clusterBinding.Spec.KubeconfigSecretRef.Name,
+				Name:      kuberesources.ServiceAccountName,
 				Namespace: clusterBinding.Namespace,
 			},
 		},

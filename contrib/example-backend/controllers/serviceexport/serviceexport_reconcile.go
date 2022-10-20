@@ -18,16 +18,25 @@ package serviceexport
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"math/big"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	kubebindhelpers "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1/helpers"
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
+)
+
+const (
+	soureceSpecHashAnnotationKey = "kube-bind.io/source-spec-hash"
 )
 
 type reconciler struct {
@@ -110,14 +119,21 @@ func (r *reconciler) ensureExportResources(ctx context.Context, export *kubebind
 		if ser == nil {
 			// APIServiceExportResource missing
 			logger.V(1).Info("Creating APIServiceExportResource")
+			resource.Annotations = map[string]string{
+				soureceSpecHashAnnotationKey: resourceHash(resource),
+			}
 			if _, err := r.createServiceExportResource(ctx, resource); err != nil {
 				errs = append(errs, err)
 				continue
 			}
-		} else {
+		} else if expected := resourceHash(resource); ser.Annotations[soureceSpecHashAnnotationKey] != expected {
 			// both exist, update APIServiceExportResource
 			logger.V(1).Info("Updating APIServiceExportResource")
 			resource.ObjectMeta = ser.ObjectMeta
+			if resource.Annotations == nil {
+				resource.Annotations = map[string]string{}
+			}
+			resource.Annotations[soureceSpecHashAnnotationKey] = expected
 			if _, err := r.updateServiceExportResource(ctx, resource); err != nil {
 				errs = append(errs, err)
 				continue
@@ -130,4 +146,24 @@ func (r *reconciler) ensureExportResources(ctx context.Context, export *kubebind
 	}
 
 	return utilerrors.NewAggregate(errs)
+}
+
+func resourceHash(obj runtime.Object) string {
+	bs, err := json.Marshal(obj)
+	if err != nil {
+		utilruntime.HandleError(err)
+		return ""
+	}
+
+	return toSha224Base62(string(bs))
+}
+
+func toSha224Base62(s string) string {
+	return toBase62(sha256.Sum224([]byte(s)))
+}
+
+func toBase62(hash [28]byte) string {
+	var i big.Int
+	i.SetBytes(hash[:])
+	return i.Text(62)
 }

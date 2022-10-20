@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1informers "k8s.io/client-go/informers/core/v1"
 	kubeclient "k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -123,7 +125,17 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 	logger = logger.WithValues("namespace", ns)
 	ctx = klog.NewContext(ctx, logger)
 
-	sa, err := kuberesources.CreateServiceAccount(ctx, m.kubeClient, ns)
+	// first look for ClusterBinding to get old secret name
+	saName := kuberesources.ServiceAccountName
+	if cb, err := m.bindClient.KubeBindV1alpha1().ClusterBindings(ns).Get(ctx, kuberesources.ClusterBindingName, metav1.GetOptions{}); err != nil && !errors.IsNotFound(err) {
+		return nil, err
+	} else if err == nil {
+		saName = cb.Spec.KubeconfigSecretRef.Name // reuse old name
+	} else if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, saName, m.providerPrettyName); err != nil {
+		return nil, err
+	}
+
+	sa, err := kuberesources.CreateServiceAccount(ctx, m.kubeClient, ns, saName)
 	if err != nil {
 		return nil, err
 	}
@@ -135,10 +147,6 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 
 	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig, ns, saSecret.Name)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, kfgSecret.Name, m.providerPrettyName); err != nil {
 		return nil, err
 	}
 

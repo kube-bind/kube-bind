@@ -19,6 +19,6 @@ package resources
 const (
 	ServiceAccountTokenType       = "kubernetes.io/service-account-token"
 	ServiceAccountTokenAnnotation = "kubernetes.io/service-account.name"
-	ServiceAccountName            = "kube-bind"
+	ServiceAccountName            = "kubeconfig"
 	ClusterBindingName            = "cluster"
 )

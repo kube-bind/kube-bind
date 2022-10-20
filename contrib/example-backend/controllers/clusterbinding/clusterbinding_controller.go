@@ -153,30 +153,6 @@ func NewController(
 		},
 	})
 
-	clusterRoleInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueClusterRole(logger, obj)
-		},
-		UpdateFunc: func(old, newObj interface{}) {
-			c.enqueueClusterRole(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueClusterRole(logger, obj)
-		},
-	})
-
-	clusterRoleBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueClusterRoleBinding(logger, obj)
-		},
-		UpdateFunc: func(old, newObj interface{}) {
-			c.enqueueClusterRoleBinding(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueClusterRoleBinding(logger, obj)
-		},
-	})
-
 	return c, nil
 }
 
@@ -232,28 +208,6 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 
 	key := ns + "/cluster"
 	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "APIServiceExport", "ServiceExportKey", seKey)
-	c.queue.Add(key)
-}
-
-func (c *Controller) enqueueClusterRole(logger klog.Logger, obj interface{}) {
-	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-
-	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "ClusterRole", "ClusterRoleKey", key)
-	c.queue.Add(key)
-}
-
-func (c *Controller) enqueueClusterRoleBinding(logger klog.Logger, obj interface{}) {
-	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-
-	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "ClusterRoleBinding", "ClusterRoleBindingKey", key)
 	c.queue.Add(key)
 }
 

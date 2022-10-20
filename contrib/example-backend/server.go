@@ -30,6 +30,7 @@ import (
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicenamespace"
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
 type Server struct {
@@ -101,13 +102,19 @@ func NewServer(config *Config) (*Server, error) {
 	// construct controllers
 	s.ClusterBinding, err = clusterbinding.NewController(
 		config.ClientConfig,
+		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
 		config.BindInformers.KubeBind().V1alpha1().ClusterBindings(),
+		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		config.KubeInformers.Rbac().V1().ClusterRoles(),
+		config.KubeInformers.Rbac().V1().ClusterRoleBindings(),
+		config.KubeInformers.Core().V1().Namespaces(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ClusterBinding Controller: %v", err)
 	}
 	s.ServiceNamespace, err = servicenamespace.NewController(
 		config.ClientConfig,
+		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceNamespaces(),
 		config.BindInformers.KubeBind().V1alpha1().ClusterBindings(),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
@@ -137,6 +144,7 @@ func NewServer(config *Config) (*Server, error) {
 	}
 	s.ServiceBindingRequest, err = servicebindingrequest.NewController(
 		config.ClientConfig,
+		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceBindingRequests(),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
 	)

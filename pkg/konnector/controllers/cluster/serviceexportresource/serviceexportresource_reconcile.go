@@ -36,6 +36,7 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource/spec"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource/status"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
@@ -54,6 +55,7 @@ type reconciler struct {
 
 	getCRD            func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getServiceBinding func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
+	getServiceExport  func(name string) (*kubebindv1alpha1.APIServiceExport, error)
 }
 
 type syncContext struct {
@@ -102,7 +104,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 	}
 
 	// any binding that references this CRD?
-	foundBinding := false
+	var export *kubebindv1alpha1.APIServiceExport
 	for _, ref := range crd.OwnerReferences {
 		parts := strings.SplitN(ref.APIVersion, "/", 2)
 		if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
@@ -116,17 +118,24 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		}
 
 		if binding.Spec.KubeconfigSecretRef.Namespace+"/"+binding.Spec.KubeconfigSecretRef.Name == r.consumerSecretRefKey {
-			foundBinding = true
+			// check whether the export also exists
+			ex, err := r.getServiceExport(binding.Spec.Export)
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			} else if errors.IsNotFound(err) {
+				continue
+			}
+			export = ex
 			break
 		}
 	}
 
-	if !foundBinding {
+	if export == nil {
 		// stop it
 		r.lock.Lock()
 		defer r.lock.Unlock()
 		if c, found := r.syncContext[resource.Name]; found {
-			logger.V(1).Info("Stopping APIServiceExportResource sync", "reason", "NoServiceBinding")
+			logger.V(1).Info("Stopping APIServiceExportResource sync", "reason", "NoAPIServiceExport")
 			c.cancel()
 			delete(r.syncContext, resource.Name)
 		}
@@ -134,9 +143,9 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		conditions.MarkFalse(
 			resource,
 			kubebindv1alpha1.APIServiceExportResourrceConditionSyncing,
-			"ServiceBindingNotFound",
+			"APIServiceExportNotFound",
 			conditionsapi.ConditionSeverityWarning,
-			"No APIServiceBinding for this resource in the consumer cluster",
+			"No APIServiceExport for this resource in the service provider cluster",
 		)
 
 		return nil
@@ -153,11 +162,9 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 
 		// technically, we could be less aggressive here if nothing big changed in the resource, e.g. just schemas. But ¯\_(ツ)_/¯
 
-		if c, found := r.syncContext[resource.Name]; found {
-			logger.V(1).Info("Stopping APIServiceExportResource sync", "reason", "GenerationChanged", "generation", resource.Generation)
-			c.cancel()
-			delete(r.syncContext, resource.Name)
-		}
+		logger.V(1).Info("Stopping APIServiceExportResource sync", "reason", "GenerationChanged", "generation", resource.Generation)
+		c.cancel()
+		delete(r.syncContext, resource.Name)
 	}
 	r.lock.Unlock()
 
@@ -175,7 +182,26 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
 	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
 	consumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
-	providerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
+
+	var providerInf multinsinformer.GetterInformer
+	if crd.Spec.Scope == apiextensionsv1.ClusterScoped || export.Spec.Scope == kubebindv1alpha1.ClusterScope {
+		factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
+		factory.ForResource(gvr).Lister() // wire the GVR up in the informer factory
+		providerInf = multinsinformer.GetterInformerWrapper{
+			GVR:      gvr,
+			Delegate: factory,
+		}
+	} else {
+		providerInf, err = multinsinformer.NewDynamicMultiNamespaceInformer(
+			gvr,
+			r.providerNamespace,
+			r.providerConfig,
+			r.serviceNamespaceInformer,
+		)
+		if err != nil {
+			return err
+		}
+	}
 
 	specCtrl, err := spec.NewController(
 		gvr,
@@ -183,7 +209,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		r.consumerConfig,
 		r.providerConfig,
 		consumerInf.ForResource(gvr),
-		providerInf.ForResource(gvr),
+		providerInf,
 		r.serviceNamespaceInformer,
 	)
 	if err != nil {
@@ -196,7 +222,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 		r.consumerConfig,
 		r.providerConfig,
 		consumerInf.ForResource(gvr),
-		providerInf.ForResource(gvr),
+		providerInf,
 		r.serviceNamespaceInformer,
 	)
 	if err != nil {
@@ -207,14 +233,15 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 	ctx, cancel := context.WithCancel(ctx)
 
 	consumerInf.Start(ctx.Done())
-	providerInf.Start(ctx.Done())
+	providerInf.Start(ctx)
 
 	go func() {
 		// to not block the main thread
 		consumerSynced := consumerInf.WaitForCacheSync(ctx.Done())
-		providerSynced := providerInf.WaitForCacheSync(ctx.Done())
+		logger.V(2).Info("Synced informers", "consumer", consumerSynced)
 
-		logger.V(2).Info("Synced informers", "consumer", consumerSynced, "provider", providerSynced)
+		providerSynced := providerInf.WaitForCacheSync(ctx.Done())
+		logger.V(2).Info("Synced informers", "provider", providerSynced)
 
 		go specCtrl.Start(ctx, 1)
 		go statusCtrl.Start(ctx, 1)
@@ -222,6 +249,9 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
+	if c, found := r.syncContext[resource.Name]; found {
+		c.cancel()
+	}
 	r.syncContext[resource.Name] = syncContext{
 		generation: resource.Generation,
 		cancel:     cancel,

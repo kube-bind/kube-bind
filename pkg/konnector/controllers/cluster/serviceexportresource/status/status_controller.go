@@ -38,6 +38,7 @@ import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
@@ -50,7 +51,8 @@ func NewController(
 	gvr schema.GroupVersionResource,
 	providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
-	consumerDynamicInformer, providerDynamicInformer informers.GenericInformer,
+	consumerDynamicInformer informers.GenericInformer,
+	providerDynamicInformer multinsinformer.GetterInformer,
 	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister],
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
@@ -73,7 +75,6 @@ func NewController(
 	}
 
 	dynamicConsumerLister := dynamiclister.New(consumerDynamicInformer.Informer().GetIndexer(), gvr)
-	dynamicProviderLister := dynamiclister.New(providerDynamicInformer.Informer().GetIndexer(), gvr)
 	c := &controller{
 		queue: queue,
 
@@ -86,8 +87,7 @@ func NewController(
 		consumerDynamicLister:  dynamicConsumerLister,
 		consumerDynamicIndexer: consumerDynamicInformer.Informer().GetIndexer(),
 
-		providerDynamicLister:  dynamicProviderLister,
-		providerDynamicIndexer: providerDynamicInformer.Informer().GetIndexer(),
+		providerDynamicInformer: providerDynamicInformer,
 
 		serviceNamespaceInformer: serviceNamespaceInformer,
 
@@ -126,7 +126,7 @@ func NewController(
 		},
 	})
 
-	providerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	providerDynamicInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueProvider(logger, obj)
 		},
@@ -153,8 +153,7 @@ type controller struct {
 	consumerDynamicLister  dynamiclister.Lister
 	consumerDynamicIndexer cache.Indexer
 
-	providerDynamicLister  dynamiclister.Lister
-	providerDynamicIndexer cache.Indexer
+	providerDynamicInformer multinsinformer.GetterInformer
 
 	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister]
 
@@ -246,7 +245,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 	if sn.Status.Namespace == "" {
 		return // not ready
 	}
-	objs, err := c.providerDynamicIndexer.ByIndex(cache.NamespaceIndex, sn.Status.Namespace)
+	objs, err := c.providerDynamicInformer.List(sn.Status.Namespace)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -332,7 +331,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.providerDynamicLister.Namespace(ns).Get(name)
+	obj, err := c.providerDynamicInformer.Get(ns, name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
@@ -350,7 +349,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 		return nil
 	}
 
-	return c.reconcile(ctx, obj)
+	return c.reconcile(ctx, obj.(*unstructured.Unstructured))
 }
 
 func (c *controller) removeDownstreamFinalizer(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {

@@ -59,10 +59,12 @@ func StartKonnector(t *testing.T, clientConfig *rest.Config, args ...string) *ko
 
 	server, err := konnector.NewServer(config)
 	require.NoError(t, err)
+	prepared, err := server.PrepareRun(ctx)
+	require.NoError(t, err)
 
-	server.OptionallyStartInformers(ctx)
+	prepared.OptionallyStartInformers(ctx)
 	go func() {
-		err := server.Run(ctx)
+		err := prepared.Run(ctx)
 		select {
 		case <-ctx.Done():
 		default:

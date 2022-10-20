@@ -53,7 +53,30 @@ func NewServer(config *Config) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) OptionallyStartInformers(ctx context.Context) {
+type prepared struct {
+	Server
+}
+
+type Prepared struct {
+	*prepared
+}
+
+func (s *Server) PrepareRun(ctx context.Context) (Prepared, error) {
+	// install/upgrade CRDs
+	if err := crd.Create(ctx,
+		s.Config.ApiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
+		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiservicebindings"},
+	); err != nil {
+		return Prepared{}, err
+	}
+	return Prepared{
+		prepared: &prepared{
+			Server: *s,
+		},
+	}, nil
+}
+
+func (s *Prepared) OptionallyStartInformers(ctx context.Context) {
 	logger := klog.FromContext(ctx)
 
 	// start informer factories
@@ -72,15 +95,7 @@ func (s *Server) OptionallyStartInformers(ctx context.Context) {
 	)
 }
 
-func (s *Server) Run(ctx context.Context) error {
-	// install/upgrade CRDs
-	if err := crd.Create(ctx,
-		s.Config.ApiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
-		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiservicebindings"},
-	); err != nil {
-		return err
-	}
-
+func (s Prepared) Run(ctx context.Context) error {
 	s.Controller.Start(ctx, 2)
 	return nil
 }

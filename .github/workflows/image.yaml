@@ -28,13 +28,27 @@ jobs:
 
     # Build ko from HEAD, build and push an image tagged with the commit SHA,
     # then keylessly sign it with cosign.
-    - name: Publish and sign image
+    - name: Publish and sign konnector image
       env:
-        KO_DOCKER_REPO: ghcr.io/${{ github.repository }}
+        KO_DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/konnector
         COSIGN_EXPERIMENTAL: 'true'
       run: |
         echo "${{ github.token }}" | ko login ghcr.io --username "${{ github.actor }}" --password-stdin
         img=$(ko build --bare --platform=all -t latest -t ${{ github.sha }} -t ${{github.ref_name}} ./cmd/konnector)
+        echo "built ${img}"
+        cosign sign ${img} \
+            -a sha=${{ github.sha }} \
+            -a ref=${{ github.ref }} \
+            -a run_id=${{ github.run_id }} \
+            -a run_attempt=${{ github.run_attempt }}
+
+    - name: Publish and sign example-backend image
+      env:
+        KO_DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/example-backend
+        COSIGN_EXPERIMENTAL: 'true'
+      run: |
+        echo "${{ github.token }}" | ko login ghcr.io --username "${{ github.actor }}" --password-stdin
+        img=$(ko build --bare --platform=all -t latest -t ${{ github.sha }} -t ${{github.ref_name}} ./cmd/example-backend)
         echo "built ${img}"
         cosign sign ${img} \
             -a sha=${{ github.sha }} \

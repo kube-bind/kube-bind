@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	konnectorImage = "ghcr.io/kube-bind/kube-bind"
+	konnectorImage = "ghcr.io/kube-bind/konnector"
 )
 
 // nolint: unused

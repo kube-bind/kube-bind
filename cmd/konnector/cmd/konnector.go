@@ -64,13 +64,17 @@ func New(ctx context.Context) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			server.OptionallyStartInformers(ctx) // hot standby
+			prepared, err := server.PrepareRun(ctx)
+			if err != nil {
+				return err
+			}
+			prepared.OptionallyStartInformers(ctx)
 
 			logger.Info("trying to acquire the lock")
 			lock := NewLock(config.KubeClient, options.LeaseLockNamespace, options.LeaseLockName, options.LeaseLockIdentity)
 			runLeaderElection(ctx, lock, options.LeaseLockIdentity, func(ctx context.Context) {
 				logger.Info("starting konnector controller")
-				err = server.Run(ctx)
+				err = prepared.Run(ctx)
 			})
 
 			return err

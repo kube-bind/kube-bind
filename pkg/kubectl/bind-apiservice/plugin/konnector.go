@@ -19,18 +19,27 @@ package plugin
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/blang/semver/v4"
+
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	kubeclient "k8s.io/client-go/kubernetes"
+	clientgoversion "k8s.io/client-go/pkg/version"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/deploy/konnector"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
+)
+
+const (
+	konnectorImage = "ghcr.io/kube-bind/konnector"
 )
 
 // nolint: unused
@@ -49,11 +58,54 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 	if err != nil {
 		return err
 	}
+	kubeClient, err := kubeclient.NewForConfig(config)
+	if err != nil {
+		return err
+	}
 
-	if !b.SkipKonnector {
-		logger.V(1).Info("Deploying konnector")
-		if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, sets.NewString()); err != nil {
+	konnectorVersion, installed, err := currentKonnectorVersion(ctx, kubeClient)
+	if err != nil {
+		return fmt.Errorf("failed to check current konnector version in the cluster: %w", err)
+	}
+	bindVersion, err := binaryVersion(clientgoversion.Get().GitVersion)
+	if err != nil {
+		return err
+	}
+
+	if b.KonnectorImageOverride != "" {
+		fmt.Fprintf(b.Options.ErrOut, "Deploying konnector %s to namespace kube-bind with custom image %q.\n", bindVersion, b.KonnectorImageOverride) // nolint: errcheck
+		if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, b.KonnectorImageOverride); err != nil {
 			return err
+		}
+	}
+	if !b.SkipKonnector {
+		konnectorImage := fmt.Sprintf("%s:%s", konnectorImage, bindVersion)
+
+		if installed && (konnectorVersion == "unknown" || konnectorVersion == "latest") {
+			fmt.Fprintf(b.Options.ErrOut, "konnector of %s version already installed, skipping\n", konnectorVersion) // nolint: errcheck
+			// fall through to CRD test
+		} else if installed {
+			konnectorSemVer, err := semver.Parse(strings.TrimLeft(konnectorVersion, "v"))
+			if err != nil {
+				return fmt.Errorf("failed to parse konnector SemVer version %q: %w", konnectorVersion, err)
+			}
+			bindSemVer, err := semver.Parse(strings.TrimLeft(bindVersion, "v"))
+			if err != nil {
+				return fmt.Errorf("failed to parse kubectl-bind SemVer version %q: %w", bindVersion, err)
+			}
+			if bindSemVer.GT(konnectorSemVer) {
+				fmt.Fprintf(b.Options.ErrOut, "Updating konnector from %s to %s.\n", konnectorVersion, bindVersion) // nolint: errcheck
+				if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, konnectorImage); err != nil {
+					return err
+				}
+			} else {
+				fmt.Fprintf(b.Options.ErrOut, "Newer konnector %s installed. To downgrade to %s use --downgrade-konnector.\n", konnectorVersion, bindVersion) // nolint: errcheck
+			}
+		} else {
+			fmt.Fprintf(b.Options.ErrOut, "Deploying konnector %s to namespace kube-bind.\n", bindVersion) // nolint: errcheck
+			if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, konnectorImage); err != nil {
+				return err
+			}
 		}
 	}
 	first := true
@@ -70,4 +122,35 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 		}
 		return err == nil, nil
 	})
+}
+
+func currentKonnectorVersion(ctx context.Context, kubeClient kubeclient.Interface) (string, bool, error) {
+	deployment, err := kubeClient.AppsV1().Deployments("kube-bind").Get(ctx, "konnector", metav1.GetOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		return "", false, err
+	} else if errors.IsNotFound(err) {
+		return "", false, nil
+	}
+
+	img := deployment.Spec.Template.Spec.Containers[0].Image
+	if !strings.HasPrefix(img, konnectorImage+":") {
+		return "unknown", true, nil
+	}
+
+	version := strings.TrimPrefix(img, konnectorImage+":")
+	return version, true, nil
+}
+
+func binaryVersion(s string) (string, error) {
+	if strings.HasPrefix(s, "v0.0.0-") {
+		return "v0.0.0", nil // special version if no ldflags are set
+	}
+	parts := strings.SplitN(s, "+", 2)
+	if len(parts) < 2 {
+		return "", fmt.Errorf("failed to parse version %q", s)
+	}
+	if !strings.HasPrefix(parts[1], "kubectl-bind") {
+		return "", fmt.Errorf("failed to parse version %q", s)
+	}
+	return strings.SplitN(strings.TrimPrefix(parts[1], "kubectl-bind-"), "-", 2)[0], nil
 }

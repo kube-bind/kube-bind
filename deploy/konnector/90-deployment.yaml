@@ -19,7 +19,7 @@ spec:
       serviceAccountName: konnector
       containers:
       - name: konnector
-        image: ghcr.io/kube-bind/kube-bind:latest
+        image: IMAGE
         env:
         - name: POD_NAME
           valueFrom:

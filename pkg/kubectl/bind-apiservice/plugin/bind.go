@@ -59,8 +59,10 @@ type BindAPIServiceOptions struct {
 	file                      string
 
 	// skipKonnector skips the deployment of the konnector.
-	SkipKonnector bool
-	NoBanner      bool
+	SkipKonnector          bool
+	KonnectorImageOverride string
+	DowngradeKonnector     bool
+	NoBanner               bool
 
 	url string
 }
@@ -86,6 +88,9 @@ func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&b.file, "file", "f", b.file, "A file with an APIServiceBindingRequest manifest. Use - to read from stdin")
 	cmd.Flags().StringVar(&b.remoteNamespace, "remote-namespace", b.remoteNamespace, "The namespace in the remote cluster where the konnector is deployed")
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
+	cmd.Flags().BoolVar(&b.DowngradeKonnector, "downgrade-konnector", b.DowngradeKonnector, "Downgrade the konnector to the version of the kubectl-bind-apiservice binary")
+	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
+	cmd.Flags().MarkHidden("konnector-image") // nolint:errcheck
 	cmd.Flags().BoolVar(&b.NoBanner, "no-banner", b.NoBanner, "Do not show the red banner")
 	cmd.Flags().MarkHidden("no-banner") // nolint:errcheck
 }

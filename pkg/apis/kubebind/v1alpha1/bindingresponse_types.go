@@ -31,11 +31,11 @@ import (
 type BindingResponse struct {
 	metav1.TypeMeta `json:",inline"`
 
-	// authentication is data specific to the  authentication method that was used.
+	// authentication is data specific to the authentication method that was used.
 	//
 	// +optional
 	// +kubebuilder:validation:Optional
-	Authentication *runtime.RawExtension `json:"authentication,omitempty"`
+	Authentication BindingResponseAuthentication `json:"authentication,omitempty"`
 
 	// kubeconfig is a kubeconfig file that can be used to access the service provider cluster.
 	//
@@ -49,4 +49,26 @@ type BindingResponse struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
 	Requests []runtime.RawExtension `json:"requests"`
+}
+
+// BindingResponseAuthentication is the authentication data specific to the
+// authentication method that was used. Exactly one field must be set.
+type BindingResponseAuthentication struct {
+	// oauth2CodeGrant is the data returned by the OAuth2 code grant flow.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	OAuth2CodeGrant *BindingResponseAuthenticationOAuth2CodeGrant `json:"oauth2CodeGrant,omitempty"`
+}
+
+// BindingResponseAuthenticationOAuth2CodeGrant contains the authentication data which is passed back to
+// the consumer as BindingResponse.Authentication. It is authentication method
+// specific.
+type BindingResponseAuthenticationOAuth2CodeGrant struct {
+	// sessionID is the session ID that was originally passed from the consumer to
+	// the service provider. It must be checked to equal the original value.
+	SessionID string `json:"sid"`
+
+	// id is the ID of the authenticated user. It is for informational purposes only.
+	ID string `json:"id"`
 }

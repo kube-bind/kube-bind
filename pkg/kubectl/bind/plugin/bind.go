@@ -43,7 +43,6 @@ import (
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 
-	"github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/authenticator"
@@ -200,14 +199,10 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	if !ok {
 		return fmt.Errorf("unexpected response type %T", response)
 	}
-	if bindingResponse.Authentication == nil {
-		return fmt.Errorf("unexpected response: authentication is nil")
+	if bindingResponse.Authentication.OAuth2CodeGrant == nil {
+		return fmt.Errorf("unexpected response: authentication.oauth2CodeGrant is nil")
 	}
-	var authResponse http.CodeGrantCallbackResponse
-	if err := json.Unmarshal(bindingResponse.Authentication.Raw, &authResponse); err != nil {
-		return fmt.Errorf("unexpected response: failed to unmarshal authentication response: %v", err)
-	}
-	if authResponse.SessionID != sessionID {
+	if bindingResponse.Authentication.OAuth2CodeGrant.SessionID != sessionID {
 		return fmt.Errorf("unexpected response: sessionID does not match")
 	}
 

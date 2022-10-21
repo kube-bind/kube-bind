@@ -23,6 +23,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -91,6 +92,9 @@ func NewController(
 			},
 			createServiceExport: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error) {
 				return bindClient.KubeBindV1alpha1().APIServiceExports(resource.Namespace).Create(ctx, resource, metav1.CreateOptions{})
+			},
+			listServiceExport: func(ns string) ([]*kubebindv1alpha1.APIServiceExport, error) {
+				return serviceExportInformer.Lister().APIServiceExports(ns).List(labels.Everything())
 			},
 		},
 

@@ -18,6 +18,7 @@ package servicebindingrequest
 
 import (
 	"context"
+	"reflect"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -38,6 +39,7 @@ type reconciler struct {
 
 	getServiceExport    func(ns, name string) (*kubebindv1alpha1.APIServiceExport, error)
 	createServiceExport func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error)
+	listServiceExport   func(ns string) ([]*kubebindv1alpha1.APIServiceExport, error)
 }
 
 func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha1.APIServiceBindingRequest) error {
@@ -71,19 +73,36 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 				GroupResource: res.GroupResource,
 			})
 		}
-		logger.V(2).Info("Creating service export", "namespace", export.Namespace, "name", export.Name)
-		var err error
-		if _, err = r.createServiceExport(ctx, export); apierrors.IsAlreadyExists(err) {
-			export.GenerateName = req.Name + "-"
-			export.Name = ""
 
-			logger.V(2).Info("Creation of service export failed, trying with a generated name", "namespace", export.Namespace, "name", export.Name)
-			if export, err = r.createServiceExport(ctx, export); err != nil {
-				return err
-			}
-		}
+		// find existing export
+		exports, err := r.listServiceExport(req.Namespace)
 		if err != nil {
 			return err
+		}
+		existingFound := false
+		for _, e := range exports {
+			if reflect.DeepEqual(e.Spec, export.Spec) {
+				logger.V(2).Info("found existing export", "namespace", export.Namespace, "export", e.Name)
+				existingFound = true
+				export = e
+				break
+			}
+		}
+		if !existingFound {
+			logger.V(2).Info("Creating service export", "namespace", export.Namespace, "name", export.Name)
+			var err error
+			if _, err = r.createServiceExport(ctx, export); apierrors.IsAlreadyExists(err) {
+				export.GenerateName = req.Name + "-"
+				export.Name = ""
+
+				logger.V(2).Info("Creation of service export failed, trying with a generated name", "namespace", export.Namespace, "name", export.Name)
+				if export, err = r.createServiceExport(ctx, export); err != nil {
+					return err
+				}
+			}
+			if err != nil {
+				return err
+			}
 		}
 
 		req.Status.Export = export.Name // waiting for export to be ready for phase update
@@ -122,7 +141,6 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 			c.Reason,
 			c.Severity,
 			c.Message,
-			req.Status.Export,
 		)
 		return nil
 	} else {

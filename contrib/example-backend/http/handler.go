@@ -138,9 +138,10 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	code := &AuthCode{
 		RedirectURL: r.URL.Query().Get("u"),
 		SessionID:   r.URL.Query().Get("s"),
+		ClusterID:   r.URL.Query().Get("c"),
 	}
-	if code.RedirectURL == "" || code.SessionID == "" {
-		logger.Error(errors.New("missing redirect url or session id"), "failed to authorize")
+	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {
+		logger.Error(errors.New("missing redirect url or session id or cluster id"), "failed to authorize")
 		http.Error(w, "missing redirect_url or session_id", http.StatusBadRequest)
 		return
 	}
@@ -192,15 +193,14 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	if state == "" {
 		state = r.URL.Query().Get("state")
 	}
-	decode, err := base64.StdEncoding.DecodeString(state)
+	decoded, err := base64.StdEncoding.DecodeString(state)
 	if err != nil {
 		logger.Info("failed to decode state", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	authCode := &AuthCode{}
-	if err := json.Unmarshal(decode, authCode); err != nil {
+	if err := json.Unmarshal(decoded, authCode); err != nil {
 		logger.Info("faile to unmarshal authCode", "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -241,6 +241,7 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 		RefreshToken: token.RefreshToken,
 		RedirectURL:  authCode.RedirectURL,
 		SessionID:    authCode.SessionID,
+		ClusterID:    authCode.ClusterID,
 	}
 
 	b, err := sessionCookie.Encode()
@@ -329,7 +330,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	group := r.URL.Query().Get("group")
 	resource := r.URL.Query().Get("resource")
-	kfg, err := h.kubeManager.HandleResources(r.Context(), idToken.Subject, resource, group)
+	kfg, err := h.kubeManager.HandleResources(r.Context(), idToken.Subject+"#"+state.ClusterID, resource, group)
 	if err != nil {
 		logger.Info("failed to handle resources", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -355,16 +356,6 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// callback response
-	authResponse := CodeGrantCallbackResponse{
-		SessionID: state.SessionID,
-		ID:        idToken.Issuer + "/" + idToken.Subject,
-	}
-	authResponseBytes, err := json.Marshal(&authResponse)
-	if err != nil {
-		logger.Info("failed to marshal auth response", "error", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
 	requestBytes, err := json.Marshal(&request)
 	if err != nil {
 		logger.Info("failed to marshal request", "error", err)
@@ -376,9 +367,14 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 			APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
 			Kind:       "BindingResponse",
 		},
-		Authentication: &runtime.RawExtension{Raw: authResponseBytes},
-		Kubeconfig:     kfg,
-		Requests:       []runtime.RawExtension{{Raw: requestBytes}},
+		Authentication: kubebindv1alpha1.BindingResponseAuthentication{
+			OAuth2CodeGrant: &kubebindv1alpha1.BindingResponseAuthenticationOAuth2CodeGrant{
+				SessionID: state.SessionID,
+				ID:        idToken.Issuer + "/" + idToken.Subject,
+			},
+		},
+		Kubeconfig: kfg,
+		Requests:   []runtime.RawExtension{{Raw: requestBytes}},
 	}
 	payload, err := json.Marshal(&response)
 	if err != nil {

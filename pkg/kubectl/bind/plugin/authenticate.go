@@ -52,7 +52,7 @@ func getProvider(url string) (*kubebindv1alpha1.BindingProvider, error) {
 	return provider, nil
 }
 
-func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, authEndpoint, sessionID string, urlCh chan<- string) error {
+func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, authEndpoint, sessionID, clusterID string, urlCh chan<- string) error {
 	var oauth2Method *kubebindv1alpha1.OAuth2CodeGrant
 	for _, m := range provider.AuthenticationMethods {
 		if m.Method == "OAuth2CodeGrant" {
@@ -72,6 +72,7 @@ func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, a
 	values := u.Query()
 	values.Add("u", authEndpoint)
 	values.Add("s", sessionID)
+	values.Add("c", clusterID)
 	u.RawQuery = values.Encode()
 
 	fmt.Fprintf(b.Options.ErrOut, "\nTo authenticate, visit %s in your browser or scan the QRCode below:\n\n", u.String()) // nolint: errcheck

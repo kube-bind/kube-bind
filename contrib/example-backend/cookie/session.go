@@ -37,6 +37,7 @@ type SessionState struct {
 
 	RedirectURL string `msgpack:"ru,omitempty"`
 	SessionID   string `msgpack:"si,omitempty"`
+	ClusterID   string `msgpack:"ci,omitempty"`
 }
 
 func (s *SessionState) Encode() ([]byte, error) {

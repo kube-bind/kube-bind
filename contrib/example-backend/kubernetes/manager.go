@@ -42,6 +42,7 @@ type Manager struct {
 	providerPrettyName string
 
 	clusterConfig *rest.Config
+	externalHost  string
 
 	kubeClient kubeclient.Interface
 	bindClient bindclient.Interface
@@ -56,6 +57,7 @@ type Manager struct {
 func NewKubernetesManager(
 	namespacePrefix, providerPrettyName string,
 	config *rest.Config,
+	externalHost string,
 	namespaceInformer corev1informers.NamespaceInformer,
 	exportInformer bindinformers.APIServiceExportInformer,
 ) (*Manager, error) {
@@ -76,6 +78,7 @@ func NewKubernetesManager(
 		providerPrettyName: providerPrettyName,
 
 		clusterConfig: config,
+		externalHost:  externalHost,
 
 		kubeClient: kubeClient,
 		bindClient: bindClient,
@@ -149,7 +152,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		return nil, err
 	}
 
-	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig, saSecret.Name, ns, kubeconfigSecretName)
+	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig, m.externalHost, saSecret.Name, ns, kubeconfigSecretName)
 	if err != nil {
 		return nil, err
 	}

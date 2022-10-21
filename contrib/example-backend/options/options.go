@@ -18,6 +18,7 @@ package options
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -41,6 +42,7 @@ type ExtraOptions struct {
 	NamespacePrefix string
 	PrettyName      string
 	ConsumerScope   string
+	ExternalHost    string
 
 	TestingAutoSelect string
 }
@@ -84,6 +86,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.NamespacePrefix, "namespace-prefix", options.NamespacePrefix, "The prefix to use for cluster namespaces")
 	fs.StringVar(&options.PrettyName, "pretty-name", options.PrettyName, "Pretty name for the backend")
 	fs.StringVar(&options.ConsumerScope, "consumer-scope", options.ConsumerScope, "How consumers access the service provider cluster. In Kubernetes, \"namespaced\" allows namespace isolation. In kcp, \"cluster\" allows workspace isolation, and with that allows cluster-scoped resources to bind and it is generally more performant.")
+	fs.StringVar(&options.ExternalHost, "external-hostname", options.ExternalHost, "The external hostname for the backend, including https:// and port. If not specified, service account's hosts are used.")
 
 	fs.StringVar(&options.TestingAutoSelect, "testing-auto-select", options.TestingAutoSelect, "<resource>.<group> that is automatically selected on th bind screen for testing")
 	fs.MarkHidden("testing-auto-select") // nolint: errcheck
@@ -128,6 +131,16 @@ func (options *CompletedOptions) Validate() error {
 	}
 	if options.ConsumerScope != string(kubebindv1alpha1.NamespacedScope) && options.ConsumerScope != string(kubebindv1alpha1.ClusterScope) {
 		return fmt.Errorf("consumer scope must be either %q or %q", kubebindv1alpha1.NamespacedScope, kubebindv1alpha1.ClusterScope)
+	}
+
+	if options.ExternalHost != "" {
+		if !strings.HasPrefix(options.ExternalHost, "https://") {
+			return fmt.Errorf("external hostname must start with https://")
+		}
+		_, err := url.Parse(options.ExternalHost)
+		if err != nil {
+			return fmt.Errorf("invalid external hostname: %v", err)
+		}
 	}
 
 	return nil

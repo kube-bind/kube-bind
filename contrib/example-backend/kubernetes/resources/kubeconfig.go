@@ -19,6 +19,8 @@ package resources
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -36,9 +38,22 @@ import (
 func GenerateKubeconfig(ctx context.Context,
 	client kubernetes.Interface,
 	clusterConfig *rest.Config,
+	externalHost string,
 	saSecretName, ns, kubeconfigSecretName string,
 ) (*corev1.Secret, error) {
 	logger := klog.FromContext(ctx)
+
+	if externalHost == "" {
+		externalHost = clusterConfig.Host
+	}
+	clusterURL, err := url.Parse(clusterConfig.Host)
+	if err != nil {
+		return nil, err
+	}
+	clusterHost, _, err := net.SplitHostPort(clusterURL.Host)
+	if err != nil {
+		return nil, err
+	}
 
 	var saSecret *corev1.Secret
 	logger.V(2).Info("Waiting for service account secret to be updated with a token", "name", saSecretName)
@@ -57,7 +72,8 @@ func GenerateKubeconfig(ctx context.Context,
 	cfg := clientcmdapi.Config{
 		Clusters: map[string]*clientcmdapi.Cluster{
 			"default": {
-				Server:                   clusterConfig.Host,
+				Server:                   externalHost,
+				TLSServerName:            clusterHost,
 				CertificateAuthorityData: clusterConfig.CAData,
 			},
 		},

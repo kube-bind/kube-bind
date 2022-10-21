@@ -17,6 +17,7 @@ spec:
       labels:
         app: example-backend
     spec:
+      serviceAccountName: example-backend
       containers:
         - name: example-backend
           image: ghcr.io/kube-bind/example-backend:latest
@@ -24,34 +25,34 @@ spec:
             - /example-backend
           args:
             - --namespace-prefix=cluster
-            - --pretty-name=Example-Backend
+            - --pretty-name=MangoDB
             - --consumer-scope=Namespaced
             - --oidc-issuer-client-id=$(OIDC-ISSUER-CLIENT-ID)
             - --oidc-issuer-client-secret=$(OIDC-ISSUER-CLIENT-SECRET)
             - --oidc-issuer-url=$(OIDC-ISSUER-URL)
             - --oidc-callback-url=$(OIDC-CALLBACK-URL)
             - --listen-ip=0.0.0.0
-            - --listen-port=80
+            - --listen-port=443
           env:
             - name: OIDC-ISSUER-CLIENT-ID
               valueFrom:
                 secretKeyRef:
-                  name: oidc-configs
+                  name: oidc-config
                   key: oidc-issuer-client-id
             - name: OIDC-ISSUER-CLIENT-SECRET
               valueFrom:
                 secretKeyRef:
-                  name: oidc-configs
+                  name: oidc-config
                   key: oidc-issuer-client-secret
             - name: OIDC-ISSUER-URL
               valueFrom:
                 secretKeyRef:
-                  name: oidc-configs
+                  name: oidc-config
                   key: oidc-issuer-url
             - name: OIDC-CALLBACK-URL
               valueFrom:
                 secretKeyRef:
-                  name: oidc-configs
+                  name: oidc-config
                   key: oidc-callback-url
           resources:
             limits:
@@ -60,25 +61,69 @@ spec:
             requests:
               cpu: '100m'
               memory: 256Mi
-          volumeMounts:
-            - name: kube-bind-kubeconfig
-              mountPath: /etc/kubernetes/kubeconfig
-              readOnly: true
       volumes:
-        - name: kube-bind-kubeconfig
+        - name: oidc-config
           secret:
-            secretName: kube-bind-kubeconfig
+            secretName: oidc-config
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: oidc-config
+type: Opaque
+stringData:
+    oidc-issuer-client-id: 'mangodb'
+    oidc-issuer-client-secret: 'mangodb-93f3e8d86fd1fc4c9c50c74643b87d1cfce8dd5ef25f8722187fe002'
+    oidc-issuer-url: 'https://mangodb.de'
+    oidc-callback-url: 'https://mangodb.de/callback'
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: example-backend
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - protocol: TCP
       name: example-backend
-      port: 80
-      targetPort: 80
+      port: 443
+      targetPort: 443
   selector:
     app: example-backend
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: example-backend
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: example-backend
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: example-backend
+  namespace: default
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-backend
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+  - host: "mangodb.de"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: example-backend
+            port:
+              number: 443

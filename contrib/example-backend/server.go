@@ -83,6 +83,7 @@ func NewServer(config *Config) (*Server, error) {
 		config.Options.NamespacePrefix,
 		config.Options.PrettyName,
 		config.ClientConfig,
+		config.Options.ExternalHost,
 		config.KubeInformers.Core().V1().Namespaces(),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
 	)

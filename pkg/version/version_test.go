@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin
+package version
 
 import (
 	"testing"
 )
 
-func Test_binaryVersion(t *testing.T) {
+func TestBinaryVersion(t *testing.T) {
 	tests := []struct {
 		name    string
 		arg     string
@@ -50,7 +50,7 @@ func Test_binaryVersion(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := binaryVersion(tt.arg)
+			got, err := BinaryVersion(tt.arg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("binaryVersion() error = %v, wantErr %v", err, tt.wantErr)
 				return

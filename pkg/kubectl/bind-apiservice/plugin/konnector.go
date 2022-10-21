@@ -36,6 +36,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/deploy/konnector"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
+	"github.com/kube-bind/kube-bind/pkg/version"
 )
 
 const (
@@ -67,7 +68,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 	if err != nil {
 		return fmt.Errorf("failed to check current konnector version in the cluster: %w", err)
 	}
-	bindVersion, err := binaryVersion(clientgoversion.Get().GitVersion)
+	bindVersion, err := version.BinaryVersion(clientgoversion.Get().GitVersion)
 	if err != nil {
 		return err
 	}
@@ -139,18 +140,4 @@ func currentKonnectorVersion(ctx context.Context, kubeClient kubeclient.Interfac
 
 	version := strings.TrimPrefix(img, konnectorImage+":")
 	return version, true, nil
-}
-
-func binaryVersion(s string) (string, error) {
-	if strings.HasPrefix(s, "v0.0.0-") {
-		return "v0.0.0", nil // special version if no ldflags are set
-	}
-	parts := strings.SplitN(s, "+", 2)
-	if len(parts) < 2 {
-		return "", fmt.Errorf("failed to parse version %q", s)
-	}
-	if !strings.HasPrefix(parts[1], "kubectl-bind") {
-		return "", fmt.Errorf("failed to parse version %q", s)
-	}
-	return strings.SplitN(strings.TrimPrefix(parts[1], "kubectl-bind-"), "-", 2)[0], nil
 }

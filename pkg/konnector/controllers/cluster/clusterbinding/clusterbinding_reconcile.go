@@ -25,11 +25,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/cache"
+	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
+	"github.com/kube-bind/kube-bind/pkg/version"
 )
 
 type reconciler struct {
@@ -52,6 +54,10 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Cl
 	}
 
 	if err := r.ensureHeartbeat(ctx, binding); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := r.ensureKonnectorVersion(ctx, binding); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -138,6 +144,34 @@ func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebind
 	conditions.MarkTrue(
 		binding,
 		kubebindv1alpha1.ClusterBindingConditionSecretValid,
+	)
+
+	return nil
+}
+
+func (r *reconciler) ensureKonnectorVersion(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
+	gitVersion := componentbaseversion.Get().GitVersion
+	ver, err := version.BinaryVersion(gitVersion)
+	if err != nil {
+		binding.Status.KonnectorVersion = "unknown"
+
+		conditions.MarkFalse(
+			binding,
+			kubebindv1alpha1.ClusterBindingConditionValidVersion,
+			"ParseError",
+			conditionsapi.ConditionSeverityWarning,
+			"Konnector binary version string %q cannot be parsed: %v",
+			componentbaseversion.Get().GitVersion,
+			err,
+		)
+		return nil
+	}
+
+	binding.Status.KonnectorVersion = ver
+
+	conditions.MarkTrue(
+		binding,
+		kubebindv1alpha1.ClusterBindingConditionValidVersion,
 	)
 
 	return nil

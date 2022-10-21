@@ -61,7 +61,7 @@ type APIServiceBindingRequest struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type APIServiceBindingRequestResponse struct {
 	metav1.TypeMeta `json:",inline"`
-	NameObjectMeta  `json:"metadata"`
+	ObjectMeta      NameObjectMeta `json:"metadata"`
 
 	// spec specifies how an API service from a service provider should be bound in the
 	// local consumer cluster.

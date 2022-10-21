@@ -26,15 +26,15 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns string) (*corev1.ServiceAccount, error) {
+func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns, name string) (*corev1.ServiceAccount, error) {
 	logger := klog.FromContext(ctx)
 
-	sa, err := client.CoreV1().ServiceAccounts(ns).Get(ctx, ServiceAccountName, metav1.GetOptions{})
+	sa, err := client.CoreV1().ServiceAccounts(ns).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			sa = &corev1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      ServiceAccountName,
+					Name:      name,
 					Namespace: ns,
 				},
 			}

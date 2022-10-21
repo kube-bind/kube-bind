@@ -73,7 +73,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 		}
 		logger.V(2).Info("Creating service export", "namespace", export.Namespace, "name", export.Name)
 		var err error
-		if _, err = r.createServiceExport(ctx, export); err != nil && !apierrors.IsAlreadyExists(err) {
+		if _, err = r.createServiceExport(ctx, export); apierrors.IsAlreadyExists(err) {
 			export.GenerateName = req.Name + "-"
 			export.Name = ""
 

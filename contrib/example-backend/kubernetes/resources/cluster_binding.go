@@ -19,37 +19,31 @@ package resources
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 )
 
 func CreateClusterBinding(ctx context.Context, client bindclient.Interface, ns, secretName, providerPrettyName string) error {
-	_, err := client.KubeBindV1alpha1().ClusterBindings(ns).Get(ctx, ClusterBindingName, metav1.GetOptions{})
-	if err != nil {
-		if errors.IsNotFound(err) {
-			clusterBinding := &kubebindv1alpha1.ClusterBinding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      ClusterBindingName,
-					Namespace: ns,
-				},
-				Spec: kubebindv1alpha1.ClusterBindingSpec{
-					ProviderPrettyName: providerPrettyName,
-					KubeconfigSecretRef: kubebindv1alpha1.LocalSecretKeyRef{
-						Name: secretName,
-						Key:  "kubeconfig",
-					},
-				},
-			}
+	logger := klog.FromContext(ctx)
 
-			_, err = client.KubeBindV1alpha1().ClusterBindings(ns).Create(ctx, clusterBinding, metav1.CreateOptions{})
-			if err == nil {
-				return nil
-			}
-		}
+	clusterBinding := &kubebindv1alpha1.ClusterBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ClusterBindingName,
+			Namespace: ns,
+		},
+		Spec: kubebindv1alpha1.ClusterBindingSpec{
+			ProviderPrettyName: providerPrettyName,
+			KubeconfigSecretRef: kubebindv1alpha1.LocalSecretKeyRef{
+				Name: secretName,
+				Key:  "kubeconfig",
+			},
+		},
 	}
 
+	logger.V(3).Info("Creating ClusterBinding")
+	_, err := client.KubeBindV1alpha1().ClusterBindings(ns).Create(ctx, clusterBinding, metav1.CreateOptions{})
 	return err
 }

@@ -21,6 +21,8 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1informers "k8s.io/client-go/informers/core/v1"
 	kubeclient "k8s.io/client-go/kubernetes"
 	corev1listers "k8s.io/client-go/listers/core/v1"
@@ -123,7 +125,21 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 	logger = logger.WithValues("namespace", ns)
 	ctx = klog.NewContext(ctx, logger)
 
-	sa, err := kuberesources.CreateServiceAccount(ctx, m.kubeClient, ns)
+	// first look for ClusterBinding to get old secret name
+	kubeconfigSecretName := kuberesources.KubeconfigSecretName
+	cb, err := m.bindClient.KubeBindV1alpha1().ClusterBindings(ns).Get(ctx, kuberesources.ClusterBindingName, metav1.GetOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, err
+	} else if errors.IsNotFound(err) {
+		if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, "kubeconfig", m.providerPrettyName); err != nil {
+			return nil, err
+		}
+	} else {
+		logger.V(3).Info("Found existing ClusterBinding")
+		kubeconfigSecretName = cb.Spec.KubeconfigSecretRef.Name // reuse old name
+	}
+
+	sa, err := kuberesources.CreateServiceAccount(ctx, m.kubeClient, ns, kuberesources.ServiceAccountName)
 	if err != nil {
 		return nil, err
 	}
@@ -133,12 +149,8 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		return nil, err
 	}
 
-	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig, ns, saSecret.Name)
+	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig, saSecret.Name, ns, kubeconfigSecretName)
 	if err != nil {
-		return nil, err
-	}
-
-	if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, kfgSecret.Name, m.providerPrettyName); err != nil {
 		return nil, err
 	}
 

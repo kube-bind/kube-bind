@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
@@ -90,7 +91,7 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.APISer
 }
 
 func (c *reconciler) ensureRBACRole(ctx context.Context, ns string, sns *kubebindv1alpha1.APIServiceNamespace) error {
-	objName := sns.Namespace
+	objName := "kube-binder"
 	role, err := c.getRole(ns, objName)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get role %s/%s: %w", ns, objName, err)
@@ -132,17 +133,10 @@ func (c *reconciler) ensureRBACRole(ctx context.Context, ns string, sns *kubebin
 }
 
 func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, ns string, sns *kubebindv1alpha1.APIServiceNamespace) error {
-	objName := sns.Namespace
+	objName := "kube-binder"
 	binding, err := c.getRoleBinding(ns, objName)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get role binding %s/%s: %w", ns, objName, err)
-	}
-
-	cluster, err := c.getClusterBinding(sns.Namespace)
-	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("failed to get cluster binding %s/%s: %w", sns.Namespace, "cluster", err)
-	} else if errors.IsNotFound(err) {
-		return nil // no role binding without cluster binding
 	}
 
 	expected := &rbacv1.RoleBinding{
@@ -154,7 +148,7 @@ func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, ns string, sns *
 			{
 				Kind:      "ServiceAccount",
 				Namespace: sns.Namespace,
-				Name:      cluster.Spec.KubeconfigSecretRef.Name, // this is an example-backend invariant that the service account is equally named
+				Name:      kuberesources.ServiceAccountName,
 			},
 		},
 		RoleRef: rbacv1.RoleRef{

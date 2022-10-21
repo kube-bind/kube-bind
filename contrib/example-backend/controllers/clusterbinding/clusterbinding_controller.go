@@ -127,8 +127,8 @@ func NewController(
 			updateRoleBinding: func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
 				return kubeClient.RbacV1().RoleBindings(ns).Update(ctx, binding, metav1.UpdateOptions{})
 			},
-			getRoleBinding: func(namespace, name string) (*rbacv1.RoleBinding, error) {
-				return roleBindingInformer.Lister().RoleBindings(namespace).Get(name)
+			getRoleBinding: func(ns, name string) (*rbacv1.RoleBinding, error) {
+				return roleBindingInformer.Lister().RoleBindings(ns).Get(name)
 			},
 		},
 

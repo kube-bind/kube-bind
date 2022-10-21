@@ -341,6 +341,12 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 			APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
 			Kind:       "APIServiceBindingRequest",
 		},
+		ObjectMeta: kubebindv1alpha1.NameObjectMeta{
+			// this is good for one resource. If there are more (in the future),
+			// we need a better name heuristic. Note: it does not have to be unique.
+			// But pretty is better.
+			Name: resource + "." + group,
+		},
 		Spec: kubebindv1alpha1.APIServiceBindingRequestSpec{
 			Resources: []kubebindv1alpha1.APIServiceBindingRequestResource{
 				{GroupResource: kubebindv1alpha1.GroupResource{Group: group, Resource: resource}},

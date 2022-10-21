@@ -145,6 +145,10 @@ spec:
                   that the konnector is not unhealthy if it does not receive a heartbeat
                   within this time.
                 type: string
+              konnectorVersion:
+                description: konnectorVersion is the version of the konnector that
+                  is running on the consumer cluster.
+                type: string
               lastHeartbeatTime:
                 description: lastHeartbeatTime is the last time the konnector updated
                   the status.

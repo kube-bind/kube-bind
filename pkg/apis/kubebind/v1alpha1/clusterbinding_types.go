@@ -27,6 +27,9 @@ const (
 	// ClusterBindingConditionSecretValid is set when the secret is valid.
 	ClusterBindingConditionSecretValid = "SecretValid"
 
+	// ClusterBindingConditionValidVersion is set when the binary version is valid.
+	ClusterBindingConditionValidVersion = "ValidVersion"
+
 	// ClusterBindingConditionSecretValid is set when the secret is valid.
 	ClusterBindingConditionHealthy = "Healthy"
 )
@@ -120,6 +123,10 @@ type ClusterBindingStatus struct {
 	// konnector is not unhealthy if it does not receive a heartbeat within
 	// this time.
 	HeartbeatInterval metav1.Duration `json:"heartbeatInterval,omitempty"`
+
+	// konnectorVersion is the version of the konnector that is running on the
+	// consumer cluster.
+	KonnectorVersion string `json:"konnectorVersion,omitempty"`
 
 	// conditions is a list of conditions that apply to the ClusterBinding. It is
 	// updated by the konnector and the service provider.

@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
@@ -39,6 +40,8 @@ import (
 
 // nolint: unused
 func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, config *rest.Config, request *kubebindv1alpha1.APIServiceBindingRequest, remoteHost, remoteNamespace, kubeconfig string) ([]*kubebindv1alpha1.APIServiceBinding, error) {
+	logger := klog.FromContext(ctx).WithValues("request", request.Name, "remoteHost", remoteHost, "remoteNamespace", remoteNamespace)
+
 	bindClient, err := bindclient.NewForConfig(config)
 	if err != nil {
 		return nil, err
@@ -70,6 +73,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 	}
 
 	var bindings []*kubebindv1alpha1.APIServiceBinding
+nextRequest:
 	for _, resource := range request.Spec.Resources {
 		crd, err := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, resource.Resource+"."+resource.Group, metav1.GetOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
@@ -86,7 +90,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 				return nil, err
 			}
 		} else if err == nil {
-			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Found existing CRD %s. Checking owner.\n", crd.Name) // noline: errcheck
+			logger.V(1).Info("Found existing CRD, checking owner", "crd", crd.Name) // noline: errcheck
 
 			// check if the CRD is owner-refed by the APIServiceBinding
 			for _, ref := range crd.OwnerReferences {
@@ -103,8 +107,12 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 				}
 
 				if existing.Spec.KubeconfigSecretRef.Namespace == "kube-bind" && existing.Spec.KubeconfigSecretRef.Name == secretName {
-					_, err = b.ensureKubeconfigSecretWithLogging(ctx, kubeconfig, secretName, kubeClient)
-					return nil, err
+					fmt.Fprintf(b.Options.IOStreams.ErrOut, "Updating kubeconfig in secret kube-bind/%s for existing APIServiceBinding %s.\n", secretName, existing.Name) // nolint: errcheck
+					if _, err = b.ensureKubeconfigSecretWithLogging(ctx, kubeconfig, secretName, kubeClient); err != nil {
+						return nil, err
+					}
+					bindings = append(bindings, existing)
+					continue nextRequest
 				}
 			}
 			return nil, fmt.Errorf("found existing CustomResourceDefinition %s not from this service provider host %s, namespace %s", crd.Name, remoteHost, remoteNamespace)

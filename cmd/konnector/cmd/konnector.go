@@ -18,33 +18,39 @@ package cmd
 
 import (
 	"context"
-	"strings"
+	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
 	logsv1 "k8s.io/component-base/logs/api/v1"
 	_ "k8s.io/component-base/logs/json/register"
-	"k8s.io/component-base/version"
+	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/pkg/konnector"
 	konnectoroptions "github.com/kube-bind/kube-bind/pkg/konnector/options"
+	bindversion "github.com/kube-bind/kube-bind/pkg/version"
 )
 
 func New(ctx context.Context) *cobra.Command {
+	ver, err := bindversion.BinaryVersion(componentbaseversion.Get().GitVersion)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to get version: %v\n", err) // nolint:errcheck
+		ver = "<unknown>"
+	}
+
 	options := konnectoroptions.NewOptions()
 	cmd := &cobra.Command{
-		Use:   "konnector",
-		Short: "Connect remote API services to local APIs",
+		Use:     "konnector",
+		Short:   "Connect remote API services to local APIs",
+		Version: ver,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// setup logging first
 			if err := logsv1.ValidateAndApply(options.Logs, nil); err != nil {
 				return err
 			}
-			ver := version.Get().GitVersion
-			if i := strings.Index(ver, "bind-"); i != -1 {
-				ver = ver[i+5:] // example: v1.25.2+kubectl-bind-v0.0.7-52-g8fee0baeaff3aa
-			}
+
 			logger := klog.FromContext(ctx)
 			logger.Info("Starting konnector", "version", ver)
 
@@ -81,12 +87,6 @@ func New(ctx context.Context) *cobra.Command {
 		},
 	}
 	options.AddFlags(cmd.Flags())
-
-	if v := version.Get().String(); len(v) == 0 {
-		cmd.Version = "<unknown>"
-	} else {
-		cmd.Version = v
-	}
 
 	return cmd
 }

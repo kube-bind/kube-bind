@@ -47,7 +47,7 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.API
 			kubebindv1alpha1.APIServiceExportConditionConnected,
 			"NoServiceBinding",
 			conditionsapi.ConditionSeverityInfo,
-			"No ServiceBindings found for APIServiceExport",
+			"No APIServiceBindings found for APIServiceExport",
 		)
 	} else if len(bindings) > 1 {
 		conditions.MarkFalse(
@@ -55,7 +55,7 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.API
 			kubebindv1alpha1.APIServiceExportConditionConnected,
 			"MultipleServiceBindings",
 			conditionsapi.ConditionSeverityError,
-			"Multiple ServiceBindings found for APIServiceExport. Delete all but one.",
+			"Multiple APIServiceBindings found for APIServiceExport. Delete all but one.",
 		)
 	} else {
 		conditions.MarkTrue(

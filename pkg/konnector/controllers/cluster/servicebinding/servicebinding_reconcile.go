@@ -39,6 +39,7 @@ type reconciler struct {
 
 	getServiceExport  func(ns string) (*kubebindv1alpha1.APIServiceExport, error)
 	getServiceBinding func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
+	getClusterBinding func(ctx context.Context) (*kubebindv1alpha1.ClusterBinding, error)
 
 	getServiceExportResource          func(name string) (*kubebindv1alpha1.APIServiceExportResource, error)
 	updateServiceExportResourceStatus func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error)
@@ -56,6 +57,10 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 	}
 
 	if err := r.ensureCRDs(ctx, binding); err != nil {
+		errs = append(errs, err)
+	}
+
+	if err := r.ensurePrettyName(ctx, binding); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -305,4 +310,18 @@ nextResource:
 	}
 
 	return utilerrors.NewAggregate(errs)
+}
+
+func (r *reconciler) ensurePrettyName(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
+	clusterBinding, err := r.getClusterBinding(ctx)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	} else if errors.IsNotFound(err) {
+		binding.Status.ProviderPrettyName = ""
+		return nil
+	}
+
+	binding.Status.ProviderPrettyName = clusterBinding.Spec.ProviderPrettyName
+
+	return nil
 }

@@ -29,13 +29,18 @@ func TestBinaryVersion(t *testing.T) {
 	}{
 		{
 			name: "happy case",
-			arg:  "v1.25.2+kubectl-bind-v0.0.15",
+			arg:  "v1.25.2+kube-bind-v0.0.15",
 			want: "v0.0.15",
 		},
 		{
 			name: "dirty",
-			arg:  "v1.25.2+kubectl-bind-v0.0.15",
+			arg:  "v1.25.2+kube-bind-v0.0.15",
 			want: "v0.0.15",
+		},
+		{
+			name:    "wrong prefix",
+			arg:     "v1.25.2+kube-bla-v0.0.15",
+			wantErr: true,
 		},
 		{
 			name:    "garbage",

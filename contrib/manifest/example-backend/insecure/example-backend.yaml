@@ -30,10 +30,8 @@ spec:
             - --oidc-issuer-client-secret=$(OIDC-ISSUER-CLIENT-SECRET)
             - --oidc-issuer-url=$(OIDC-ISSUER-URL)
             - --oidc-callback-url=$(OIDC-CALLBACK-URL)
-            - --listen-ip=127.0.0.1
-            - --listen-port=8080
-            - --tls-cert-file=/etc/kube-bind/tls/server/tls.crt
-            - --tls-key-file=/etc/kube-bind/tls/server/tls.key
+            - --listen-ip=0.0.0.0
+            - --listen-port=80
           env:
             - name: OIDC-ISSUER-CLIENT-ID
               valueFrom:
@@ -60,19 +58,13 @@ spec:
               cpu: '2'
               memory: 2Gi
             requests:
-              cpu: '1'
-              memory: 1Gi
+              cpu: '100m'
+              memory: 256Mi
           volumeMounts:
-            - name: kube-bind-certs
-              mountPath: /etc/kube-bind/tls/server
-              readOnly: true
             - name: kube-bind-kubeconfig
               mountPath: /etc/kubernetes/kubeconfig
               readOnly: true
       volumes:
-        - name: kube-bind-certs
-          secret:
-            secretName: kube-bind-cert
         - name: kube-bind-kubeconfig
           secret:
             secretName: kube-bind-kubeconfig
@@ -86,7 +78,7 @@ spec:
   ports:
     - protocol: TCP
       name: example-backend
-      port: 8080
-      targetPort: 8080
+      port: 80
+      targetPort: 80
   selector:
     app: example-backend

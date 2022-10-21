@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: example-backend
-          image: quay.io/kube-bind/example-backend:latest
+          image: ghcr.io/kube-bind/example-backend:latest
           command:
             - /example-backend
           args:

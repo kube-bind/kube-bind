@@ -58,6 +58,7 @@ var noCacheHeaders = map[string]string{
 type handler struct {
 	oidc *OIDCServiceProvider
 
+	scope              kubebindv1alpha1.Scope
 	backendCallbackURL string
 	providerPrettyName string
 	testingAutoSelect  string
@@ -71,6 +72,7 @@ type handler struct {
 func NewHandler(
 	provider *OIDCServiceProvider,
 	backendCallbackURL, providerPrettyName, testingAutoSelect string,
+	scope kubebindv1alpha1.Scope,
 	mgr *kubernetes.Manager,
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,
 ) (*handler, error) {
@@ -79,6 +81,7 @@ func NewHandler(
 		backendCallbackURL:  backendCallbackURL,
 		providerPrettyName:  providerPrettyName,
 		testingAutoSelect:   testingAutoSelect,
+		scope:               scope,
 		client:              http.DefaultClient,
 		kubeManager:         mgr,
 		apiextensionsLister: apiextensionsLister,
@@ -281,6 +284,12 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 	sort.SliceStable(crds, func(i, j int) bool {
 		return crds[i].Name < crds[j].Name
 	})
+	rightScopedCRDs := []*apiextensionsv1.CustomResourceDefinition{}
+	for _, crd := range crds {
+		if h.scope == kubebindv1alpha1.ClusterScope || crd.Spec.Scope == apiextensionsv1.NamespaceScoped {
+			rightScopedCRDs = append(rightScopedCRDs, crd)
+		}
+	}
 
 	bs := bytes.Buffer{}
 	if err := resourcesTemplate.Execute(&bs, struct {
@@ -288,7 +297,7 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		CRDs      []*apiextensionsv1.CustomResourceDefinition
 	}{
 		SessionID: r.URL.Query().Get("s"),
-		CRDs:      crds,
+		CRDs:      rightScopedCRDs,
 	}); err != nil {
 		logger.Info("failed to execute template", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)

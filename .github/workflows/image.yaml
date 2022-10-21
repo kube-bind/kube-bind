@@ -24,7 +24,7 @@ jobs:
       run: go install github.com/google/ko@latest
 
     - name: Set LDFLAGS
-      run: echo LDFLAGS="$(make ldflags)" >> $GITHUB_ENV
+      run: echo LDFLAGS="$(make ldflags)" | tee -a >> $GITHUB_ENV
 
     # Build ko from HEAD, build and push an image tagged with the commit SHA,
     # then keylessly sign it with cosign.

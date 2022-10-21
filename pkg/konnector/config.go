@@ -54,7 +54,7 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 		return nil, err
 	}
 	config.ClientConfig = rest.CopyConfig(config.ClientConfig)
-	config.ClientConfig = rest.AddUserAgent(config.ClientConfig, "kube-bind-konnector")
+	config.ClientConfig = rest.AddUserAgent(config.ClientConfig, "konnector")
 
 	if config.BindClient, err = bindclient.NewForConfig(config.ClientConfig); err != nil {
 		return nil, err

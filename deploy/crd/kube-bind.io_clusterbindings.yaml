@@ -17,6 +17,9 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .status.konnectorVersion
+      name: Konnector Version
+      type: string
     - jsonPath: .status.lastHeartbeatTime
       name: Last Heartbeat
       type: date

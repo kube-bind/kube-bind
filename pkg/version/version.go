@@ -29,8 +29,10 @@ func BinaryVersion(s string) (string, error) {
 	if len(parts) < 2 {
 		return "", fmt.Errorf("failed to parse version %q", s)
 	}
-	if !strings.HasPrefix(parts[1], "kubectl-bind") {
+
+	prefix := "kube-bind"
+	if !strings.HasPrefix(parts[1], prefix) {
 		return "", fmt.Errorf("failed to parse version %q", s)
 	}
-	return strings.SplitN(strings.TrimPrefix(parts[1], "kubectl-bind-"), "-", 2)[0], nil
+	return strings.SplitN(strings.TrimPrefix(parts[1], prefix+"-"), "-", 2)[0], nil
 }

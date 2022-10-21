@@ -36,7 +36,7 @@ import (
 )
 
 const (
-	soureceSpecHashAnnotationKey = "kube-bind.io/source-spec-hash"
+	sourceSpecHashAnnotationKey = "kube-bind.io/source-spec-hash"
 )
 
 type reconciler struct {
@@ -120,20 +120,20 @@ func (r *reconciler) ensureExportResources(ctx context.Context, export *kubebind
 			// APIServiceExportResource missing
 			logger.V(1).Info("Creating APIServiceExportResource")
 			resource.Annotations = map[string]string{
-				soureceSpecHashAnnotationKey: resourceHash(resource),
+				sourceSpecHashAnnotationKey: resourceHash(resource),
 			}
 			if _, err := r.createServiceExportResource(ctx, resource); err != nil {
 				errs = append(errs, err)
 				continue
 			}
-		} else if expected := resourceHash(resource); ser.Annotations[soureceSpecHashAnnotationKey] != expected {
+		} else if expected := resourceHash(resource); ser.Annotations[sourceSpecHashAnnotationKey] != expected {
 			// both exist, update APIServiceExportResource
 			logger.V(1).Info("Updating APIServiceExportResource")
 			resource.ObjectMeta = ser.ObjectMeta
 			if resource.Annotations == nil {
 				resource.Annotations = map[string]string{}
 			}
-			resource.Annotations[soureceSpecHashAnnotationKey] = expected
+			resource.Annotations[sourceSpecHashAnnotationKey] = expected
 			if _, err := r.updateServiceExportResource(ctx, resource); err != nil {
 				errs = append(errs, err)
 				continue

@@ -1,0 +1,84 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-backend
+  labels:
+    app: example-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-backend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: example-backend
+    spec:
+      containers:
+        - name: example-backend
+          image: ghcr.io/kube-bind/example-backend:latest
+          command:
+            - /example-backend
+          args:
+            - --namespace-prefix=cluster
+            - --pretty-name=Example-Backend
+            - --consumer-scope=Namespaced
+            - --oidc-issuer-client-id=$(OIDC-ISSUER-CLIENT-ID)
+            - --oidc-issuer-client-secret=$(OIDC-ISSUER-CLIENT-SECRET)
+            - --oidc-issuer-url=$(OIDC-ISSUER-URL)
+            - --oidc-callback-url=$(OIDC-CALLBACK-URL)
+            - --listen-ip=0.0.0.0
+            - --listen-port=80
+          env:
+            - name: OIDC-ISSUER-CLIENT-ID
+              valueFrom:
+                secretKeyRef:
+                  name: oidc-configs
+                  key: oidc-issuer-client-id
+            - name: OIDC-ISSUER-CLIENT-SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oidc-configs
+                  key: oidc-issuer-client-secret
+            - name: OIDC-ISSUER-URL
+              valueFrom:
+                secretKeyRef:
+                  name: oidc-configs
+                  key: oidc-issuer-url
+            - name: OIDC-CALLBACK-URL
+              valueFrom:
+                secretKeyRef:
+                  name: oidc-configs
+                  key: oidc-callback-url
+          resources:
+            limits:
+              cpu: '2'
+              memory: 2Gi
+            requests:
+              cpu: '100m'
+              memory: 256Mi
+          volumeMounts:
+            - name: kube-bind-kubeconfig
+              mountPath: /etc/kubernetes/kubeconfig
+              readOnly: true
+      volumes:
+        - name: kube-bind-kubeconfig
+          secret:
+            secretName: kube-bind-kubeconfig
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-backend
+spec:
+  type: NodePort
+  ports:
+    - protocol: TCP
+      name: example-backend
+      port: 80
+      targetPort: 80
+  selector:
+    app: example-backend

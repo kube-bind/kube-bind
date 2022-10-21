@@ -94,6 +94,7 @@ func NewServer(config *Config) (*Server, error) {
 		callback,
 		config.Options.PrettyName,
 		config.Options.TestingAutoSelect,
+		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
 		s.Kubernetes,
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),
 	)

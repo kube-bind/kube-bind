@@ -101,6 +101,10 @@ func (h *handler) AddRoutes(mux *mux.Router) {
 func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
 
+	if h.oidcAuthorizeURL == "" {
+		h.oidcAuthorizeURL = fmt.Sprintf("http://%s/authorize", r.Host)
+	}
+
 	provider := &kubebindv1alpha1.BindingProvider{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha1.GroupVersion,

@@ -59,9 +59,6 @@ func (options *OIDC) Validate() error {
 	if options.CallbackURL == "" {
 		return fmt.Errorf("OIDC callback URL cannot be empty")
 	}
-	if options.AuthorizeURL == "" {
-		return fmt.Errorf("OIDC authorize URL cannot be empty")
-	}
 
 	return nil
 }

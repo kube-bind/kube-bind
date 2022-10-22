@@ -143,8 +143,6 @@ nextRequest:
 						},
 						Namespace: "kube-bind",
 					},
-
-					Export: request.Status.Export,
 				},
 			}, metav1.CreateOptions{})
 			if err != nil && !apierrors.IsAlreadyExists(err) {

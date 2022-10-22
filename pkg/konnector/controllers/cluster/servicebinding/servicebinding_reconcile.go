@@ -41,8 +41,7 @@ type reconciler struct {
 	getServiceBinding func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
 	getClusterBinding func(ctx context.Context) (*kubebindv1alpha1.ClusterBinding, error)
 
-	getServiceExportResource          func(name string) (*kubebindv1alpha1.APIServiceExportResource, error)
-	updateServiceExportResourceStatus func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error)
+	updateServiceExportStatus func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error)
 
 	getCRD    func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	updateCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)
@@ -70,7 +69,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 }
 
 func (r *reconciler) ensureValidServiceExport(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
-	if _, err := r.getServiceExport(binding.Spec.Export); err != nil && !errors.IsNotFound(err) {
+	if _, err := r.getServiceExport(binding.Name); err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		conditions.MarkFalse(
@@ -79,7 +78,7 @@ func (r *reconciler) ensureValidServiceExport(ctx context.Context, binding *kube
 			"APIServiceExportNotFound",
 			conditionsapi.ConditionSeverityError,
 			"APIServiceExport %s not found on the service provider cluster. Rerun kubectl bind for repair.",
-			binding.Spec.Export,
+			binding.Name,
 		)
 		return nil
 	}
@@ -95,218 +94,134 @@ func (r *reconciler) ensureValidServiceExport(ctx context.Context, binding *kube
 func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
 	var errs []error
 
-	export, err := r.getServiceExport(binding.Spec.Export)
+	export, err := r.getServiceExport(binding.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
+		conditions.MarkFalse(
+			binding,
+			kubebindv1alpha1.APIServiceBindingConditionConnected,
+			"APIServiceExportNotFound",
+			conditionsapi.ConditionSeverityError,
+			"APIServiceExport %s not found on the service provider cluster.",
+			binding.Name,
+		)
 		return nil // nothing we can do here
 	}
 
-	resourceValid := true
-	schemaInSync := true
-nextResource:
-	for _, resource := range export.Spec.Resources {
-		name := resource.Resource + "." + resource.Group
-		resource, err := r.getServiceExportResource(name)
-		if err != nil && !errors.IsNotFound(err) {
-			errs = append(errs, err)
-			continue
-		} else if errors.IsNotFound(err) {
-			conditions.MarkFalse(
-				binding,
-				kubebindv1alpha1.APIServiceBindingConditionResourcesValid,
-				"ServiceExportResourceNotFound",
-				conditionsapi.ConditionSeverityError,
-				"APIServiceExportResource %s not found on the service provider cluster.",
-				name,
-			)
-			resourceValid = false
-			continue
-		}
-
-		if resource.Spec.Scope != apiextensionsv1.NamespaceScoped && export.Spec.Scope != kubebindv1alpha1.ClusterScope {
-			conditions.MarkFalse(
-				binding,
-				kubebindv1alpha1.APIServiceBindingConditionResourcesValid,
-				"ServiceExportResourceWrongScope",
-				conditionsapi.ConditionSeverityError,
-				"APIServiceExportResource %s is Cluster scope, but the APIServiceExport is not.",
-				name,
-			)
-			resourceValid = false
-			continue
-		}
-
-		crd, err := kubebindhelpers.ServiceExportResourceToCRD(resource)
-		if err != nil {
-			conditions.MarkFalse(
-				binding,
-				kubebindv1alpha1.APIServiceBindingConditionResourcesValid,
-				"ServiceExportResourceInvalid",
-				conditionsapi.ConditionSeverityError,
-				"APIServiceExportResource %s on the service provider cluster is invalid: %s",
-				name, err,
-			)
-			resourceValid = false
-			continue
-		}
-
-		// put binding owner reference on the CRD.
-		newReference := metav1.OwnerReference{
-			APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
-			Kind:       "APIServiceBinding",
-			Name:       binding.Name,
-			UID:        binding.UID,
-			Controller: pointer.Bool(true),
-		}
-		crd.OwnerReferences = append(crd.OwnerReferences, newReference)
-
-		existing, err := r.getCRD(crd.Name)
-		var result *apiextensionsv1.CustomResourceDefinition
-		if err != nil && !errors.IsNotFound(err) {
-			errs = append(errs, err)
-			continue
-		} else if errors.IsNotFound(err) {
-			result, err = r.createCRD(ctx, crd)
-			if err != nil && !errors.IsInvalid(err) {
-				errs = append(errs, err)
-				continue
-			} else if errors.IsInvalid(err) {
-				conditions.MarkFalse(
-					binding,
-					kubebindv1alpha1.APIServiceExportConditionSchemaInSync,
-					"CustomResourceDefinitionCreateFailed",
-					conditionsapi.ConditionSeverityError,
-					"CustomResourceDefinition %s cannot be created: %s",
-					name, err,
-				)
-				schemaInSync = false
-				continue
-			}
-		} else {
-			// first check this really ours and we don't override something else
-			foundOther := false
-			foundThis := false
-			var newOwners []metav1.OwnerReference
-			for _, ref := range existing.OwnerReferences {
-				parts := strings.SplitN(ref.APIVersion, "/", 2)
-				if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
-					newOwners = append(newOwners, ref)
-					continue
-				}
-
-				if ref.Name == binding.Name {
-					// found our own reference
-					newOwners = append(newOwners, newReference)
-					foundThis = true
-					continue
-				}
-
-				other, err := r.getServiceBinding(ref.Name)
-				if err != nil && !errors.IsNotFound(err) {
-					errs = append(errs, err)
-					continue nextResource
-				} else if errors.IsNotFound(err) {
-					continue // prune non-existing references
-				}
-
-				// we found another binding. Is it of the same service provider?
-				if other.Spec.KubeconfigSecretRef == binding.Spec.KubeconfigSecretRef {
-					errs = append(errs, err)
-					continue
-				}
-
-				// here we found a binding from another service provider. So the CRD is not ours.
-				conditions.MarkFalse(
-					binding,
-					kubebindv1alpha1.APIServiceExportConditionSchemaInSync,
-					"ForeignCustomResourceDefinition",
-					conditionsapi.ConditionSeverityError,
-					"CustomResourceDefinition %s is owned by APIServiceBinding %s.",
-					name, other.Name,
-				)
-				schemaInSync = false
-				continue nextResource
-			}
-			if !foundThis && !foundOther {
-				// this is not our CRD, we should not touch it
-				conditions.MarkFalse(
-					binding,
-					kubebindv1alpha1.APIServiceExportConditionSchemaInSync,
-					"ForeignCustomResourceDefinition",
-					conditionsapi.ConditionSeverityError,
-					"CustomResourceDefinition %s is not owned by kube-bind.io.",
-					name,
-				)
-				schemaInSync = false
-				continue
-			}
-
-			// add ourselves as owner if we are not there
-			crd.ObjectMeta = existing.ObjectMeta
-			if !foundThis {
-				newOwners = append(newOwners, newReference)
-			}
-			crd.ObjectMeta.OwnerReferences = newOwners
-			result, err = r.updateCRD(ctx, crd)
-			if err != nil {
-				errs = append(errs, err)
-				continue
-			} else if errors.IsInvalid(err) {
-				conditions.MarkFalse(
-					binding,
-					kubebindv1alpha1.APIServiceExportConditionSchemaInSync,
-					"CustomResourceDefinitionUpdateFailed",
-					conditionsapi.ConditionSeverityError,
-					"CustomResourceDefinition %s cannot be updated: %s",
-					name, err,
-				)
-				schemaInSync = false
-				continue
-			}
-		}
-
-		// copy the CRD status onto the APIServiceExportResource
-		if result != nil {
-			orig := resource
-			resource = resource.DeepCopy()
-			resource.Status.Conditions = nil
-			for _, c := range result.Status.Conditions {
-				severity := conditionsapi.ConditionSeverityError
-				if c.Status == apiextensionsv1.ConditionTrue {
-					severity = conditionsapi.ConditionSeverityNone
-				}
-				resource.Status.Conditions = append(resource.Status.Conditions, conditionsapi.Condition{
-					Type:               conditionsapi.ConditionType(c.Type),
-					Status:             corev1.ConditionStatus(c.Status),
-					Severity:           severity, // CRD conditions have no severity
-					LastTransitionTime: c.LastTransitionTime,
-					Reason:             c.Reason,
-					Message:            c.Message,
-				})
-			}
-			resource.Status.AcceptedNames = result.Status.AcceptedNames
-			resource.Status.StoredVersions = result.Status.StoredVersions
-			if !equality.Semantic.DeepEqual(orig, resource) {
-				if _, err := r.updateServiceExportResourceStatus(ctx, resource); err != nil {
-					errs = append(errs, err)
-				}
-			}
-		}
+	crd, err := kubebindhelpers.ServiceExportToCRD(export)
+	if err != nil {
+		conditions.MarkFalse(
+			binding,
+			kubebindv1alpha1.APIServiceBindingConditionConnected,
+			"APIServiceExportInvalid",
+			conditionsapi.ConditionSeverityError,
+			"APIServiceExport %s on the service provider cluster is invalid: %s",
+			binding.Name, err,
+		)
+		return nil // nothing we can do here
 	}
 
-	if resourceValid {
-		conditions.MarkTrue(
-			binding,
-			kubebindv1alpha1.APIServiceBindingConditionResourcesValid,
-		)
+	// put binding owner reference on the CRD.
+	newReference := metav1.OwnerReference{
+		APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
+		Kind:       "APIServiceBinding",
+		Name:       binding.Name,
+		UID:        binding.UID,
+		Controller: pointer.Bool(true),
+	}
+	crd.OwnerReferences = append(crd.OwnerReferences, newReference)
+
+	existing, err := r.getCRD(crd.Name)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	} else if errors.IsNotFound(err) {
+		if _, err := r.createCRD(ctx, crd); err != nil && !errors.IsInvalid(err) {
+			return err
+		} else if errors.IsInvalid(err) {
+			conditions.MarkFalse(
+				binding,
+				kubebindv1alpha1.APIServiceBindingConditionConnected,
+				"CustomResourceDefinitionCreateFailed",
+				conditionsapi.ConditionSeverityError,
+				"CustomResourceDefinition %s cannot be created: %s",
+				binding.Name, err,
+			)
+			return nil
+		}
+
+		conditions.MarkTrue(binding, kubebindv1alpha1.APIServiceBindingConditionConnected)
+		return nil // we wait for a new reconcile to update APIServiceExport status
 	}
 
-	if schemaInSync {
-		conditions.MarkTrue(
+	// first check this really ours and we don't override something else
+	foundThis := false
+	for _, ref := range existing.OwnerReferences {
+		parts := strings.SplitN(ref.APIVersion, "/", 2)
+		if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
+			continue
+		}
+		if ref.Name == binding.Name {
+			// found our own reference
+			foundThis = true
+			break
+		}
+	}
+	if !foundThis {
+		// this is not our CRD, we should not touch it
+		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.APIServiceBindingConditionSchemaInSync,
+			kubebindv1alpha1.APIServiceBindingConditionConnected,
+			"ForeignCustomResourceDefinition",
+			conditionsapi.ConditionSeverityError,
+			"CustomResourceDefinition %s is not owned by kube-bind.io.",
+			binding.Name,
 		)
+		return nil
+	}
+
+	crd.ObjectMeta = existing.ObjectMeta
+	updated, err := r.updateCRD(ctx, crd)
+	if err != nil && !errors.IsInvalid(err) {
+		return nil
+	} else if errors.IsInvalid(err) {
+		conditions.MarkFalse(
+			binding,
+			kubebindv1alpha1.APIServiceBindingConditionConnected,
+			"CustomResourceDefinitionUpdateFailed",
+			conditionsapi.ConditionSeverityError,
+			"CustomResourceDefinition %s cannot be updated: %s",
+			binding.Name, err,
+		)
+		return nil
+	}
+
+	conditions.MarkTrue(binding, kubebindv1alpha1.APIServiceBindingConditionConnected)
+
+	// copy the CRD status onto the APIServiceExport
+	orig := export
+	export = export.DeepCopy()
+	export.Status.Conditions = nil
+	for _, c := range updated.Status.Conditions {
+		severity := conditionsapi.ConditionSeverityError
+		if c.Status == apiextensionsv1.ConditionTrue {
+			severity = conditionsapi.ConditionSeverityNone
+		}
+		export.Status.Conditions = append(export.Status.Conditions, conditionsapi.Condition{
+			Type:               conditionsapi.ConditionType(c.Type),
+			Status:             corev1.ConditionStatus(c.Status),
+			Severity:           severity, // CRD conditions have no severity
+			LastTransitionTime: c.LastTransitionTime,
+			Reason:             c.Reason,
+			Message:            c.Message,
+		})
+	}
+	export.Status.AcceptedNames = updated.Status.AcceptedNames
+	export.Status.StoredVersions = updated.Status.StoredVersions
+	if !equality.Semantic.DeepEqual(orig, export) {
+		if _, err := r.updateServiceExportStatus(ctx, export); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return utilerrors.NewAggregate(errs)

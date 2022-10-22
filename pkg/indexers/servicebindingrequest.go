@@ -21,13 +21,30 @@ import (
 )
 
 const (
-	ServiceBindingRequestByExport = "ServiceBindingRequestByExport"
+	ServiceBindingRequestByGroupResource = "ServiceBindingRequestByGroupResource"
+	ServiceBindingRequestByServiceExport = "ServiceBindingRequestByServiceExport"
 )
 
-func IndexServiceBindingRequestByExport(obj interface{}) ([]string, error) {
+func IndexServiceBindingRequestByGroupResource(obj interface{}) ([]string, error) {
 	sbr, ok := obj.(*kubebindv1alpha1.APIServiceBindingRequest)
-	if !ok || sbr.Status.Export == "" {
+	if !ok {
 		return nil, nil
 	}
-	return []string{sbr.Namespace + "/" + sbr.Status.Export}, nil
+	keys := []string{}
+	for _, gr := range sbr.Spec.Resources {
+		keys = append(keys, gr.GroupResource.Resource+"."+gr.GroupResource.Group)
+	}
+	return keys, nil
+}
+
+func IndexServiceBindingRequestByServiceExport(obj interface{}) ([]string, error) {
+	sbr, ok := obj.(*kubebindv1alpha1.APIServiceBindingRequest)
+	if !ok {
+		return nil, nil
+	}
+	keys := []string{}
+	for _, gr := range sbr.Spec.Resources {
+		keys = append(keys, sbr.Namespace+"/"+gr.GroupResource.Resource+"."+gr.GroupResource.Group)
+	}
+	return keys, nil
 }

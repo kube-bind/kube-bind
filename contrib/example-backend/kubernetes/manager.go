@@ -100,10 +100,6 @@ func NewKubernetesManager(
 		NamespacesByIdentity: IndexNamespacesByIdentity,
 	})
 
-	indexers.AddIfNotPresentOrDie(m.namespaceIndexer, cache.Indexers{
-		indexers.ServiceExportByServiceExportResource: indexers.IndexServiceExportByServiceExportResource,
-	})
-
 	return m, nil
 }
 

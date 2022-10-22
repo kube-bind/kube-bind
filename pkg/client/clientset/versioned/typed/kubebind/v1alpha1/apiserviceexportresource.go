@@ -37,17 +37,17 @@ type APIServiceExportResourcesGetter interface {
 	APIServiceExportResources(namespace string) APIServiceExportResourceInterface
 }
 
-// APIServiceExportResourceInterface has methods to work with APIServiceExportResource resources.
+// APIServiceExportResourceInterface has methods to work with APIServiceExport resources.
 type APIServiceExportResourceInterface interface {
-	Create(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExportResource, opts v1.CreateOptions) (*v1alpha1.APIServiceExportResource, error)
-	Update(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExportResource, opts v1.UpdateOptions) (*v1alpha1.APIServiceExportResource, error)
-	UpdateStatus(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExportResource, opts v1.UpdateOptions) (*v1alpha1.APIServiceExportResource, error)
+	Create(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExport, opts v1.CreateOptions) (*v1alpha1.APIServiceExport, error)
+	Update(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExport, opts v1.UpdateOptions) (*v1alpha1.APIServiceExport, error)
+	UpdateStatus(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExport, opts v1.UpdateOptions) (*v1alpha1.APIServiceExport, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.APIServiceExportResource, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.APIServiceExportResourceList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha1.APIServiceExport, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.APIServiceExportList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.APIServiceExportResource, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.APIServiceExport, err error)
 	APIServiceExportResourceExpansion
 }
 
@@ -66,8 +66,8 @@ func newAPIServiceExportResources(c *KubeBindV1alpha1Client, namespace string) *
 }
 
 // Get takes name of the aPIServiceExportResource, and returns the corresponding aPIServiceExportResource object, and an error if there is any.
-func (c *aPIServiceExportResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.APIServiceExportResource, err error) {
-	result = &v1alpha1.APIServiceExportResource{}
+func (c *aPIServiceExportResources) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.APIServiceExport, err error) {
+	result = &v1alpha1.APIServiceExport{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("apiserviceexportresources").
@@ -79,12 +79,12 @@ func (c *aPIServiceExportResources) Get(ctx context.Context, name string, option
 }
 
 // List takes label and field selectors, and returns the list of APIServiceExportResources that match those selectors.
-func (c *aPIServiceExportResources) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.APIServiceExportResourceList, err error) {
+func (c *aPIServiceExportResources) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.APIServiceExportList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
 	}
-	result = &v1alpha1.APIServiceExportResourceList{}
+	result = &v1alpha1.APIServiceExportList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("apiserviceexportresources").
@@ -111,8 +111,8 @@ func (c *aPIServiceExportResources) Watch(ctx context.Context, opts v1.ListOptio
 }
 
 // Create takes the representation of a aPIServiceExportResource and creates it.  Returns the server's representation of the aPIServiceExportResource, and an error, if there is any.
-func (c *aPIServiceExportResources) Create(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExportResource, opts v1.CreateOptions) (result *v1alpha1.APIServiceExportResource, err error) {
-	result = &v1alpha1.APIServiceExportResource{}
+func (c *aPIServiceExportResources) Create(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExport, opts v1.CreateOptions) (result *v1alpha1.APIServiceExport, err error) {
+	result = &v1alpha1.APIServiceExport{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("apiserviceexportresources").
@@ -124,8 +124,8 @@ func (c *aPIServiceExportResources) Create(ctx context.Context, aPIServiceExport
 }
 
 // Update takes the representation of a aPIServiceExportResource and updates it. Returns the server's representation of the aPIServiceExportResource, and an error, if there is any.
-func (c *aPIServiceExportResources) Update(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExportResource, opts v1.UpdateOptions) (result *v1alpha1.APIServiceExportResource, err error) {
-	result = &v1alpha1.APIServiceExportResource{}
+func (c *aPIServiceExportResources) Update(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExport, opts v1.UpdateOptions) (result *v1alpha1.APIServiceExport, err error) {
+	result = &v1alpha1.APIServiceExport{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("apiserviceexportresources").
@@ -139,8 +139,8 @@ func (c *aPIServiceExportResources) Update(ctx context.Context, aPIServiceExport
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *aPIServiceExportResources) UpdateStatus(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExportResource, opts v1.UpdateOptions) (result *v1alpha1.APIServiceExportResource, err error) {
-	result = &v1alpha1.APIServiceExportResource{}
+func (c *aPIServiceExportResources) UpdateStatus(ctx context.Context, aPIServiceExportResource *v1alpha1.APIServiceExport, opts v1.UpdateOptions) (result *v1alpha1.APIServiceExport, err error) {
+	result = &v1alpha1.APIServiceExport{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("apiserviceexportresources").
@@ -181,8 +181,8 @@ func (c *aPIServiceExportResources) DeleteCollection(ctx context.Context, opts v
 }
 
 // Patch applies the patch and returns the patched aPIServiceExportResource.
-func (c *aPIServiceExportResources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.APIServiceExportResource, err error) {
-	result = &v1alpha1.APIServiceExportResource{}
+func (c *aPIServiceExportResources) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.APIServiceExport, err error) {
+	result = &v1alpha1.APIServiceExport{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("apiserviceexportresources").

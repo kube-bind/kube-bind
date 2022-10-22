@@ -28,7 +28,6 @@ import (
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicebindingrequest"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexport"
-	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexportresource"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicenamespace"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/deploy"
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
@@ -50,7 +49,6 @@ type Controllers struct {
 	ClusterBinding        *clusterbinding.Controller
 	ServiceNamespace      *servicenamespace.Controller
 	ServiceExport         *serviceexport.Controller
-	ServiceExportResource *serviceexportresource.Controller
 	ServiceBindingRequest *servicebindingrequest.Controller
 }
 
@@ -137,25 +135,17 @@ func NewServer(config *Config) (*Server, error) {
 	s.ServiceExport, err = serviceexport.NewController(
 		config.ClientConfig,
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
-		config.BindInformers.KubeBind().V1alpha1().APIServiceExportResources(),
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceExport Controller: %w", err)
-	}
-	s.ServiceExportResource, err = serviceexportresource.NewController(
-		config.ClientConfig,
-		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
-		config.BindInformers.KubeBind().V1alpha1().APIServiceExportResources(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("error setting up APIServiceExportResource Controller: %w", err)
 	}
 	s.ServiceBindingRequest, err = servicebindingrequest.NewController(
 		config.ClientConfig,
 		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceBindingRequests(),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ServiceBindingRequest Controller: %w", err)
@@ -198,7 +188,6 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 
 	// start controllers
-	go s.Controllers.ServiceExportResource.Start(ctx, 1)
 	go s.Controllers.ServiceExport.Start(ctx, 1)
 	go s.Controllers.ServiceNamespace.Start(ctx, 1)
 	go s.Controllers.ClusterBinding.Start(ctx, 1)

@@ -31,7 +31,7 @@ import (
 type APIServiceExportResourceLister interface {
 	// List lists all APIServiceExportResources in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.APIServiceExportResource, err error)
+	List(selector labels.Selector) (ret []*v1alpha1.APIServiceExport, err error)
 	// APIServiceExportResources returns an object that can list and get APIServiceExportResources.
 	APIServiceExportResources(namespace string) APIServiceExportResourceNamespaceLister
 	APIServiceExportResourceListerExpansion
@@ -48,9 +48,9 @@ func NewAPIServiceExportResourceLister(indexer cache.Indexer) APIServiceExportRe
 }
 
 // List lists all APIServiceExportResources in the indexer.
-func (s *aPIServiceExportResourceLister) List(selector labels.Selector) (ret []*v1alpha1.APIServiceExportResource, err error) {
+func (s *aPIServiceExportResourceLister) List(selector labels.Selector) (ret []*v1alpha1.APIServiceExport, err error) {
 	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.APIServiceExportResource))
+		ret = append(ret, m.(*v1alpha1.APIServiceExport))
 	})
 	return ret, err
 }
@@ -65,10 +65,10 @@ func (s *aPIServiceExportResourceLister) APIServiceExportResources(namespace str
 type APIServiceExportResourceNamespaceLister interface {
 	// List lists all APIServiceExportResources in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.APIServiceExportResource, err error)
-	// Get retrieves the APIServiceExportResource from the indexer for a given namespace and name.
+	List(selector labels.Selector) (ret []*v1alpha1.APIServiceExport, err error)
+	// Get retrieves the APIServiceExport from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.APIServiceExportResource, error)
+	Get(name string) (*v1alpha1.APIServiceExport, error)
 	APIServiceExportResourceNamespaceListerExpansion
 }
 
@@ -80,15 +80,15 @@ type aPIServiceExportResourceNamespaceLister struct {
 }
 
 // List lists all APIServiceExportResources in the indexer for a given namespace.
-func (s aPIServiceExportResourceNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.APIServiceExportResource, err error) {
+func (s aPIServiceExportResourceNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.APIServiceExport, err error) {
 	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.APIServiceExportResource))
+		ret = append(ret, m.(*v1alpha1.APIServiceExport))
 	})
 	return ret, err
 }
 
-// Get retrieves the APIServiceExportResource from the indexer for a given namespace and name.
-func (s aPIServiceExportResourceNamespaceLister) Get(name string) (*v1alpha1.APIServiceExportResource, error) {
+// Get retrieves the APIServiceExport from the indexer for a given namespace and name.
+func (s aPIServiceExportResourceNamespaceLister) Get(name string) (*v1alpha1.APIServiceExport, error) {
 	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
 	if err != nil {
 		return nil, err
@@ -96,5 +96,5 @@ func (s aPIServiceExportResourceNamespaceLister) Get(name string) (*v1alpha1.API
 	if !exists {
 		return nil, errors.NewNotFound(v1alpha1.Resource("apiserviceexportresource"), name)
 	}
-	return obj.(*v1alpha1.APIServiceExportResource), nil
+	return obj.(*v1alpha1.APIServiceExport), nil
 }

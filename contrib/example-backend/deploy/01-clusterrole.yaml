@@ -41,15 +41,5 @@ rules:
 - apiGroups:
     - "kube-bind.io"
   resources:
-    - "apiserviceexportresources"
-  verbs: ["get", "watch", "list"]
-- apiGroups:
-    - "kube-bind.io"
-  resources:
-    - "apiserviceexportresources/status"
-  verbs: ["get","patch","update"]
-- apiGroups:
-    - "kube-bind.io"
-  resources:
     - "apiservicenamespaces"
   verbs: ["create","delete","patch","update","get","list","watch"]

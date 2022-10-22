@@ -24,9 +24,9 @@ import (
 )
 
 const (
-	// APIServiceBindingRequestConditionExportReady is set to true when the
+	// APIServiceBindingRequestConditionExportsReady is set to true when the
 	// corresponding APIServiceExport is ready.
-	APIServiceBindingRequestConditionExportReady conditionsapi.ConditionType = "ExportReady"
+	APIServiceBindingRequestConditionExportsReady conditionsapi.ConditionType = "ExportsReady"
 )
 
 // APIServiceBindingRequest is represents a request session of kubectl-bind-apiservice.
@@ -112,6 +112,25 @@ type APIServiceBindingRequestResource struct {
 	Versions []string `json:"versions,omitempty"`
 }
 
+// GroupResource identifies a resource.
+type GroupResource struct {
+	// group is the name of an API group.
+	// For core groups this is the empty string '""'.
+	//
+	// +kubebuilder:validation:Pattern=`^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$`
+	// +kubebuilder:default=""
+	Group string `json:"group,omitempty"`
+
+	// resource is the name of the resource.
+	// Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+	// not provided by an service binding export.
+	//
+	// +kubebuilder:validation:Pattern=`^[a-z][-a-z0-9]*[a-z0-9]$`
+	// +required
+	// +kubebuilder:validation:Required
+	Resource string `json:"resource"`
+}
+
 // APIServiceBindingRequestPhase describes the phase of a binding request.
 type APIServiceBindingRequestPhase string
 
@@ -142,10 +161,6 @@ type APIServiceBindingRequestStatus struct {
 	// terminalMessage is a human readable message that describes the reason
 	// for the current phase.
 	TerminalMessage string `json:"terminalMessage,omitempty"`
-
-	// export is the name of the APIServiceExport object that has been created
-	// for this binding request when phase is Succeeded.
-	Export string `json:"export,omitempty"`
 
 	// conditions is a list of conditions that apply to the ClusterBinding. It is
 	// updated by the konnector and the service provider.

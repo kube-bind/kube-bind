@@ -18,28 +18,28 @@ package servicebindingrequest
 
 import (
 	"context"
-	"reflect"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1/helpers"
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 )
 
 type reconciler struct {
-	scope kubebindv1alpha1.Scope
+	informerScope kubebindv1alpha1.Scope
 
-	deleteServiceBindingRequest func(ctx context.Context, ns, name string) error
-
+	getCRD              func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getServiceExport    func(ns, name string) (*kubebindv1alpha1.APIServiceExport, error)
 	createServiceExport func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error)
-	listServiceExport   func(ns string) ([]*kubebindv1alpha1.APIServiceExport, error)
+
+	deleteServiceBindingRequest func(ctx context.Context, namespace, name string) error
 }
 
 func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha1.APIServiceBindingRequest) error {
@@ -57,106 +57,85 @@ func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha1.APISer
 func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.APIServiceBindingRequest) error {
 	logger := klog.FromContext(ctx)
 
-	if req.Status.Export == "" {
-		// create new export
-		export := &kubebindv1alpha1.APIServiceExport{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: req.Namespace,
-				Name:      req.Name,
-			},
-			Spec: kubebindv1alpha1.APIServiceExportSpec{
-				Scope: r.scope,
-			},
-		}
+	if req.Status.Phase == kubebindv1alpha1.APIServiceBindingRequestPhasePending {
+		failure := false
 		for _, res := range req.Spec.Resources {
-			export.Spec.Resources = append(export.Spec.Resources, kubebindv1alpha1.APIServiceExportGroupResource{
-				GroupResource: res.GroupResource,
-			})
-		}
-
-		// find existing export
-		exports, err := r.listServiceExport(req.Namespace)
-		if err != nil {
-			return err
-		}
-		existingFound := false
-		for _, e := range exports {
-			if reflect.DeepEqual(e.Spec, export.Spec) {
-				logger.V(2).Info("found existing export", "namespace", export.Namespace, "export", e.Name)
-				existingFound = true
-				export = e
+			name := res.Resource + "." + res.Group
+			crd, err := r.getCRD(name)
+			if err != nil && !apierrors.IsNotFound(err) {
+				return err
+			}
+			if apierrors.IsNotFound(err) {
+				conditions.MarkFalse(
+					req,
+					kubebindv1alpha1.APIServiceBindingRequestConditionExportsReady,
+					"CRDNotFound",
+					conditionsapi.ConditionSeverityError,
+					"CustomResourceDefinition %s in the service provider cluster not found",
+					name,
+				)
+				failure = true
 				break
 			}
-		}
-		if !existingFound {
-			logger.V(2).Info("Creating service export", "namespace", export.Namespace, "name", export.Name)
-			var err error
-			if _, err = r.createServiceExport(ctx, export); apierrors.IsAlreadyExists(err) {
-				export.GenerateName = req.Name + "-"
-				export.Name = ""
 
-				logger.V(2).Info("Creation of service export failed, trying with a generated name", "namespace", export.Namespace, "name", export.Name)
-				if export, err = r.createServiceExport(ctx, export); err != nil {
-					return err
-				}
+			if _, err := r.getServiceExport(req.Namespace, name); err != nil && !apierrors.IsNotFound(err) {
+				return err
+			} else if err == nil {
+				continue
 			}
+
+			exportSpec, err := helpers.CRDToServiceExport(crd)
 			if err != nil {
+				conditions.MarkFalse(
+					req,
+					kubebindv1alpha1.APIServiceBindingRequestConditionExportsReady,
+					"CRDInvalid",
+					conditionsapi.ConditionSeverityError,
+					"CustomResourceDefinition %s cannot be converted to a APIServiceExport: %v",
+					name,
+					err,
+				)
+				failure = true
+				break
+			}
+			hash := helpers.APIServiceExportCRDSpecHash(exportSpec)
+			export := &kubebindv1alpha1.APIServiceExport{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      crd.Name,
+					Namespace: req.Namespace,
+					Annotations: map[string]string{
+						kubebindv1alpha1.SourceSpecHashAnnotationKey: hash,
+					},
+				},
+				Spec: kubebindv1alpha1.APIServiceExportSpec{
+					APIServiceExportCRDSpec: *exportSpec,
+					InformerScope:           r.informerScope,
+				},
+			}
+
+			logger.V(1).Info("Creating APIServiceExport", "name", export.Name, "namespace", export.Namespace)
+			if _, err = r.createServiceExport(ctx, export); err != nil {
 				return err
 			}
 		}
 
-		req.Status.Export = export.Name // waiting for export to be ready for phase update
-		return nil
-	}
-
-	export, err := r.getServiceExport(req.Namespace, req.Status.Export)
-	if err != nil && !apierrors.IsNotFound(err) {
-		return err
-	} else if apierrors.IsNotFound(err) {
-		conditions.MarkFalse(
-			req,
-			kubebindv1alpha1.APIServiceBindingRequestConditionExportReady,
-			"ServiceExportNotFound",
-			conditionsapi.ConditionSeverityError,
-			"APIServiceExport %s in the service provider cluster not found",
-			req.Status.Export,
-		)
-		return nil
-	}
-
-	if c := conditions.Get(export, conditionsapi.ReadyCondition); c == nil {
-		conditions.MarkFalse(
-			req,
-			kubebindv1alpha1.APIServiceBindingRequestConditionExportReady,
-			"Unknown",
-			conditionsapi.ConditionSeverityInfo,
-			"APIServiceExport %s in the service provider cluster has no Ready condition",
-			req.Status.Export,
-		)
-		return nil
-	} else if c.Status != corev1.ConditionTrue {
-		conditions.MarkFalse(
-			req,
-			kubebindv1alpha1.APIServiceBindingRequestConditionExportReady,
-			c.Reason,
-			c.Severity,
-			c.Message,
-		)
-		return nil
-	} else {
-		conditions.MarkTrue(req, kubebindv1alpha1.APIServiceBindingRequestConditionExportReady)
-
-		if req.Status.Phase == kubebindv1alpha1.APIServiceBindingRequestPhasePending {
-			if time.Since(req.CreationTimestamp.Time) > time.Minute {
-				req.Status.Phase = kubebindv1alpha1.APIServiceBindingRequestPhaseFailed
-				req.Status.TerminalMessage = c.Message
-			}
+		if !failure {
+			conditions.MarkTrue(req, kubebindv1alpha1.APIServiceBindingRequestConditionExportsReady)
 			req.Status.Phase = kubebindv1alpha1.APIServiceBindingRequestPhaseSucceeded
-			req.Status.TerminalMessage = c.Message
-		} else if time.Since(req.CreationTimestamp.Time) > 10*time.Minute {
-			logger.Info("Deleting service binding request %s/%s", req.Namespace, req.Name, "reason", "timeout", "age", time.Since(req.CreationTimestamp.Time))
-			return r.deleteServiceBindingRequest(ctx, req.Namespace, req.Status.Export)
+			return nil
 		}
+
+		if time.Since(req.CreationTimestamp.Time) > time.Minute {
+			req.Status.Phase = kubebindv1alpha1.APIServiceBindingRequestPhaseFailed
+			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha1.APIServiceBindingRequestConditionExportsReady)
+		}
+
+		return nil
+	}
+
+	if time.Since(req.CreationTimestamp.Time) > 10*time.Minute {
+		logger.Info("Deleting service binding request %s/%s", req.Namespace, req.Name, "reason", "timeout", "age", time.Since(req.CreationTimestamp.Time))
+		return r.deleteServiceBindingRequest(ctx, req.Namespace, req.Name)
 	}
 
 	return nil

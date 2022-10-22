@@ -125,10 +125,6 @@ func New(
 		indexers.ByServiceBindingKubeconfigSecret: indexers.IndexServiceBindingByKubeconfigSecret,
 	})
 
-	indexers.AddIfNotPresentOrDie(serviceBindingInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ByServiceBindingExport: indexers.IndexByServiceBindingExport,
-	})
-
 	indexers.AddIfNotPresentOrDie(crdInformer.Informer().GetIndexer(), cache.Indexers{
 		indexers.CRDByServiceBinding: indexers.IndexCRDByServiceBinding,
 	})

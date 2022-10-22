@@ -22,7 +22,6 @@ import (
 
 const (
 	ByServiceBindingKubeconfigSecret = "byKubeconfigSecret"
-	ByServiceBindingExport           = "byServiceExport"
 )
 
 func IndexServiceBindingByKubeconfigSecret(obj interface{}) ([]string, error) {
@@ -36,13 +35,4 @@ func IndexServiceBindingByKubeconfigSecret(obj interface{}) ([]string, error) {
 func ByServiceBindingKubeconfigSecretKey(binding *kubebindv1alpha1.APIServiceBinding) string {
 	ref := &binding.Spec.KubeconfigSecretRef
 	return ref.Namespace + "/" + ref.Name
-}
-
-func IndexByServiceBindingExport(obj interface{}) ([]string, error) {
-	export, ok := obj.(*kubebindv1alpha1.APIServiceBinding)
-	if !ok {
-		return nil, nil
-	}
-
-	return []string{export.Spec.Export}, nil
 }

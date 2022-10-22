@@ -53,7 +53,6 @@ func NewController(
 	consumerConfig, providerConfig *rest.Config,
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
 	serviceExportInformer bindinformers.APIServiceExportInformer,
-	serviceExportResourceInformer bindinformers.APIServiceExportResourceInformer,
 	crdInformer dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister],
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
@@ -87,9 +86,6 @@ func NewController(
 		serviceExportLister:  serviceExportInformer.Lister(),
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
 
-		serviceExportResourceLister:  serviceExportResourceInformer.Lister(),
-		serviceExportResourceIndexer: serviceExportResourceInformer.Informer().GetIndexer(),
-
 		crdInformer: crdInformer,
 
 		reconciler: reconciler{
@@ -102,14 +98,11 @@ func NewController(
 			getServiceBinding: func(name string) (*kubebindv1alpha1.APIServiceBinding, error) {
 				return serviceBindingInformer.Lister().Get(name)
 			},
-			getServiceExportResource: func(name string) (*kubebindv1alpha1.APIServiceExportResource, error) {
-				return serviceExportResourceInformer.Lister().APIServiceExportResources(providerNamespace).Get(name)
-			},
 			getClusterBinding: func(ctx context.Context) (*kubebindv1alpha1.ClusterBinding, error) {
 				return providerBindClient.KubeBindV1alpha1().ClusterBindings(providerNamespace).Get(ctx, "cluster", metav1.GetOptions{})
 			},
-			updateServiceExportResourceStatus: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error) {
-				return providerBindClient.KubeBindV1alpha1().APIServiceExportResources(providerNamespace).UpdateStatus(ctx, resource, metav1.UpdateOptions{})
+			updateServiceExportStatus: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error) {
+				return providerBindClient.KubeBindV1alpha1().APIServiceExports(providerNamespace).UpdateStatus(ctx, resource, metav1.UpdateOptions{})
 			},
 			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return crdInformer.Lister().Get(name)
@@ -131,10 +124,6 @@ func NewController(
 
 	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
 		indexers.ServiceExportByCustomResourceDefinition: indexers.IndexServiceExportByCustomResourceDefinition,
-	})
-
-	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceExportByServiceExportResource: indexers.IndexServiceExportByServiceExportResource,
 	})
 
 	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -163,9 +152,6 @@ type controller struct {
 
 	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
-
-	serviceExportResourceLister  bindlisters.APIServiceExportResourceListerExpansion
-	serviceExportResourceIndexer cache.Indexer
 
 	crdInformer dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister]
 

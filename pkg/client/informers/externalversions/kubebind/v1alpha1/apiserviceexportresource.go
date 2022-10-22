@@ -46,14 +46,14 @@ type aPIServiceExportResourceInformer struct {
 	namespace        string
 }
 
-// NewAPIServiceExportResourceInformer constructs a new informer for APIServiceExportResource type.
+// NewAPIServiceExportResourceInformer constructs a new informer for APIServiceExport type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewAPIServiceExportResourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
 	return NewFilteredAPIServiceExportResourceInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredAPIServiceExportResourceInformer constructs a new informer for APIServiceExportResource type.
+// NewFilteredAPIServiceExportResourceInformer constructs a new informer for APIServiceExport type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredAPIServiceExportResourceInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
@@ -72,7 +72,7 @@ func NewFilteredAPIServiceExportResourceInformer(client versioned.Interface, nam
 				return client.KubeBindV1alpha1().APIServiceExportResources(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubebindv1alpha1.APIServiceExportResource{},
+		&kubebindv1alpha1.APIServiceExport{},
 		resyncPeriod,
 		indexers,
 	)
@@ -83,7 +83,7 @@ func (f *aPIServiceExportResourceInformer) defaultInformer(client versioned.Inte
 }
 
 func (f *aPIServiceExportResourceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubebindv1alpha1.APIServiceExportResource{}, f.defaultInformer)
+	return f.factory.InformerFor(&kubebindv1alpha1.APIServiceExport{}, f.defaultInformer)
 }
 
 func (f *aPIServiceExportResourceInformer) Lister() v1alpha1.APIServiceExportResourceLister {

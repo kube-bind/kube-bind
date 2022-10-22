@@ -21,26 +21,8 @@ import (
 )
 
 const (
-	ServiceExportByServiceExportResource    = "serviceExportByServiceExportResource"
 	ServiceExportByCustomResourceDefinition = "serviceExportByCustomResourceDefinition"
 )
-
-func IndexServiceExportByServiceExportResource(obj interface{}) ([]string, error) {
-	export, ok := obj.(*v1alpha1.APIServiceExport)
-	if !ok {
-		return nil, nil
-	}
-
-	grs := []string{}
-	for _, gr := range export.Spec.Resources {
-		grs = append(grs, ServiceExportByServiceExportResourceKey(export.Namespace, gr.Resource, gr.Group))
-	}
-	return grs, nil
-}
-
-func ServiceExportByServiceExportResourceKey(ns, resource, group string) string {
-	return ns + "/" + resource + "." + group
-}
 
 func IndexServiceExportByCustomResourceDefinition(obj interface{}) ([]string, error) {
 	export, ok := obj.(*v1alpha1.APIServiceExport)
@@ -48,9 +30,5 @@ func IndexServiceExportByCustomResourceDefinition(obj interface{}) ([]string, er
 		return nil, nil
 	}
 
-	grs := []string{}
-	for _, gr := range export.Spec.Resources {
-		grs = append(grs, gr.Resource+"."+gr.Group)
-	}
-	return grs, nil
+	return []string{export.Name}, nil
 }

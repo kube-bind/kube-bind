@@ -94,13 +94,13 @@ func NewServer(config *Config) (*Server, error) {
 	}
 	handler, err := examplehttp.NewHandler(
 		s.OIDC,
+		config.Options.OIDC.AuthorizeURL,
 		callback,
 		config.Options.PrettyName,
 		config.Options.TestingAutoSelect,
 		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
 		s.Kubernetes,
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),
-		config.Options.OIDC.AuthorizeURL,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)

@@ -59,6 +59,7 @@ type handler struct {
 	oidc *OIDCServiceProvider
 
 	scope              kubebindv1alpha1.Scope
+	oidcAuthorizeURL   string
 	backendCallbackURL string
 	providerPrettyName string
 	testingAutoSelect  string
@@ -67,20 +68,18 @@ type handler struct {
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister
 
 	kubeManager *kubernetes.Manager
-
-	oidcAuthorizeURL string
 }
 
 func NewHandler(
 	provider *OIDCServiceProvider,
-	backendCallbackURL, providerPrettyName, testingAutoSelect string,
+	oidcAuthorizeURL, backendCallbackURL, providerPrettyName, testingAutoSelect string,
 	scope kubebindv1alpha1.Scope,
 	mgr *kubernetes.Manager,
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,
-	oidcAuthorizeURL string,
 ) (*handler, error) {
 	return &handler{
 		oidc:                provider,
+		oidcAuthorizeURL:    oidcAuthorizeURL,
 		backendCallbackURL:  backendCallbackURL,
 		providerPrettyName:  providerPrettyName,
 		testingAutoSelect:   testingAutoSelect,
@@ -88,7 +87,6 @@ func NewHandler(
 		client:              http.DefaultClient,
 		kubeManager:         mgr,
 		apiextensionsLister: apiextensionsLister,
-		oidcAuthorizeURL:    oidcAuthorizeURL,
 	}, nil
 }
 

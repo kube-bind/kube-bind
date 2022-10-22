@@ -277,7 +277,7 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 
 	crds, err := h.apiextensionsLister.List(labels.Everything())
 	if err != nil {
-		logger.Info("failed to list crds", "error", err)
+		logger.Error(err, "failed to list crds")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -299,7 +299,7 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		SessionID: r.URL.Query().Get("s"),
 		CRDs:      rightScopedCRDs,
 	}); err != nil {
-		logger.Info("failed to execute template", "error", err)
+		logger.Error(err, "failed to execute template")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -315,14 +315,14 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	ck, err := r.Cookie("kube-bind-" + r.URL.Query().Get("s"))
 	if err != nil {
-		logger.Info("failed to get session cookie", "error", err)
+		logger.Error(err, "failed to get session cookie")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
 	state, err := cookie.Decode(ck.Value)
 	if err != nil {
-		logger.Info("failed to decode session cookie", "error", err)
+		logger.Error(err, "failed to decode session cookie")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -332,7 +332,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		Issuer  string `json:"iss"`
 	}
 	if err := json.Unmarshal([]byte(state.IDToken), &idToken); err != nil {
-		logger.Info("failed to unmarshal id token", "error", err)
+		logger.Error(err, "failed to unmarshal id token")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -341,7 +341,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	resource := r.URL.Query().Get("resource")
 	kfg, err := h.kubeManager.HandleResources(r.Context(), idToken.Subject+"#"+state.ClusterID, resource, group)
 	if err != nil {
-		logger.Info("failed to handle resources", "error", err)
+		logger.Error(err, "failed to handle resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -367,7 +367,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	// callback response
 	requestBytes, err := json.Marshal(&request)
 	if err != nil {
-		logger.Info("failed to marshal request", "error", err)
+		logger.Error(err, "failed to marshal request")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -387,7 +387,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	}
 	payload, err := json.Marshal(&response)
 	if err != nil {
-		logger.Info("failed to marshal auth response", "error", err)
+		logger.Error(err, "failed to marshal auth response")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -396,7 +396,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	parsedAuthURL, err := url.Parse(state.RedirectURL)
 	if err != nil {
-		logger.Info("failed to parse redirect url", "error", err)
+		logger.Error(err, "failed to parse redirect url")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}

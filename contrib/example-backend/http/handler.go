@@ -101,8 +101,9 @@ func (h *handler) AddRoutes(mux *mux.Router) {
 func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
 
-	if h.oidcAuthorizeURL == "" {
-		h.oidcAuthorizeURL = fmt.Sprintf("http://%s/authorize", r.Host)
+	oidcAuthorizeURL := h.oidcAuthorizeURL
+	if oidcAuthorizeURL == "" {
+		oidcAuthorizeURL = fmt.Sprintf("http://%s/authorize", r.Host)
 	}
 
 	provider := &kubebindv1alpha1.BindingProvider{
@@ -115,7 +116,7 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 			{
 				Method: "OAuth2CodeGrant",
 				OAuth2CodeGrant: &kubebindv1alpha1.OAuth2CodeGrant{
-					AuthenticatedURL: h.oidcAuthorizeURL,
+					AuthenticatedURL: oidcAuthorizeURL,
 				},
 			},
 		},

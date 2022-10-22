@@ -94,6 +94,7 @@ func NewServer(config *Config) (*Server, error) {
 	}
 	handler, err := examplehttp.NewHandler(
 		s.OIDC,
+		config.Options.OIDC.AuthorizeURL,
 		callback,
 		config.Options.PrettyName,
 		config.Options.TestingAutoSelect,

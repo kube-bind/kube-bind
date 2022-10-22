@@ -59,6 +59,7 @@ type handler struct {
 	oidc *OIDCServiceProvider
 
 	scope              kubebindv1alpha1.Scope
+	oidcAuthorizeURL   string
 	backendCallbackURL string
 	providerPrettyName string
 	testingAutoSelect  string
@@ -71,13 +72,14 @@ type handler struct {
 
 func NewHandler(
 	provider *OIDCServiceProvider,
-	backendCallbackURL, providerPrettyName, testingAutoSelect string,
+	oidcAuthorizeURL, backendCallbackURL, providerPrettyName, testingAutoSelect string,
 	scope kubebindv1alpha1.Scope,
 	mgr *kubernetes.Manager,
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,
 ) (*handler, error) {
 	return &handler{
 		oidc:                provider,
+		oidcAuthorizeURL:    oidcAuthorizeURL,
 		backendCallbackURL:  backendCallbackURL,
 		providerPrettyName:  providerPrettyName,
 		testingAutoSelect:   testingAutoSelect,
@@ -99,6 +101,10 @@ func (h *handler) AddRoutes(mux *mux.Router) {
 func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
 
+	if h.oidcAuthorizeURL == "" {
+		h.oidcAuthorizeURL = fmt.Sprintf("http://%s/authorize", r.Host)
+	}
+
 	provider := &kubebindv1alpha1.BindingProvider{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha1.GroupVersion,
@@ -109,7 +115,7 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 			{
 				Method: "OAuth2CodeGrant",
 				OAuth2CodeGrant: &kubebindv1alpha1.OAuth2CodeGrant{
-					AuthenticatedURL: fmt.Sprintf("http://%s/authorize", r.Host),
+					AuthenticatedURL: h.oidcAuthorizeURL,
 				},
 			},
 		},

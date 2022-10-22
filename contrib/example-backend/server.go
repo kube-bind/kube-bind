@@ -100,6 +100,7 @@ func NewServer(config *Config) (*Server, error) {
 		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
 		s.Kubernetes,
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),
+		config.Options.OIDC.AuthorizeURL,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)

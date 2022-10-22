@@ -67,6 +67,8 @@ type handler struct {
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister
 
 	kubeManager *kubernetes.Manager
+
+	oidcAuthorizeURL string
 }
 
 func NewHandler(
@@ -75,6 +77,7 @@ func NewHandler(
 	scope kubebindv1alpha1.Scope,
 	mgr *kubernetes.Manager,
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,
+	oidcAuthorizeURL string,
 ) (*handler, error) {
 	return &handler{
 		oidc:                provider,
@@ -85,6 +88,7 @@ func NewHandler(
 		client:              http.DefaultClient,
 		kubeManager:         mgr,
 		apiextensionsLister: apiextensionsLister,
+		oidcAuthorizeURL:    oidcAuthorizeURL,
 	}, nil
 }
 
@@ -109,7 +113,7 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 			{
 				Method: "OAuth2CodeGrant",
 				OAuth2CodeGrant: &kubebindv1alpha1.OAuth2CodeGrant{
-					AuthenticatedURL: fmt.Sprintf("http://%s/authorize", r.Host),
+					AuthenticatedURL: h.oidcAuthorizeURL,
 				},
 			},
 		},

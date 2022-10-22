@@ -27,6 +27,7 @@ type OIDC struct {
 	IssuerClientSecret string
 	IssuerURL          string
 	CallbackURL        string
+	AuthorizeURL       string
 }
 
 func NewOIDC() *OIDC {
@@ -38,6 +39,7 @@ func (options *OIDC) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.IssuerClientSecret, "oidc-issuer-client-secret", options.IssuerClientSecret, "OpenID client secret")
 	fs.StringVar(&options.IssuerURL, "oidc-issuer-url", options.IssuerURL, "Callback URL for OpenID responses.")
 	fs.StringVar(&options.CallbackURL, "oidc-callback-url", options.CallbackURL, "OpenID callback URL")
+	fs.StringVar(&options.AuthorizeURL, "oidc-authorize-url", options.AuthorizeURL, "OpenID authorize URL")
 }
 
 func (options *OIDC) Complete() error {
@@ -56,6 +58,9 @@ func (options *OIDC) Validate() error {
 	}
 	if options.CallbackURL == "" {
 		return fmt.Errorf("OIDC callback URL cannot be empty")
+	}
+	if options.AuthorizeURL == "" {
+		return fmt.Errorf("OIDC authorize URL cannot be empty")
 	}
 
 	return nil

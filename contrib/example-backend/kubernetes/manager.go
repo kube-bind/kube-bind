@@ -41,9 +41,10 @@ type Manager struct {
 	namespacePrefix    string
 	providerPrettyName string
 
-	clusterConfig   *rest.Config
-	externalAddress string
-	externalCA      []byte
+	clusterConfig         *rest.Config
+	externalAddress       string
+	externalCA            []byte
+	externalTLSServerName string
 
 	kubeClient kubeclient.Interface
 	bindClient bindclient.Interface
@@ -60,6 +61,7 @@ func NewKubernetesManager(
 	config *rest.Config,
 	externalAddress string,
 	externalCA []byte,
+	externalTLSServerName string,
 	namespaceInformer corev1informers.NamespaceInformer,
 	exportInformer bindinformers.APIServiceExportInformer,
 ) (*Manager, error) {
@@ -79,9 +81,10 @@ func NewKubernetesManager(
 		namespacePrefix:    namespacePrefix,
 		providerPrettyName: providerPrettyName,
 
-		clusterConfig:   config,
-		externalAddress: externalAddress,
-		externalCA:      externalCA,
+		clusterConfig:         config,
+		externalAddress:       externalAddress,
+		externalCA:            externalCA,
+		externalTLSServerName: externalTLSServerName,
 
 		kubeClient: kubeClient,
 		bindClient: bindClient,
@@ -155,7 +158,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		return nil, err
 	}
 
-	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig, m.externalAddress, m.externalCA, saSecret.Name, ns, kubeconfigSecretName)
+	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, m.kubeClient, m.clusterConfig, m.externalAddress, m.externalCA, m.externalTLSServerName, saSecret.Name, ns, kubeconfigSecretName)
 	if err != nil {
 		return nil, err
 	}

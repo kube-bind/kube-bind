@@ -85,6 +85,7 @@ func NewServer(config *Config) (*Server, error) {
 		config.ClientConfig,
 		config.Options.ExternalAddress,
 		config.Options.ExternalCA,
+		config.Options.TLSExternalServerName,
 		config.KubeInformers.Core().V1().Namespaces(),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
 	)

@@ -406,6 +406,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	parsedAuthURL.RawQuery = values.Encode()
 
+	logger.V(1).Info("redirecting to auth callback", "url", state.RedirectURL+"?response=<redacted>")
 	http.Redirect(w, r, parsedAuthURL.String(), http.StatusFound)
 }
 

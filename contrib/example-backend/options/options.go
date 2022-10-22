@@ -40,12 +40,13 @@ type Options struct {
 type ExtraOptions struct {
 	KubeConfig string
 
-	NamespacePrefix string
-	PrettyName      string
-	ConsumerScope   string
-	ExternalAddress string
-	ExternalCAFile  string
-	ExternalCA      []byte
+	NamespacePrefix       string
+	PrettyName            string
+	ConsumerScope         string
+	ExternalAddress       string
+	ExternalCAFile        string
+	ExternalCA            []byte
+	TLSExternalServerName string
 
 	TestingAutoSelect string
 }
@@ -91,6 +92,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.ConsumerScope, "consumer-scope", options.ConsumerScope, "How consumers access the service provider cluster. In Kubernetes, \"namespaced\" allows namespace isolation. In kcp, \"cluster\" allows workspace isolation, and with that allows cluster-scoped resources to bind and it is generally more performant.")
 	fs.StringVar(&options.ExternalAddress, "external-address", options.ExternalAddress, "The external address for the service provider cluster, including https:// and port. If not specified, service account's hosts are used.")
 	fs.StringVar(&options.ExternalCAFile, "external-ca-file", options.ExternalCAFile, "The external CA file for the service provider cluster. If not specified, service account's CA is used.")
+	fs.StringVar(&options.TLSExternalServerName, "external-server-name", options.TLSExternalServerName, "The external (TLS) server name used by consumers to talk to the service provider cluster. This can be useful to select the right certificate via SNI.")
 
 	fs.StringVar(&options.TestingAutoSelect, "testing-auto-select", options.TestingAutoSelect, "<resource>.<group> that is automatically selected on th bind screen for testing")
 	fs.MarkHidden("testing-auto-select") // nolint: errcheck

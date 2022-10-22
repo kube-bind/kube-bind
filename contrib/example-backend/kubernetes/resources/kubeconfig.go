@@ -38,6 +38,7 @@ func GenerateKubeconfig(ctx context.Context,
 	clusterConfig *rest.Config,
 	externalAddress string,
 	externalCA []byte,
+	externalTLSServerName string,
 	saSecretName, ns, kubeconfigSecretName string,
 ) (*corev1.Secret, error) {
 	logger := klog.FromContext(ctx)
@@ -67,6 +68,7 @@ func GenerateKubeconfig(ctx context.Context,
 		Clusters: map[string]*clientcmdapi.Cluster{
 			"default": {
 				Server:                   externalAddress,
+				TLSServerName:            externalTLSServerName,
 				CertificateAuthorityData: externalCA,
 			},
 		},

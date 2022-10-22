@@ -19,8 +19,6 @@ package resources
 import (
 	"context"
 	"fmt"
-	"net"
-	"net/url"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -38,21 +36,17 @@ import (
 func GenerateKubeconfig(ctx context.Context,
 	client kubernetes.Interface,
 	clusterConfig *rest.Config,
-	externalHost string,
+	externalAddress string,
+	externalCA []byte,
 	saSecretName, ns, kubeconfigSecretName string,
 ) (*corev1.Secret, error) {
 	logger := klog.FromContext(ctx)
 
-	if externalHost == "" {
-		externalHost = clusterConfig.Host
+	if externalAddress == "" {
+		externalAddress = clusterConfig.Host
 	}
-	clusterURL, err := url.Parse(clusterConfig.Host)
-	if err != nil {
-		return nil, err
-	}
-	clusterHost, _, err := net.SplitHostPort(clusterURL.Host)
-	if err != nil {
-		return nil, err
+	if externalCA == nil {
+		externalCA = clusterConfig.CAData
 	}
 
 	var saSecret *corev1.Secret
@@ -72,9 +66,8 @@ func GenerateKubeconfig(ctx context.Context,
 	cfg := clientcmdapi.Config{
 		Clusters: map[string]*clientcmdapi.Cluster{
 			"default": {
-				Server:                   externalHost,
-				TLSServerName:            clusterHost,
-				CertificateAuthorityData: clusterConfig.CAData,
+				Server:                   externalAddress,
+				CertificateAuthorityData: externalCA,
 			},
 		},
 		Contexts: map[string]*clientcmdapi.Context{

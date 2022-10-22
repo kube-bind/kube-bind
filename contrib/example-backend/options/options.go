@@ -19,6 +19,7 @@ package options
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -42,7 +43,9 @@ type ExtraOptions struct {
 	NamespacePrefix string
 	PrettyName      string
 	ConsumerScope   string
-	ExternalHost    string
+	ExternalAddress string
+	ExternalCAFile  string
+	ExternalCA      []byte
 
 	TestingAutoSelect string
 }
@@ -86,7 +89,8 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.NamespacePrefix, "namespace-prefix", options.NamespacePrefix, "The prefix to use for cluster namespaces")
 	fs.StringVar(&options.PrettyName, "pretty-name", options.PrettyName, "Pretty name for the backend")
 	fs.StringVar(&options.ConsumerScope, "consumer-scope", options.ConsumerScope, "How consumers access the service provider cluster. In Kubernetes, \"namespaced\" allows namespace isolation. In kcp, \"cluster\" allows workspace isolation, and with that allows cluster-scoped resources to bind and it is generally more performant.")
-	fs.StringVar(&options.ExternalHost, "external-hostname", options.ExternalHost, "The external hostname for the backend, including https:// and port. If not specified, service account's hosts are used.")
+	fs.StringVar(&options.ExternalAddress, "external-address", options.ExternalAddress, "The external address for the service provider cluster, including https:// and port. If not specified, service account's hosts are used.")
+	fs.StringVar(&options.ExternalCAFile, "external-ca-file", options.ExternalCAFile, "The external CA file for the service provider cluster. If not specified, service account's CA is used.")
 
 	fs.StringVar(&options.TestingAutoSelect, "testing-auto-select", options.TestingAutoSelect, "<resource>.<group> that is automatically selected on th bind screen for testing")
 	fs.MarkHidden("testing-auto-select") // nolint: errcheck
@@ -106,6 +110,17 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 	}
 	if strings.ToLower(options.ConsumerScope) == "cluster" {
 		options.ConsumerScope = string(kubebindv1alpha1.ClusterScope)
+	}
+
+	if options.ExternalCAFile != "" && options.ExternalCA != nil {
+		return nil, fmt.Errorf("cannot specify both --external-ca-file and set ExternalCA")
+	}
+	if options.ExternalCAFile != "" {
+		ca, err := os.ReadFile(options.ExternalCAFile)
+		if err != nil {
+			return nil, fmt.Errorf("error reading external CA file: %v", err)
+		}
+		options.ExternalCA = ca
 	}
 
 	return &CompletedOptions{
@@ -133,11 +148,11 @@ func (options *CompletedOptions) Validate() error {
 		return fmt.Errorf("consumer scope must be either %q or %q", kubebindv1alpha1.NamespacedScope, kubebindv1alpha1.ClusterScope)
 	}
 
-	if options.ExternalHost != "" {
-		if !strings.HasPrefix(options.ExternalHost, "https://") {
+	if options.ExternalAddress != "" {
+		if !strings.HasPrefix(options.ExternalAddress, "https://") {
 			return fmt.Errorf("external hostname must start with https://")
 		}
-		_, err := url.Parse(options.ExternalHost)
+		_, err := url.Parse(options.ExternalAddress)
 		if err != nil {
 			return fmt.Errorf("invalid external hostname: %v", err)
 		}

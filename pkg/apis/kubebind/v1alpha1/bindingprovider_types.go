@@ -41,7 +41,7 @@ type BindingProvider struct {
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength=1
-	AuthenticationMethods []AuthenticationMethod `json:"authenticationMethod,omitempty"`
+	AuthenticationMethods []AuthenticationMethod `json:"authenticationMethods,omitempty"`
 }
 
 type AuthenticationMethod struct {

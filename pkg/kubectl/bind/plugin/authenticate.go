@@ -75,10 +75,11 @@ func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, a
 	values.Add("c", clusterID)
 	u.RawQuery = values.Encode()
 
-	fmt.Fprintf(b.Options.ErrOut, "\nTo authenticate, visit %s in your browser or scan the QRCode below:\n\n", u.String()) // nolint: errcheck
+	fmt.Fprintf(b.Options.ErrOut, "\nTo authenticate, visit %s in your browser", u.String()) // nolint: errcheck
 
 	// TODO(sttts): callback backend, not 127.0.0.1
 	if false {
+		fmt.Fprintf(b.Options.ErrOut, " or scan the QRCode below")
 		config := qrterminal.Config{
 			Level:     qrterminal.L,
 			Writer:    b.Options.ErrOut,
@@ -88,6 +89,7 @@ func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, a
 		}
 		qrterminal.GenerateWithConfig(u.String(), config)
 	}
+	fmt.Fprintf(b.Options.ErrOut, ".\n\n")
 
 	if urlCh != nil {
 		urlCh <- u.String()

@@ -54,7 +54,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 			if existing.Spec.KubeconfigSecretRef.Namespace != "kube-bind" || existing.Spec.KubeconfigSecretRef.Name != secretName {
 				return nil, fmt.Errorf("found existing APIServiceBinding %s not from this service provider", name)
 			}
-			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Updating existing APIServiceBinding %s.\n", existing.Name) // nolint: errcheck
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Updating existing APIServiceBinding %s.\n", existing.Name) // nolint: errcheck
 			bindings = append(bindings, existing)
 
 			// checking CRD to match the binding
@@ -104,7 +104,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 			)
 			_, _ = bindClient.KubeBindV1alpha1().APIServiceBindings().UpdateStatus(ctx, created, metav1.UpdateOptions{}) // nolint:errcheck
 
-			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Created APIServiceBinding %s.%s\n", resource.Resource, resource.Group) // nolint: errcheck
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Created APIServiceBinding %s.%s\n", resource.Resource, resource.Group) // nolint: errcheck
 			bindings = append(bindings, created)
 			return true, nil
 		}); err != nil {

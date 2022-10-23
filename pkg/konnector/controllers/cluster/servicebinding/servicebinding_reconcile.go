@@ -19,9 +19,7 @@ package servicebinding
 import (
 	"context"
 
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -167,8 +165,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha1.A
 	}
 
 	crd.ObjectMeta = existing.ObjectMeta
-	updated, err := r.updateCRD(ctx, crd)
-	if err != nil && !errors.IsInvalid(err) {
+	if _, err := r.updateCRD(ctx, crd); err != nil && !errors.IsInvalid(err) {
 		return nil
 	} else if errors.IsInvalid(err) {
 		conditions.MarkFalse(
@@ -183,32 +180,6 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha1.A
 	}
 
 	conditions.MarkTrue(binding, kubebindv1alpha1.APIServiceBindingConditionConnected)
-
-	// copy the CRD status onto the APIServiceExport
-	orig := export
-	export = export.DeepCopy()
-	export.Status.Conditions = nil
-	for _, c := range updated.Status.Conditions {
-		severity := conditionsapi.ConditionSeverityError
-		if c.Status == apiextensionsv1.ConditionTrue {
-			severity = conditionsapi.ConditionSeverityNone
-		}
-		export.Status.Conditions = append(export.Status.Conditions, conditionsapi.Condition{
-			Type:               conditionsapi.ConditionType(c.Type),
-			Status:             corev1.ConditionStatus(c.Status),
-			Severity:           severity, // CRD conditions have no severity
-			LastTransitionTime: c.LastTransitionTime,
-			Reason:             c.Reason,
-			Message:            c.Message,
-		})
-	}
-	export.Status.AcceptedNames = updated.Status.AcceptedNames
-	export.Status.StoredVersions = updated.Status.StoredVersions
-	if !equality.Semantic.DeepEqual(orig, export) {
-		if _, err := r.updateServiceExportStatus(ctx, export); err != nil {
-			errs = append(errs, err)
-		}
-	}
 
 	return utilerrors.NewAggregate(errs)
 }

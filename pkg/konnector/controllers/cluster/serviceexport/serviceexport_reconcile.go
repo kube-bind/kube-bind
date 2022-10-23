@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	runtimeschema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -69,6 +70,9 @@ func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebin
 	}
 
 	if export != nil {
+		if err := r.ensureServiceBindingConditionCopied(ctx, export); err != nil {
+			errs = append(errs, err)
+		}
 		if err := r.ensureCRDConditionsCopied(ctx, export); err != nil {
 			errs = append(errs, err)
 		}
@@ -275,6 +279,51 @@ func (r *reconciler) ensureServiceBindingConditionCopied(ctx context.Context, ex
 			binding.Name,
 		)
 	}
+
+	return nil
+}
+
+func (r *reconciler) ensureCRDConditionsCopied(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
+	crd, err := r.getCRD(export.Name)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	} else if errors.IsNotFound(err) {
+		return nil //nothing to copy.
+	}
+
+	exportIndex := map[conditionsapi.ConditionType]int{}
+	for i, c := range export.Status.Conditions {
+		exportIndex[c.Type] = i
+	}
+	for _, c := range crd.Status.Conditions {
+		if conditionsapi.ConditionType(c.Type) == conditionsapi.ReadyCondition {
+			continue
+		}
+
+		severity := conditionsapi.ConditionSeverityError
+		if c.Status == apiextensionsv1.ConditionTrue {
+			severity = conditionsapi.ConditionSeverityNone
+		}
+		copied := conditionsapi.Condition{
+			Type:               conditionsapi.ConditionType(c.Type),
+			Status:             corev1.ConditionStatus(c.Status),
+			Severity:           severity, // CRD conditions have no severity
+			LastTransitionTime: c.LastTransitionTime,
+			Reason:             c.Reason,
+			Message:            c.Message,
+		}
+
+		// update or append
+		if i, found := exportIndex[conditionsapi.ConditionType(c.Type)]; found {
+			export.Status.Conditions[i] = copied
+		} else {
+			export.Status.Conditions = append(export.Status.Conditions, copied)
+		}
+	}
+	conditions.SetSummary(export)
+
+	export.Status.AcceptedNames = crd.Status.AcceptedNames
+	export.Status.StoredVersions = crd.Status.StoredVersions
 
 	return nil
 }

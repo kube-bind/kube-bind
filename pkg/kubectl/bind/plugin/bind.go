@@ -183,13 +183,15 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return err
 	}
 
-	if err := auth.Execute(ctx); err != nil {
+	err = auth.Execute(ctx)
+	fmt.Fprintf(b.Options.ErrOut, "\n\n")
+	if err != nil {
 		return err
 	} else if response == nil {
 		return fmt.Errorf("authentication timeout")
 	}
 
-	fmt.Fprintf(b.IOStreams.ErrOut, "Successfully authenticated to %s\n", exportURL.String()) // nolint: errcheck
+	fmt.Fprintf(b.IOStreams.ErrOut, "🔑 Successfully authenticated to %s\n", exportURL.String()) // nolint: errcheck
 
 	// verify the response
 	if gvk.GroupVersion() != kubebindv1alpha1.SchemeGroupVersion || gvk.Kind != "BindingResponse" {
@@ -231,7 +233,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	} else if err == nil {
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Created kube-binding namespace.\n") // nolint: errcheck
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "📦 Created kube-binding namespace.\n") // nolint: errcheck
 	}
 
 	// copy kubeconfig into local cluster
@@ -248,9 +250,9 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return err
 	}
 	if created {
-		fmt.Fprintf(b.Options.ErrOut, "Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+		fmt.Fprintf(b.Options.ErrOut, "🔒 Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
 	} else {
-		fmt.Fprintf(b.Options.ErrOut, "Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+		fmt.Fprintf(b.Options.ErrOut, "🔒 Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
 	}
 
 	// print the request in dry-run mode
@@ -301,7 +303,8 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 
 		// TODO: support passing through the base options
 
-		fmt.Fprintf(b.Options.ErrOut, "Executing: %s %s\n", "kubectl bind", strings.Join(args, " ")) // nolint: errcheck
+		fmt.Fprintf(b.Options.ErrOut, "🚀 Executing: %s %s\n", "kubectl bind", strings.Join(args, " ")) // nolint: errcheck
+		fmt.Fprintf(b.Options.ErrOut, "✨ Use \"-o yaml\" and \"--dry-run\" to get the APIServiceBindingRequest and pass it to \"kubectl bind apiservice\" directly. Great for automation.\n")
 		command := exec.CommandContext(ctx, executable, append(args, "--no-banner")...)
 		command.Stdin = bytes.NewReader(bs)
 		command.Stdout = b.Options.Out

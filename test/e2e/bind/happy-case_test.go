@@ -216,6 +216,18 @@ spec:
 				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the MangoDB instance to be deleted on provider side")
 			},
 		},
+		{
+			name: "Bind again",
+			step: func(t *testing.T) {
+				authURLCh := make(chan string, 1)
+				go simulateBrowser(t, authURLCh, "mangodbs")
+				invocations := make(chan framework.SubCommandInvocation, 1)
+				framework.Bind(t, authURLCh, invocations, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
+				inv := <-invocations
+				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
+				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.step(t)

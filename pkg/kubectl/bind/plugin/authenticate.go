@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 
@@ -52,7 +53,7 @@ func getProvider(url string) (*kubebindv1alpha1.BindingProvider, error) {
 	return provider, nil
 }
 
-func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, authEndpoint, sessionID, clusterID string, urlCh chan<- string) error {
+func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, callback, sessionID, clusterID string, urlCh chan<- string) error {
 	var oauth2Method *kubebindv1alpha1.OAuth2CodeGrant
 	for _, m := range provider.AuthenticationMethods {
 		if m.Method == "OAuth2CodeGrant" {
@@ -69,8 +70,17 @@ func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, a
 		return fmt.Errorf("failed to parse auth url: %v", err)
 	}
 
+	cbURL, err := url.Parse(callback)
+	if err != nil {
+		return fmt.Errorf("failed to parse callback url: %v", err)
+	}
+	_, cbPort, err := net.SplitHostPort(cbURL.Host)
+	if err != nil {
+		return fmt.Errorf("failed to parse callback port: %v", err)
+	}
+
 	values := u.Query()
-	values.Add("u", authEndpoint)
+	values.Add("p", cbPort)
 	values.Add("s", sessionID)
 	values.Add("c", clusterID)
 	u.RawQuery = values.Encode()

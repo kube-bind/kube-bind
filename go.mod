@@ -10,6 +10,7 @@ require (
 	github.com/fatih/color v1.12.0
 	github.com/google/go-cmp v0.5.8
 	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/securecookie v1.1.1
 	github.com/headzoo/surf v1.0.1
 	github.com/kcp-dev/kcp/pkg/apis v0.9.1
 	github.com/labstack/echo/v4 v4.9.0

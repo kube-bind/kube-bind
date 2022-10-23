@@ -17,16 +17,15 @@ limitations under the License.
 package cookie
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"time"
 )
 
-func MakeCookie(req *http.Request, name string, value []byte, expiration time.Duration) *http.Cookie {
+func MakeCookie(req *http.Request, name string, value string, expiration time.Duration) *http.Cookie {
 	return &http.Cookie{
 		Name:     name,
-		Value:    base64.RawURLEncoding.EncodeToString(value),
+		Value:    value,
 		Path:     "/", // TODO: make configurable
 		Domain:   "",  // TODO: add domain support
 		Expires:  time.Now().Add(expiration),

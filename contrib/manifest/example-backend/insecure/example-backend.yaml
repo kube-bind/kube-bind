@@ -33,6 +33,7 @@ spec:
             - --oidc-callback-url=$(OIDC-CALLBACK-URL)
             - --listen-ip=0.0.0.0
             - --listen-port=443
+            - --cookie-signing-key=$(COOKIE-SIGNING-KEY)
           env:
             - name: OIDC-ISSUER-CLIENT-ID
               valueFrom:
@@ -54,6 +55,11 @@ spec:
                 secretKeyRef:
                   name: oidc-config
                   key: oidc-callback-url
+            - name: COOKIE-SIGNING-KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cookie-config
+                  key: signing-key
           resources:
             limits:
               cpu: '2'
@@ -65,6 +71,9 @@ spec:
         - name: oidc-config
           secret:
             secretName: oidc-config
+        - name: cookie-config
+          secret:
+            secretName: cookie-config
 ---
 apiVersion: v1
 kind: Secret

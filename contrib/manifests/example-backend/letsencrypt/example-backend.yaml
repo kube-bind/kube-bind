@@ -1,0 +1,236 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-backend
+  labels:
+    app: example-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: example-backend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: example-backend
+    spec:
+      serviceAccountName: example-backend
+      containers:
+        - name: example-backend
+          image: ghcr.io/kube-bind/example-backend:latest
+          imagePullPolicy: Always
+          args:
+            - --namespace-prefix=cluster
+            - --pretty-name=MangoDB
+            - --consumer-scope=Namespaced
+            - --oidc-issuer-client-id=$(OIDC-ISSUER-CLIENT-ID)
+            - --oidc-issuer-client-secret=$(OIDC-ISSUER-CLIENT-SECRET)
+            - --oidc-issuer-url=$(OIDC-ISSUER-URL)
+            - --oidc-authorize-url=$(OIDC-AUTHORIZE-URL)
+            - --oidc-callback-url=$(OIDC-CALLBACK-URL)
+            - --listen-ip=0.0.0.0
+            - --listen-port=8080
+            - --external-address=https://api.mangodb.de
+            - --external-ca-file=/etc/tls/ca.crt
+            - --external-server-name=78615b03-d644-4fb7-8395-8a60efd388f2.k8s.ondigitalocean.com
+            - --cookie-signing-key=$(COOKIE-SIGNING-KEY)
+          env:
+            - name: OIDC-ISSUER-CLIENT-ID
+              valueFrom:
+                configMapKeyRef:
+                  name: oidc-config
+                  key: oidc-issuer-client-id
+            - name: OIDC-ISSUER-CLIENT-SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oidc-secret
+                  key: oidc-issuer-client-secret
+            - name: OIDC-ISSUER-URL
+              valueFrom:
+                configMapKeyRef:
+                  name: oidc-config
+                  key: oidc-issuer-url
+            - name: OIDC-AUTHORIZE-URL
+              valueFrom:
+                configMapKeyRef:
+                  name: oidc-config
+                  key: oidc-authorize-url
+            - name: OIDC-CALLBACK-URL
+              valueFrom:
+                configMapKeyRef:
+                  name: oidc-config
+                  key: oidc-callback-url
+            - name: COOKIE-SIGNING-KEY
+              valueFrom:
+                secretKeyRef:
+                  name: oidc-secret
+                  key: cookie-signing-key
+          resources:
+            limits:
+              cpu: '2'
+              memory: 2Gi
+            requests:
+              cpu: '100m'
+              memory: 256Mi
+          volumeMounts:
+          - name: kube-bind-ca
+            mountPath: /etc/tls
+            readOnly: true
+      volumes:
+        - name: oidc-config
+          configMap:
+            name: oidc-config
+        - name: oidc-secret
+          secret:
+            secretName: oidc-config
+        - name: kube-bind-ca
+          secret:
+            secretName: kube-bind-ca
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oidc-config
+data:
+    oidc-issuer-client-id: 'kube-bind'
+    oidc-issuer-url: 'https://mangodb.de/dex'
+    oidc-authorize-url: 'https://mangodb.de/authorize'
+    oidc-callback-url: 'https://mangodb.de/callback'
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kube-bind-ca
+type: Opaque
+data:
+  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURKekNDQWcrZ0F3SUJBZ0lDQm5Vd0RRWUpLb1pJaHZjTkFRRUxCUUF3TXpFVk1CTUdBMVVFQ2hNTVJHbG4KYVhSaGJFOWpaV0Z1TVJvd0dBWURWUVFERXhGck9ITmhZWE1nUTJ4MWMzUmxjaUJEUVRBZUZ3MHlNakV3TWpFeApOVEV3TXpkYUZ3MDBNakV3TWpFeE5URXdNemRhTURNeEZUQVRCZ05WQkFvVERFUnBaMmwwWVd4UFkyVmhiakVhCk1CZ0dBMVVFQXhNUmF6aHpZV0Z6SUVOc2RYTjBaWElnUTBFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUIKRHdBd2dnRUtBb0lCQVFEMUJsNWJVNHVvL3cwd0gxczkwcHMvcDhneW1MTmpVRU4xc2xyNmtpWXYrNkpzbXBqaApVdjE2UHpXOXY4dStRQWpMeUJHUmc3TG0vRVpvcmpZMGxDdTYrSVMrcitxUjZsN3ZETXBYVmdBUE5NWi8zMk12CmVTZ3hTa0FzZmhsb1p0NnA1S0NUcGRFM29XQk9Kc3BVUzRPZG10OWhyempsbEY4eGh2c1lQNXVWZDhBV29FTFUKMFlTbms1Z3JPaWZCMDQzTlVKanNhVk5Ta2V0ekUycWlpTjJuWmlYZnVMSFRDNk9HY0d4VVNSYTBzcUhPQ0pETwpja3BhQlI2Z2ZPR2xkcG4xQXNROEFJdWRxa3ZnTWhoaUkzMU84cXZOS0tFSVlJSGdrTzhYNzh0cmxnb01UWFFQCnFiSFlrUmZaWlRnN0hmWXRGTjRyWmRjV2VyakJOZzYrOGtxVkFnTUJBQUdqUlRCRE1BNEdBMVVkRHdFQi93UUUKQXdJQmhqQVNCZ05WSFJNQkFmOEVDREFHQVFIL0FnRUFNQjBHQTFVZERnUVdCQlJqbS9iOU5JMzcxbFd1U2crOAovZWdYNHAvaXR6QU5CZ2txaGtpRzl3MEJBUXNGQUFPQ0FRRUFmYTV6eHErREVnQUhUanBBSWFvWlE3QTUyTExoCkw5S3NCTzFQOHFZQldqQ2Z2OHV5NHhKaEVYMnlmU3VkR1pTZWNLaXRueERnbmhKanRSNGxuZjJXNVdIZldWNDIKdk5TYldYemc5bzVxVVFNMnl6a1ExV25NV3pxQ2VWMlpOUC9CczJLZWlUeDlMTk5ZZFFiSU01bjkyY0RYNzZGeQpHa09sbGo3djV6cWh5MC9MSWtjNmxnNW0waEd1U3FaUDliUFpvR3lRZWtrQXp3UEZWMWJYcmc4dXJUbFlXWjExCjJ3aGtzeWtCbk5qUHNjajNxWHA1OVpOaVVRUFNsSFBpK2lWb1RmMDJNYmlHb1lUd3FQL0ZUSlVxTHNxa3JoRkkKQjkrZ3lycVNVQTFERzNscUJzNVlzd0RwQ3FIMDEwQkg1YUtvUWFuY2hrQlNBc29ZWVJvS3QvTTdRdz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-backend
+spec:
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      name: example-backend
+      port: 80
+      targetPort: 8080
+  selector:
+    app: example-backend
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: example-backend
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: example-backend
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: example-backend
+  namespace: default
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-backend
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-buffers-number: "4 512k"
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 256k
+spec:
+  tls:
+  - hosts:
+    - mangodb.de
+    secretName: mangodb-tls
+  rules:
+  - host: "mangodb.de"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: example-backend
+            port:
+              number: 80
+      - pathType: Prefix
+        path: "/dex"
+        backend:
+          service:
+            name: dex
+            port:
+              number: 80
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dex
+  labels:
+    app: dex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dex
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: dex
+    spec:
+      containers:
+      - name: dex
+        image: ghcr.io/dexidp/dex:latest-distroless
+        args:
+        - dex
+        - serve
+        - /etc/dex/config.yaml
+        resources:
+          limits:
+            cpu: '2'
+            memory: 2Gi
+          requests:
+            cpu: '100m'
+            memory: 256Mi
+        volumeMounts:
+        - name: dex-config
+          mountPath: /etc/dex
+          readOnly: true
+        - name: mangodb-tls
+          mountPath: /etc/tls
+          readOnly: true
+      volumes:
+      - name: dex-config
+        secret:
+          secretName: dex-config
+      - name: mangodb-tls
+        secret:
+          secretName: mangodb-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dex
+spec:
+  type: ClusterIP
+  ports:
+  - protocol: TCP
+    name: dex
+    port: 80
+    targetPort: 5556
+  selector:
+    app: dex

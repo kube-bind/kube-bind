@@ -169,7 +169,11 @@ func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
 	if err := b.deployKonnector(ctx, config); err != nil {
 		return err
 	}
-	bindings, err := b.createAPIServiceBindings(ctx, config, result, remoteConfig.Host, remoteNamespace, remoteKubeconfig)
+	secretName, err := b.createKubeconfigSecret(ctx, config, remoteConfig.Host, remoteNamespace, remoteKubeconfig)
+	if err != nil {
+		return err
+	}
+	bindings, err := b.createAPIServiceBindings(ctx, config, result, secretName)
 	if err != nil {
 		return err
 	}

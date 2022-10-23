@@ -18,7 +18,6 @@ package servicebinding
 
 import (
 	"context"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -155,20 +154,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha1.A
 	}
 
 	// first check this really ours and we don't override something else
-	foundThis := false
-	for _, ref := range existing.OwnerReferences {
-		parts := strings.SplitN(ref.APIVersion, "/", 2)
-		if parts[0] != kubebindv1alpha1.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
-			continue
-		}
-		if ref.Name == binding.Name {
-			// found our own reference
-			foundThis = true
-			break
-		}
-	}
-	if !foundThis {
-		// this is not our CRD, we should not touch it
+	if !kubebindhelpers.IsOwnedByBinding(binding.Name, binding.UID, crd.OwnerReferences) {
 		conditions.MarkFalse(
 			binding,
 			kubebindv1alpha1.APIServiceBindingConditionConnected,

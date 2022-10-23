@@ -164,25 +164,10 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 		runtime.HandleError(fmt.Errorf("unexpected type %T", obj))
 		return
 	}
-	if indexers.ByServiceBindingKubeconfigSecretKey(binding) != c.consumerSecretRefKey {
-		return // not for us
-	}
 
-	crds, err := c.crdInformer.Informer().GetIndexer().ByIndex(indexers.CRDByServiceBinding, binding.Name)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-
-	for _, crd := range crds {
-		key, err := cache.MetaNamespaceKeyFunc(crd)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
-		}
-		logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceBinding", "APIServiceBindingKey", binding.Name)
-		c.queue.Add(key)
-	}
+	key := c.providerNamespace + "/" + binding.Name
+	logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceBinding", "APIServiceBindingKey", binding.Name)
+	c.queue.Add(key)
 }
 
 func (c *controller) enqueueCRD(logger klog.Logger, obj interface{}) {

@@ -52,7 +52,6 @@ func FindRemoteKubeconfig(ctx context.Context, kubeClient *kubernetes.Clientset,
 	if err != nil {
 		return "", err
 	}
-	var secretName string
 	for _, s := range secrets.Items {
 		logger := logger.WithValues("namespace", "kube-bind", "name", s.Name)
 		bs, found := s.Data["kubeconfig"]
@@ -74,10 +73,9 @@ func FindRemoteKubeconfig(ctx context.Context, kubeClient *kubernetes.Clientset,
 			continue
 		}
 
-		// host and namesapce match
-		secretName = s.Name
+		return s.Name, nil
 	}
-	return secretName, nil
+	return "", nil
 }
 
 // EnsureKubeconfigSecret create a secret which contains the service binding authenticated data such as

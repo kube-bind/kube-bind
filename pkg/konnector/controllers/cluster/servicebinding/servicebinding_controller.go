@@ -204,8 +204,8 @@ func (c *controller) enqueueCRD(logger klog.Logger, obj interface{}) {
 	}
 	for _, obj := range exports {
 		export := obj.(*kubebindv1alpha1.APIServiceExport)
-		key := c.providerNamespace + "/" + export.Name
-		logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "CustomResourceDefinition", "CustomResourceDefinitionKey", name)
+		key := export.Name
+		logger.V(2).Info("queueing APIServiceBinding", "key", key, "reason", "CustomResourceDefinition", "CustomResourceDefinitionKey", name)
 		c.queue.Add(key)
 	}
 }

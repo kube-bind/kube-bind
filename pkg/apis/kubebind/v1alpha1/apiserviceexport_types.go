@@ -17,52 +17,51 @@ limitations under the License.
 package v1alpha1
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
+)
+
+const (
+	SourceSpecHashAnnotationKey = "kube-bind.io/source-spec-hash"
 )
 
 const (
 	// APIServiceExportConditionConnected means the APIServiceExport has been connected to a APIServiceBinding.
 	APIServiceExportConditionConnected conditionsapi.ConditionType = "Connected"
 
-	// APIServiceExportConditionServiceBindingReady is set to true when the APIServiceExport is ready.
-	APIServiceExportConditionServiceBindingReady conditionsapi.ConditionType = "ExportReady"
+	// APIServiceExportConditionProviderInSync is set to true when the APIServiceExport
+	// is in-sync with the CRD in the service provider cluster.
+	APIServiceExportConditionProviderInSync conditionsapi.ConditionType = "ProviderInSync"
 
-	// APIServiceExportConditionResourcesValid is set to true when the APIServiceExport's
-	// resources exist and are valid.
-	APIServiceExportConditionResourcesValid conditionsapi.ConditionType = "ResourcesValid"
-
-	// APIServiceExportConditionSchemaInSync is set to true when the APIServiceExport's
+	// APIServiceExportConditionConsumerInSync is set to true when the APIServiceExport's
 	// schema is applied to the consumer cluster.
-	APIServiceExportConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"
-
-	// APIServiceExportConditionResourcesInSync is set to true when the APIServiceExport's
-	// resources are in sync with the CRDs.
-	APIServiceExportConditionResourcesInSync conditionsapi.ConditionType = "ResourcesInSync"
+	APIServiceExportConditionConsumerInSync conditionsapi.ConditionType = "ConsumerInSync"
 )
 
-// APIServiceExport specifies an API service to be exported to a consumer cluster. The
-// consumer cluster is defined by the ClusterBinding singleton in the same namespace.
+// APIServiceExport specifies the resource to be exported. It is mostly a CRD:
+// - the spec is a CRD spec, but without webhooks
+// - the status reflects that on the consumer cluster
 //
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type=="Ready")].status`,priority=0
+// +kubebuilder:printcolumn:name="Established",type="string",JSONPath=`.status.conditions[?(@.type=="Established")].status`,priority=5
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
 type APIServiceExport struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// spec represents the data in the newly created service binding export.
-	//
+	// spec specifies the resource.
 	// +required
 	// +kubebuilder:validation:Required
 	Spec APIServiceExportSpec `json:"spec"`
 
-	// status contains reconciliation information for the service binding export.
+	// status contains reconciliation information for the resource.
 	Status APIServiceExportStatus `json:"status,omitempty"`
 }
 
@@ -74,15 +73,13 @@ func (in *APIServiceExport) SetConditions(conditions conditionsapi.Conditions) {
 	in.Status.Conditions = conditions
 }
 
+// APIServiceExportSpec defines the desired state of APIServiceExport.
+//
+// +kubebuilder:validation:XValidation:rule=`self.scope == "Namespaced" || self.informerScope == "Cluster"`,message="informerScope is must be Cluster for cluster-scoped resources"
 type APIServiceExportSpec struct {
-	// resources are the resources to be bound into the consumer cluster.
-	//
-	// +listType=map
-	// +listMapKey=group
-	// +listMapKey=resource
-	Resources []APIServiceExportGroupResource `json:"resources,omitempty"`
+	APIServiceExportCRDSpec `json:",inline"`
 
-	// scope is the scope of the APIServiceExport. It can be either Cluster or Namespace.
+	// informerScope is the scope of the APIServiceExport. It can be either Cluster or Namespace.
 	//
 	// Cluster:    The konnector has permission to watch all namespaces at once and cluster-scoped resources.
 	//             This is more efficient than watching each namespace individually.
@@ -91,35 +88,126 @@ type APIServiceExportSpec struct {
 	//
 	// +required
 	// +kubebuilder:validation:Required
-	Scope Scope `json:"scope"`
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="informerScope is immutable"
+	InformerScope Scope `json:"informerScope"`
 }
 
-type APIServiceExportStatus struct {
-	// conditions is a list of conditions that apply to the APIServiceExport.
-	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
-}
-
-type APIServiceExportGroupResource struct {
-	GroupResource `json:",inline"`
-}
-
-// GroupResource identifies a resource.
-type GroupResource struct {
-	// group is the name of an API group.
-	// For core groups this is the empty string '""'.
+type APIServiceExportCRDSpec struct {
+	// group is the API group of the defined custom resource. Empty string means the
+	// core API group. 	The resources are served under `/apis/<group>/...` or `/api` for the core group.
 	//
-	// +kubebuilder:validation:Pattern=`^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$`
-	// +kubebuilder:default=""
-	Group string `json:"group,omitempty"`
+	// +required
+	Group string `json:"group"`
 
-	// resource is the name of the resource.
-	// Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
-	// not provided by an service binding export.
+	// names specify the resource and kind names for the custom resource.
 	//
-	// +kubebuilder:validation:Pattern=`^[a-z][-a-z0-9]*[a-z0-9]$`
+	// +required
+	Names apiextensionsv1.CustomResourceDefinitionNames `json:"names"`
+
+	// scope indicates whether the defined custom resource is cluster- or namespace-scoped.
+	// Allowed values are `Cluster` and `Namespaced`.
+	//
+	// +required
+	// +kubebuilder:validation:Enum=Cluster;Namespaced
+	Scope apiextensionsv1.ResourceScope `json:"scope"`
+
+	// versions is the API version of the defined custom resource.
+	//
+	// Note: the OpenAPI v3 schemas must be equal for all versions until CEL
+	//       version migration is supported.
+	//
+	// +required
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MinItems=1
+	Versions []APIServiceExportVersion `json:"versions"`
+}
+
+// APIServiceExportVersion describes one API version of a resource.
+type APIServiceExportVersion struct {
+	// name is the version name, e.g. “v1”, “v2beta1”, etc.
+	// The custom resources are served under this version at `/apis/<group>/<version>/...` if `served` is true.
+	//
 	// +required
 	// +kubebuilder:validation:Required
-	Resource string `json:"resource"`
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=^v[1-9][0-9]*([a-z]+[1-9][0-9]*)?$
+	Name string `json:"name"`
+	// served is a flag enabling/disabling this version from being served via REST APIs
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:default=true
+	Served bool `json:"served"`
+	// storage indicates this version should be used when persisting custom resources to storage.
+	// There must be exactly one version with storage=true.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Storage bool `json:"storage"`
+	// deprecated indicates this version of the custom resource API is deprecated.
+	// When set to true, API requests to this version receive a warning header in the server response.
+	// Defaults to false.
+	//
+	// +optional
+	Deprecated bool `json:"deprecated,omitempty"`
+	// deprecationWarning overrides the default warning returned to API clients.
+	// May only be set when `deprecated` is true.
+	// The default warning indicates this version is deprecated and recommends use
+	// of the newest served version of equal or greater stability, if one exists.
+	//
+	// +optional
+	DeprecationWarning *string `json:"deprecationWarning,omitempty"`
+	// schema describes the structural schema used for validation, pruning, and defaulting
+	// of this version of the custom resource.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Schema APIServiceExportSchema `json:"schema"`
+	// subresources specify what subresources this version of the defined custom resource have.
+	//
+	// +optional
+	Subresources apiextensionsv1.CustomResourceSubresources `json:"subresources,omitempty"`
+	// additionalPrinterColumns specifies additional columns returned in Table output.
+	// See https://kubernetes.io/docs/reference/using-api/api-concepts/#receiving-resources-as-tables for details.
+	// If no columns are specified, a single column displaying the age of the custom resource is used.
+	//
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	AdditionalPrinterColumns []apiextensionsv1.CustomResourceColumnDefinition `json:"additionalPrinterColumns,omitempty"`
+}
+
+type APIServiceExportSchema struct {
+	// openAPIV3Schema is the OpenAPI v3 schema to use for validation and pruning.
+	//
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +structType=atomic
+	// +required
+	// +kubebuilder:validation:Required
+	OpenAPIV3Schema runtime.RawExtension `json:"openAPIV3Schema"`
+}
+
+// APIServiceExportStatus stores status information about a APIServiceExport. It
+// reflects the status of the CRD of the consumer cluster.
+type APIServiceExportStatus struct {
+	// acceptedNames are the names that are actually being used to serve discovery.
+	// They may be different than the names in spec.
+	// +optional
+	AcceptedNames apiextensionsv1.CustomResourceDefinitionNames `json:"acceptedNames"`
+
+	// storedVersions lists all versions of CustomResources that were ever persisted. Tracking these
+	// versions allows a migration path for stored versions in etcd. The field is mutable
+	// so a migration controller can finish a migration to another version (ensuring
+	// no old objects are left in storage), and then remove the rest of the
+	// versions from this list.
+	// Versions may not be removed from `spec.versions` while they exist in this list.
+	// +optional
+	StoredVersions []string `json:"storedVersions"`
+
+	// conditions is a list of conditions that apply to the APIServiceExport. It is
+	// updated by the konnector on the consumer cluster.
+	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
 // APIServiceExportList is the objects list that represents the APIServiceExport.

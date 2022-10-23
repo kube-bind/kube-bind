@@ -29,7 +29,6 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	kubernetesclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -47,11 +46,10 @@ const (
 	controllerName = "kube-bind-example-backend-serviceexport"
 )
 
-// NewController returns a new controller to reconcile CRDs.
+// NewController returns a new controller to reconcile ServiceExports.
 func NewController(
 	config *rest.Config,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
-	serviceExportResourceInformer bindinformers.APIServiceExportResourceInformer,
 	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
 ) (*Controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
@@ -65,22 +63,14 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
-	kubeClient, err := kubernetesclient.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
 
 	c := &Controller{
 		queue: queue,
 
 		bindClient: bindClient,
-		kubeClient: kubeClient,
 
 		serviceExportLister:  serviceExportInformer.Lister(),
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
-
-		serviceExportResourceLister:  serviceExportResourceInformer.Lister(),
-		serviceExportResourceIndexer: serviceExportResourceInformer.Informer().GetIndexer(),
 
 		crdLister:  crdInformer.Lister(),
 		crdIndexer: crdInformer.Informer().GetIndexer(),
@@ -89,17 +79,16 @@ func NewController(
 			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return crdInformer.Lister().Get(name)
 			},
-			getServiceExportResource: func(ns, name string) (*kubebindv1alpha1.APIServiceExportResource, error) {
-				return serviceExportResourceInformer.Lister().APIServiceExportResources(ns).Get(name)
+			deleteServiceExport: func(ctx context.Context, ns, name string) error {
+				return bindClient.KubeBindV1alpha1().APIServiceExports(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
-			createServiceExportResource: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error) {
-				return bindClient.KubeBindV1alpha1().APIServiceExportResources(resource.Namespace).Create(ctx, resource, metav1.CreateOptions{})
-			},
-			updateServiceExportResource: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error) {
-				return bindClient.KubeBindV1alpha1().APIServiceExportResources(resource.Namespace).Update(ctx, resource, metav1.UpdateOptions{})
-			},
-			deleteServiceExportResource: func(ctx context.Context, ns, name string) error {
-				return bindClient.KubeBindV1alpha1().APIServiceExportResources(ns).Delete(ctx, name, metav1.DeleteOptions{})
+			requeue: func(export *kubebindv1alpha1.APIServiceExport) {
+				key, err := cache.MetaNamespaceKeyFunc(export)
+				if err != nil {
+					runtime.HandleError(err)
+					return
+				}
+				queue.Add(key)
 			},
 		},
 
@@ -109,10 +98,6 @@ func NewController(
 			},
 		),
 	}
-
-	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceExportByServiceExportResource: indexers.IndexServiceExportByServiceExportResource,
-	})
 
 	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
 		indexers.ServiceExportByCustomResourceDefinition: indexers.IndexServiceExportByCustomResourceDefinition,
@@ -127,18 +112,6 @@ func NewController(
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
-		},
-	})
-
-	serviceExportResourceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueServiceExportResource(logger, obj)
-		},
-		UpdateFunc: func(old, newObj interface{}) {
-			c.enqueueServiceExportResource(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueServiceExportResource(logger, obj)
 		},
 	})
 
@@ -166,13 +139,9 @@ type Controller struct {
 	queue workqueue.RateLimitingInterface
 
 	bindClient bindclient.Interface
-	kubeClient kubernetesclient.Interface
 
 	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
-
-	serviceExportResourceLister  bindlisters.APIServiceExportResourceLister
-	serviceExportResourceIndexer cache.Indexer
 
 	crdLister  apiextensionslisters.CustomResourceDefinitionLister
 	crdIndexer cache.Indexer
@@ -191,29 +160,6 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 
 	logger.V(2).Info("queueing APIServiceExport", "key", key)
 	c.queue.Add(key)
-}
-
-func (c *Controller) enqueueServiceExportResource(logger klog.Logger, obj interface{}) {
-	serKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-
-	exports, err := c.serviceExportIndexer.ByIndex(indexers.ServiceExportByServiceExportResource, serKey)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-	for _, obj := range exports {
-		key, err := cache.MetaNamespaceKeyFunc(obj)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
-		}
-		logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceExportResource", "ServiceExportResourceKey", serKey)
-		c.queue.Add(key)
-	}
 }
 
 func (c *Controller) enqueueCRD(logger klog.Logger, obj interface{}) {
@@ -295,8 +241,6 @@ func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 func (c *Controller) process(ctx context.Context, key string) error {
-	logger := klog.FromContext(ctx)
-
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)
@@ -307,7 +251,6 @@ func (c *Controller) process(ctx context.Context, key string) error {
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		logger.V(2).Info("APIServiceExport not found, ignoring")
 		return nil // nothing we can do
 	}
 

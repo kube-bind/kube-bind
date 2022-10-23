@@ -30,8 +30,6 @@ type Interface interface {
 	APIServiceBindingRequests() APIServiceBindingRequestInformer
 	// APIServiceExports returns a APIServiceExportInformer.
 	APIServiceExports() APIServiceExportInformer
-	// APIServiceExportResources returns a APIServiceExportResourceInformer.
-	APIServiceExportResources() APIServiceExportResourceInformer
 	// APIServiceNamespaces returns a APIServiceNamespaceInformer.
 	APIServiceNamespaces() APIServiceNamespaceInformer
 	// ClusterBindings returns a ClusterBindingInformer.
@@ -62,11 +60,6 @@ func (v *version) APIServiceBindingRequests() APIServiceBindingRequestInformer {
 // APIServiceExports returns a APIServiceExportInformer.
 func (v *version) APIServiceExports() APIServiceExportInformer {
 	return &aPIServiceExportInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-}
-
-// APIServiceExportResources returns a APIServiceExportResourceInformer.
-func (v *version) APIServiceExportResources() APIServiceExportResourceInformer {
-	return &aPIServiceExportResourceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // APIServiceNamespaces returns a APIServiceNamespaceInformer.

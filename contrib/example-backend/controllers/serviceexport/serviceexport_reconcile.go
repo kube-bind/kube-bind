@@ -18,15 +18,10 @@ package serviceexport
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/json"
-	"math/big"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
@@ -35,135 +30,65 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 )
 
-const (
-	sourceSpecHashAnnotationKey = "kube-bind.io/source-spec-hash"
-)
-
 type reconciler struct {
-	getCRD                      func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	getServiceExportResource    func(ns, name string) (*kubebindv1alpha1.APIServiceExportResource, error)
-	createServiceExportResource func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error)
-	updateServiceExportResource func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExportResource) (*kubebindv1alpha1.APIServiceExportResource, error)
-	deleteServiceExportResource func(ctx context.Context, ns, name string) error
+	getCRD              func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
+	deleteServiceExport func(ctx context.Context, namespace, name string) error
+
+	requeue func(export *kubebindv1alpha1.APIServiceExport)
 }
 
 func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
 	var errs []error
 
-	if err := r.ensureExportResources(ctx, export); err != nil {
+	if specChanged, err := r.ensureSchema(ctx, export); err != nil {
 		errs = append(errs, err)
+	} else if specChanged {
+		r.requeue(export)
+		return nil
 	}
-
-	conditions.SetSummary(export)
 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureExportResources(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) (specChanged bool, err error) {
 	logger := klog.FromContext(ctx)
-	var errs []error
 
-	resourceInSync := true
-	for _, gr := range export.Spec.Resources {
-		name := gr.Resource + "." + gr.Group
-
-		ser, err := r.getServiceExportResource(export.Namespace, name)
-		if err != nil && !errors.IsNotFound(err) {
-			return err
-		}
-		crd, err := r.getCRD(name)
-		if err != nil && !errors.IsNotFound(err) {
-			return err
-		}
-
-		if crd == nil {
-			if ser != nil {
-				// CRD missing => delete SER too
-				logger.V(1).Info("Deleting APIServiceExportResource because CRD is missing")
-				if err := r.deleteServiceExportResource(ctx, export.Namespace, name); err != nil && !errors.IsNotFound(err) {
-					return err
-				}
-			}
-
-			if resourceInSync {
-				conditions.MarkFalse(
-					export,
-					kubebindv1alpha1.APIServiceExportConditionResourcesInSync,
-					"CustomResourceDefinitionMissing",
-					conditionsapi.ConditionSeverityError,
-					"Referenced CustomResourceDefinition %s does not exist",
-					name,
-				)
-				resourceInSync = false
-			}
-			continue
-		}
-
-		resource, err := kubebindhelpers.CRDToServiceExportResource(crd)
-		if err != nil {
-			if resourceInSync {
-				conditions.MarkFalse(
-					export,
-					kubebindv1alpha1.APIServiceExportConditionResourcesInSync,
-					"CustomResourceDefinitionUpdateFailed",
-					conditionsapi.ConditionSeverityError,
-					"CustomResourceDefinition %s cannot be converted into a APIServiceExportResource: %s",
-					name, err,
-				)
-				resourceInSync = false
-			}
-			continue
-		}
-		resource.Namespace = export.Namespace
-
-		if ser == nil {
-			// APIServiceExportResource missing
-			logger.V(1).Info("Creating APIServiceExportResource")
-			resource.Annotations = map[string]string{
-				sourceSpecHashAnnotationKey: resourceHash(resource),
-			}
-			if _, err := r.createServiceExportResource(ctx, resource); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-		} else if expected := resourceHash(resource); ser.Annotations[sourceSpecHashAnnotationKey] != expected {
-			// both exist, update APIServiceExportResource
-			logger.V(1).Info("Updating APIServiceExportResource")
-			resource.ObjectMeta = ser.ObjectMeta
-			if resource.Annotations == nil {
-				resource.Annotations = map[string]string{}
-			}
-			resource.Annotations[sourceSpecHashAnnotationKey] = expected
-			if _, err := r.updateServiceExportResource(ctx, resource); err != nil {
-				errs = append(errs, err)
-				continue
-			}
-		}
+	crd, err := r.getCRD(export.Name)
+	if err != nil && !errors.IsNotFound(err) {
+		return false, err
 	}
 
-	if resourceInSync {
-		conditions.MarkTrue(export, kubebindv1alpha1.APIServiceExportConditionResourcesInSync)
+	if crd == nil {
+		// CRD missing => delete SER too
+		logger.V(1).Info("Deleting APIServiceExport because CRD is missing")
+		return false, r.deleteServiceExport(ctx, export.Namespace, export.Name)
 	}
 
-	return utilerrors.NewAggregate(errs)
-}
-
-func resourceHash(obj runtime.Object) string {
-	bs, err := json.Marshal(obj)
+	expected, err := kubebindhelpers.CRDToServiceExport(crd)
 	if err != nil {
-		utilruntime.HandleError(err)
-		return ""
+		conditions.MarkFalse(
+			export,
+			kubebindv1alpha1.APIServiceExportConditionProviderInSync,
+			"CustomResourceDefinitionUpdateFailed",
+			conditionsapi.ConditionSeverityError,
+			"CustomResourceDefinition %s cannot be converted into a APIServiceExport: %s",
+			export.Name, err,
+		)
+		return false, nil //nothing we can do
 	}
 
-	return toSha224Base62(string(bs))
-}
+	if hash := kubebindhelpers.APIServiceExportCRDSpecHash(expected); export.Annotations[kubebindv1alpha1.SourceSpecHashAnnotationKey] != hash {
+		// both exist, update APIServiceExport
+		logger.V(1).Info("Updating APIServiceExport")
+		export.Spec.APIServiceExportCRDSpec = *expected
+		if export.Annotations == nil {
+			export.Annotations = map[string]string{}
+		}
+		export.Annotations[kubebindv1alpha1.SourceSpecHashAnnotationKey] = hash
+		return true, nil
+	}
 
-func toSha224Base62(s string) string {
-	return toBase62(sha256.Sum224([]byte(s)))
-}
+	conditions.MarkTrue(export, kubebindv1alpha1.APIServiceExportConditionProviderInSync)
 
-func toBase62(hash [28]byte) string {
-	var i big.Int
-	i.SetBytes(hash[:])
-	return i.Text(62)
+	return false, nil
 }

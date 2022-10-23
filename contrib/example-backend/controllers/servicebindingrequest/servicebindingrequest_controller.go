@@ -21,9 +21,11 @@ import (
 	"fmt"
 	"time"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
+	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -52,6 +54,7 @@ func NewController(
 	scope kubebindv1alpha1.Scope,
 	serviceBindingRequestInformer bindinformers.APIServiceBindingRequestInformer,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
+	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
 ) (*Controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -81,11 +84,13 @@ func NewController(
 		serviceBindingRequestLister:  serviceBindingRequestInformer.Lister(),
 		serviceBindingRequestIndexer: serviceBindingRequestInformer.Informer().GetIndexer(),
 
-		reconciler: reconciler{
-			scope: scope,
+		crdLister:  crdInformer.Lister(),
+		crdIndexer: crdInformer.Informer().GetIndexer(),
 
-			deleteServiceBindingRequest: func(ctx context.Context, ns, name string) error {
-				return bindClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Delete(ctx, name, metav1.DeleteOptions{})
+		reconciler: reconciler{
+			informerScope: scope,
+			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
+				return crdInformer.Lister().Get(name)
 			},
 			getServiceExport: func(ns, name string) (*kubebindv1alpha1.APIServiceExport, error) {
 				return serviceExportInformer.Lister().APIServiceExports(ns).Get(name)
@@ -93,8 +98,8 @@ func NewController(
 			createServiceExport: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error) {
 				return bindClient.KubeBindV1alpha1().APIServiceExports(resource.Namespace).Create(ctx, resource, metav1.CreateOptions{})
 			},
-			listServiceExport: func(ns string) ([]*kubebindv1alpha1.APIServiceExport, error) {
-				return serviceExportInformer.Lister().APIServiceExports(ns).List(labels.Everything())
+			deleteServiceBindingRequest: func(ctx context.Context, ns, name string) error {
+				return bindClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
 		},
 
@@ -106,7 +111,10 @@ func NewController(
 	}
 
 	indexers.AddIfNotPresentOrDie(serviceBindingRequestInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceBindingRequestByExport: indexers.IndexServiceBindingRequestByExport,
+		indexers.ServiceBindingRequestByServiceExport: indexers.IndexServiceBindingRequestByServiceExport,
+	})
+	indexers.AddIfNotPresentOrDie(serviceBindingRequestInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceBindingRequestByGroupResource: indexers.IndexServiceBindingRequestByGroupResource,
 	})
 
 	serviceBindingRequestInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -133,6 +141,18 @@ func NewController(
 		},
 	})
 
+	crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			c.enqueueCRD(logger, obj)
+		},
+		UpdateFunc: func(old, newObj interface{}) {
+			c.enqueueCRD(logger, newObj)
+		},
+		DeleteFunc: func(obj interface{}) {
+			c.enqueueCRD(logger, obj)
+		},
+	})
+
 	return c, nil
 }
 
@@ -151,6 +171,9 @@ type Controller struct {
 
 	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
+
+	crdLister  apiextensionslisters.CustomResourceDefinitionLister
+	crdIndexer cache.Indexer
 
 	reconciler
 
@@ -175,7 +198,7 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	requests, err := c.serviceBindingRequestIndexer.ByIndex(indexers.ServiceBindingRequestByExport, seKey)
+	requests, err := c.serviceBindingRequestIndexer.ByIndex(indexers.ServiceBindingRequestByServiceExport, seKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -187,6 +210,29 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 			continue
 		}
 		logger.V(2).Info("queueing APIServiceBindingRequest", "key", key, "reason", "APIServiceExport", "APIServiceExportKey", seKey)
+		c.queue.Add(key)
+	}
+}
+
+func (c *Controller) enqueueCRD(logger klog.Logger, obj interface{}) {
+	crdKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	requests, err := c.serviceBindingRequestIndexer.ByIndex(indexers.ServiceBindingRequestByGroupResource, crdKey)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	for _, obj := range requests {
+		key, err := cache.MetaNamespaceKeyFunc(obj)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
+		}
+		logger.V(2).Info("queueing APIServiceBindingRequest", "key", key, "reason", "CustomResourceDefinition", "CustomResourceDefinitionKey", crdKey)
 		c.queue.Add(key)
 	}
 }

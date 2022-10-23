@@ -52,8 +52,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&APIServiceBindingList{},
 		&APIServiceBindingRequest{},
 		&APIServiceBindingRequestList{},
-		&APIServiceExportResource{},
-		&APIServiceExportResourceList{},
 		&APIServiceNamespace{},
 		&APIServiceNamespaceList{},
 		&ClusterBinding{},

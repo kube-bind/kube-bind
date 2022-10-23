@@ -41,10 +41,6 @@ func (c *FakeKubeBindV1alpha1) APIServiceExports(namespace string) v1alpha1.APIS
 	return &FakeAPIServiceExports{c, namespace}
 }
 
-func (c *FakeKubeBindV1alpha1) APIServiceExportResources(namespace string) v1alpha1.APIServiceExportResourceInterface {
-	return &FakeAPIServiceExportResources{c, namespace}
-}
-
 func (c *FakeKubeBindV1alpha1) APIServiceNamespaces(namespace string) v1alpha1.APIServiceNamespaceInterface {
 	return &FakeAPIServiceNamespaces{c, namespace}
 }

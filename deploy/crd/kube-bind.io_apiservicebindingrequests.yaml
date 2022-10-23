@@ -1,4 +1,3 @@
----
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -90,6 +89,7 @@ spec:
             - resources
             type: object
           status:
+            default: {}
             description: status contains reconciliation information for a service
               binding.
             properties:
@@ -139,10 +139,6 @@ spec:
                   - type
                   type: object
                 type: array
-              export:
-                description: export is the name of the APIServiceExport object that
-                  has been created for this binding request when phase is Succeeded.
-                type: string
               phase:
                 default: Pending
                 description: phase is the current phase of the binding request. It

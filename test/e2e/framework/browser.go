@@ -29,7 +29,7 @@ import (
 func BrowerEventuallyAtPath(t *testing.T, browser *browser.Browser, path string) {
 	require.Eventuallyf(t, func() bool {
 		if browser.Url().Path == path {
-			t.Logf("Browser is at %s", browser.Url())
+			t.Logf("Browser is at %s, waiting for path %s", browser.Url(), path)
 			return true
 		}
 		t.Logf("Waiting for browser to be at %s, current URL: %s", path, browser.Url())

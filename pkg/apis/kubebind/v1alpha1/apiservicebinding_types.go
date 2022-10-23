@@ -36,10 +36,6 @@ const (
 	// APIServiceBindingConditionConnected means the APIServiceBinding has been connected to a APIServiceExport.
 	APIServiceBindingConditionConnected conditionsapi.ConditionType = "Connected"
 
-	// APIServiceBindingConditionResourcesValid is set to true when the APIServiceExport's
-	// resources exist and are valid.
-	APIServiceBindingConditionResourcesValid conditionsapi.ConditionType = "ResourcesValid"
-
 	// APIServiceBindingConditionSchemaInSync is set to true when the APIServiceExport's
 	// schema is applied to the consumer cluster.
 	APIServiceBindingConditionSchemaInSync conditionsapi.ConditionType = "SchemaInSync"
@@ -85,13 +81,6 @@ func (in *APIServiceBinding) SetConditions(conditions conditionsapi.Conditions) 
 }
 
 type APIServiceBindingSpec struct {
-	// export is the name of the APIServiceExport object in the service provider cluster.
-	//
-	// +required
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinLength=1
-	Export string `json:"export"`
-
 	// kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.
 	//
 	// +required

@@ -30,7 +30,7 @@ const (
 	// ClusterBindingConditionValidVersion is set when the binary version is valid.
 	ClusterBindingConditionValidVersion = "ValidVersion"
 
-	// ClusterBindingConditionSecretValid is set when the secret is valid.
+	// ClusterBindingConditionHealthy is set when the cluster binding is healthy.
 	ClusterBindingConditionHealthy = "Healthy"
 )
 

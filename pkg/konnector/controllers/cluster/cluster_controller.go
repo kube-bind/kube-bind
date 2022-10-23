@@ -44,7 +44,6 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/namespacedeletion"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/servicebinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport"
-	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexportresource"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
 
@@ -123,18 +122,6 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
-	serviceexportCtrl, err := serviceexport.NewController(
-		consumerSecretRefKey,
-		providerNamespace,
-		consumerConfig,
-		providerConfig,
-		providerBindInformers.KubeBind().V1alpha1().APIServiceExports(),
-		providerBindInformers.KubeBind().V1alpha1().APIServiceExportResources(),
-		serviceBindingInformer,
-	)
-	if err != nil {
-		return nil, err
-	}
 	servicebindingCtrl, err := servicebinding.NewController(
 		consumerSecretRefKey,
 		providerNamespace,
@@ -142,18 +129,17 @@ func NewController(
 		providerConfig,
 		serviceBindingInformer,
 		providerBindInformers.KubeBind().V1alpha1().APIServiceExports(),
-		providerBindInformers.KubeBind().V1alpha1().APIServiceExportResources(),
 		crdInformer,
 	)
 	if err != nil {
 		return nil, err
 	}
-	serviceexportresourceCtrl, err := serviceexportresource.NewController(
+	serviceexportCtrl, err := serviceexport.NewController(
 		consumerSecretRefKey,
 		providerNamespace,
 		consumerConfig,
 		providerConfig,
-		providerBindInformers.KubeBind().V1alpha1().APIServiceExportResources(),
+		providerBindInformers.KubeBind().V1alpha1().APIServiceExports(),
 		providerBindInformers.KubeBind().V1alpha1().APIServiceNamespaces(),
 		serviceBindingInformer,
 		crdInformer,
@@ -178,9 +164,8 @@ func NewController(
 
 		clusterbindingCtrl:         clusterbindingCtrl,
 		namespacedeletionCtrl:      namespacedeletionCtrl,
-		serviceexportCtrl:          serviceexportCtrl,
 		servicebindingCtrl:         servicebindingCtrl,
-		serviceresourcebindingCtrl: serviceexportresourceCtrl,
+		serviceresourcebindingCtrl: serviceexportCtrl,
 	}, nil
 }
 
@@ -206,7 +191,6 @@ type controller struct {
 
 	clusterbindingCtrl         GenericController
 	namespacedeletionCtrl      GenericController
-	serviceexportCtrl          GenericController
 	servicebindingCtrl         GenericController
 	serviceresourcebindingCtrl GenericController
 }
@@ -261,7 +245,6 @@ func (c *controller) Start(ctx context.Context) {
 
 	go c.clusterbindingCtrl.Start(ctx, 2)
 	go c.namespacedeletionCtrl.Start(ctx, 2)
-	go c.serviceexportCtrl.Start(ctx, 2)
 	go c.servicebindingCtrl.Start(ctx, 2)
 	go c.serviceresourcebindingCtrl.Start(ctx, 2)
 

@@ -40,7 +40,7 @@ type reconciler struct {
 	getServiceBinding func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
 	getClusterBinding func(ctx context.Context) (*kubebindv1alpha1.ClusterBinding, error)
 
-	updateServiceExportStatus func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error)
+	updateServiceExportStatus func(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error)
 
 	getCRD    func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	updateCRD func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error)

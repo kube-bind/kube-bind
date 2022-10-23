@@ -31,20 +31,20 @@ import (
 )
 
 // ServiceExportToCRD converts a APIServiceExport to a CRD.
-func ServiceExportToCRD(resource *kubebindv1alpha1.APIServiceExport) (*apiextensionsv1.CustomResourceDefinition, error) {
+func ServiceExportToCRD(export *kubebindv1alpha1.APIServiceExport) (*apiextensionsv1.CustomResourceDefinition, error) {
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: resource.Name,
+			Name: export.Name,
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: resource.Spec.Group,
-			Names: resource.Spec.Names,
-			Scope: resource.Spec.Scope,
+			Group: export.Spec.Group,
+			Names: export.Spec.Names,
+			Scope: export.Spec.Scope,
 		},
 	}
 
-	for i := range resource.Spec.Versions {
-		resourceVersion := resource.Spec.Versions[i]
+	for i := range export.Spec.Versions {
+		resourceVersion := export.Spec.Versions[i]
 
 		crdVersion := apiextensionsv1.CustomResourceDefinitionVersion{
 			Name:                     resourceVersion.Name,

@@ -101,8 +101,8 @@ func NewController(
 			getClusterBinding: func(ctx context.Context) (*kubebindv1alpha1.ClusterBinding, error) {
 				return providerBindClient.KubeBindV1alpha1().ClusterBindings(providerNamespace).Get(ctx, "cluster", metav1.GetOptions{})
 			},
-			updateServiceExportStatus: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error) {
-				return providerBindClient.KubeBindV1alpha1().APIServiceExports(providerNamespace).UpdateStatus(ctx, resource, metav1.UpdateOptions{})
+			updateServiceExportStatus: func(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error) {
+				return providerBindClient.KubeBindV1alpha1().APIServiceExports(providerNamespace).UpdateStatus(ctx, export, metav1.UpdateOptions{})
 			},
 			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return crdInformer.Lister().Get(name)

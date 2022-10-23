@@ -61,15 +61,15 @@ type syncContext struct {
 	cancel     func()
 }
 
-func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebindv1alpha1.APIServiceExport) error {
 	errs := []error{}
 
-	if err := r.ensureControllers(ctx, name, resource); err != nil {
+	if err := r.ensureControllers(ctx, name, export); err != nil {
 		errs = append(errs, err)
 	}
 
-	if resource != nil {
-		if err := r.ensureServiceBindingConditionCopied(ctx, resource); err != nil {
+	if export != nil {
+		if err := r.ensureCRDConditionsCopied(ctx, export); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -77,10 +77,10 @@ func (r *reconciler) reconcile(ctx context.Context, name string, resource *kubeb
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureControllers(ctx context.Context, name string, resource *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) ensureControllers(ctx context.Context, name string, export *kubebindv1alpha1.APIServiceExport) error {
 	logger := klog.FromContext(ctx)
 
-	if resource == nil {
+	if export == nil {
 		// stop dangling syncers on delete
 		r.lock.Lock()
 		defer r.lock.Unlock()
@@ -93,24 +93,24 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, resourc
 	}
 
 	var errs []error
-	crd, err := r.getCRD(resource.Name)
+	crd, err := r.getCRD(export.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		// stop it
 		r.lock.Lock()
 		defer r.lock.Unlock()
-		if c, found := r.syncContext[resource.Name]; found {
+		if c, found := r.syncContext[export.Name]; found {
 			logger.V(1).Info("Stopping APIServiceExport sync", "reason", "NoCustomResourceDefinition")
 			c.cancel()
-			delete(r.syncContext, resource.Name)
+			delete(r.syncContext, export.Name)
 		}
 
 		return nil
 	}
 
 	// any binding that references this resource?
-	binding, err := r.getServiceBinding(resource.Name)
+	binding, err := r.getServiceBinding(export.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
@@ -118,48 +118,48 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, resourc
 		// stop it
 		r.lock.Lock()
 		defer r.lock.Unlock()
-		if c, found := r.syncContext[resource.Name]; found {
+		if c, found := r.syncContext[export.Name]; found {
 			logger.V(1).Info("Stopping APIServiceExport sync", "reason", "NoAPIServiceExport")
 			c.cancel()
-			delete(r.syncContext, resource.Name)
+			delete(r.syncContext, export.Name)
 		}
 
 		return nil
 	}
 
 	r.lock.Lock()
-	c, found := r.syncContext[resource.Name]
+	c, found := r.syncContext[export.Name]
 	if found {
-		if c.generation == resource.Generation {
+		if c.generation == export.Generation {
 			r.lock.Unlock()
 			return nil // all as expected
 		}
 
 		// technically, we could be less aggressive here if nothing big changed in the resource, e.g. just schemas. But ¯\_(ツ)_/¯
 
-		logger.V(1).Info("Stopping APIServiceExport sync", "reason", "GenerationChanged", "generation", resource.Generation)
+		logger.V(1).Info("Stopping APIServiceExport sync", "reason", "GenerationChanged", "generation", export.Generation)
 		c.cancel()
-		delete(r.syncContext, resource.Name)
+		delete(r.syncContext, export.Name)
 	}
 	r.lock.Unlock()
 
 	// start a new syncer
 
 	var syncVersion string
-	for _, v := range resource.Spec.Versions {
+	for _, v := range export.Spec.Versions {
 		if v.Served {
 			syncVersion = v.Name
 			break
 		}
 	}
-	gvr := runtimeschema.GroupVersionResource{Group: resource.Spec.Group, Version: syncVersion, Resource: resource.Spec.Names.Plural}
+	gvr := runtimeschema.GroupVersionResource{Group: export.Spec.Group, Version: syncVersion, Resource: export.Spec.Names.Plural}
 
 	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
 	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
 	consumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
 
 	var providerInf multinsinformer.GetterInformer
-	if crd.Spec.Scope == apiextensionsv1.ClusterScoped || resource.Spec.InformerScope == kubebindv1alpha1.ClusterScope {
+	if crd.Spec.Scope == apiextensionsv1.ClusterScoped || export.Spec.InformerScope == kubebindv1alpha1.ClusterScope {
 		factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
 		factory.ForResource(gvr).Lister() // wire the GVR up in the informer factory
 		providerInf = multinsinformer.GetterInformerWrapper{
@@ -224,11 +224,11 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, resourc
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	if c, found := r.syncContext[resource.Name]; found {
+	if c, found := r.syncContext[export.Name]; found {
 		c.cancel()
 	}
-	r.syncContext[resource.Name] = syncContext{
-		generation: resource.Generation,
+	r.syncContext[export.Name] = syncContext{
+		generation: export.Generation,
 		cancel:     cancel,
 	}
 

@@ -12,6 +12,7 @@ on:
       - "**/*.md"
       - ".github/ISSUE_TEMPLATE/*"
       - ".goreleaser.yaml"
+      - "contrib/manifests/**"
 
 jobs:
   go-test-e2e:

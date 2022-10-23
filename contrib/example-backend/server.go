@@ -18,6 +18,7 @@ package backend
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net"
 
@@ -90,12 +91,29 @@ func NewServer(config *Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up Kubernetes Manager: %w", err)
 	}
+
+	signingKey, err := base64.StdEncoding.DecodeString(config.Options.Cookie.SigningKey)
+	if err != nil {
+		return nil, fmt.Errorf("error creating signing key: %w", err)
+	}
+
+	var encryptionKey []byte
+	if config.Options.Cookie.EncryptionKey != "" {
+		var err error
+		encryptionKey, err = base64.StdEncoding.DecodeString(config.Options.Cookie.EncryptionKey)
+		if err != nil {
+			return nil, fmt.Errorf("error creating encryption key: %w", err)
+		}
+	}
+
 	handler, err := examplehttp.NewHandler(
 		s.OIDC,
 		config.Options.OIDC.AuthorizeURL,
 		callback,
 		config.Options.PrettyName,
 		config.Options.TestingAutoSelect,
+		signingKey,
+		encryptionKey,
 		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
 		s.Kubernetes,
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),

@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/securecookie"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
@@ -64,15 +65,18 @@ type handler struct {
 	providerPrettyName string
 	testingAutoSelect  string
 
+	cookieEncryptionKey []byte
+	cookieSigningKey    []byte
+
 	client              *http.Client
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister
-
-	kubeManager *kubernetes.Manager
+	kubeManager         *kubernetes.Manager
 }
 
 func NewHandler(
 	provider *OIDCServiceProvider,
 	oidcAuthorizeURL, backendCallbackURL, providerPrettyName, testingAutoSelect string,
+	cookieSigningKey, cookieEncryptionKey []byte,
 	scope kubebindv1alpha1.Scope,
 	mgr *kubernetes.Manager,
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,
@@ -87,6 +91,8 @@ func NewHandler(
 		client:              http.DefaultClient,
 		kubeManager:         mgr,
 		apiextensionsLister: apiextensionsLister,
+		cookieSigningKey:    cookieSigningKey,
+		cookieEncryptionKey: cookieEncryptionKey,
 	}, nil
 }
 
@@ -254,20 +260,16 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 		ClusterID:    authCode.ClusterID,
 	}
 
-	b, err := sessionCookie.Encode()
+	cookieName := "kube-bind-" + authCode.SessionID
+	s := securecookie.New(h.cookieSigningKey, h.cookieEncryptionKey)
+	encoded, err := s.Encode(cookieName, sessionCookie)
 	if err != nil {
-		logger.Info("failed to encode session cookie", "error", err)
+		logger.Info("failed to encode secure session cookie", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	http.SetCookie(w, cookie.MakeCookie(
-		r,
-		"kube-bind-"+authCode.SessionID,
-		b,
-		time.Duration(1)*time.Hour),
-	)
-
+	http.SetCookie(w, cookie.MakeCookie(r, cookieName, encoded, time.Duration(1)*time.Hour))
 	http.Redirect(w, r, "/resources?s="+authCode.SessionID, http.StatusFound)
 }
 
@@ -320,15 +322,17 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	prepareNoCache(w)
 
-	ck, err := r.Cookie("kube-bind-" + r.URL.Query().Get("s"))
+	cookieName := "kube-bind-" + r.URL.Query().Get("s")
+	ck, err := r.Cookie(cookieName)
 	if err != nil {
 		logger.Error(err, "failed to get session cookie")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	state, err := cookie.Decode(ck.Value)
-	if err != nil {
+	state := cookie.SessionState{}
+	s := securecookie.New(h.cookieSigningKey, h.cookieEncryptionKey)
+	if err := s.Decode(cookieName, ck.Value, &state); err != nil {
 		logger.Error(err, "failed to decode session cookie")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

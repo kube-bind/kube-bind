@@ -31,9 +31,10 @@ import (
 )
 
 type Options struct {
-	Logs  *logs.Options
-	OIDC  *OIDC
-	Serve *Serve
+	Logs   *logs.Options
+	OIDC   *OIDC
+	Cookie *Cookie
+	Serve  *Serve
 
 	ExtraOptions
 }
@@ -52,9 +53,10 @@ type ExtraOptions struct {
 }
 
 type completedOptions struct {
-	Logs  *logs.Options
-	OIDC  *OIDC
-	Serve *Serve
+	Logs   *logs.Options
+	OIDC   *OIDC
+	Cookie *Cookie
+	Serve  *Serve
 
 	ExtraOptions
 }
@@ -69,9 +71,10 @@ func NewOptions() *Options {
 	logs.Verbosity = logsv1.VerbosityLevel(2)
 
 	return &Options{
-		Logs:  logs,
-		OIDC:  NewOIDC(),
-		Serve: NewServe(),
+		Logs:   logs,
+		OIDC:   NewOIDC(),
+		Cookie: NewCookie(),
+		Serve:  NewServe(),
 
 		ExtraOptions: ExtraOptions{
 			NamespacePrefix: "cluster",
@@ -84,6 +87,7 @@ func NewOptions() *Options {
 func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	logsv1.AddFlags(options.Logs, fs)
 	options.OIDC.AddFlags(fs)
+	options.Cookie.AddFlags(fs)
 	options.Serve.AddFlags(fs)
 
 	fs.StringVar(&options.KubeConfig, "kubeconfig", options.KubeConfig, "path to a kubeconfig. Only required if out-of-cluster")
@@ -100,6 +104,9 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 
 func (options *Options) Complete() (*CompletedOptions, error) {
 	if err := options.OIDC.Complete(); err != nil {
+		return nil, err
+	}
+	if err := options.Cookie.Complete(); err != nil {
 		return nil, err
 	}
 	if err := options.Serve.Complete(); err != nil {
@@ -129,6 +136,7 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 		completedOptions: &completedOptions{
 			Logs:         options.Logs,
 			OIDC:         options.OIDC,
+			Cookie:       options.Cookie,
 			Serve:        options.Serve,
 			ExtraOptions: options.ExtraOptions,
 		},
@@ -144,6 +152,9 @@ func (options *CompletedOptions) Validate() error {
 	}
 
 	if err := options.OIDC.Validate(); err != nil {
+		return err
+	}
+	if err := options.Cookie.Validate(); err != nil {
 		return err
 	}
 	if options.ConsumerScope != string(kubebindv1alpha1.NamespacedScope) && options.ConsumerScope != string(kubebindv1alpha1.ClusterScope) {

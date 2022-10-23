@@ -18,12 +18,14 @@ package framework
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net"
 	"testing"
 	"time"
 
 	dexapi "github.com/dexidp/dex/api/v2"
+	"github.com/gorilla/securecookie"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
@@ -40,10 +42,16 @@ import (
 )
 
 func StartBackend(t *testing.T, clientConfig *rest.Config, args ...string) (net.Addr, *backend.Server) {
+	signingKey := securecookie.GenerateRandomKey(32)
+	if len(signingKey) == 0 {
+		panic("error creating signing key")
+	}
+
 	return StartBackendWithoutDefaultArgs(t, clientConfig, append([]string{
 		"--oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0",
 		"--oidc-issuer-client-id=kube-bind",
 		"--oidc-issuer-url=http://127.0.0.1:5556/dex",
+		"--cookie-signing-key=" + base64.StdEncoding.EncodeToString(signingKey),
 	}, args...)...)
 }
 

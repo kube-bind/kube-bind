@@ -67,9 +67,20 @@ $ bin/example-backend \
   --oidc-issuer-url=http://127.0.0.1:5556/dex \
   --oidc-callback-url=http://127.0.0.1:8080/callback \
   --pretty-name="BigCorp.com" \
-  --namespace-prefix="kubd-bind-" 
+  --namespace-prefix="kubd-bind-" \
+  --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE=
+  --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y=
 ```
 
 where `ZXhhbXBsZS1hcHAtc2VjcmV0` matches the value of the dex config file.
+
+The `--cookie-signing-key` and `--cookie-encryption-key` settings can be generated using:
+```shell
+$ openssl rand -base64 32
+WQh88mNOY0Z3tLy1/WOud7qIEEBxz+POc4j8BsYenYo=
+```
+
+The `--cookie-signing-key` option is required and supports 32 and 64 byte lengths.
+The `--cookie-encryption-key` option is optional and supports byte lengths of 16, 24, 32 for AES-128, AES-192, or AES-256.
 
 * with a KUBECONFIG against another cluster (a consumer cluster) bind a service: `kubectl bind https://127.0.0.1:8080/export`.

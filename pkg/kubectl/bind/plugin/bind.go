@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"net/url"
 	"os"
 	"os/exec"
@@ -38,7 +39,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	kubeclient "k8s.io/client-go/kubernetes"
@@ -166,8 +166,6 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return fmt.Errorf("unsupported binding provider version: %q", provider.APIVersion)
 	}
 
-	sessionID := rand.String(rand.IntnRange(20, 30))
-
 	ns, err := kubeClient.CoreV1().Namespaces().Get(ctx, "kube-bind", metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return err
@@ -181,6 +179,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 			return err
 		}
 	}
+	sessionID := SessionID()
 	if err := b.authenticate(provider, auth.Endpoint(ctx), sessionID, ClusterID(ns), urlCh); err != nil {
 		return err
 	}
@@ -323,6 +322,14 @@ func ClusterID(ns *corev1.Namespace) string {
 	hash := sha256.Sum224([]byte(ns.UID))
 	base62hash := toBase62(hash)
 	return base62hash[:6] // 50 billion
+}
+
+func SessionID() string {
+	var b [28]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		panic(err)
+	}
+	return toBase62(b)[:6] // 50 billion
 }
 
 func toBase62(hash [28]byte) string {

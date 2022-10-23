@@ -183,7 +183,9 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return err
 	}
 
-	if err := auth.Execute(ctx); err != nil {
+	err = auth.Execute(ctx)
+	fmt.Fprintf(b.Options.ErrOut, "\n\n")
+	if err != nil {
 		return err
 	} else if response == nil {
 		return fmt.Errorf("authentication timeout")

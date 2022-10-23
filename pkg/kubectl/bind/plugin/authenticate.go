@@ -89,7 +89,7 @@ func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, a
 		}
 		qrterminal.GenerateWithConfig(u.String(), config)
 	}
-	fmt.Fprintf(b.Options.ErrOut, ".\n\n")
+	fmt.Fprintf(b.Options.ErrOut, ".")
 
 	if urlCh != nil {
 		urlCh <- u.String()

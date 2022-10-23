@@ -19,9 +19,11 @@ package plugin
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"net/url"
 	"os"
 	"os/exec"
@@ -179,7 +181,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 			return err
 		}
 	}
-	if err := b.authenticate(provider, auth.Endpoint(ctx), sessionID, string(ns.UID), urlCh); err != nil {
+	if err := b.authenticate(provider, auth.Endpoint(ctx), sessionID, ClusterID(ns), urlCh); err != nil {
 		return err
 	}
 
@@ -315,4 +317,16 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}
 
 	return nil
+}
+
+func ClusterID(ns *corev1.Namespace) string {
+	hash := sha256.Sum224([]byte(ns.UID))
+	base62hash := toBase62(hash)
+	return base62hash[:6] // 50 billion
+}
+
+func toBase62(hash [28]byte) string {
+	var i big.Int
+	i.SetBytes(hash[:])
+	return i.Text(62)
 }

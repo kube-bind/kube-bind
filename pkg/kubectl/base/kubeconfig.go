@@ -78,9 +78,11 @@ func FindRemoteKubeconfig(ctx context.Context, kubeClient *kubernetes.Clientset,
 	return "", nil
 }
 
-// EnsureKubeconfigSecret create a secret which contains the service binding authenticated data such as
+// EnsureKubeconfigSecret creates a secret which contains the service binding authenticated data such as
 // the binding session id and the kubeconfig of the service provider cluster. If it is pre-existing, the kubeconfig
 // is updated.
+//
+// It does special checking that only kubeconfigs with the same host and default namespace are updated.
 func EnsureKubeconfigSecret(ctx context.Context, kubeconfig, name string, client kubernetes.Interface) (*corev1.Secret, bool, error) {
 	remoteHost, remoteNamespace, err := ParseRemoteKubeconfig([]byte(kubeconfig))
 	if err != nil {

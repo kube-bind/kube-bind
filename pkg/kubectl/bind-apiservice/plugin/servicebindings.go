@@ -21,12 +21,10 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
-	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
@@ -34,46 +32,16 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
-	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
 )
 
-// nolint: unused
-func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, config *rest.Config, request *kubebindv1alpha1.APIServiceBindingRequest, remoteHost, remoteNamespace, kubeconfig string) ([]*kubebindv1alpha1.APIServiceBinding, error) {
+func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, config *rest.Config, request *kubebindv1alpha1.APIServiceBindingRequest, secretName string) ([]*kubebindv1alpha1.APIServiceBinding, error) {
 	bindClient, err := bindclient.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	kubeClient, err := kubeclient.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
 	apiextensionsClient, err := apiextensionsclientset.NewForConfig(config)
 	if err != nil {
 		return nil, err
-	}
-
-	// create kube-bind namespace
-	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "kube-bind",
-		},
-	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
-		return nil, err
-	} else if err == nil {
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Created kube-binding namespace.\n") // nolint: errcheck
-	}
-
-	// look for secret of the given identity
-	secretName, err := base.FindRemoteKubeconfig(ctx, kubeClient, remoteNamespace, remoteHost)
-	if err != nil {
-		return nil, err
-	}
-	if secretName == "" {
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Creating secret for host %s, namespace %s\n", remoteHost, remoteNamespace) // nolint: errcheck
-		secretName, err = b.ensureKubeconfigSecretWithLogging(ctx, kubeconfig, "", kubeClient)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	var bindings []*kubebindv1alpha1.APIServiceBinding
@@ -84,7 +52,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 			return nil, err
 		} else if err == nil {
 			if existing.Spec.KubeconfigSecretRef.Namespace != "kube-bind" || existing.Spec.KubeconfigSecretRef.Name != secretName {
-				return nil, fmt.Errorf("found existing APIServiceBinding %s not from this service provider host %s, namespace %s", name, remoteHost, remoteNamespace)
+				return nil, fmt.Errorf("found existing APIServiceBinding %s not from this service provider", name)
 			}
 			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Updating existing APIServiceBinding %s.\n", existing.Name) // nolint: errcheck
 			bindings = append(bindings, existing)
@@ -146,26 +114,4 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 	}
 
 	return bindings, nil
-}
-
-func (b *BindAPIServiceOptions) ensureKubeconfigSecretWithLogging(ctx context.Context, kubeconfig, name string, client kubeclient.Interface) (string, error) {
-	secret, created, err := base.EnsureKubeconfigSecret(ctx, kubeconfig, name, client)
-	if err != nil {
-		return "", err
-	}
-
-	remoteHost, remoteNamespace, err := base.ParseRemoteKubeconfig([]byte(kubeconfig))
-	if err != nil {
-		return "", err
-	}
-
-	if b.remoteKubeconfigFile != "" {
-		if created {
-			fmt.Fprintf(b.Options.ErrOut, "Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
-		} else {
-			fmt.Fprintf(b.Options.ErrOut, "Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
-		}
-	}
-
-	return secret.Name, nil
 }

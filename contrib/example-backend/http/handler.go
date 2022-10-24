@@ -41,6 +41,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/cookie"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/template"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
@@ -287,7 +288,10 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	crds, err := h.apiextensionsLister.List(labels.Everything())
+	labelSelector := labels.Set{
+		resources.AllowedExportedCRDs: "allowed",
+	}
+	crds, err := h.apiextensionsLister.List(labelSelector.AsSelector())
 	if err != nil {
 		logger.Error(err, "failed to list crds")
 		http.Error(w, "internal error", http.StatusInternalServerError)

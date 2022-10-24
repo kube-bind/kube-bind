@@ -22,4 +22,7 @@ const (
 	ServiceAccountName            = "kube-binder"
 	KubeconfigSecretName          = "kubeconfig"
 	ClusterBindingName            = "cluster"
+
+	//TODO(MQ): maybe think of a better label name.
+	AllowedExportedCRDs = "kubebind.io/allowed-exported-crd"
 )

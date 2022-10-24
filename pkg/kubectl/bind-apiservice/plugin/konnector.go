@@ -112,16 +112,21 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 	first := true
 	return wait.PollImmediateInfiniteWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
 		_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			logger.V(2).Info("Waiting for APIServiceBindings to be served", "error", err, "host", bindClient.RESTClient())
-			if first {
-				fmt.Fprint(b.Options.IOStreams.ErrOut, "Waiting for the konnector to be ready") // nolint: errcheck
-				first = false
-			} else {
-				fmt.Fprint(b.Options.IOStreams.ErrOut, ".") // nolint: errcheck
+		if err == nil {
+			if !first {
+				fmt.Fprintln(b.Options.IOStreams.ErrOut) // nolint: errcheck
 			}
+			return true, nil
 		}
-		return err == nil, nil
+
+		logger.V(2).Info("Waiting for APIServiceBindings to be served", "error", err, "host", bindClient.RESTClient())
+		if first {
+			fmt.Fprint(b.Options.IOStreams.ErrOut, "  Waiting for the konnector to be ready") // nolint: errcheck
+			first = false
+		} else {
+			fmt.Fprint(b.Options.IOStreams.ErrOut, ".") // nolint: errcheck
+		}
+		return false, nil
 	})
 }
 

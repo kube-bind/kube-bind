@@ -156,6 +156,9 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		SessionID:   r.URL.Query().Get("s"),
 		ClusterID:   r.URL.Query().Get("c"),
 	}
+	if p := r.URL.Query().Get("p"); p != "" && code.RedirectURL == "" {
+		code.RedirectURL = fmt.Sprintf("http://localhost:%s/callback", p)
+	}
 	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {
 		logger.Error(errors.New("missing redirect url or session id or cluster id"), "failed to authorize")
 		http.Error(w, "missing redirect_url or session_id", http.StatusBadRequest)

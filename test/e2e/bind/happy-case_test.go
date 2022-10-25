@@ -111,6 +111,8 @@ apiVersion: mangodb.com/v1alpha1
 kind: MangoDB
 metadata:
   name: test
+  labels:
+    kubebind.io/allowed-exported-crd: allowed
 spec:
   tokenSecret: credentials
 `), metav1.CreateOptions{})

@@ -24,5 +24,5 @@ const (
 	ClusterBindingName            = "cluster"
 
 	//TODO(MQ): maybe think of a better label name.
-	AllowedExportedCRDs = "kubebind.io/allowed-exported-crd"
+	ExportedCRDsLabel = "kube-bind.io/exported"
 )

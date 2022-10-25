@@ -289,7 +289,7 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 	}
 
 	labelSelector := labels.Set{
-		resources.AllowedExportedCRDs: "allowed",
+		resources.ExportedCRDsLabel: "true",
 	}
 	crds, err := h.apiextensionsLister.List(labelSelector.AsSelector())
 	if err != nil {

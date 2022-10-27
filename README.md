@@ -68,7 +68,7 @@ $ bin/example-backend \
   --oidc-callback-url=http://127.0.0.1:8080/callback \
   --pretty-name="BigCorp.com" \
   --namespace-prefix="kubd-bind-" \
-  --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE=
+  --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
   --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y=
 ```
 

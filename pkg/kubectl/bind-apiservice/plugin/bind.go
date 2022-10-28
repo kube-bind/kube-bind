@@ -85,7 +85,7 @@ func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&b.remoteKubeconfigFile, "remote-kubeconfig", b.remoteKubeconfigFile, "A file path for a kubeconfig file to connect to the service provider cluster")
 	cmd.Flags().StringVar(&b.remoteKubeconfigNamespace, "remote-kubeconfig-namespace", b.remoteKubeconfigNamespace, "The namespace of the remote kubeconfig secret to read from")
 	cmd.Flags().StringVar(&b.remoteKubeconfigName, "remote-kubeconfig-name", b.remoteKubeconfigNamespace, "The name of the remote kubeconfig secret to read from")
-	cmd.Flags().StringVarP(&b.file, "file", "f", b.file, "A file with an APIServiceBindingRequest manifest. Use - to read from stdin")
+	cmd.Flags().StringVarP(&b.file, "file", "f", b.file, "A file with an APIServiceExportRequest manifest. Use - to read from stdin")
 	cmd.Flags().StringVar(&b.remoteNamespace, "remote-namespace", b.remoteNamespace, "The namespace in the remote cluster where the konnector is deployed")
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVar(&b.DowngradeKonnector, "downgrade-konnector", b.DowngradeKonnector, "Downgrade the konnector to the version of the kubectl-bind-apiservice binary")
@@ -162,7 +162,7 @@ func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	result, err := b.createServiceBindingRequest(ctx, remoteConfig, remoteNamespace, request)
+	result, err := b.createServiceExportRequest(ctx, remoteConfig, remoteNamespace, request)
 	if err != nil {
 		return err
 	}
@@ -257,15 +257,15 @@ func (b *BindAPIServiceOptions) getRequestManifest() ([]byte, error) {
 	return body, nil
 }
 
-func (b *BindAPIServiceOptions) unmarshalManifest(bs []byte) (*kubebindv1alpha1.APIServiceBindingRequest, error) {
-	var request kubebindv1alpha1.APIServiceBindingRequest
+func (b *BindAPIServiceOptions) unmarshalManifest(bs []byte) (*kubebindv1alpha1.APIServiceExportRequest, error) {
+	var request kubebindv1alpha1.APIServiceExportRequest
 	if err := yaml.Unmarshal(bs, &request); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal manifest: %w", err)
 	}
 	if request.APIVersion != kubebindv1alpha1.SchemeGroupVersion.String() {
 		return nil, fmt.Errorf("invalid apiVersion %q", request.APIVersion)
 	}
-	if request.Kind != "APIServiceBindingRequest" {
+	if request.Kind != "APIServiceExportRequest" {
 		return nil, fmt.Errorf("invalid kind %q", request.Kind)
 	}
 	return &request, nil

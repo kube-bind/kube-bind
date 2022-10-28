@@ -210,7 +210,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}
 
 	// extract the requests
-	var apiRequests []*kubebindv1alpha1.APIServiceBindingRequestResponse
+	var apiRequests []*kubebindv1alpha1.APIServiceExportRequestResponse
 	for i, request := range bindingResponse.Requests {
 		var meta metav1.TypeMeta
 		if err := json.Unmarshal(request.Raw, &meta); err != nil {
@@ -219,7 +219,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		if got, expected := meta.APIVersion, kubebindv1alpha1.SchemeGroupVersion.String(); got != expected {
 			return fmt.Errorf("unexpected response: request #%d is not %s, got %s", i, expected, got)
 		}
-		var apiRequest kubebindv1alpha1.APIServiceBindingRequestResponse
+		var apiRequest kubebindv1alpha1.APIServiceExportRequestResponse
 		if err := json.Unmarshal(request.Raw, &apiRequest); err != nil {
 			return fmt.Errorf("failed to unmarshal api request #%d: %v", i+1, err)
 		}
@@ -305,7 +305,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		// TODO: support passing through the base options
 
 		fmt.Fprintf(b.Options.ErrOut, "🚀 Executing: %s %s\n", "kubectl bind", strings.Join(args, " ")) // nolint: errcheck
-		fmt.Fprintf(b.Options.ErrOut, "✨ Use \"-o yaml\" and \"--dry-run\" to get the APIServiceBindingRequest and pass it to \"kubectl bind apiservice\" directly. Great for automation.\n")
+		fmt.Fprintf(b.Options.ErrOut, "✨ Use \"-o yaml\" and \"--dry-run\" to get the APIServiceExportRequest and pass it to \"kubectl bind apiservice\" directly. Great for automation.\n")
 		command := exec.CommandContext(ctx, executable, append(args, "--no-banner")...)
 		command.Stdin = bytes.NewReader(bs)
 		command.Stdout = b.Options.Out

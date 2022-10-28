@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package servicebindingrequest
+package serviceexportrequest
 
 import (
 	"context"
@@ -44,15 +44,15 @@ import (
 )
 
 const (
-	controllerName = "kube-bind-example-backend-servicebindingrequest"
+	controllerName = "kube-bind-example-backend-serviceexportrequest"
 )
 
-// NewController returns a new controller to reconcile APIServiceBindingRequests by
+// NewController returns a new controller to reconcile APIServiceExportRequests by
 // creating corresponding APIServiceExports.
 func NewController(
 	config *rest.Config,
 	scope kubebindv1alpha1.Scope,
-	serviceBindingRequestInformer bindinformers.APIServiceBindingRequestInformer,
+	serviceExportRequestInformer bindinformers.APIServiceExportRequestInformer,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
 ) (*Controller, error) {
@@ -81,8 +81,8 @@ func NewController(
 		serviceExportLister:  serviceExportInformer.Lister(),
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
 
-		serviceBindingRequestLister:  serviceBindingRequestInformer.Lister(),
-		serviceBindingRequestIndexer: serviceBindingRequestInformer.Informer().GetIndexer(),
+		serviceExportRequestLister:  serviceExportRequestInformer.Lister(),
+		serviceExportRequestIndexer: serviceExportRequestInformer.Informer().GetIndexer(),
 
 		crdLister:  crdInformer.Lister(),
 		crdIndexer: crdInformer.Informer().GetIndexer(),
@@ -98,34 +98,34 @@ func NewController(
 			createServiceExport: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error) {
 				return bindClient.KubeBindV1alpha1().APIServiceExports(resource.Namespace).Create(ctx, resource, metav1.CreateOptions{})
 			},
-			deleteServiceBindingRequest: func(ctx context.Context, ns, name string) error {
-				return bindClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Delete(ctx, name, metav1.DeleteOptions{})
+			deleteServiceExportRequest: func(ctx context.Context, ns, name string) error {
+				return bindClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceBindingRequest, *kubebindv1alpha1.APIServiceBindingRequestSpec, *kubebindv1alpha1.APIServiceBindingRequestStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceBindingRequest] {
-				return bindClient.KubeBindV1alpha1().APIServiceBindingRequests(ns)
+		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceExportRequest, *kubebindv1alpha1.APIServiceExportRequestSpec, *kubebindv1alpha1.APIServiceExportRequestStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceExportRequest] {
+				return bindClient.KubeBindV1alpha1().APIServiceExportRequests(ns)
 			},
 		),
 	}
 
-	indexers.AddIfNotPresentOrDie(serviceBindingRequestInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceBindingRequestByServiceExport: indexers.IndexServiceBindingRequestByServiceExport,
+	indexers.AddIfNotPresentOrDie(serviceExportRequestInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceExportRequestByServiceExport: indexers.IndexServiceExportRequestByServiceExport,
 	})
-	indexers.AddIfNotPresentOrDie(serviceBindingRequestInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceBindingRequestByGroupResource: indexers.IndexServiceBindingRequestByGroupResource,
+	indexers.AddIfNotPresentOrDie(serviceExportRequestInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceExportRequestByGroupResource: indexers.IndexServiceExportRequestByGroupResource,
 	})
 
-	serviceBindingRequestInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	serviceExportRequestInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			c.enqueueServiceBindingRequest(logger, obj)
+			c.enqueueServiceExportRequest(logger, obj)
 		},
 		UpdateFunc: func(old, newObj interface{}) {
-			c.enqueueServiceBindingRequest(logger, newObj)
+			c.enqueueServiceExportRequest(logger, newObj)
 		},
 		DeleteFunc: func(obj interface{}) {
-			c.enqueueServiceBindingRequest(logger, obj)
+			c.enqueueServiceExportRequest(logger, obj)
 		},
 	})
 
@@ -156,18 +156,18 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.APIServiceBindingRequestSpec, *kubebindv1alpha1.APIServiceBindingRequestStatus]
+type Resource = committer.Resource[*kubebindv1alpha1.APIServiceExportRequestSpec, *kubebindv1alpha1.APIServiceExportRequestStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
-// Controller to reconcile APIServiceBindingRequests by creating corresponding APIServiceExports.
+// Controller to reconcile APIServiceExportRequests by creating corresponding APIServiceExports.
 type Controller struct {
 	queue workqueue.RateLimitingInterface
 
 	bindClient bindclient.Interface
 	kubeClient kubernetesclient.Interface
 
-	serviceBindingRequestLister  bindlisters.APIServiceBindingRequestLister
-	serviceBindingRequestIndexer cache.Indexer
+	serviceExportRequestLister  bindlisters.APIServiceExportRequestLister
+	serviceExportRequestIndexer cache.Indexer
 
 	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
@@ -180,14 +180,14 @@ type Controller struct {
 	commit CommitFunc
 }
 
-func (c *Controller) enqueueServiceBindingRequest(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceExportRequest(logger klog.Logger, obj interface{}) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	logger.V(2).Info("queueing APIServiceBindingRequest", "key", key)
+	logger.V(2).Info("queueing APIServiceExportRequest", "key", key)
 	c.queue.Add(key)
 }
 
@@ -198,7 +198,7 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	requests, err := c.serviceBindingRequestIndexer.ByIndex(indexers.ServiceBindingRequestByServiceExport, seKey)
+	requests, err := c.serviceExportRequestIndexer.ByIndex(indexers.ServiceExportRequestByServiceExport, seKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -209,7 +209,7 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing APIServiceBindingRequest", "key", key, "reason", "APIServiceExport", "APIServiceExportKey", seKey)
+		logger.V(2).Info("queueing APIServiceExportRequest", "key", key, "reason", "APIServiceExport", "APIServiceExportKey", seKey)
 		c.queue.Add(key)
 	}
 }
@@ -221,7 +221,7 @@ func (c *Controller) enqueueCRD(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	requests, err := c.serviceBindingRequestIndexer.ByIndex(indexers.ServiceBindingRequestByGroupResource, crdKey)
+	requests, err := c.serviceExportRequestIndexer.ByIndex(indexers.ServiceExportRequestByGroupResource, crdKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -232,7 +232,7 @@ func (c *Controller) enqueueCRD(logger klog.Logger, obj interface{}) {
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing APIServiceBindingRequest", "key", key, "reason", "CustomResourceDefinition", "CustomResourceDefinitionKey", crdKey)
+		logger.V(2).Info("queueing APIServiceExportRequest", "key", key, "reason", "CustomResourceDefinition", "CustomResourceDefinitionKey", crdKey)
 		c.queue.Add(key)
 	}
 }
@@ -295,7 +295,7 @@ func (c *Controller) process(ctx context.Context, key string) error {
 		return nil // we cannot do anything
 	}
 
-	obj, err := c.serviceBindingRequestLister.APIServiceBindingRequests(ns).Get(name)
+	obj, err := c.serviceExportRequestLister.APIServiceExportRequests(ns).Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {

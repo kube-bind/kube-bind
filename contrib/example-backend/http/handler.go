@@ -364,10 +364,10 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request := kubebindv1alpha1.APIServiceBindingRequestResponse{
+	request := kubebindv1alpha1.APIServiceExportRequestResponse{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
-			Kind:       "APIServiceBindingRequest",
+			Kind:       "APIServiceExportRequest",
 		},
 		ObjectMeta: kubebindv1alpha1.NameObjectMeta{
 			// this is good for one resource. If there are more (in the future),
@@ -375,8 +375,8 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 			// But pretty is better.
 			Name: resource + "." + group,
 		},
-		Spec: kubebindv1alpha1.APIServiceBindingRequestSpec{
-			Resources: []kubebindv1alpha1.APIServiceBindingRequestResource{
+		Spec: kubebindv1alpha1.APIServiceExportRequestSpec{
+			Resources: []kubebindv1alpha1.APIServiceExportRequestResource{
 				{GroupResource: kubebindv1alpha1.GroupResource{Group: group, Resource: resource}},
 			},
 		},

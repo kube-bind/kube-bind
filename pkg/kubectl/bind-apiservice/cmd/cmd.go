@@ -30,11 +30,11 @@ import (
 
 var (
 	bindAPIServiceExampleUses = `
-	# bind to a remote API service. Use kubectl bind to create the APIBindingRequest interactively. 
-	%[1]s apiservice --remote-kubeconfig file -f apiservice-binding-request.yaml
+	# bind to a remote API service. Use kubectl bind to create the APIServiceExportRequest interactively. 
+	%[1]s apiservice --remote-kubeconfig file -f apiservice-export-request.yaml
 
 	# bind to a remote API service via a request manifest from a https URL.
-	%[1]s apiservice --remote-kubeconfig file https://some-url.com/apiservice-binding-requests.yaml
+	%[1]s apiservice --remote-kubeconfig file https://some-url.com/apiservice-export-requests.yaml
 
     # bind to a API service directly without any remote agent or service provider.
 	%[1]s apiservice --remote-kubeconfig file -n remote-namespace resources.group/v1
@@ -44,7 +44,7 @@ var (
 func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	opts := plugin.NewBindAPIServiceOptions(streams)
 	cmd := &cobra.Command{
-		Use:          "apiservice https://<url-to-a-APIBindingRequest>|-f <file-to-a-APIBindingRequest>",
+		Use:          "apiservice https://<url-to-a-APIServiceExportRequest>|-f <file-to-a-APIBindingRequest>",
 		Short:        "Bind to a remote API service",
 		Example:      fmt.Sprintf(bindAPIServiceExampleUses, "kubectl bind"),
 		SilenceUsage: true,

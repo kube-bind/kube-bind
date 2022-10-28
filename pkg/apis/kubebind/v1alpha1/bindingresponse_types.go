@@ -25,7 +25,7 @@ import (
 // authentication and resource selection on the service prpvider website. It returns
 // a list of requests of possibly different types that kubectl bind has to
 // pass to the sub-command kubect-bind-<type>, e.g. kubectl-bind-apiservice for
-// APIServiceBindingRequest.
+// APIServiceExportRequest.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type BindingResponse struct {
@@ -43,7 +43,7 @@ type BindingResponse struct {
 	// +kubebuilder:validation:Required
 	Kubeconfig []byte `json:"kubeconfig"`
 
-	// requests is a list of binding requests of different types, e.g. APIServiceBindingRequest.
+	// requests is a list of binding requests of different types, e.g. APIServiceExportRequest.
 	//
 	// +required
 	// +kubebuilder:validation:Required

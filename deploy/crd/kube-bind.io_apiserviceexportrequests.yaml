@@ -4,16 +4,16 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: apiservicebindingrequests.kube-bind.io
+  name: apiserviceexportrequests.kube-bind.io
 spec:
   group: kube-bind.io
   names:
     categories:
     - kube-bindings
-    kind: APIServiceBindingRequest
-    listKind: APIServiceBindingRequestList
-    plural: apiservicebindingrequests
-    singular: apiservicebindingrequest
+    kind: APIServiceExportRequest
+    listKind: APIServiceExportRequestList
+    plural: apiserviceexportrequests
+    singular: apiserviceexportrequest
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -26,9 +26,8 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: "APIServiceBindingRequest is represents a request session of
-          kubectl-bind-apiservice. \n The service provider can prune these objects
-          after some time."
+        description: "APIServiceExportRequest is represents a request session of kubectl-bind-apiservice.
+          \n The service provider can prune these objects after some time."
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

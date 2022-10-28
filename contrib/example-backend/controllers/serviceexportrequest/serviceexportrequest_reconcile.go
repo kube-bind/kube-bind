@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package servicebindingrequest
+package serviceexportrequest
 
 import (
 	"context"
@@ -39,10 +39,10 @@ type reconciler struct {
 	getServiceExport    func(ns, name string) (*kubebindv1alpha1.APIServiceExport, error)
 	createServiceExport func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error)
 
-	deleteServiceBindingRequest func(ctx context.Context, namespace, name string) error
+	deleteServiceExportRequest func(ctx context.Context, namespace, name string) error
 }
 
-func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha1.APIServiceBindingRequest) error {
+func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha1.APIServiceExportRequest) error {
 	var errs []error
 
 	if err := r.ensureExports(ctx, req); err != nil {
@@ -54,10 +54,10 @@ func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha1.APISer
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.APIServiceBindingRequest) error {
+func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.APIServiceExportRequest) error {
 	logger := klog.FromContext(ctx)
 
-	if req.Status.Phase == kubebindv1alpha1.APIServiceBindingRequestPhasePending {
+	if req.Status.Phase == kubebindv1alpha1.APIServiceExportRequestPhasePending {
 		failure := false
 		for _, res := range req.Spec.Resources {
 			name := res.Resource + "." + res.Group
@@ -68,7 +68,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 			if apierrors.IsNotFound(err) {
 				conditions.MarkFalse(
 					req,
-					kubebindv1alpha1.APIServiceBindingRequestConditionExportsReady,
+					kubebindv1alpha1.APIServiceExportRequestConditionExportsReady,
 					"CRDNotFound",
 					conditionsapi.ConditionSeverityError,
 					"CustomResourceDefinition %s in the service provider cluster not found",
@@ -88,7 +88,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 			if err != nil {
 				conditions.MarkFalse(
 					req,
-					kubebindv1alpha1.APIServiceBindingRequestConditionExportsReady,
+					kubebindv1alpha1.APIServiceExportRequestConditionExportsReady,
 					"CRDInvalid",
 					conditionsapi.ConditionSeverityError,
 					"CustomResourceDefinition %s cannot be converted to a APIServiceExport: %v",
@@ -120,14 +120,14 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 		}
 
 		if !failure {
-			conditions.MarkTrue(req, kubebindv1alpha1.APIServiceBindingRequestConditionExportsReady)
-			req.Status.Phase = kubebindv1alpha1.APIServiceBindingRequestPhaseSucceeded
+			conditions.MarkTrue(req, kubebindv1alpha1.APIServiceExportRequestConditionExportsReady)
+			req.Status.Phase = kubebindv1alpha1.APIServiceExportRequestPhaseSucceeded
 			return nil
 		}
 
 		if time.Since(req.CreationTimestamp.Time) > time.Minute {
-			req.Status.Phase = kubebindv1alpha1.APIServiceBindingRequestPhaseFailed
-			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha1.APIServiceBindingRequestConditionExportsReady)
+			req.Status.Phase = kubebindv1alpha1.APIServiceExportRequestPhaseFailed
+			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha1.APIServiceExportRequestConditionExportsReady)
 		}
 
 		return nil
@@ -135,7 +135,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 
 	if time.Since(req.CreationTimestamp.Time) > 10*time.Minute {
 		logger.Info("Deleting service binding request %s/%s", req.Namespace, req.Name, "reason", "timeout", "age", time.Since(req.CreationTimestamp.Time))
-		return r.deleteServiceBindingRequest(ctx, req.Namespace, req.Name)
+		return r.deleteServiceExportRequest(ctx, req.Namespace, req.Name)
 	}
 
 	return nil

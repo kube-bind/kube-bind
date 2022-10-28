@@ -33,12 +33,12 @@ func (c *FakeKubeBindV1alpha1) APIServiceBindings() v1alpha1.APIServiceBindingIn
 	return &FakeAPIServiceBindings{c}
 }
 
-func (c *FakeKubeBindV1alpha1) APIServiceBindingRequests(namespace string) v1alpha1.APIServiceBindingRequestInterface {
-	return &FakeAPIServiceBindingRequests{c, namespace}
-}
-
 func (c *FakeKubeBindV1alpha1) APIServiceExports(namespace string) v1alpha1.APIServiceExportInterface {
 	return &FakeAPIServiceExports{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha1) APIServiceExportRequests(namespace string) v1alpha1.APIServiceExportRequestInterface {
+	return &FakeAPIServiceExportRequests{c, namespace}
 }
 
 func (c *FakeKubeBindV1alpha1) APIServiceNamespaces(namespace string) v1alpha1.APIServiceNamespaceInterface {

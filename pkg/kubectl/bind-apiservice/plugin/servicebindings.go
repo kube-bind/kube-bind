@@ -34,7 +34,7 @@ import (
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 )
 
-func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, config *rest.Config, request *kubebindv1alpha1.APIServiceBindingRequest, secretName string) ([]*kubebindv1alpha1.APIServiceBinding, error) {
+func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, config *rest.Config, request *kubebindv1alpha1.APIServiceExportRequest, secretName string) ([]*kubebindv1alpha1.APIServiceBinding, error) {
 	bindClient, err := bindclient.NewForConfig(config)
 	if err != nil {
 		return nil, err

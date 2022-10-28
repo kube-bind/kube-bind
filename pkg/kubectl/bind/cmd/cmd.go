@@ -36,13 +36,13 @@ var (
 	%[1]s bind https://mangodb.com/exports
 
 	# authenticate and configure the services to bind, but don't actually bind them.
-	%[1]s bind https://mangodb.com/exports --dry-run -o yaml > apiservice-binding-requests.yaml
+	%[1]s bind https://mangodb.com/exports --dry-run -o yaml > apiservice-export-requests.yaml
 
 	# bind to a remote API service as configured above and actually bind to it, e.g. in GitOps automation.
 	%[1]s bind apiservice --remote-kubeconfig name -f apiservice-binding-requests.yaml
 
 	# bind to a remote API service via a request manifest from a https URL.
-	%[1]s bind apiservice --remote-kubeconfig name https://some-url.com/apiservice-binding-requests.yaml
+	%[1]s bind apiservice --remote-kubeconfig name https://some-url.com/apiservice-export-requests.yaml
 	`
 )
 

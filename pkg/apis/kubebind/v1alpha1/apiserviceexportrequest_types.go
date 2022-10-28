@@ -24,12 +24,12 @@ import (
 )
 
 const (
-	// APIServiceBindingRequestConditionExportsReady is set to true when the
+	// APIServiceExportRequestConditionExportsReady is set to true when the
 	// corresponding APIServiceExport is ready.
-	APIServiceBindingRequestConditionExportsReady conditionsapi.ConditionType = "ExportsReady"
+	APIServiceExportRequestConditionExportsReady conditionsapi.ConditionType = "ExportsReady"
 )
 
-// APIServiceBindingRequest is represents a request session of kubectl-bind-apiservice.
+// APIServiceExportRequest is represents a request session of kubectl-bind-apiservice.
 //
 // The service provider can prune these objects after some time.
 //
@@ -40,7 +40,7 @@ const (
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=`.status.conditions[?(@.type=="Ready")].status`,priority=0
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
-type APIServiceBindingRequest struct {
+type APIServiceExportRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -49,17 +49,17 @@ type APIServiceBindingRequest struct {
 	//
 	// +required
 	// +kubebuilder:validation:Required
-	Spec APIServiceBindingRequestSpec `json:"spec"`
+	Spec APIServiceExportRequestSpec `json:"spec"`
 
 	// status contains reconciliation information for a service binding.
-	Status APIServiceBindingRequestStatus `json:"status,omitempty"`
+	Status APIServiceExportRequestStatus `json:"status,omitempty"`
 }
 
-// APIServiceBindingRequestResponse is like APIServiceBindingRequest but without
+// APIServiceExportRequestResponse is like APIServiceExportRequest but without
 // ObjectMeta, to avoid unwanted metadata fields being sent in the response.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type APIServiceBindingRequestResponse struct {
+type APIServiceExportRequestResponse struct {
 	metav1.TypeMeta `json:",inline"`
 	ObjectMeta      NameObjectMeta `json:"metadata"`
 
@@ -68,10 +68,10 @@ type APIServiceBindingRequestResponse struct {
 	//
 	// +required
 	// +kubebuilder:validation:Required
-	Spec APIServiceBindingRequestSpec `json:"spec"`
+	Spec APIServiceExportRequestSpec `json:"spec"`
 
 	// status contains reconciliation information for a service binding.
-	Status APIServiceBindingRequestStatus `json:"status,omitempty"`
+	Status APIServiceExportRequestStatus `json:"status,omitempty"`
 }
 
 type NameObjectMeta struct {
@@ -79,16 +79,16 @@ type NameObjectMeta struct {
 	Name string `json:"name,omitempty"`
 }
 
-func (in *APIServiceBindingRequest) GetConditions() conditionsapi.Conditions {
+func (in *APIServiceExportRequest) GetConditions() conditionsapi.Conditions {
 	return in.Status.Conditions
 }
 
-func (in *APIServiceBindingRequest) SetConditions(conditions conditionsapi.Conditions) {
+func (in *APIServiceExportRequest) SetConditions(conditions conditionsapi.Conditions) {
 	in.Status.Conditions = conditions
 }
 
-// APIServiceBindingRequestSpec is the spec of a APIServiceBindingRequest.
-type APIServiceBindingRequestSpec struct {
+// APIServiceExportRequestSpec is the spec of a APIServiceExportRequest.
+type APIServiceExportRequestSpec struct {
 	// parameters holds service provider specific parameters for this binding
 	// request.
 	//
@@ -101,10 +101,10 @@ type APIServiceBindingRequestSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
-	Resources []APIServiceBindingRequestResource `json:"resources"`
+	Resources []APIServiceExportRequestResource `json:"resources"`
 }
 
-type APIServiceBindingRequestResource struct {
+type APIServiceExportRequestResource struct {
 	GroupResource `json:",inline"`
 
 	// versions is a list of versions that should be exported. If this is empty
@@ -131,23 +131,23 @@ type GroupResource struct {
 	Resource string `json:"resource"`
 }
 
-// APIServiceBindingRequestPhase describes the phase of a binding request.
-type APIServiceBindingRequestPhase string
+// APIServiceExportRequestPhase describes the phase of a binding request.
+type APIServiceExportRequestPhase string
 
 const (
-	// APIServiceBindingRequestPhasePending indicates that the service binding
+	// APIServiceExportRequestPhasePending indicates that the service binding
 	// is in progress.
-	APIServiceBindingRequestPhasePending APIServiceBindingRequestPhase = "Pending"
-	// APIServiceBindingRequestPhaseFailed indicates that the service binding
+	APIServiceExportRequestPhasePending APIServiceExportRequestPhase = "Pending"
+	// APIServiceExportRequestPhaseFailed indicates that the service binding
 	// has failed. It will not resume.
-	APIServiceBindingRequestPhaseFailed APIServiceBindingRequestPhase = "Failed"
-	// APIServiceBindingRequestPhaseSucceeded indicates that the service binding
+	APIServiceExportRequestPhaseFailed APIServiceExportRequestPhase = "Failed"
+	// APIServiceExportRequestPhaseSucceeded indicates that the service binding
 	// has succeeded. The corresponding APIServiceExport have been created and
 	// are ready.
-	APIServiceBindingRequestPhaseSucceeded APIServiceBindingRequestPhase = "Succeeded"
+	APIServiceExportRequestPhaseSucceeded APIServiceExportRequestPhase = "Succeeded"
 )
 
-type APIServiceBindingRequestStatus struct {
+type APIServiceExportRequestStatus struct {
 	// phase is the current phase of the binding request. It starts in Pending
 	// and transitions to Succeeded or Failed. See the condition for detailed
 	// information.
@@ -156,7 +156,7 @@ type APIServiceBindingRequestStatus struct {
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=Pending
 	// +kubebuilder:validation:Enum=Pending;Failed;Succeeded
-	Phase APIServiceBindingRequestPhase `json:"phase,omitempty"`
+	Phase APIServiceExportRequestPhase `json:"phase,omitempty"`
 
 	// terminalMessage is a human readable message that describes the reason
 	// for the current phase.
@@ -167,12 +167,12 @@ type APIServiceBindingRequestStatus struct {
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
-// APIServiceBindingRequestList is the list of APIServiceBindingRequest.
+// APIServiceExportRequestList is the list of APIServiceExportRequest.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-type APIServiceBindingRequestList struct {
+type APIServiceExportRequestList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []APIServiceBindingRequest `json:"items"`
+	Items []APIServiceExportRequest `json:"items"`
 }

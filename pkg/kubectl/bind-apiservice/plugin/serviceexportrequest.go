@@ -33,12 +33,12 @@ import (
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 )
 
-func (b *BindAPIServiceOptions) createServiceBindingRequest(
+func (b *BindAPIServiceOptions) createServiceExportRequest(
 	ctx context.Context,
 	remoteConfig *rest.Config,
 	ns string,
-	request *kubebindv1alpha1.APIServiceBindingRequest,
-) (*kubebindv1alpha1.APIServiceBindingRequest, error) {
+	request *kubebindv1alpha1.APIServiceExportRequest,
+) (*kubebindv1alpha1.APIServiceExportRequest, error) {
 	bindRemoteClient, err := bindclient.NewForConfig(remoteConfig)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (b *BindAPIServiceOptions) createServiceBindingRequest(
 	if request.Name == "" {
 		request.GenerateName = "export-"
 	}
-	created, err := bindRemoteClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Create(ctx, request, metav1.CreateOptions{})
+	created, err := bindRemoteClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Create(ctx, request, metav1.CreateOptions{})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return nil, err
 	} else if err != nil && request.Name == "" {
@@ -56,26 +56,26 @@ func (b *BindAPIServiceOptions) createServiceBindingRequest(
 	} else if err != nil {
 		request.GenerateName = request.Name + "-"
 		request.Name = ""
-		created, err = bindRemoteClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Create(ctx, request, metav1.CreateOptions{})
+		created, err = bindRemoteClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Create(ctx, request, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// wait for the request to be Successful, Failed or deleted
-	var result *kubebindv1alpha1.APIServiceBindingRequest
+	var result *kubebindv1alpha1.APIServiceExportRequest
 	if err := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
-		request, err := bindRemoteClient.KubeBindV1alpha1().APIServiceBindingRequests(ns).Get(ctx, created.Name, metav1.GetOptions{})
+		request, err := bindRemoteClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Get(ctx, created.Name, metav1.GetOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return false, err
 		} else if apierrors.IsNotFound(err) {
-			return false, fmt.Errorf("APIServiceBindingRequest %s was deleted by the service provider", created.Name)
+			return false, fmt.Errorf("APIServiceExportRequest %s was deleted by the service provider", created.Name)
 		}
-		if request.Status.Phase == kubebindv1alpha1.APIServiceBindingRequestPhaseSucceeded {
+		if request.Status.Phase == kubebindv1alpha1.APIServiceExportRequestPhaseSucceeded {
 			result = request
 			return true, nil
 		}
-		if request.Status.Phase == kubebindv1alpha1.APIServiceBindingRequestPhaseFailed {
+		if request.Status.Phase == kubebindv1alpha1.APIServiceExportRequestPhaseFailed {
 			return false, fmt.Errorf("binding request failed: %s", request.Status.TerminalMessage)
 		}
 		return false, nil

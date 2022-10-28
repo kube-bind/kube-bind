@@ -6,7 +6,7 @@ rules:
 - apiGroups:
   - "kube-bind.io"
   resources:
-  - "apiservicebindingrequests"
+  - "apiserviceexportrequests"
   verbs: ["create","delete","patch","update","get","list","watch"]
 - apiGroups:
     - ""

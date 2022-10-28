@@ -66,7 +66,7 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "clusterbindings"},
 		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiserviceexports"},
 		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiservicenamespaces"},
-		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiservicebindingrequests"},
+		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiserviceexportrequests"},
 	)
 	require.NoError(t, err)
 

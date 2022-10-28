@@ -51,6 +51,8 @@ staticClients:
 ```
 * Run dex: `./bin/dex serve examples/config-dev.yaml`
 
+* label some CRDs to export with `kube-bind.io/exported: true`
+
 Next you should be able to run the backend. For it you need a kubernetes cluster (e.g. kind)
 accessible.
 
@@ -67,7 +69,7 @@ $ bin/example-backend \
   --oidc-issuer-url=http://127.0.0.1:5556/dex \
   --oidc-callback-url=http://127.0.0.1:8080/callback \
   --pretty-name="BigCorp.com" \
-  --namespace-prefix="kubd-bind-" \
+  --namespace-prefix="kube-bind-" \
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
   --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y=
 ```

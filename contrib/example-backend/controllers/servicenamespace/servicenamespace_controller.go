@@ -26,7 +26,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -114,24 +113,6 @@ func NewController(
 				return kubeClient.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
 			},
 
-			getServiceNamespace: func(ns, name string) (*kubebindv1alpha1.APIServiceNamespace, error) {
-				return serviceNamespaceInformer.Lister().APIServiceNamespaces(ns).Get(name)
-			},
-
-			getClusterBinding: func(ns string) (*kubebindv1alpha1.ClusterBinding, error) {
-				return clusterBindingInformer.Lister().ClusterBindings(ns).Get("cluster")
-			},
-
-			getRole: func(ns, name string) (*rbacv1.Role, error) {
-				return roleInformer.Lister().Roles(ns).Get(name)
-			},
-			createRole: func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error) {
-				return kubeClient.RbacV1().Roles(cr.Namespace).Create(ctx, cr, metav1.CreateOptions{})
-			},
-			updateRole: func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error) {
-				return kubeClient.RbacV1().Roles(cr.Namespace).Update(ctx, cr, metav1.UpdateOptions{})
-			},
-
 			getRoleBinding: func(ns, name string) (*rbacv1.RoleBinding, error) {
 				return roleBindingInformer.Lister().RoleBindings(ns).Get(name)
 			},
@@ -140,10 +121,6 @@ func NewController(
 			},
 			updateRoleBinding: func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
 				return kubeClient.RbacV1().RoleBindings(crb.Namespace).Update(ctx, crb, metav1.UpdateOptions{})
-			},
-
-			listServiceExports: func(ns string) ([]*kubebindv1alpha1.APIServiceExport, error) {
-				return serviceExportInformer.Lister().APIServiceExports(ns).List(labels.Everything())
 			},
 		},
 

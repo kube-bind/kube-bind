@@ -37,19 +37,9 @@ type reconciler struct {
 	createNamespace func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error)
 	deleteNamespace func(ctx context.Context, name string) error
 
-	getServiceNamespace func(ns, name string) (*kubebindv1alpha1.APIServiceNamespace, error)
-
-	getClusterBinding func(ns string) (*kubebindv1alpha1.ClusterBinding, error)
-
-	getRole    func(ns, name string) (*rbacv1.Role, error)
-	createRole func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error)
-	updateRole func(ctx context.Context, cr *rbacv1.Role) (*rbacv1.Role, error)
-
 	getRoleBinding    func(ns, name string) (*rbacv1.RoleBinding, error)
 	createRoleBinding func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
 	updateRoleBinding func(ctx context.Context, cr *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
-
-	listServiceExports func(ns string) ([]*kubebindv1alpha1.APIServiceExport, error)
 }
 
 func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.APIServiceNamespace) error {
@@ -74,10 +64,6 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.APISer
 	}
 
 	if c.scope == kubebindv1alpha1.NamespacedScope {
-		if err := c.ensureRBACRole(ctx, nsName, sns); err != nil {
-			return fmt.Errorf("failed to ensure RBAC: %w", err)
-		}
-
 		if err := c.ensureRBACRoleBinding(ctx, nsName, sns); err != nil {
 			return fmt.Errorf("failed to ensure RBAC: %w", err)
 		}
@@ -85,46 +71,6 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.APISer
 
 	if sns.Status.Namespace != nsName {
 		sns.Status.Namespace = nsName
-	}
-
-	return nil
-}
-
-func (c *reconciler) ensureRBACRole(ctx context.Context, ns string, sns *kubebindv1alpha1.APIServiceNamespace) error {
-	objName := "kube-binder"
-	role, err := c.getRole(ns, objName)
-	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("failed to get role %s/%s: %w", ns, objName, err)
-	}
-
-	exports, err := c.listServiceExports(ns)
-	if err != nil {
-		return fmt.Errorf("failed to list APIServiceExports: %w", err)
-	}
-	expected := &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      objName,
-			Namespace: ns,
-		},
-	}
-	for _, export := range exports {
-		expected.Rules = append(expected.Rules, rbacv1.PolicyRule{
-			APIGroups: []string{export.Spec.Group},
-			Resources: []string{export.Spec.Names.Plural},
-			Verbs:     []string{"get", "list", "watch", "update", "patch", "delete", "create"},
-		})
-	}
-
-	if role == nil {
-		if _, err := c.createRole(ctx, expected); err != nil {
-			return fmt.Errorf("failed to create role %s/%s: %w", ns, objName, err)
-		}
-	} else if !reflect.DeepEqual(role.Rules, expected.Rules) {
-		role = role.DeepCopy()
-		role.Rules = expected.Rules
-		if _, err := c.updateRole(ctx, role); err != nil {
-			return fmt.Errorf("failed to create role %s/%s: %w", ns, objName, err)
-		}
 	}
 
 	return nil
@@ -150,8 +96,8 @@ func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, ns string, sns *
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
-			Kind:     "Role",
-			Name:     objName,
+			Kind:     "ClusterRole",
+			Name:     "kube-binder-" + sns.Namespace,
 			APIGroup: "rbac.authorization.k8s.io",
 		},
 	}

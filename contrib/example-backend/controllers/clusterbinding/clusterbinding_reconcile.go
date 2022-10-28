@@ -47,6 +47,7 @@ type reconciler struct {
 	getClusterRoleBinding    func(name string) (*rbacv1.ClusterRoleBinding, error)
 	createClusterRoleBinding func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
 	updateClusterRoleBinding func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
+	deleteClusterRoleBinding func(ctx context.Context, name string) error
 
 	getRoleBinding    func(ns, name string) (*rbacv1.RoleBinding, error)
 	createRoleBinding func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
@@ -174,6 +175,12 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBi
 	binding, err := r.getClusterRoleBinding(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get ClusterRoleBinding %s: %w", name, err)
+	}
+
+	if r.scope != kubebindv1alpha1.ClusterScope {
+		if err := r.deleteClusterRoleBinding(ctx, name); err != nil {
+			return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", name, err)
+		}
 	}
 
 	ns, err := r.getNamespace(clusterBinding.Namespace)

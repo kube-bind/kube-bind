@@ -118,6 +118,9 @@ func NewController(
 			updateClusterRoleBinding: func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
 				return kubeClient.RbacV1().ClusterRoleBindings().Update(ctx, binding, metav1.UpdateOptions{})
 			},
+			deleteClusterRoleBinding: func(ctx context.Context, name string) error {
+				return kubeClient.RbacV1().ClusterRoleBindings().Delete(ctx, name, metav1.DeleteOptions{})
+			},
 			getNamespace: func(name string) (*v1.Namespace, error) {
 				return namespaceInformer.Lister().Get(name)
 			},

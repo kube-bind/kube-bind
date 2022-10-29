@@ -37,6 +37,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/cookie"
@@ -44,6 +45,7 @@ import (
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/template"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	bindversion "github.com/kube-bind/kube-bind/pkg/version"
 )
 
 var (
@@ -113,11 +115,18 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 		oidcAuthorizeURL = fmt.Sprintf("http://%s/authorize", r.Host)
 	}
 
+	ver, err := bindversion.BinaryVersion(componentbaseversion.Get().GitVersion)
+	if err != nil {
+		logger.Error(err, "failed to parse version %q", componentbaseversion.Get().GitVersion)
+		ver = "v0.0.0"
+	}
+
 	provider := &kubebindv1alpha1.BindingProvider{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha1.GroupVersion,
 			Kind:       "BindingProvider",
 		},
+		Version:            ver,
 		ProviderPrettyName: "example-backend",
 		AuthenticationMethods: []kubebindv1alpha1.AuthenticationMethod{
 			{

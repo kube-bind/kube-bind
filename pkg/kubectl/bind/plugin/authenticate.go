@@ -24,10 +24,15 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 
+	"github.com/blang/semver/v4"
 	"github.com/mdp/qrterminal/v3"
 
+	clientgoversion "k8s.io/client-go/pkg/version"
+
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/version"
 )
 
 func getProvider(url string) (*kubebindv1alpha1.BindingProvider, error) {
@@ -50,7 +55,40 @@ func getProvider(url string) (*kubebindv1alpha1.BindingProvider, error) {
 		return nil, err
 	}
 
+	// check provider version compatibility
+	bindVersion, err := version.BinaryVersion(clientgoversion.Get().GitVersion)
+	if err != nil {
+		return nil, err
+	}
+	if bindSemVer, err := semver.Parse(strings.TrimLeft(bindVersion, "v")); err != nil {
+		return nil, fmt.Errorf("failed to parse bind version %q: %v", bindVersion, err)
+	} else if min := semver.MustParse("0.3.0"); bindSemVer.GE(min) {
+		// we added this in v0.3.0. Don't test before.
+		if err := validateProviderVersion(provider.Version); err != nil {
+			return nil, err
+		}
+	}
+
 	return provider, nil
+}
+
+func validateProviderVersion(providerVersion string) error {
+	if providerVersion == "" {
+		return fmt.Errorf("provider version %q is empty, please update the backend to v0.3.0+", providerVersion)
+	} else if providerVersion == "v0.0.0" || providerVersion == "v0.0.0-master+$Format:%H$" {
+		// unversioned, development version
+		return nil
+	}
+
+	providerSemVer, err := semver.Parse(strings.TrimPrefix(providerVersion, "v"))
+	if err != nil {
+		return fmt.Errorf("provider version %q cannot be parsed", providerVersion)
+	}
+	if min := semver.MustParse("0.3.0"); providerSemVer.LT(min) {
+		return fmt.Errorf("provider version %s is not supported, must be at least v%s", providerVersion, min)
+	}
+
+	return nil
 }
 
 func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, callback, sessionID, clusterID string, urlCh chan<- string) error {

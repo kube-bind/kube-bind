@@ -305,7 +305,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		// TODO: support passing through the base options
 
 		fmt.Fprintf(b.Options.ErrOut, "🚀 Executing: %s %s\n", "kubectl bind", strings.Join(args, " ")) // nolint: errcheck
-		fmt.Fprintf(b.Options.ErrOut, "✨ Use \"-o yaml\" and \"--dry-run\" to get the APIServiceExportRequest and pass it to \"kubectl bind apiservice\" directly. Great for automation.\n")
+		fmt.Fprintf(b.Options.ErrOut, "✨ Use \"-o yaml\" and \"--dry-run\" to get the APIServiceExportRequest.\n   and pass it to \"kubectl bind apiservice\" directly. Great for automation.\n")
 		command := exec.CommandContext(ctx, executable, append(args, "--no-banner")...)
 		command.Stdin = bytes.NewReader(bs)
 		command.Stdout = b.Options.Out

@@ -121,7 +121,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 
 		logger.V(2).Info("Waiting for APIServiceBindings to be served", "error", err, "host", bindClient.RESTClient())
 		if first {
-			fmt.Fprint(b.Options.IOStreams.ErrOut, "  Waiting for the konnector to be ready") // nolint: errcheck
+			fmt.Fprint(b.Options.IOStreams.ErrOut, "   Waiting for the konnector to be ready") // nolint: errcheck
 			first = false
 		} else {
 			fmt.Fprint(b.Options.IOStreams.ErrOut, ".") // nolint: errcheck

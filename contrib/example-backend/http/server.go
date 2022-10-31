@@ -63,7 +63,7 @@ func (s *Server) Addr() net.Addr {
 func (s *Server) Start(ctx context.Context) error {
 	go func() {
 		<-ctx.Done()
-		s.server.Close() // nolint:errcheck
+		s.Close() // nolint:errcheck
 	}()
 
 	go func() {
@@ -77,6 +77,10 @@ func (s *Server) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) Shutdown() error {
+func (s *Server) Close() error {
 	return s.server.Close()
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	return s.server.Shutdown(ctx)
 }

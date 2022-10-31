@@ -30,13 +30,13 @@ import (
 type Server struct {
 	options  *options.Serve
 	listener net.Listener
-	Router   *mux.Router
+	server   *http.Server
 }
 
 func NewServer(options *options.Serve) (*Server, error) {
 	server := &Server{
 		options: options,
-		Router:  mux.NewRouter(),
+		server:  &http.Server{Handler: mux.NewRouter()},
 	}
 
 	if options.Listener == nil {
@@ -52,26 +52,31 @@ func NewServer(options *options.Serve) (*Server, error) {
 	return server, nil
 }
 
+func (s *Server) AddRoute(path string, handler http.HandlerFunc, method string) {
+	s.server.Handler.(*mux.Router).HandleFunc(path, handler).Methods(method)
+}
+
 func (s *Server) Addr() net.Addr {
 	return s.listener.Addr()
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	server := &http.Server{
-		Handler: s.Router,
-	}
 	go func() {
 		<-ctx.Done()
-		server.Close() // nolint:errcheck
+		s.server.Close() // nolint:errcheck
 	}()
 
 	go func() {
 		if s.options.KeyFile == "" {
-			server.Serve(s.listener) // nolint:errcheck
+			s.server.Serve(s.listener) // nolint:errcheck
 		} else {
-			server.ServeTLS(s.listener, s.options.CertFile, s.options.KeyFile) // nolint:errcheck
+			s.server.ServeTLS(s.listener, s.options.CertFile, s.options.KeyFile) // nolint:errcheck
 		}
 	}()
 
 	return nil
+}
+
+func (s *Server) Shutdown() error {
+	return s.server.Close()
 }

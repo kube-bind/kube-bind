@@ -121,7 +121,7 @@ func NewServer(config *Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)
 	}
-	handler.AddRoutes(s.WebServer.Router)
+	handler.AddRoutes(s.WebServer)
 
 	// construct controllers
 	s.ClusterBinding, err = clusterbinding.NewController(

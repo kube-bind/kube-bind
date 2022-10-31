@@ -29,7 +29,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -99,12 +98,12 @@ func NewHandler(
 	}, nil
 }
 
-func (h *handler) AddRoutes(mux *mux.Router) {
-	mux.HandleFunc("/export", h.handleServiceExport).Methods("GET")
-	mux.HandleFunc("/resources", h.handleResources).Methods("GET")
-	mux.HandleFunc("/bind", h.handleBind).Methods("GET")
-	mux.HandleFunc("/authorize", h.handleAuthorize).Methods("GET")
-	mux.HandleFunc("/callback", h.handleCallback).Methods("GET")
+func (h *handler) AddRoutes(server *Server) {
+	server.AddRoute("/export", h.handleServiceExport, http.MethodGet)
+	server.AddRoute("/resources", h.handleResources, http.MethodGet)
+	server.AddRoute("/bind", h.handleBind, http.MethodGet)
+	server.AddRoute("/authorize", h.handleAuthorize, http.MethodGet)
+	server.AddRoute("/callback", h.handleCallback, http.MethodGet)
 }
 
 func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {

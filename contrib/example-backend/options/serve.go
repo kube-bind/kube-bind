@@ -26,6 +26,7 @@ import (
 type Serve struct {
 	ListenIP          string
 	ListenPort        int
+	ListenAddress     string
 	CertFile, KeyFile string
 
 	// Listener is used to pre-wire a port zero listener for testing.
@@ -34,16 +35,18 @@ type Serve struct {
 
 func NewServe() *Serve {
 	return &Serve{
-		ListenIP:   "127.0.0.1",
-		ListenPort: 8080,
+		ListenAddress: "127.0.0.1:8080",
 	}
 }
 
 func (options *Serve) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.ListenIP, "listen-ip", options.ListenIP, "The host IP where the backend is running")
+	fs.MarkDeprecated("listen-ip", "Use listen-address instead") // nolint: errcheck
 	fs.IntVar(&options.ListenPort, "listen-port", options.ListenPort, "The host port where the backend is running")
-	fs.StringVar(&options.CertFile, "tls-cert-file", options.CertFile, "The TLS certificate file the webserver will use")
-	fs.StringVar(&options.KeyFile, "tls-key-file", options.KeyFile, "The TLS private key file the webserver will use")
+	fs.MarkDeprecated("listen-port", "Use listen-address instead") // nolint: errcheck
+	fs.StringVar(&options.ListenAddress, "listen-address", options.ListenAddress, "The address where the backend should be listening on, defaults to 127.0.0.1:8080.")
+	fs.StringVar(&options.CertFile, "tls-cert-file", options.CertFile, "The TLS certificate file the webserver will use.")
+	fs.StringVar(&options.KeyFile, "tls-key-file", options.KeyFile, "The TLS private key file the webserver will use.")
 }
 
 func (options *Serve) Complete() error {
@@ -51,8 +54,8 @@ func (options *Serve) Complete() error {
 }
 
 func (options *Serve) Validate() error {
-	if options.ListenIP == "" {
-		return fmt.Errorf("listen IP cannot be empty")
+	if (options.ListenIP == "") != (options.ListenAddress == "") {
+		return fmt.Errorf("either listen-ip or listen-address must be provided")
 	}
 	if options.CertFile == "" && options.KeyFile != "" {
 		return fmt.Errorf("TLS key file cannot be specified without TLS cert file")

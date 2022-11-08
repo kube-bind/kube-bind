@@ -31,8 +31,7 @@ spec:
             - --oidc-issuer-url=$(OIDC-ISSUER-URL)
             - --oidc-authorize-url=$(OIDC-AUTHORIZE-URL)
             - --oidc-callback-url=$(OIDC-CALLBACK-URL)
-            - --listen-ip=0.0.0.0
-            - --listen-port=8080
+            - --listen-address=0.0.0.0:8080
             - --external-address=https://api.mangodb.de
             - --external-ca-file=/etc/tls/ca.crt
             - --external-server-name=78615b03-d644-4fb7-8395-8a60efd388f2.k8s.ondigitalocean.com

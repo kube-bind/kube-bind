@@ -31,8 +31,7 @@ spec:
             - --oidc-issuer-client-secret=$(OIDC-ISSUER-CLIENT-SECRET)
             - --oidc-issuer-url=$(OIDC-ISSUER-URL)
             - --oidc-callback-url=$(OIDC-CALLBACK-URL)
-            - --listen-ip=0.0.0.0
-            - --listen-port=443
+            - --listen-address=0.0.0.0:443
             - --cookie-signing-key=$(COOKIE-SIGNING-KEY)
           env:
             - name: OIDC-ISSUER-CLIENT-ID

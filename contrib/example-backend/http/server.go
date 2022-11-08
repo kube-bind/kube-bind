@@ -41,7 +41,11 @@ func NewServer(options *options.Serve) (*Server, error) {
 
 	if options.Listener == nil {
 		var err error
-		server.listener, err = net.Listen("tcp", net.JoinHostPort(options.ListenIP, strconv.Itoa(options.ListenPort)))
+		addr := options.ListenAddress
+		if options.ListenIP != "" {
+			addr = net.JoinHostPort(options.ListenIP, strconv.Itoa(options.ListenPort))
+		}
+		server.listener, err = net.Listen("tcp", addr)
 		if err != nil {
 			return nil, err
 		}

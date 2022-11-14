@@ -227,6 +227,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}
 
 	// create kube-bind namespace
+	// TODO(rikatz): Is this duplicated with line 178?
 	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "kube-bind",
@@ -234,7 +235,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	} else if err == nil {
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "📦 Created kube-binding namespace.\n") // nolint: errcheck
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "📦 Created kube-bind namespace.\n") // nolint: errcheck
 	}
 
 	// copy kubeconfig into local cluster

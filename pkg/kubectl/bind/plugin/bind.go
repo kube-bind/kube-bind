@@ -39,8 +39,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/printers"
 	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
@@ -55,8 +55,9 @@ type BindOptions struct {
 	*base.Options
 	Logs *logs.Options
 
-	Print  *genericclioptions.PrintFlags
-	DryRun bool
+	PrintFlags *genericclioptions.PrintFlags
+	Printer    printers.ResourcePrinter
+	DryRun     bool
 
 	// url is the argument accepted by the command. It contains the
 	// reference to where an APIService exists.
@@ -74,9 +75,9 @@ type BindOptions struct {
 // NewBindOptions returns new BindOptions.
 func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 	opts := &BindOptions{
-		Options: base.NewOptions(streams),
-		Logs:    logs.NewOptions(),
-		Print:   genericclioptions.NewPrintFlags("kubectl-bind"),
+		Options:    base.NewOptions(streams),
+		Logs:       logs.NewOptions(),
+		PrintFlags: genericclioptions.NewPrintFlags("kubectl-bind").WithDefaultOutput("yaml"),
 
 		Runner: func(cmd *exec.Cmd) error {
 			return cmd.Run()
@@ -92,7 +93,7 @@ func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 
 	b.Options.BindFlags(cmd)
 	logsv1.AddFlags(b.Logs, cmd.Flags())
-	b.Print.AddFlags(cmd)
+	b.PrintFlags.AddFlags(cmd)
 
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
@@ -107,6 +108,18 @@ func (b *BindOptions) Complete(args []string) error {
 	if len(args) > 0 {
 		b.URL = args[0]
 	}
+
+	if b.DryRun {
+		b.PrintFlags.Complete("%s (dry run)")
+	}
+
+	printer, err := b.PrintFlags.ToPrinter()
+	if err != nil {
+		return err
+	}
+
+	b.Printer = printer
+
 	return nil
 }
 
@@ -118,13 +131,6 @@ func (b *BindOptions) Validate() error {
 
 	if _, err := url.Parse(b.URL); err != nil {
 		return fmt.Errorf("invalid url %q: %w", b.URL, err)
-	}
-
-	if allowed := sets.NewString(b.Print.AllowedFormats()...); *b.Print.OutputFormat != "" && !allowed.Has(*b.Print.OutputFormat) {
-		return fmt.Errorf("invalid output format %q (allowed: %s)", *b.Print.OutputFormat, strings.Join(allowed.List(), ", "))
-	}
-	if b.DryRun && *b.Print.OutputFormat == "" {
-		return errors.New("output format is required when dry-run is enabled")
 	}
 
 	return b.Options.Validate()
@@ -259,20 +265,10 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 
 	// print the request in dry-run mode
 	if b.DryRun {
-		printer, err := b.Print.ToPrinter()
-		if err != nil {
-			return err
-		}
-		first := true
 		for _, request := range apiRequests {
-			printer.PrintObj(request, b.IOStreams.Out) // nolint: errcheck
-
-			// TODO: this is a hack to separate the objects. Is there anything better in the printer?
-			if !first && *b.Print.OutputFormat == "yaml" {
-				fmt.Fprintln(b.IOStreams.Out, "---") // nolint: errcheck
+			if err = b.Printer.PrintObj(request, b.IOStreams.Out); err != nil {
+				return err
 			}
-
-			first = false
 		}
 	}
 

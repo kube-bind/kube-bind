@@ -110,7 +110,7 @@ func (b *BindOptions) Complete(args []string) error {
 	}
 
 	if b.DryRun {
-		b.PrintFlags.Complete("%s (dry run)")
+		b.PrintFlags.Complete("%s (dry run)") // nolint: errcheck
 	}
 
 	printer, err := b.PrintFlags.ToPrinter()

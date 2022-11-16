@@ -16,8 +16,6 @@ spec:
   - name: v1alpha1
     served: true
     storage: true
-    subresources:
-      status: {}
     schema:
       openAPIV3Schema:
         type: object
@@ -31,28 +29,10 @@ spec:
                 - Dedicated
                 - Shared
                 default: Shared
-              region:
-                type: string
-                default: us-east-1
-                minLength: 1
-              backup:
-                type: boolean
-                default: false
-              tokenSecret:
-                type: string
-                minLength: 1
-            required:
-            - tokenSecret
           status:
             type: object
             properties:
               phase:
                 type: string
-                enum:
-                - Pending
-                - Running
-                - Succeeded
-                - Failed
-                - Unknown
         required:
         - spec

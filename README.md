@@ -51,8 +51,6 @@ staticClients:
 ```
 * Run dex: `./bin/dex serve examples/config-dev.yaml`
 
-* label some CRDs to export with `kube-bind.io/exported: true`
-
 Next you should be able to run the backend. For it you need a kubernetes cluster (e.g. kind)
 accessible.
 
@@ -60,6 +58,7 @@ accessible.
 and that you have at least one k8s cluster. Take a look at the backend option in the cmd/main.go file***
 
 * apply the CRDs: `kubectl apply -f deploy/crd`
+* In order to populate binding list on website, we need a CRD with label `kube-bind.io/exported: true`. Apply example CRD: `kubectl apply -f deploy/examples/crd-mangodb.yaml`
 * start the backend binary with the right flags:
 ```shell
 $ make build
@@ -85,4 +84,4 @@ WQh88mNOY0Z3tLy1/WOud7qIEEBxz+POc4j8BsYenYo=
 The `--cookie-signing-key` option is required and supports 32 and 64 byte lengths.
 The `--cookie-encryption-key` option is optional and supports byte lengths of 16, 24, 32 for AES-128, AES-192, or AES-256.
 
-* with a KUBECONFIG against another cluster (a consumer cluster) bind a service: `kubectl bind https://127.0.0.1:8080/export`.
+* with a KUBECONFIG against another cluster (a consumer cluster) bind a service: `kubectl bind http://127.0.0.1:8080/export`.

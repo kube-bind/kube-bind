@@ -34,7 +34,7 @@ import (
 	bindplugin "github.com/kube-bind/kube-bind/pkg/kubectl/bind/plugin"
 )
 
-func Bind(t *testing.T, authURLCh chan<- string, invocations chan<- SubCommandInvocation, positionalArg string, flags ...string) {
+func Bind(t *testing.T, iostreams genericclioptions.IOStreams, authURLCh chan<- string, invocations chan<- SubCommandInvocation, positionalArg string, flags ...string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
@@ -44,7 +44,7 @@ func Bind(t *testing.T, authURLCh chan<- string, invocations chan<- SubCommandIn
 	}
 	t.Logf("kubectl bind %s", strings.Join(args, " "))
 
-	opts := bindplugin.NewBindOptions(genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr})
+	opts := bindplugin.NewBindOptions(iostreams)
 	cmd := &cobra.Command{}
 	opts.AddCmdFlags(cmd)
 	err := cmd.Flags().Parse(flags)
@@ -54,6 +54,7 @@ func Bind(t *testing.T, authURLCh chan<- string, invocations chan<- SubCommandIn
 	require.NoError(t, err)
 	err = opts.Validate()
 	require.NoError(t, err)
+
 	opts.Runner = func(cmd *exec.Cmd) error {
 		bs, err := io.ReadAll(cmd.Stdin)
 		if err != nil {

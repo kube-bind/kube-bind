@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/yaml"
 
@@ -82,12 +83,24 @@ func testHappyCase(t *testing.T, scope kubebindv1alpha1.Scope) {
 		step func(t *testing.T)
 	}{
 		{
+			name: "MangoDB is bound dry run",
+			step: func(t *testing.T) {
+				iostreams, _, bufOut, _ := genericclioptions.NewTestIOStreams()
+				authURLDryRunCh := make(chan string, 1)
+				go simulateBrowser(t, authURLDryRunCh, "mangodbs")
+				framework.Bind(t, iostreams, authURLDryRunCh, nil, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector", "--dry-run")
+				_, err := yaml.YAMLToJSON(bufOut.Bytes())
+				require.NoError(t, err)
+			},
+		},
+		{
 			name: "MangoDB is bound",
 			step: func(t *testing.T) {
+				iostreams, _, _, _ := genericclioptions.NewTestIOStreams()
 				authURLCh := make(chan string, 1)
 				go simulateBrowser(t, authURLCh, "mangodbs")
 				invocations := make(chan framework.SubCommandInvocation, 1)
-				framework.Bind(t, authURLCh, invocations, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
+				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
 				inv := <-invocations
 				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
 				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
@@ -219,10 +232,11 @@ spec:
 		{
 			name: "Bind again",
 			step: func(t *testing.T) {
+				iostreams, _, _, _ := genericclioptions.NewTestIOStreams()
 				authURLCh := make(chan string, 1)
 				go simulateBrowser(t, authURLCh, "mangodbs")
 				invocations := make(chan framework.SubCommandInvocation, 1)
-				framework.Bind(t, authURLCh, invocations, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
+				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
 				inv := <-invocations
 				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
 				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)

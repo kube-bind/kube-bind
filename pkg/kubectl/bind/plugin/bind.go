@@ -55,9 +55,9 @@ type BindOptions struct {
 	*base.Options
 	Logs *logs.Options
 
-	PrintFlags *genericclioptions.PrintFlags
-	Printer    printers.ResourcePrinter
-	DryRun     bool
+	Print   *genericclioptions.PrintFlags
+	Printer printers.ResourcePrinter
+	DryRun  bool
 
 	// url is the argument accepted by the command. It contains the
 	// reference to where an APIService exists.
@@ -75,9 +75,9 @@ type BindOptions struct {
 // NewBindOptions returns new BindOptions.
 func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 	opts := &BindOptions{
-		Options:    base.NewOptions(streams),
-		Logs:       logs.NewOptions(),
-		PrintFlags: genericclioptions.NewPrintFlags("kubectl-bind").WithDefaultOutput("yaml"),
+		Options: base.NewOptions(streams),
+		Logs:    logs.NewOptions(),
+		Print:   genericclioptions.NewPrintFlags("kubectl-bind").WithDefaultOutput("yaml"),
 
 		Runner: func(cmd *exec.Cmd) error {
 			return cmd.Run()
@@ -93,7 +93,7 @@ func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 
 	b.Options.BindFlags(cmd)
 	logsv1.AddFlags(b.Logs, cmd.Flags())
-	b.PrintFlags.AddFlags(cmd)
+	b.Print.AddFlags(cmd)
 
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
@@ -109,11 +109,7 @@ func (b *BindOptions) Complete(args []string) error {
 		b.URL = args[0]
 	}
 
-	if b.DryRun {
-		b.PrintFlags.Complete("%s (dry run)") // nolint: errcheck
-	}
-
-	printer, err := b.PrintFlags.ToPrinter()
+	printer, err := b.Print.ToPrinter()
 	if err != nil {
 		return err
 	}

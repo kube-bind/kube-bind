@@ -56,7 +56,7 @@ type BindOptions struct {
 	Logs *logs.Options
 
 	Print   *genericclioptions.PrintFlags
-	Printer printers.ResourcePrinter
+	printer printers.ResourcePrinter
 	DryRun  bool
 
 	// url is the argument accepted by the command. It contains the
@@ -114,7 +114,7 @@ func (b *BindOptions) Complete(args []string) error {
 		return err
 	}
 
-	b.Printer = printer
+	b.printer = printer
 
 	return nil
 }
@@ -262,7 +262,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	// print the request in dry-run mode
 	if b.DryRun {
 		for _, request := range apiRequests {
-			if err = b.Printer.PrintObj(request, b.IOStreams.Out); err != nil {
+			if err = b.printer.PrintObj(request, b.IOStreams.Out); err != nil {
 				return err
 			}
 		}

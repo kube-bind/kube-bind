@@ -22,7 +22,8 @@ BOOM – the MangoDB API is available in the local cluster,
 $ kubectl get mangodbs 
 ```
 
-For more information go to https://kubectl-bind.io or watch the [ContainerDays talk](https://www.youtube.com/watch?v=dg0g15Qv5Fo&t=1s).
+For more information go to https://kubectl-bind.io or watch the [ContainerDays talk](https://www.youtube.com/watch?v=dg0g15Qv5Fo&t=1s)
+or the [KubeCon talk](https://www.youtube.com/watch?v=Uv0ivz5xej4).
 
 The kube-bind prototype is following this manifesto from the linked talk:
 

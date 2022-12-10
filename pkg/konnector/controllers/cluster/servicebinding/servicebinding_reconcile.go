@@ -19,10 +19,13 @@ package servicebinding
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/pointer"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
@@ -37,6 +40,7 @@ type reconciler struct {
 	getServiceExport  func(ns string) (*kubebindv1alpha1.APIServiceExport, error)
 	getServiceBinding func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
 	getClusterBinding func(ctx context.Context) (*kubebindv1alpha1.ClusterBinding, error)
+	getSecret         func(ns, name string) (*corev1.Secret, error)
 
 	updateServiceExportStatus func(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error)
 
@@ -46,7 +50,38 @@ type reconciler struct {
 }
 
 func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
+	logger := klog.FromContext(ctx)
+
 	var errs []error
+	var kubeconfig string
+
+	ref := binding.Spec.KubeconfigSecretRef
+	secret, err := r.getSecret(ref.Namespace, ref.Name)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	} else if errors.IsNotFound(err) {
+		logger.V(2).Info("secret not found", "secret", ref.Namespace+"/"+ref.Name)
+	} else {
+		kubeconfig = string(secret.Data[ref.Key])
+	}
+
+	// extract which namespace this kubeconfig points to
+	cfg, err := clientcmd.Load([]byte(kubeconfig))
+	if err != nil {
+		logger.Error(err, "invalid kubeconfig in secret", "namespace", ref.Namespace, "name", ref.Name)
+		return nil // nothing we can do here. The APIServiceBinding Controller will set a condition
+	}
+	kubeContext, found := cfg.Contexts[cfg.CurrentContext]
+	if !found {
+		logger.Error(err, "kubeconfig in secret does not have a current context", "namespace", ref.Namespace, "name", ref.Name)
+		return nil // nothing we can do here. The APIServiceBinding Controller will set a condition
+	}
+
+	// As konnector is running APIServiceBinding controller for each provider cluster,
+	// so each controller should skip others provider's APIServiceBinding object
+	if kubeContext.Namespace != r.providerNamespace {
+		return nil
+	}
 
 	if err := r.ensureValidServiceExport(ctx, binding); err != nil {
 		errs = append(errs, err)

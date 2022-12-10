@@ -109,6 +109,7 @@ func New(
 					namespaceDynamicInformer,
 					serviceBindingDynamicInformer,
 					crdDynamicInformer,
+					secretInformer,
 				)
 			},
 		},

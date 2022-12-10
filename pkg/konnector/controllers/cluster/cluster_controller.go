@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubernetesinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	kubernetesclient "k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
@@ -61,6 +62,7 @@ func NewController(
 	namespaceInformer dynamic.Informer[corelisters.NamespaceLister],
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
 	crdInformer dynamic.Informer[crdlisters.CustomResourceDefinitionLister],
+	secretInformer coreinformers.SecretInformer,
 ) (*controller, error) {
 	consumerConfig = rest.CopyConfig(consumerConfig)
 	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
@@ -130,6 +132,7 @@ func NewController(
 		serviceBindingInformer,
 		providerBindInformers.KubeBind().V1alpha1().APIServiceExports(),
 		crdInformer,
+		secretInformer,
 	)
 	if err != nil {
 		return nil, err

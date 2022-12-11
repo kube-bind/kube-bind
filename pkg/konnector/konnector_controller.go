@@ -97,19 +97,19 @@ func New(
 			getSecret: func(ns, name string) (*corev1.Secret, error) {
 				return secretInformer.Lister().Secrets(ns).Get(name)
 			},
-			newClusterController: func(consumerSecretRefKey, providerNamespace string, providerConfig *rest.Config) (startable, error) {
+			newClusterController: func(consumerSecretRefKey, providerNamespace, serviceBindingName string, providerConfig *rest.Config) (startable, error) {
 				providerConfig = rest.CopyConfig(providerConfig)
 				providerConfig = rest.AddUserAgent(providerConfig, controllerName)
 
 				return cluster.NewController(
 					consumerSecretRefKey,
 					providerNamespace,
+					serviceBindingName,
 					consumerConfig,
 					providerConfig,
 					namespaceDynamicInformer,
 					serviceBindingDynamicInformer,
 					crdDynamicInformer,
-					secretInformer,
 				)
 			},
 		},

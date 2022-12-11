@@ -38,7 +38,7 @@ type reconciler struct {
 	lock        sync.Mutex
 	controllers map[string]*controllerContext // by service binding name
 
-	newClusterController func(consumerSecretRefKey, providerNamespace string, providerConfig *rest.Config) (startable, error)
+	newClusterController func(consumerSecretRefKey, providerNamespace, serviceBindingName string, providerConfig *rest.Config) (startable, error)
 	getSecret            func(ns, name string) (*corev1.Secret, error)
 }
 
@@ -120,6 +120,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 	ctrl, err := r.newClusterController(
 		binding.Spec.KubeconfigSecretRef.Namespace+"/"+binding.Spec.KubeconfigSecretRef.Name,
 		providerNamespace,
+		binding.Name,
 		providerConfig,
 	)
 	if err != nil {

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
@@ -30,7 +29,6 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -51,12 +49,11 @@ const (
 
 // NewController returns a new controller for ServiceBindings.
 func NewController(
-	consumerSecretRefKey, providerNamespace string,
+	consumerSecretRefKey, providerNamespace, serviceBindingName string,
 	consumerConfig, providerConfig *rest.Config,
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 	crdInformer dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister],
-	secretInformer coreinformers.SecretInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -94,6 +91,7 @@ func NewController(
 		reconciler: reconciler{
 			consumerSecretRefKey: consumerSecretRefKey,
 			providerNamespace:    providerNamespace,
+			serviceBindingName:   serviceBindingName,
 
 			getServiceExport: func(name string) (*kubebindv1alpha1.APIServiceExport, error) {
 				return serviceExportInformer.Lister().APIServiceExports(providerNamespace).Get(name)
@@ -103,9 +101,6 @@ func NewController(
 			},
 			getClusterBinding: func(ctx context.Context) (*kubebindv1alpha1.ClusterBinding, error) {
 				return providerBindClient.KubeBindV1alpha1().ClusterBindings(providerNamespace).Get(ctx, "cluster", metav1.GetOptions{})
-			},
-			getSecret: func(ns, name string) (*corev1.Secret, error) {
-				return secretInformer.Lister().Secrets(ns).Get(name)
 			},
 			updateServiceExportStatus: func(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error) {
 				return providerBindClient.KubeBindV1alpha1().APIServiceExports(providerNamespace).UpdateStatus(ctx, export, metav1.UpdateOptions{})

@@ -35,7 +35,7 @@ type startable interface {
 }
 
 type reconciler struct {
-	lock        sync.Mutex
+	lock        sync.RWMutex
 	controllers map[string]*controllerContext // by service binding name
 
 	newClusterController func(consumerSecretRefKey, providerNamespace string, reconcileServiceBinding func(binding *kubebindv1alpha1.APIServiceBinding) bool, providerConfig *rest.Config) (startable, error)
@@ -121,7 +121,14 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 		binding.Spec.KubeconfigSecretRef.Namespace+"/"+binding.Spec.KubeconfigSecretRef.Name,
 		providerNamespace,
 		func(svcBinding *kubebindv1alpha1.APIServiceBinding) bool {
-			return svcBinding.Name == binding.Name
+			r.lock.RLock()
+			defer r.lock.RUnlock()
+			// for the very first time, ctrlContext is nil
+			// and need to check for this as well
+			if binding.Name == svcBinding.Name {
+				return true
+			}
+			return ctrlContext != nil && ctrlContext.serviceBindings.Has(svcBinding.Name)
 		},
 		providerConfig,
 	)

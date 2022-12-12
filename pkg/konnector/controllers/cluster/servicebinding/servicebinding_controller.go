@@ -49,7 +49,8 @@ const (
 
 // NewController returns a new controller for ServiceBindings.
 func NewController(
-	consumerSecretRefKey, providerNamespace, serviceBindingName string,
+	consumerSecretRefKey, providerNamespace string,
+	reconcileServiceBinding func(binding *kubebindv1alpha1.APIServiceBinding) bool,
 	consumerConfig, providerConfig *rest.Config,
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
 	serviceExportInformer bindinformers.APIServiceExportInformer,
@@ -89,9 +90,9 @@ func NewController(
 		crdInformer: crdInformer,
 
 		reconciler: reconciler{
-			consumerSecretRefKey: consumerSecretRefKey,
-			providerNamespace:    providerNamespace,
-			serviceBindingName:   serviceBindingName,
+			consumerSecretRefKey:    consumerSecretRefKey,
+			providerNamespace:       providerNamespace,
+			reconcileServiceBinding: reconcileServiceBinding,
 
 			getServiceExport: func(name string) (*kubebindv1alpha1.APIServiceExport, error) {
 				return serviceExportInformer.Lister().APIServiceExports(providerNamespace).Get(name)

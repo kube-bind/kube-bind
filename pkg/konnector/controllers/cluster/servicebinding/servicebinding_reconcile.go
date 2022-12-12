@@ -32,11 +32,12 @@ import (
 )
 
 type reconciler struct {
-	consumerSecretRefKey, providerNamespace, serviceBindingName string
+	consumerSecretRefKey, providerNamespace string
 
-	getServiceExport  func(ns string) (*kubebindv1alpha1.APIServiceExport, error)
-	getServiceBinding func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
-	getClusterBinding func(ctx context.Context) (*kubebindv1alpha1.ClusterBinding, error)
+	reconcileServiceBinding func(binding *kubebindv1alpha1.APIServiceBinding) bool
+	getServiceExport        func(ns string) (*kubebindv1alpha1.APIServiceExport, error)
+	getServiceBinding       func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
+	getClusterBinding       func(ctx context.Context) (*kubebindv1alpha1.ClusterBinding, error)
 
 	updateServiceExportStatus func(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error)
 
@@ -50,7 +51,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 
 	// As konnector is running APIServiceBinding controller for each provider cluster,
 	// so each controller should skip others provider's APIServiceBinding object
-	if r.serviceBindingName != binding.Name {
+	if !r.reconcileServiceBinding(binding) {
 		return nil
 	}
 

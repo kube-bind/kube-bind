@@ -57,7 +57,7 @@ const (
 func NewController(
 	consumerSecretRefKey string,
 	providerNamespace string,
-	serviceBindingName string,
+	reconcileServiceBinding func(binding *kubebindv1alpha1.APIServiceBinding) bool,
 	consumerConfig, providerConfig *rest.Config,
 	namespaceInformer dynamic.Informer[corelisters.NamespaceLister],
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
@@ -126,7 +126,7 @@ func NewController(
 	servicebindingCtrl, err := servicebinding.NewController(
 		consumerSecretRefKey,
 		providerNamespace,
-		serviceBindingName,
+		reconcileServiceBinding,
 		consumerConfig,
 		providerConfig,
 		serviceBindingInformer,

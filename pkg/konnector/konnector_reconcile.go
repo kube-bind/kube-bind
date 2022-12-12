@@ -35,10 +35,10 @@ type startable interface {
 }
 
 type reconciler struct {
-	lock        sync.Mutex
+	lock        sync.RWMutex
 	controllers map[string]*controllerContext // by service binding name
 
-	newClusterController func(consumerSecretRefKey, providerNamespace string, providerConfig *rest.Config) (startable, error)
+	newClusterController func(consumerSecretRefKey, providerNamespace string, reconcileServiceBinding func(binding *kubebindv1alpha1.APIServiceBinding) bool, providerConfig *rest.Config) (startable, error)
 	getSecret            func(ns, name string) (*corev1.Secret, error)
 }
 
@@ -115,11 +115,23 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 		return nil // nothing we can do here. The APIServiceBinding Controller will set a condition
 	}
 
+	ctrlCtx, cancel := context.WithCancel(ctx)
+	r.controllers[binding.Name] = &controllerContext{
+		kubeconfig:      kubeconfig,
+		cancel:          cancel,
+		serviceBindings: sets.NewString(binding.Name),
+	}
+
 	// create new because there is none yet for this kubeconfig
 	logger.V(2).Info("starting new Controller", "secret", ref.Namespace+"/"+ref.Name)
 	ctrl, err := r.newClusterController(
 		binding.Spec.KubeconfigSecretRef.Namespace+"/"+binding.Spec.KubeconfigSecretRef.Name,
 		providerNamespace,
+		func(svcBinding *kubebindv1alpha1.APIServiceBinding) bool {
+			r.lock.RLock()
+			defer r.lock.RUnlock()
+			return r.controllers[binding.Name].serviceBindings.Has(svcBinding.Name)
+		},
 		providerConfig,
 	)
 	if err != nil {
@@ -127,12 +139,6 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 		return err
 	}
 
-	ctrlCtx, cancel := context.WithCancel(ctx)
-	r.controllers[binding.Name] = &controllerContext{
-		kubeconfig:      kubeconfig,
-		cancel:          cancel,
-		serviceBindings: sets.NewString(binding.Name),
-	}
 	go ctrl.Start(ctrlCtx)
 
 	return nil

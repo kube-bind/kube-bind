@@ -115,6 +115,13 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 		return nil // nothing we can do here. The APIServiceBinding Controller will set a condition
 	}
 
+	ctrlCtx, cancel := context.WithCancel(ctx)
+	r.controllers[binding.Name] = &controllerContext{
+		kubeconfig:      kubeconfig,
+		cancel:          cancel,
+		serviceBindings: sets.NewString(binding.Name),
+	}
+
 	// create new because there is none yet for this kubeconfig
 	logger.V(2).Info("starting new Controller", "secret", ref.Namespace+"/"+ref.Name)
 	ctrl, err := r.newClusterController(
@@ -123,12 +130,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 		func(svcBinding *kubebindv1alpha1.APIServiceBinding) bool {
 			r.lock.RLock()
 			defer r.lock.RUnlock()
-			// for the very first time, ctrlContext is nil
-			// and need to check for this as well
-			if binding.Name == svcBinding.Name {
-				return true
-			}
-			return ctrlContext != nil && ctrlContext.serviceBindings.Has(svcBinding.Name)
+			return r.controllers[binding.Name].serviceBindings.Has(svcBinding.Name)
 		},
 		providerConfig,
 	)
@@ -137,12 +139,6 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 		return err
 	}
 
-	ctrlCtx, cancel := context.WithCancel(ctx)
-	r.controllers[binding.Name] = &controllerContext{
-		kubeconfig:      kubeconfig,
-		cancel:          cancel,
-		serviceBindings: sets.NewString(binding.Name),
-	}
 	go ctrl.Start(ctrlCtx)
 
 	return nil

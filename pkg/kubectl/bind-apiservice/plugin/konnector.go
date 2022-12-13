@@ -64,10 +64,6 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 		return err
 	}
 
-	konnectorVersion, installed, err := currentKonnectorVersion(ctx, kubeClient)
-	if err != nil {
-		return fmt.Errorf("failed to check current konnector version in the cluster: %w", err)
-	}
 	bindVersion, err := version.BinaryVersion(clientgoversion.Get().GitVersion)
 	if err != nil {
 		return err
@@ -78,8 +74,12 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 		if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, b.KonnectorImageOverride); err != nil {
 			return err
 		}
-	}
-	if !b.SkipKonnector {
+	} else if !b.SkipKonnector {
+		konnectorVersion, installed, err := currentKonnectorVersion(ctx, kubeClient)
+		if err != nil {
+			return fmt.Errorf("failed to check current konnector version in the cluster: %w", err)
+		}
+
 		konnectorImage := fmt.Sprintf("%s:%s", konnectorImage, bindVersion)
 
 		if installed && (konnectorVersion == "unknown" || konnectorVersion == "latest") {

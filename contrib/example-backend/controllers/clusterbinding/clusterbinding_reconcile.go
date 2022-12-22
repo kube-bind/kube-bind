@@ -178,7 +178,7 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBi
 	}
 
 	if r.scope != kubebindv1alpha1.ClusterScope {
-		if err := r.deleteClusterRoleBinding(ctx, name); err != nil {
+		if err := r.deleteClusterRoleBinding(ctx, name); err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", name, err)
 		}
 	}

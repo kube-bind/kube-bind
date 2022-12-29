@@ -111,9 +111,17 @@ func NewController(
 				return obj.(*unstructured.Unstructured), nil
 			},
 			createProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+				// Skip creating provider object if object is created in provider side first
+				if _, found := obj.GetLabels()["provider-created"]; found {
+					return nil, nil
+				}
 				return providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
 			},
 			updateProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+				// Skip sending spec to upstream as it is provider created
+				if _, found := obj.GetLabels()["provider-created"]; found {
+					return nil, nil
+				}
 				data, err := json.Marshal(obj.Object)
 				if err != nil {
 					return nil, err

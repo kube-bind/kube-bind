@@ -50,6 +50,9 @@ type reconciler struct {
 // reconcile syncs downstream objects (metadata and spec) with upstream objects.
 func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructured) error {
 	logger := klog.FromContext(ctx)
+	if _, found := obj.GetLabels()["provider-created"]; found {
+		return nil
+	}
 
 	ns := obj.GetNamespace()
 	if ns != "" {

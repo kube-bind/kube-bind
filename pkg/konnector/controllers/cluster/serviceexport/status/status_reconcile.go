@@ -18,6 +18,8 @@ package status
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"reflect"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -33,13 +35,19 @@ type reconciler struct {
 
 	getConsumerObject          func(ns, name string) (*unstructured.Unstructured, error)
 	updateConsumerObjectStatus func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+	updateConsumerObject       func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+	createConsumerObject       func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
 
 	deleteProviderObject func(ctx context.Context, ns, name string) error
 }
 
 // reconcile syncs upstream status to consumer objects.
 func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructured) error {
+
 	logger := klog.FromContext(ctx)
+	fmt.Println("reconciling: ", obj.GetNamespace(), "/", obj.GetName())
+
+	obj = obj.DeepCopy()
 
 	ns := obj.GetNamespace()
 	if ns != "" {
@@ -60,6 +68,65 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 
 		// continue with downstream namespace
 		ns = sn.Name
+	}
+	fmt.Println("service namespace: ", ns)
+
+	if _, found := obj.GetLabels()["provider-created"]; found {
+		_, err := r.getConsumerObject(ns, obj.GetName())
+		if err == nil {
+			downstream, er := r.getConsumerObject(ns, obj.GetName())
+			if er != nil {
+				return er
+			}
+
+			downstreamSpec, _, err := unstructured.NestedFieldNoCopy(downstream.Object, "spec")
+			if err != nil {
+				logger.Error(err, "failed to get downstream spec")
+				return nil
+			}
+			upstreamSpec, foundUpstreamSpec, err := unstructured.NestedFieldNoCopy(obj.Object, "spec")
+			if err != nil {
+				logger.Error(err, "failed to get downstream spec")
+				return nil
+			}
+			if reflect.DeepEqual(downstreamSpec, upstreamSpec) {
+				return nil // nothing to do
+			}
+
+			if foundUpstreamSpec {
+				if err := unstructured.SetNestedField(downstream.Object, upstreamSpec, "spec"); err != nil {
+					bs, err := json.Marshal(upstreamSpec)
+					if err != nil {
+						logger.Error(err, "failed to marshal downstream spec", "spec", fmt.Sprintf("%s", downstreamSpec))
+						return nil // nothing we can do
+					}
+					logger.Error(err, "failed to set spec", "spec", string(bs))
+					return nil // nothing we can do
+				}
+			} else {
+				unstructured.RemoveNestedField(downstream.Object, "spec")
+			}
+
+			if _, er := r.updateConsumerObject(ctx, downstream); er != nil {
+				return er
+			}
+		} else if errors.IsNotFound(err) {
+			upstream := obj.DeepCopy()
+			upstream.SetUID("")
+			upstream.SetResourceVersion("")
+			upstream.SetNamespace(ns)
+			upstream.SetManagedFields(nil)
+			upstream.SetDeletionTimestamp(nil)
+			upstream.SetDeletionGracePeriodSeconds(nil)
+			upstream.SetOwnerReferences(nil)
+			upstream.SetFinalizers(nil)
+			if _, er := r.createConsumerObject(ctx, upstream); er != nil {
+				return er
+			}
+		} else {
+			return err
+		}
+		return nil
 	}
 
 	downstream, err := r.getConsumerObject(ns, obj.GetName())

@@ -86,14 +86,11 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 			}
 			upstreamSpec, foundUpstreamSpec, err := unstructured.NestedFieldNoCopy(obj.Object, "spec")
 			if err != nil {
-				logger.Error(err, "failed to get downstream spec")
+				logger.Error(err, "failed to get upstream spec")
 				return nil
 			}
-			if reflect.DeepEqual(downstreamSpec, upstreamSpec) {
-				return nil // nothing to do
-			}
 
-			if foundUpstreamSpec {
+			if foundUpstreamSpec && !reflect.DeepEqual(downstreamSpec, upstreamSpec){
 				if err := unstructured.SetNestedField(downstream.Object, upstreamSpec, "spec"); err != nil {
 					bs, err := json.Marshal(upstreamSpec)
 					if err != nil {
@@ -108,6 +105,37 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 			}
 
 			if _, er := r.updateConsumerObject(ctx, downstream); er != nil {
+				return er
+			}
+
+			// upstream status sync with downstream status
+
+			downstreamStatus, _, err := unstructured.NestedFieldNoCopy(downstream.Object, "status")
+			if err != nil {
+				logger.Error(err, "failed to get downstream status")
+				return nil
+			}
+			upstreamStatus, foundUpstreamStatus, err := unstructured.NestedFieldNoCopy(obj.Object, "status")
+			if err != nil {
+				logger.Error(err, "failed to get upstream status")
+				return nil
+			}
+
+			if foundUpstreamStatus && !reflect.DeepEqual(downstreamStatus, upstreamStatus) {
+				if err := unstructured.SetNestedField(downstream.Object, upstreamStatus, "status"); err != nil {
+					bs, err := json.Marshal(upstreamStatus)
+					if err != nil {
+						logger.Error(err, "failed to marshal upstream status", "status", fmt.Sprintf("%s", upstreamStatus))
+						return nil // nothing we can do
+					}
+					logger.Error(err, "failed to set spec", "spec", string(bs))
+					return nil // nothing we can do
+				}
+			} else {
+				unstructured.RemoveNestedField(downstream.Object, "status")
+			}
+
+			if _, er := r.updateConsumerObjectStatus(ctx, downstream); er != nil {
 				return er
 			}
 		} else if errors.IsNotFound(err) {

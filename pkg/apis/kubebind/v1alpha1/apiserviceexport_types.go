@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	resourcemeta "kmodules.xyz/resource-metadata/apis/meta/v1alpha1"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -89,7 +91,8 @@ type APIServiceExportSpec struct {
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="informerScope is immutable"
-	InformerScope Scope `json:"informerScope"`
+	InformerScope Scope                             `json:"informerScope"`
+	Connection    []resourcemeta.ResourceConnection `json:"connection,omitempty"`
 }
 
 type APIServiceExportCRDSpec struct {

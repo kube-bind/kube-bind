@@ -22,6 +22,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	metav1alpha1 "kmodules.xyz/resource-metadata/apis/meta/v1alpha1"
+
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 
@@ -397,6 +399,13 @@ func (in *APIServiceExportSchema) DeepCopy() *APIServiceExportSchema {
 func (in *APIServiceExportSpec) DeepCopyInto(out *APIServiceExportSpec) {
 	*out = *in
 	in.APIServiceExportCRDSpec.DeepCopyInto(&out.APIServiceExportCRDSpec)
+	if in.Connection != nil {
+		in, out := &in.Connection, &out.Connection
+		*out = make([]metav1alpha1.ResourceConnection, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	return
 }
 

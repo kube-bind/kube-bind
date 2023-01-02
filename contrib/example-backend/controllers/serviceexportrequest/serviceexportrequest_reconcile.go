@@ -20,6 +20,9 @@ import (
 	"context"
 	"time"
 
+	kmapiv1 "kmodules.xyz/client-go/api/v1"
+	resourcemeta "kmodules.xyz/resource-metadata/apis/meta/v1alpha1"
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,6 +113,30 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 				Spec: kubebindv1alpha1.APIServiceExportSpec{
 					APIServiceExportCRDSpec: *exportSpec,
 					InformerScope:           r.informerScope,
+				},
+			}
+
+			export.Spec.Connection = []resourcemeta.ResourceConnection{
+				{
+					Target: metav1.TypeMeta{
+						Kind:       "Service",
+						APIVersion: "v1",
+					},
+					Labels: []kmapiv1.EdgeLabel{
+						kmapiv1.EdgeExposedBy,
+					},
+					ResourceConnectionSpec: resourcemeta.ResourceConnectionSpec{
+						Type:          resourcemeta.MatchSelector,
+						NamespacePath: "metadata.namespace",
+						Selector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app.kubernetes.io/instance":   "{.metadata.name}",
+								"app.kubernetes.io/managed-by": "kubedb.com",
+								"app.kubernetes.io/name":       "mongodbs.kubedb.com",
+							},
+						},
+						Level: resourcemeta.Owner,
+					},
 				},
 			}
 

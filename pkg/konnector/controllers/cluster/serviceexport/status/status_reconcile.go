@@ -45,7 +45,7 @@ type reconciler struct {
 func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructured) error {
 
 	logger := klog.FromContext(ctx)
-	fmt.Println("reconciling: ", obj.GetNamespace(), "/", obj.GetName())
+	klog.Info("Reconciling:", obj.GetNamespace(), "/", obj.GetName())
 
 	obj = obj.DeepCopy()
 
@@ -72,13 +72,8 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 	fmt.Println("service namespace: ", ns)
 
 	if _, found := obj.GetLabels()["provider-created"]; found {
-		_, err := r.getConsumerObject(ns, obj.GetName())
+		downstream, err := r.getConsumerObject(ns, obj.GetName())
 		if err == nil {
-			downstream, er := r.getConsumerObject(ns, obj.GetName())
-			if er != nil {
-				return er
-			}
-
 			downstreamSpec, _, err := unstructured.NestedFieldNoCopy(downstream.Object, "spec")
 			if err != nil {
 				logger.Error(err, "failed to get downstream spec")
@@ -90,7 +85,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 				return nil
 			}
 
-			if foundUpstreamSpec && !reflect.DeepEqual(downstreamSpec, upstreamSpec){
+			if foundUpstreamSpec && !reflect.DeepEqual(downstreamSpec, upstreamSpec) {
 				if err := unstructured.SetNestedField(downstream.Object, upstreamSpec, "spec"); err != nil {
 					bs, err := json.Marshal(upstreamSpec)
 					if err != nil {
@@ -100,13 +95,12 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 					logger.Error(err, "failed to set spec", "spec", string(bs))
 					return nil // nothing we can do
 				}
-			} else {
-				unstructured.RemoveNestedField(downstream.Object, "spec")
+				if _, er := r.updateConsumerObject(ctx, downstream); er != nil {
+					return er
+				}
 			}
 
-			if _, er := r.updateConsumerObject(ctx, downstream); er != nil {
-				return er
-			}
+
 
 			// upstream status sync with downstream status
 
@@ -128,15 +122,12 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 						logger.Error(err, "failed to marshal upstream status", "status", fmt.Sprintf("%s", upstreamStatus))
 						return nil // nothing we can do
 					}
-					logger.Error(err, "failed to set spec", "spec", string(bs))
+					logger.Error(err, "failed to set upstream status", "status", string(bs))
 					return nil // nothing we can do
 				}
-			} else {
-				unstructured.RemoveNestedField(downstream.Object, "status")
-			}
-
-			if _, er := r.updateConsumerObjectStatus(ctx, downstream); er != nil {
-				return er
+				if _, er := r.updateConsumerObjectStatus(ctx, downstream); er != nil {
+					return er
+				}
 			}
 		} else if errors.IsNotFound(err) {
 			upstream := obj.DeepCopy()

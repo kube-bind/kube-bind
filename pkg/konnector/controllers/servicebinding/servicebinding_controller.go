@@ -119,18 +119,6 @@ func NewController(
 		},
 	})
 
-	consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueConsumerSecret(logger, obj)
-		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueConsumerSecret(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueConsumerSecret(logger, obj)
-		},
-	})
-
 	return c, nil
 }
 

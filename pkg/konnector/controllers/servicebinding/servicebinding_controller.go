@@ -22,8 +22,6 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
-	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -52,7 +50,6 @@ func NewController(
 	consumerConfig *rest.Config,
 	serviceBindingInformer bindinformers.APIServiceBindingInformer,
 	consumerSecretInformer coreinformers.SecretInformer,
-	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -73,9 +70,6 @@ func NewController(
 		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
 
 		consumerSecretLister: consumerSecretInformer.Lister(),
-
-		crdLister:  crdInformer.Lister(),
-		crdIndexer: crdInformer.Informer().GetIndexer(),
 
 		reconciler: reconciler{
 			getConsumerSecret: func(ns, name string) (*corev1.Secret, error) {
@@ -135,9 +129,6 @@ type controller struct {
 	serviceBindingIndexer cache.Indexer
 
 	consumerSecretLister corelisters.SecretLister
-
-	crdLister  apiextensionslisters.CustomResourceDefinitionLister
-	crdIndexer cache.Indexer
 
 	reconciler
 

@@ -70,7 +70,7 @@ func New(
 		return nil, err
 	}
 
-	servicebindingCtrl, err := servicebinding.NewController(consumerConfig, serviceBindingInformer, secretInformer, crdInformer)
+	servicebindingCtrl, err := servicebinding.NewController(consumerConfig, serviceBindingInformer, secretInformer)
 	if err != nil {
 		return nil, err
 	}

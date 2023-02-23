@@ -87,7 +87,88 @@ type APIServiceBindingSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="kubeconfigSecretRef is immutable"
 	KubeconfigSecretRef ClusterSecretKeyRef `json:"kubeconfigSecretRef"`
+
+	// permissionClaims records decisions about permission claims requested by the API service provider.
+	// Individual claims can be accepted or rejected. If accepted, the API service provider gets the
+	// requested access to the specified resources in this workspace. Access is granted per
+	// GroupResource, identity, and other properties.
+	//
+	// +optional
+	PermissionClaims []AcceptablePermissionClaim `json:"permissionClaims,omitempty"`
 }
+
+type AcceptablePermissionClaim struct {
+	PermissionClaim `json:",inline"`
+
+	// state indicates if the claim is accepted or rejected.
+
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=Accepted;Rejected
+	State AcceptablePermissionClaimState `json:"state"`
+}
+
+type AcceptablePermissionClaimState string
+
+const (
+	ClaimAccepted AcceptablePermissionClaimState = "Accepted"
+	ClaimRejected AcceptablePermissionClaimState = "Rejected"
+)
+
+// PermissionClaim identifies an object by GR and identity hash.
+// Its purpose is to determine the added permissions that a service provider may
+// request and that a consumer may accept and allow the service provider access to.
+//
+// TODO fix validation
+// kubebuilder:validation:XValidation:rule="(has(self.all) && self.all) != (has(self.resourceSelector) && size(self.resourceSelector) > 0)",message="either \"all\" or \"resourceSelector\" must be set"
+type PermissionClaim struct {
+	GroupResource `json:","`
+
+	Version string `json:"version"`
+
+	// all claims all resources for the given group/resource.
+	// This is mutually exclusive with resourceSelector.
+	// +optional
+	All bool `json:"all,omitempty"`
+
+	Verbs ClaimVerbs `json:"verbs"`
+
+	// resourceSelector is a list of claimed resource selectors.
+	//
+	// +optional
+	ResourceSelector []ResourceSelector `json:"resourceSelector,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:rule="has(self.__namespace__) || has(self.name)",message="at least one field must be set"
+type ResourceSelector struct {
+	// name of an object within a claimed group/resource.
+	// It matches the metadata.name field of the underlying object.
+	// If namespace is unset, all objects matching that name will be claimed.
+	//
+	// +optional
+	// +kubebuilder:validation:Pattern="^([a-z0-9][-a-z0-9_.]*)?[a-z0-9]$"
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name,omitempty"`
+
+	// namespace containing the named object. Matches metadata.namespace field.
+	// If "name" is unset, all objects from the namespace are being claimed.
+	//
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Namespace string `json:"namespace,omitempty"`
+
+	//
+	// WARNING: If adding new fields, add them to the XValidation check!
+	//
+}
+
+type ClaimVerbs struct {
+	Provider []Verb `json:"provider"`
+	Consumer []Verb `json:"consumer"`
+}
+
+type Verb string
 
 type APIServiceBindingStatus struct {
 	// providerPrettyName is the pretty name of the service provider cluster. This

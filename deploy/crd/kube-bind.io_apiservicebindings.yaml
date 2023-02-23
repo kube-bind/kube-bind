@@ -84,6 +84,78 @@ spec:
                 x-kubernetes-validations:
                 - message: kubeconfigSecretRef is immutable
                   rule: self == oldSelf
+              permissionClaims:
+                description: permissionClaims records decisions about permission claims
+                  requested by the API service provider. Individual claims can be
+                  accepted or rejected. If accepted, the API service provider gets
+                  the requested access to the specified resources in this workspace.
+                  Access is granted per GroupResource, identity, and other properties.
+                items:
+                  properties:
+                    all:
+                      description: all claims all resources for the given group/resource.
+                        This is mutually exclusive with resourceSelector.
+                      type: boolean
+                    group:
+                      default: ""
+                      description: group is the name of an API group. For core groups
+                        this is the empty string '""'.
+                      pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
+                      type: string
+                    resource:
+                      description: 'resource is the name of the resource. Note: it
+                        is worth noting that you can not ask for permissions for resource
+                        provided by a CRD not provided by an service binding export.'
+                      pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                      type: string
+                    resourceSelector:
+                      description: resourceSelector is a list of claimed resource
+                        selectors.
+                      items:
+                        properties:
+                          name:
+                            description: name of an object within a claimed group/resource.
+                              It matches the metadata.name field of the underlying
+                              object. If namespace is unset, all objects matching
+                              that name will be claimed.
+                            maxLength: 253
+                            minLength: 1
+                            pattern: ^([a-z0-9][-a-z0-9_.]*)?[a-z0-9]$
+                            type: string
+                          namespace:
+                            description: namespace containing the named object. Matches
+                              metadata.namespace field. If "name" is unset, all objects
+                              from the namespace are being claimed.
+                            minLength: 1
+                            type: string
+                        type: object
+                        x-kubernetes-validations:
+                        - message: at least one field must be set
+                          rule: has(self.__namespace__) || has(self.name)
+                      type: array
+                    state:
+                      enum:
+                      - Accepted
+                      - Rejected
+                      type: string
+                    verbs:
+                      properties:
+                        consumer:
+                          items:
+                            type: string
+                          type: array
+                        provider:
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    version:
+                      type: string
+                  required:
+                  - resource
+                  - state
+                  type: object
+                type: array
             required:
             - kubeconfigSecretRef
             type: object

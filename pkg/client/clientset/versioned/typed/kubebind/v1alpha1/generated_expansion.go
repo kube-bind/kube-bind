@@ -24,6 +24,8 @@ type APIServiceExportExpansion interface{}
 
 type APIServiceExportRequestExpansion interface{}
 
+type APIServiceExportTemplateExpansion interface{}
+
 type APIServiceNamespaceExpansion interface{}
 
 type ClusterBindingExpansion interface{}

@@ -109,7 +109,8 @@ type APIServiceExportRequestResource struct {
 
 	// versions is a list of versions that should be exported. If this is empty
 	// a sensible default is chosen by the service provider.
-	Versions []string `json:"versions,omitempty"`
+	Versions         []string          `json:"versions,omitempty"`
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 // GroupResource identifies a resource.

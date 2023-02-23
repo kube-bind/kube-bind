@@ -31,6 +31,7 @@ import (
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexportrequest"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/servicenamespace"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/deploy"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/exporttemplate"
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
@@ -106,6 +107,7 @@ func NewServer(config *Config) (*Server, error) {
 		}
 	}
 
+	ind := exporttemplate.NewCatalogue(config.ClientConfig)
 	handler, err := examplehttp.NewHandler(
 		s.OIDC,
 		config.Options.OIDC.AuthorizeURL,
@@ -116,7 +118,7 @@ func NewServer(config *Config) (*Server, error) {
 		encryptionKey,
 		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
 		s.Kubernetes,
-		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),
+		ind,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)

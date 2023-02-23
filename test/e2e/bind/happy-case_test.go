@@ -59,11 +59,11 @@ func testHappyCase(t *testing.T, scope kubebindv1alpha1.Scope) {
 	t.Logf("Creating provider workspace")
 	providerConfig, providerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithGenerateName("test-happy-case-provider"))
 
-	t.Logf("Creating MangoDB CRD on provider side")
-	providerfixtures.Bootstrap(t, framework.DiscoveryClient(t, providerConfig), framework.DynamicClient(t, providerConfig), nil)
-
 	t.Logf("Starting backend with random port")
 	addr, _ := framework.StartBackend(t, providerConfig, "--kubeconfig="+providerKubeconfig, "--listen-port=0", "--consumer-scope="+string(scope))
+
+	t.Logf("Creating MangoDB CRD on provider side")
+	providerfixtures.Bootstrap(t, framework.DiscoveryClient(t, providerConfig), framework.DynamicClient(t, providerConfig), nil)
 
 	t.Logf("Creating consumer workspace and starting konnector")
 	consumerConfig, consumerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithGenerateName("test-happy-case-consumer"))

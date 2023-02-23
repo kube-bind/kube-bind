@@ -26,6 +26,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/contrib/example-backend/exporttemplate"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1/helpers"
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
@@ -40,6 +41,7 @@ type reconciler struct {
 	createServiceExport func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error)
 
 	deleteServiceExportRequest func(ctx context.Context, namespace, name string) error
+	crds                       exporttemplate.Index
 }
 
 func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha1.APIServiceExportRequest) error {
@@ -84,6 +86,11 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 				continue
 			}
 
+			template, err := r.crds.TemplateFor(ctx, res.Group, res.Resource)
+			if err != nil {
+				return err
+			}
+
 			exportSpec, err := helpers.CRDToServiceExport(crd)
 			if err != nil {
 				conditions.MarkFalse(
@@ -110,6 +117,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 				Spec: kubebindv1alpha1.APIServiceExportSpec{
 					APIServiceExportCRDSpec: *exportSpec,
 					InformerScope:           r.informerScope,
+					PermissionClaims:        template.Spec.ClaimedResources,
 				},
 			}
 

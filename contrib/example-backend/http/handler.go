@@ -18,6 +18,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -33,16 +34,14 @@ import (
 	"github.com/gorilla/securecookie"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/cookie"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/exporttemplate"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
-	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/template"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
@@ -71,9 +70,9 @@ type handler struct {
 	cookieEncryptionKey []byte
 	cookieSigningKey    []byte
 
-	client              *http.Client
-	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister
-	kubeManager         *kubernetes.Manager
+	client        *http.Client
+	templateIndex exporttemplate.Index
+	kubeManager   *kubernetes.Manager
 }
 
 func NewHandler(
@@ -82,7 +81,7 @@ func NewHandler(
 	cookieSigningKey, cookieEncryptionKey []byte,
 	scope kubebindv1alpha1.Scope,
 	mgr *kubernetes.Manager,
-	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,
+	apiextensionsLister exporttemplate.Index,
 ) (*handler, error) {
 	return &handler{
 		oidc:                provider,
@@ -93,7 +92,7 @@ func NewHandler(
 		scope:               scope,
 		client:              http.DefaultClient,
 		kubeManager:         mgr,
-		apiextensionsLister: apiextensionsLister,
+		templateIndex:       apiextensionsLister,
 		cookieSigningKey:    cookieSigningKey,
 		cookieEncryptionKey: cookieEncryptionKey,
 	}, nil
@@ -292,10 +291,7 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	labelSelector := labels.Set{
-		resources.ExportedCRDsLabel: "true",
-	}
-	crds, err := h.apiextensionsLister.List(labelSelector.AsSelector())
+	crds, err := h.templateIndex.GetExported(r.Context())
 	if err != nil {
 		logger.Error(err, "failed to list crds")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -306,8 +302,9 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 	})
 	rightScopedCRDs := []*apiextensionsv1.CustomResourceDefinition{}
 	for _, crd := range crds {
+		crd := crd
 		if h.scope == kubebindv1alpha1.ClusterScope || crd.Spec.Scope == apiextensionsv1.NamespaceScoped {
-			rightScopedCRDs = append(rightScopedCRDs, crd)
+			rightScopedCRDs = append(rightScopedCRDs, &crd)
 		}
 	}
 
@@ -368,6 +365,13 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	exportTemplate, err := h.templateIndex.TemplateFor(context.Background(), group, resource)
+	if err != nil {
+		logger.Error(err, "failed to get export template", "group", group, "resource", resource)
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
 	request := kubebindv1alpha1.APIServiceExportRequestResponse{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
@@ -381,7 +385,10 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		},
 		Spec: kubebindv1alpha1.APIServiceExportRequestSpec{
 			Resources: []kubebindv1alpha1.APIServiceExportRequestResource{
-				{GroupResource: kubebindv1alpha1.GroupResource{Group: group, Resource: resource}},
+				{
+					GroupResource:    kubebindv1alpha1.GroupResource{Group: group, Resource: resource},
+					PermissionClaims: exportTemplate.Spec.ClaimedResources,
+				},
 			},
 		},
 	}

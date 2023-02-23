@@ -153,6 +153,19 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *
 			Resources: []string{export.Spec.Names.Plural},
 			Verbs:     []string{"get", "list", "watch", "update", "patch", "delete", "create"},
 		})
+		for _, e := range export.Spec.PermissionClaims {
+			var verbs []string
+
+			for _, v := range e.Verbs.Provider {
+				verbs = append(verbs, string(v))
+			}
+
+			expected.Rules = append(expected.Rules, rbacv1.PolicyRule{
+				APIGroups: []string{e.Group},
+				Resources: []string{e.Resource},
+				Verbs:     verbs,
+			})
+		}
 	}
 
 	if role == nil {

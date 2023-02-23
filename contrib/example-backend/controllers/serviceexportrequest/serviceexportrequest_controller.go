@@ -35,6 +35,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/contrib/example-backend/exporttemplate"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
@@ -101,6 +102,7 @@ func NewController(
 			deleteServiceExportRequest: func(ctx context.Context, ns, name string) error {
 				return bindClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
+			crds: exporttemplate.NewCatalogue(config),
 		},
 
 		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceExportRequest, *kubebindv1alpha1.APIServiceExportRequestSpec, *kubebindv1alpha1.APIServiceExportRequestStatus](

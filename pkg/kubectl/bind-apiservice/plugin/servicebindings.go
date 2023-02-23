@@ -17,8 +17,11 @@ limitations under the License.
 package plugin
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -69,6 +72,26 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 			continue
 		}
 
+		var permissionClaims []kubebindv1alpha1.AcceptablePermissionClaim
+		for _, c := range resource.PermissionClaims {
+			accepted, err := promptYesNo(c)
+			if err != nil {
+				return nil, err
+			}
+
+			var state kubebindv1alpha1.AcceptablePermissionClaimState
+			if accepted {
+				state = kubebindv1alpha1.ClaimAccepted
+			} else {
+				state = kubebindv1alpha1.ClaimRejected
+			}
+
+			permissionClaims = append(permissionClaims, kubebindv1alpha1.AcceptablePermissionClaim{
+				PermissionClaim: c,
+				State:           state,
+			})
+		}
+
 		// create new APIServiceBinding.
 		first := true
 		if err := wait.PollInfinite(1*time.Second, func() (bool, error) {
@@ -89,6 +112,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 						},
 						Namespace: "kube-bind",
 					},
+					PermissionClaims: permissionClaims,
 				},
 			}, metav1.CreateOptions{})
 			if err != nil {
@@ -114,4 +138,24 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 	}
 
 	return bindings, nil
+}
+
+func promptYesNo(p kubebindv1alpha1.PermissionClaim) (bool, error) {
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		fmt.Printf("binding wants permission\n%+v\n[Y/N]", p)
+
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			return false, err
+		}
+
+		response = strings.ToLower(strings.TrimSpace(response))
+		if response == "y" || response == "yes" {
+			return true, nil
+		} else if response == "n" || response == "no" {
+			return false, nil
+		}
+	}
 }

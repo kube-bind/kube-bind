@@ -36,6 +36,7 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/claimedresources"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/spec"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/status"
@@ -209,6 +210,68 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 		return nil // nothing we can do here
 	}
 
+	var claimControllers []func(context.Context, int)
+	for _, claim := range binding.Spec.PermissionClaims {
+		claim := claim
+
+		if claim.State != kubebindv1alpha1.ClaimAccepted {
+			logger.Info("skipping non accepted claim", "claim", claim)
+			continue
+		}
+
+		claimGVR := runtimeschema.GroupVersionResource{
+			Group:    claim.Group,
+			Version:  claim.Version,
+			Resource: claim.Resource,
+		}
+
+		var providerInf multinsinformer.GetterInformer
+		if claim.All {
+			factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
+			factory.ForResource(claimGVR).Lister() // wire the GVR up in the informer factory
+			providerInf = multinsinformer.GetterInformerWrapper{
+				GVR:      claimGVR,
+				Delegate: factory,
+			}
+		} else {
+			providerInf, err = multinsinformer.NewDynamicMultiNamespaceInformer(
+				claimGVR,
+				r.providerNamespace,
+				r.providerConfig,
+				r.serviceNamespaceInformer,
+			)
+			if err != nil {
+				logger.Info("aborting", "error", err)
+				return err
+			}
+		}
+		claimedCtrl, err := claimedresources.NewController(
+			claimGVR,
+			r.providerNamespace,
+			r.consumerConfig,
+			r.providerConfig,
+			consumerInf.ForResource(claimGVR),
+			providerInf,
+			r.serviceNamespaceInformer,
+		)
+
+		if err != nil {
+			runtime.HandleError(err)
+			return nil //nothing we can do here
+		}
+		logger.Info("creating claim reconciler", "gvr", claimGVR)
+
+		claimControllers = append(claimControllers, func(ctx context.Context, i int) {
+			providerInf.Start(ctx)
+
+			providerSynced := providerInf.WaitForCacheSync(ctx.Done())
+			logger.V(2).Info("Synced informers", "provider", providerSynced)
+
+			claimedCtrl.Start(ctx, i)
+		})
+
+	}
+
 	ctx, cancel := context.WithCancel(ctx)
 
 	consumerInf.Start(ctx.Done())
@@ -224,6 +287,10 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 
 		go specCtrl.Start(ctx, 1)
 		go statusCtrl.Start(ctx, 1)
+
+		for _, f := range claimControllers {
+			go f(ctx, 1)
+		}
 	}()
 
 	r.lock.Lock()

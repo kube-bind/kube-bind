@@ -19,12 +19,13 @@ package authenticator
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"strconv"
+	"sync"
 	"time"
-
-	"github.com/labstack/echo/v4"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -44,113 +45,102 @@ func init() {
 	utilruntime.Must(kubebindv1alpha1.AddToScheme(kubebindSchema))
 }
 
-type Authenticator interface {
-	Endpoint(context.Context) string
-	Execute(context.Context) error
+type LocalhostCallbackAuthenticator struct {
+	port   int
+	server *http.Server
+
+	mu          sync.Mutex // synchronizes mutations of fields below
+	done        chan struct{}
+	response    runtime.Object
+	responseGvk *schema.GroupVersionKind
 }
 
-type defaultAuthenticator struct {
-	server     *echo.Echo
-	port       int
-	timeout    time.Duration
-	actionDone chan struct{}
-	action     func(context.Context, schema.GroupVersionKind, runtime.Object) error
+func NewLocalhostCallbackAuthenticator() *LocalhostCallbackAuthenticator {
+	return &LocalhostCallbackAuthenticator{
+		done: make(chan struct{}),
+	}
 }
 
-func NewDefaultAuthenticator(timeout time.Duration, action func(context.Context, schema.GroupVersionKind, runtime.Object) error) (Authenticator, error) {
-	if timeout == 0 {
-		timeout = 5 * time.Second
+func (d *LocalhostCallbackAuthenticator) Start() error {
+	if d.server != nil {
+		return errors.New("already started")
 	}
-
-	defaultAuthenticator := &defaultAuthenticator{
-		timeout:    timeout,
-		action:     action,
-		actionDone: make(chan struct{}),
-	}
-
-	server := echo.New()
-	server.HideBanner = true
-	server.HidePort = true
-	server.GET("/callback", defaultAuthenticator.actionWrapper())
-	defaultAuthenticator.server = server
 
 	address, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
-		return nil, err
+		return err
 	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/callback", d.callback)
+	d.server = &http.Server{Handler: mux}
 
 	listener, err := net.ListenTCP("tcp", address)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	d.port = listener.Addr().(*net.TCPAddr).Port
 
-	if err = listener.Close(); err != nil {
-		return nil, err
-	}
-
-	defaultAuthenticator.port = listener.Addr().(*net.TCPAddr).Port
-
-	return defaultAuthenticator, nil
-}
-
-func (d *defaultAuthenticator) Execute(ctx context.Context) error {
 	go func() {
-		time.Sleep(10 * time.Minute)
-		d.server.Server.Close()
+		d.server.Serve(listener) // nolint: errcheck
 	}()
 
-	go d.server.Start(net.JoinHostPort("localhost", strconv.Itoa(d.port))) // nolint:errcheck
-
-	select {
-	case <-d.actionDone:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
-	}
+	return nil
 }
 
-func (d *defaultAuthenticator) Endpoint(context.Context) string {
+// Endpoint returns the URL this server is listening to.
+// Start() must be called prior to this.
+func (d *LocalhostCallbackAuthenticator) Endpoint() string {
 	return fmt.Sprintf("http://%s/callback", net.JoinHostPort("localhost", strconv.Itoa(d.port)))
 }
 
-func (d *defaultAuthenticator) actionWrapper() func(echo.Context) error {
-	return func(c echo.Context) error {
-		select {
-		case <-d.actionDone:
-			return c.String(200, "Already authenticated")
-		default:
+func (d *LocalhostCallbackAuthenticator) WaitForResponse(ctx context.Context) (runtime.Object, *schema.GroupVersionKind, error) {
+	select {
+	case <-d.done:
+		return d.response, d.responseGvk, nil
+	case <-ctx.Done():
+		// 5 seconds shutdown timeout
+		shutdownCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		defer cancel()
+		if err := d.server.Shutdown(shutdownCtx); err != nil {
+			return nil, nil, fmt.Errorf("error while waiting for response: %w: error shutting down server: %v", shutdownCtx.Err(), err)
 		}
-
-		authData := c.QueryParam("response")
-
-		logger := klog.FromContext(c.Request().Context())
-		logger.V(7).Info("Received auth data", "data", authData)
-
-		decoded, err := base64.StdEncoding.DecodeString(authData)
-		if err != nil {
-			c.Logger().Error(err)
-			return err
-		}
-
-		authResponse, gvk, err := kubebindCodecs.UniversalDeserializer().Decode(decoded, nil, nil)
-		if err != nil {
-			c.Logger().Error(err)
-			return err
-		}
-		if err := d.action(c.Request().Context(), *gvk, authResponse); err != nil {
-			return err
-		}
-		close(d.actionDone)
-
-		if _, err := c.Response().Write([]byte("<h1>You have been authenticated successfully! Please head back to the command line</h1>")); err != nil {
-			return err
-		}
-
-		go func() {
-			time.Sleep(5 * time.Second)
-			d.server.Server.Close() // nolint:errcheck
-		}()
-
-		return nil
+		return nil, nil, fmt.Errorf("error while waiting for response: %w", shutdownCtx.Err())
 	}
+}
+
+func (d *LocalhostCallbackAuthenticator) callback(w http.ResponseWriter, r *http.Request) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	select {
+	case <-d.done:
+		w.Write([]byte("Already authenticated")) // nolint: errcheck
+		return
+	default:
+	}
+
+	authData := r.URL.Query().Get("response")
+	logger := klog.FromContext(r.Context())
+	logger.V(7).Info("Received auth data", "data", authData)
+
+	decoded, err := base64.StdEncoding.DecodeString(authData)
+	if err != nil {
+		logger.Error(err, "error decoding authData")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	response, gvk, err := kubebindCodecs.UniversalDeserializer().Decode(decoded, nil, nil)
+	if err != nil {
+		logger.Error(err, "error decoding authResponse")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	d.response = response
+	d.responseGvk = gvk
+	close(d.done)
+
+	w.Write([]byte("<h1>You have been authenticated successfully! Please head back to the command line</h1>")) // nolint: errcheck
 }

@@ -37,8 +37,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
 	kubeclient "k8s.io/client-go/kubernetes"
@@ -143,17 +141,6 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return err
 	}
 
-	var gvk schema.GroupVersionKind
-	var response runtime.Object
-	auth, err := authenticator.NewDefaultAuthenticator(10*time.Minute, func(ctx context.Context, what schema.GroupVersionKind, obj runtime.Object) error {
-		response = obj
-		gvk = what
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
 	exportURL, err := url.Parse(b.URL)
 	if err != nil {
 		return err // should never happen because we test this in Validate()
@@ -181,17 +168,24 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 			return err
 		}
 	}
-	sessionID := SessionID()
-	if err := b.authenticate(provider, auth.Endpoint(ctx), sessionID, ClusterID(ns), urlCh); err != nil {
-		return err
-	}
 
-	err = auth.Execute(ctx)
+	auth := authenticator.NewLocalhostCallbackAuthenticator()
+	err = auth.Start()
 	fmt.Fprintf(b.Options.ErrOut, "\n\n")
 	if err != nil {
 		return err
-	} else if response == nil {
-		return fmt.Errorf("authentication timeout")
+	}
+
+	sessionID := SessionID()
+	if err := b.authenticate(provider, auth.Endpoint(), sessionID, ClusterID(ns), urlCh); err != nil {
+		return err
+	}
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+	response, gvk, err := auth.WaitForResponse(timeoutCtx)
+	if err != nil {
+		return err
 	}
 
 	fmt.Fprintf(b.IOStreams.ErrOut, "🔑 Successfully authenticated to %s\n", exportURL.String()) // nolint: errcheck

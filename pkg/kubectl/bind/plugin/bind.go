@@ -166,6 +166,8 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		}
 		if ns, err = kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 			return err
+		} else {
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "📦 Created kube-bind namespace.\n") // nolint: errcheck
 		}
 	}
 

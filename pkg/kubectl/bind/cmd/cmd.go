@@ -64,6 +64,7 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			defer opts.Cleanup()
 			if err := logsv1.ValidateAndApply(opts.Logs, nil); err != nil {
 				return err
 			}

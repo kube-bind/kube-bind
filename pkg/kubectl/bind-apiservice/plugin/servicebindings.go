@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -74,7 +73,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 
 		var permissionClaims []kubebindv1alpha1.AcceptablePermissionClaim
 		for _, c := range resource.PermissionClaims {
-			accepted, err := promptYesNo(c)
+			accepted, err := b.promptYesNo(c)
 			if err != nil {
 				return nil, err
 			}
@@ -140,11 +139,13 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 	return bindings, nil
 }
 
-func promptYesNo(p kubebindv1alpha1.PermissionClaim) (bool, error) {
-	reader := bufio.NewReader(os.Stdin)
+func (opt BindAPIServiceOptions) promptYesNo(p kubebindv1alpha1.PermissionClaim) (bool, error) {
+
+	fmt.Printf("%+v", opt.Options.IOStreams)
+	reader := bufio.NewReader(opt.Options.IOStreams.In)
 
 	for {
-		fmt.Printf("binding wants permission\n%+v\n[Y/N]", p)
+		fmt.Fprintf(opt.Options.IOStreams.Out, "binding wants permission\n%+v\n[Y/N]", p)
 
 		response, err := reader.ReadString('\n')
 		if err != nil {

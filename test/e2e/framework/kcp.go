@@ -26,8 +26,8 @@ import (
 	"testing"
 	"time"
 
+	corev1alpha1 "github.com/kcp-dev/kcp/pkg/apis/core/v1alpha1"
 	tenancyv1alpha1 "github.com/kcp-dev/kcp/pkg/apis/tenancy/v1alpha1"
-	tenancyv1beta1 "github.com/kcp-dev/kcp/pkg/apis/tenancy/v1beta1"
 	"github.com/martinlindhe/base36"
 	"github.com/stretchr/testify/require"
 
@@ -43,7 +43,7 @@ import (
 )
 
 type (
-	ClusterWorkspaceOption func(ws *tenancyv1beta1.Workspace)
+	ClusterWorkspaceOption func(ws *tenancyv1alpha1.Workspace)
 )
 
 var (
@@ -51,19 +51,18 @@ var (
 )
 
 func init() {
-	utilruntime.Must(tenancyv1beta1.AddToScheme(kcpScheme))
 	utilruntime.Must(tenancyv1alpha1.AddToScheme(kcpScheme))
 }
 
 func WithName(s string, formatArgs ...interface{}) ClusterWorkspaceOption {
-	return func(ws *tenancyv1beta1.Workspace) {
+	return func(ws *tenancyv1alpha1.Workspace) {
 		ws.Name = fmt.Sprintf(s, formatArgs...)
 		ws.GenerateName = ""
 	}
 }
 
 func WithGenerateName(s string, formatArgs ...interface{}) ClusterWorkspaceOption {
-	return func(ws *tenancyv1beta1.Workspace) {
+	return func(ws *tenancyv1alpha1.Workspace) {
 		s = fmt.Sprintf(s, formatArgs...)
 		// Workspace.ObjectMeta.GenerateName is broken in kcp: https://github.com/kcp-dev/kcp/pull/2193
 		//
@@ -92,7 +91,7 @@ func NewWorkspace(t *testing.T, config *rest.Config, options ...ClusterWorkspace
 	tenancyClient, err := client.New(config, client.Options{Scheme: kcpScheme, Mapper: mapper})
 	require.NoError(t, err)
 
-	ws := &tenancyv1beta1.Workspace{
+	ws := &tenancyv1alpha1.Workspace{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "e2e-workspace-",
 		},
@@ -137,7 +136,7 @@ func NewWorkspace(t *testing.T, config *rest.Config, options ...ClusterWorkspace
 		defer cancel()
 		err := tenancyClient.Get(background, client.ObjectKey{Name: ws.Name}, ws)
 		require.NoError(t, err)
-		return ws.Status.Phase == tenancyv1alpha1.ClusterWorkspacePhaseReady
+		return ws.Status.Phase == corev1alpha1.LogicalClusterPhaseReady
 	}, wait.ForeverTestTimeout, time.Millisecond*100, "failed to wait for workspace %s to become ready", ws.Name)
 	t.Logf("Created %s workspace %s", ws.Spec.Type, ws.Name)
 

@@ -203,10 +203,10 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
-github.com/kcp-dev/kcp/pkg/apis v0.9.1 h1:AtGD9OQqiT2Prkg0Rz8KhkIUCD1E4RnO3iO0jGcG4h8=
-github.com/kcp-dev/kcp/pkg/apis v0.9.1/go.mod h1:bHOeSFzFYaOOwtdNLNqoZndz53tzEGZdXT/dWnPmjLU=
-github.com/kcp-dev/logicalcluster/v2 v2.0.0-alpha.3 h1:+DwIG/loh2nDB9c/FqNvLzFFq/YtBliLxAfw/uWNzyE=
-github.com/kcp-dev/logicalcluster/v2 v2.0.0-alpha.3/go.mod h1:lfWJL764jKFJxZWOGuFuT3PCCLPo6lV5Cl8P7u9T05g=
+github.com/kcp-dev/kcp/pkg/apis v0.11.0 h1:K6p+tNHNcvfACCPLcHgY0EMLeaIwR1jS491FyLfXMII=
+github.com/kcp-dev/kcp/pkg/apis v0.11.0/go.mod h1:8cUAmfMJcksauz53UtsLYG8Phhx62rvuCnd/5t/Zihk=
+github.com/kcp-dev/logicalcluster/v3 v3.0.1 h1:cqo8QhyCrQv6vhT1OaomomzJ9U8xBkMKINKQyZiBizM=
+github.com/kcp-dev/logicalcluster/v3 v3.0.1/go.mod h1:6rb68Tntup98cRr9+50rvSDxUbfqrC1yQ/T6RiZcSgA=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=

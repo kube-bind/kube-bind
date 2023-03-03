@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/headzoo/surf v1.0.1
-	github.com/kcp-dev/kcp/pkg/apis v0.9.1
+	github.com/kcp-dev/kcp/pkg/apis v0.11.0
 	github.com/martinlindhe/base36 v1.1.1
 	github.com/mdp/qrterminal/v3 v3.0.0
 	github.com/onsi/gomega v1.20.1
@@ -83,7 +83,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kcp-dev/logicalcluster/v2 v2.0.0-alpha.3 // indirect
+	github.com/kcp-dev/logicalcluster/v3 v3.0.1 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect

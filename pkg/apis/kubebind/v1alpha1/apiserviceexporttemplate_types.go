@@ -47,8 +47,7 @@ type APIServiceExportTemplate struct {
 type APIServiceExportTemplateSpec struct {
 	APIServiceSelector APIServiceSelector `json:"APIServiceSelector"`
 	// +optional
-	// +kubebuilder:validation:MaxItems=2
-	ClaimedResources []PermissionClaim `json:"claimedResources,omitempty"`
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 type APIServiceExportTemplateStatus struct{}

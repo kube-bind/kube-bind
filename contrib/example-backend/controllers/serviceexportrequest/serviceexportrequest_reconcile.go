@@ -117,7 +117,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 				Spec: kubebindv1alpha1.APIServiceExportSpec{
 					APIServiceExportCRDSpec: *exportSpec,
 					InformerScope:           r.informerScope,
-					PermissionClaims:        template.Spec.ClaimedResources,
+					PermissionClaims:        template.Spec.PermissionClaims,
 				},
 			}
 

@@ -387,7 +387,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 			Resources: []kubebindv1alpha1.APIServiceExportRequestResource{
 				{
 					GroupResource:    kubebindv1alpha1.GroupResource{Group: group, Resource: resource},
-					PermissionClaims: exportTemplate.Spec.ClaimedResources,
+					PermissionClaims: exportTemplate.Spec.PermissionClaims,
 				},
 			},
 		},

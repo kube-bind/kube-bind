@@ -58,18 +58,31 @@ spec:
                       type: string
                     type: array
                 type: object
-              claimedResources:
+              permissionClaims:
                 items:
-                  description: "PermissionClaim identifies an object by GR and identity
+                  description: PermissionClaim identifies an object by GR and identity
                     hash. Its purpose is to determine the added permissions that a
                     service provider may request and that a consumer may accept and
-                    allow the service provider access to. \n TODO fix validation kubebuilder:validation:XValidation:rule=\"(has(self.all)
-                    && self.all) != (has(self.resourceSelector) && size(self.resourceSelector)
-                    > 0)\",message=\"either \\\"all\\\" or \\\"resourceSelector\\\"
-                    must be set\""
+                    allow the service provider access to.
                   properties:
-                    all:
-                      description: all claims all resources for the given group/resource.
+                    adopt:
+                      description: adopt set to true means that objects created by
+                        the consumer are adopted by the provider. i.e. the provider
+                        will become the owner.
+                      type: boolean
+                    create:
+                      description: "only for owner Provider \n create determines whether
+                        the kube-bind konnector will sync matching objects from the
+                        provider side down to the consumer cluster."
+                      properties:
+                        donate:
+                          description: donate set to true means that a newly created
+                            object by the provider is immediately owned by hte consumer.
+                            If false, the object stays in ownership of the provider
+                          type: boolean
+                      type: object
+                    global:
+                      description: Global claims global resources for the given group/resource.
                         This is mutually exclusive with resourceSelector.
                       type: boolean
                     group:
@@ -78,44 +91,78 @@ spec:
                         this is the empty string '""'.
                       pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
                       type: string
+                    onConflict:
+                      description: onConflict determines how the conflicts between
+                        objects on the consumer side will be resolved.
+                      properties:
+                        providerOverrides:
+                          description: providerOverrides will make the provider override
+                            any object that might already exist in the consumer cluster
+                            if it has the same namespaced name as a resource created
+                            by the provider.
+                          type: boolean
+                        recreateWhenConsumerSideDeleted:
+                          description: only for owner provider When recreateWhenConsumerSideDeleted
+                            is true the provider will recreate the object in case
+                            the object is missing on the consumer side. Even if the
+                            consumer mistakenly or intentionally deletes the objet,
+                            the provider will recreate it. If the field is set as
+                            false, the provider will not recreate the object in case
+                            the object is deleted on the RecreateWhenConsumerSideDeleted
+                            side.
+                          type: boolean
+                      type: object
+                    required:
+                      description: required indicates whether the APIServiceBinding
+                        will work if this claim is not accepted.
+                      type: boolean
                     resource:
                       description: 'resource is the name of the resource. Note: it
                         is worth noting that you can not ask for permissions for resource
                         provided by a CRD not provided by an service binding export.'
                       pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
                       type: string
-                    resourceSelector:
-                      description: resourceSelector is a list of claimed resource
-                        selectors.
-                      items:
-                        properties:
-                          name:
-                            description: name of an object within a claimed group/resource.
-                              It matches the metadata.name field of the underlying
-                              object. If namespace is unset, all objects matching
-                              that name will be claimed.
-                            maxLength: 253
-                            minLength: 1
-                            pattern: ^([a-z0-9][-a-z0-9_.]*)?[a-z0-9]$
-                            type: string
-                          namespace:
-                            description: namespace containing the named object. Matches
-                              metadata.namespace field. If "name" is unset, all objects
-                              from the namespace are being claimed.
-                            minLength: 1
-                            type: string
-                        type: object
-                        x-kubernetes-validations:
-                        - message: at least one field must be set
-                          rule: has(self.__namespace__) || has(self.name)
-                      type: array
-                    verbs:
+                    selector:
+                      description: selector selects which resources are affected by
+                        this claim.
                       properties:
-                        consumer:
+                        name:
+                          description: name of an object within a claimed group/resource.
+                            It matches the metadata.name field of the underlying object.
+                            If name is unset, all objects in bound namespaces will
+                            be claimed.
+                          maxLength: 253
+                          minLength: 1
+                          pattern: ^([a-z0-9][-a-z0-9_.]*)?[a-z0-9]$
+                          type: string
+                        owner:
+                          enum:
+                          - Provider
+                          - Consumer
+                          type: string
+                      type: object
+                    update:
+                      description: update lists a number of claimed permissions for
+                        the provider. "field" and "preserving" are mutually exclusive.
+                      properties:
+                        alwaysRecreate:
+                          description: alwaysRecreate, when true will make the konnector
+                            delete the old object and create a new one instead of
+                            updating. Useful for immutable objects.
+                          type: boolean
+                        fields:
+                          description: fields are the fields owned by the owner of
+                            the claim. If the owner sets values of those fields, they
+                            will be synced to the other participant. Mutually exclusive
+                            with preservings.
                           items:
                             type: string
                           type: array
-                        provider:
+                        preservings:
+                          description: Preservings are the fields that are preserved
+                            by the konnector during synchronization. The owner is
+                            not able to set those fields. If the owner changes the
+                            value of these fields, their change will be overwritten.
                           items:
                             type: string
                           type: array
@@ -125,7 +172,9 @@ spec:
                   required:
                   - resource
                   type: object
-                maxItems: 2
+                  x-kubernetes-validations:
+                  - message: donate and adopt are mutually exclusive
+                    rule: '!(self.create.donate && self.adopt)'
                 type: array
             type: object
           status:

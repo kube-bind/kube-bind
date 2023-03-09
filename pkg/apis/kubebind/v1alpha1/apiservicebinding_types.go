@@ -119,31 +119,83 @@ const (
 // Its purpose is to determine the added permissions that a service provider may
 // request and that a consumer may accept and allow the service provider access to.
 //
-// TODO fix validation
-// kubebuilder:validation:XValidation:rule="(has(self.all) && self.all) != (has(self.resourceSelector) && size(self.resourceSelector) > 0)",message="either \"all\" or \"resourceSelector\" must be set"
+// +kubebuilder:validation:XValidation:rule="!(self.create.donate && self.adopt)",message="donate and adopt are mutually exclusive"
 type PermissionClaim struct {
 	GroupResource `json:","`
 
 	Version string `json:"version"`
 
-	// all claims all resources for the given group/resource.
+	// selector selects which resources are affected by this claim.
+	Selector ResourceSelector `json:"selector,omitempty"`
+
+	// required indicates whether the APIServiceBinding will work if this claim is not accepted.
+	Required bool `json:"required"`
+
+	// Global claims global resources for the given group/resource.
 	// This is mutually exclusive with resourceSelector.
 	// +optional
-	All bool `json:"all,omitempty"`
+	Global bool `json:"global,omitempty"`
 
-	Verbs ClaimVerbs `json:"verbs"`
-
-	// resourceSelector is a list of claimed resource selectors.
+	// only for owner Provider
 	//
-	// +optional
-	ResourceSelector []ResourceSelector `json:"resourceSelector,omitempty"`
+	// create determines whether the kube-bind konnector will sync matching objects from the
+	// provider side down to the consumer cluster.
+	Create CreateOptions `json:"create"`
+
+	// adopt set to true means that objects created by the consumer are adopted by the provider.
+	// i.e. the provider will become the owner.
+	Adopt bool `json:"adopt"`
+
+	// onConflict determines how the conflicts between objects on the consumer side
+	// will be resolved.
+	OnConflict OnConflictOptions `json:"onConflict,omitempty"`
+
+	// update lists a number of claimed permissions for the provider.
+	// "field" and "preserving" are mutually exclusive.
+	Update UpdateOptions `json:"update"`
 }
 
-// +kubebuilder:validation:XValidation:rule="has(self.__namespace__) || has(self.name)",message="at least one field must be set"
+type OnConflictOptions struct {
+	// providerOverrides will make the provider override any object that might already exist
+	// in the consumer cluster if it has the same namespaced name as a resource created by the
+	// provider.
+	ProviderOverwrites bool `json:"providerOverrides"`
+
+	// only for owner provider
+	// When recreateWhenConsumerSideDeleted is true the provider will recreate the object
+	// in case the object is missing on the consumer side. Even if the consumer mistakenly or intentionally
+	// deletes the objet, the provider will recreate it. If the field is set as false,
+	// the provider will not recreate the object in case the object is deleted on the RecreateWhenConsumerSideDeleted
+	// side.
+	RecreateWhenConsumerSideDeleted bool `json:"recreateWhenConsumerSideDeleted"`
+}
+
+type CreateOptions struct {
+	// donate set to true means that a newly created object by the provider is immediately owned by hte consumer.
+	// If false, the object stays in ownership of the provider
+	Donate bool `json:"donate"`
+}
+
+type UpdateOptions struct {
+	// fields are the fields owned by the owner of the claim. If the owner sets values of those
+	// fields, they will be synced to the other participant.
+	// Mutually exclusive with preservings.
+	Fields []string `json:"fields,omitempty"`
+
+	// Preservings are the fields that are preserved by the konnector during synchronization.
+	// The owner is not able to set those fields. If the owner changes the value of these fields,
+	// their change will be overwritten.
+	Preservings []string `json:"preservings,omitempty"`
+
+	// alwaysRecreate, when true will make the konnector delete the old object and create a new one
+	// instead of updating. Useful for immutable objects.
+	AlwaysRecreate bool `json:"alwaysRecreate,omitempty"`
+}
+
 type ResourceSelector struct {
 	// name of an object within a claimed group/resource.
 	// It matches the metadata.name field of the underlying object.
-	// If namespace is unset, all objects matching that name will be claimed.
+	// If name is unset, all objects in bound namespaces will be claimed.
 	//
 	// +optional
 	// +kubebuilder:validation:Pattern="^([a-z0-9][-a-z0-9_.]*)?[a-z0-9]$"
@@ -151,24 +203,18 @@ type ResourceSelector struct {
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name,omitempty"`
 
-	// namespace containing the named object. Matches metadata.namespace field.
-	// If "name" is unset, all objects from the namespace are being claimed.
-	//
-	// +optional
-	// +kubebuilder:validation:MinLength=1
-	Namespace string `json:"namespace,omitempty"`
+	// +kubebuilder:validation:Enum=Provider;Consumer
+	Owner Owner `json:"owner"`
 
 	//
 	// WARNING: If adding new fields, add them to the XValidation check!
 	//
 }
 
-type ClaimVerbs struct {
-	Provider []Verb `json:"provider"`
-	Consumer []Verb `json:"consumer"`
-}
+type Owner string
 
-type Verb string
+const Provider Owner = "Provider"
+const Consumer Owner = "Consumer"
 
 type APIServiceBindingStatus struct {
 	// providerPrettyName is the pretty name of the service provider cluster. This

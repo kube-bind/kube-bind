@@ -110,10 +110,11 @@ spec:
                 type: object
               permissionClaims:
                 items:
-                  description: PermissionClaim identifies an object by GR and identity
+                  description: "PermissionClaim identifies an object by GR and identity
                     hash. Its purpose is to determine the added permissions that a
                     service provider may request and that a consumer may accept and
-                    allow the service provider access to.
+                    allow the service provider access to. \n TODO fix validation +kubebuilder:validation:XValidation:rule=\"!(self.create.donate
+                    && self.adopt)\",message=\"donate and adopt are mutually exclusive\""
                   properties:
                     adopt:
                       description: adopt set to true means that objects created by
@@ -222,9 +223,6 @@ spec:
                   required:
                   - resource
                   type: object
-                  x-kubernetes-validations:
-                  - message: donate and adopt are mutually exclusive
-                    rule: '!(self.create.donate && self.adopt)'
                 maxItems: 2
                 type: array
                 x-kubernetes-list-map-keys:

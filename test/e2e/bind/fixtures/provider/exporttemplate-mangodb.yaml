@@ -7,3 +7,9 @@ spec:
   APIServiceSelector:
     resource: mangodbs
     group: mangodb.com
+  permissionClaims:
+    - group: ""
+      resource: secrets
+      version: v1
+      selector:
+        owner: Provider

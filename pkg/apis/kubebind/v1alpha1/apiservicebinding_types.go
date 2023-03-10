@@ -119,7 +119,7 @@ const (
 // Its purpose is to determine the added permissions that a service provider may
 // request and that a consumer may accept and allow the service provider access to.
 //
-// +kubebuilder:validation:XValidation:rule="!(self.create.donate && self.adopt)",message="donate and adopt are mutually exclusive"
+// TODO fix validation +kubebuilder:validation:XValidation:rule="!(self.create.donate && self.adopt)",message="donate and adopt are mutually exclusive"
 type PermissionClaim struct {
 	GroupResource `json:","`
 

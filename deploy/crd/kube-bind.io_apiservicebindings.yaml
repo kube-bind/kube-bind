@@ -205,9 +205,6 @@ spec:
                   - resource
                   - state
                   type: object
-                  x-kubernetes-validations:
-                  - message: donate and adopt are mutually exclusive
-                    rule: '!(self.create.donate && self.adopt)'
                 type: array
             required:
             - kubeconfigSecretRef

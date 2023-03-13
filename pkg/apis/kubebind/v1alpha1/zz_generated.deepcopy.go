@@ -1070,9 +1070,21 @@ func (in *PermissionClaim) DeepCopyInto(out *PermissionClaim) {
 	*out = *in
 	out.GroupResource = in.GroupResource
 	out.Selector = in.Selector
-	out.Create = in.Create
-	out.OnConflict = in.OnConflict
-	in.Update.DeepCopyInto(&out.Update)
+	if in.Create != nil {
+		in, out := &in.Create, &out.Create
+		*out = new(CreateOptions)
+		**out = **in
+	}
+	if in.OnConflict != nil {
+		in, out := &in.OnConflict, &out.OnConflict
+		*out = new(OnConflictOptions)
+		**out = **in
+	}
+	if in.Update != nil {
+		in, out := &in.Update, &out.Update
+		*out = new(UpdateOptions)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
@@ -1110,8 +1122,8 @@ func (in *UpdateOptions) DeepCopyInto(out *UpdateOptions) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.Preservings != nil {
-		in, out := &in.Preservings, &out.Preservings
+	if in.Preserving != nil {
+		in, out := &in.Preserving, &out.Preserving
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

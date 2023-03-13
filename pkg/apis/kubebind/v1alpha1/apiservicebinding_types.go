@@ -115,18 +115,18 @@ const (
 	ClaimRejected AcceptablePermissionClaimState = "Rejected"
 )
 
-// PermissionClaim identifies an object by GR and identity hash.
-// Its purpose is to determine the added permissions that a service provider may
+// PermissionClaim selects objects of a GVR that a service provider may
 // request and that a consumer may accept and allow the service provider access to.
 //
 // TODO fix validation +kubebuilder:validation:XValidation:rule="!(self.create.donate && self.adopt)",message="donate and adopt are mutually exclusive"
 type PermissionClaim struct {
 	GroupResource `json:","`
 
+	// +kubebuilder:validation:Required
 	Version string `json:"version"`
 
 	// selector selects which resources are affected by this claim.
-	Selector ResourceSelector `json:"selector,omitempty"`
+	Selector ResourceSelector `json:"selector"`
 
 	// required indicates whether the APIServiceBinding will work if this claim is not accepted.
 	Required bool `json:"required"`
@@ -140,29 +140,28 @@ type PermissionClaim struct {
 	//
 	// create determines whether the kube-bind konnector will sync matching objects from the
 	// provider side down to the consumer cluster.
-	Create CreateOptions `json:"create"`
+	Create *CreateOptions `json:"create"`
 
 	// adopt set to true means that objects created by the consumer are adopted by the provider.
 	// i.e. the provider will become the owner.
-	Adopt bool `json:"adopt"`
+	Adopt bool `json:"adopt,omitempty"`
 
 	// onConflict determines how the conflicts between objects on the consumer side
 	// will be resolved.
-	OnConflict OnConflictOptions `json:"onConflict,omitempty"`
+	OnConflict *OnConflictOptions `json:"onConflict,omitempty"`
 
 	// update lists a number of claimed permissions for the provider.
 	// "field" and "preserving" are mutually exclusive.
-	Update UpdateOptions `json:"update"`
+	Update *UpdateOptions `json:"update,omitempty"`
 }
 
 type OnConflictOptions struct {
 	// providerOverrides will make the provider override any object that might already exist
 	// in the consumer cluster if it has the same namespaced name as a resource created by the
-	// provider.
+	// provider, but is not the result of syncing.
 	ProviderOverwrites bool `json:"providerOverrides"`
 
-	// only for owner provider
-	// When recreateWhenConsumerSideDeleted is true the provider will recreate the object
+	// recreateWhenConsumerSideDeleted set to true means the provider will recreate the object
 	// in case the object is missing on the consumer side. Even if the consumer mistakenly or intentionally
 	// deletes the objet, the provider will recreate it. If the field is set as false,
 	// the provider will not recreate the object in case the object is deleted on the RecreateWhenConsumerSideDeleted
@@ -173,7 +172,7 @@ type OnConflictOptions struct {
 type CreateOptions struct {
 	// donate set to true means that a newly created object by the provider is immediately owned by hte consumer.
 	// If false, the object stays in ownership of the provider
-	Donate bool `json:"donate"`
+	Donate bool `json:"donate,omitempty"`
 }
 
 type UpdateOptions struct {
@@ -185,7 +184,7 @@ type UpdateOptions struct {
 	// Preservings are the fields that are preserved by the konnector during synchronization.
 	// The owner is not able to set those fields. If the owner changes the value of these fields,
 	// their change will be overwritten.
-	Preservings []string `json:"preservings,omitempty"`
+	Preserving []string `json:"preservings,omitempty"`
 
 	// alwaysRecreate, when true will make the konnector delete the old object and create a new one
 	// instead of updating. Useful for immutable objects.
@@ -205,15 +204,14 @@ type ResourceSelector struct {
 
 	// +kubebuilder:validation:Enum=Provider;Consumer
 	Owner Owner `json:"owner"`
-
-	//
-	// WARNING: If adding new fields, add them to the XValidation check!
-	//
 }
 
 type Owner string
 
+// Provider means that the owner of the resource is the Provider.
 const Provider Owner = "Provider"
+
+// Consumer means that the owner of the resource is the Consumer.
 const Consumer Owner = "Consumer"
 
 type APIServiceBindingStatus struct {

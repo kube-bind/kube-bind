@@ -109,7 +109,12 @@ type APIServiceExportRequestResource struct {
 
 	// versions is a list of versions that should be exported. If this is empty
 	// a sensible default is chosen by the service provider.
-	Versions         []string          `json:"versions,omitempty"`
+	Versions []string `json:"versions,omitempty"`
+
+	// permissionClaims records decisions about permission claims requested by the API service provider.
+	// Individual claims can be accepted or rejected. If accepted, the API service provider gets the
+	// requested access to the specified resources in this workspace. Access is granted per
+	// GroupResource, identity, and other properties.
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 

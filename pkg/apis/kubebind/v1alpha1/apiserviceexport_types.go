@@ -80,10 +80,6 @@ type APIServiceExportSpec struct {
 	APIServiceExportCRDSpec `json:",inline"`
 
 	// +optional
-	// +listType=map
-	// +listMapKey=group
-	// +listMapKey=resource
-	// +kubebuilder:validation:MaxItems=2
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 
 	// informerScope is the scope of the APIServiceExport. It can be either Cluster or Namespace.

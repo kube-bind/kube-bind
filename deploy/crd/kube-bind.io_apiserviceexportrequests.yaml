@@ -64,12 +64,17 @@ spec:
                       pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
                       type: string
                     permissionClaims:
+                      description: permissionClaims records decisions about permission
+                        claims requested by the API service provider. Individual claims
+                        can be accepted or rejected. If accepted, the API service
+                        provider gets the requested access to the specified resources
+                        in this workspace. Access is granted per GroupResource, identity,
+                        and other properties.
                       items:
-                        description: "PermissionClaim identifies an object by GR and
-                          identity hash. Its purpose is to determine the added permissions
-                          that a service provider may request and that a consumer
-                          may accept and allow the service provider access to. \n
-                          TODO fix validation +kubebuilder:validation:XValidation:rule=\"!(self.create.donate
+                        description: "PermissionClaim selects objects of a GVR that
+                          a service provider may request and that a consumer may accept
+                          and allow the service provider access to. \n TODO fix validation
+                          +kubebuilder:validation:XValidation:rule=\"!(self.create.donate
                           && self.adopt)\",message=\"donate and adopt are mutually
                           exclusive\""
                         properties:
@@ -108,12 +113,13 @@ spec:
                                 description: providerOverrides will make the provider
                                   override any object that might already exist in
                                   the consumer cluster if it has the same namespaced
-                                  name as a resource created by the provider.
+                                  name as a resource created by the provider, but
+                                  is not the result of syncing.
                                 type: boolean
                               recreateWhenConsumerSideDeleted:
-                                description: only for owner provider When recreateWhenConsumerSideDeleted
-                                  is true the provider will recreate the object in
-                                  case the object is missing on the consumer side.
+                                description: recreateWhenConsumerSideDeleted set to
+                                  true means the provider will recreate the object
+                                  in case the object is missing on the consumer side.
                                   Even if the consumer mistakenly or intentionally
                                   deletes the objet, the provider will recreate it.
                                   If the field is set as false, the provider will
@@ -183,6 +189,7 @@ spec:
                             type: string
                         required:
                         - resource
+                        - version
                         type: object
                       type: array
                     resource:

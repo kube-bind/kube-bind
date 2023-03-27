@@ -131,7 +131,7 @@ func (b *BindOptions) Validate() error {
 }
 
 // Run starts the binding process.
-func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
+func (b *BindOptions) Run(ctx context.Context) error {
 	config, err := b.ClientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -179,7 +179,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}
 
 	sessionID := SessionID()
-	if err := b.authenticate(provider, auth.Endpoint(), sessionID, ClusterID(ns), urlCh); err != nil {
+	if err := b.authenticate(provider, auth.Endpoint(), sessionID, ClusterID(ns)); err != nil {
 		return err
 	}
 

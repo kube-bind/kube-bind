@@ -91,7 +91,7 @@ func validateProviderVersion(providerVersion string) error {
 	return nil
 }
 
-func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, callback, sessionID, clusterID string, urlCh chan<- string) error {
+func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, callback, sessionID, clusterID string) error {
 	var oauth2Method *kubebindv1alpha1.OAuth2CodeGrant
 	for _, m := range provider.AuthenticationMethods {
 		if m.Method == "OAuth2CodeGrant" {
@@ -136,9 +136,6 @@ func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, c
 			QuietZone: 2,
 		}
 		qrterminal.GenerateWithConfig(u.String(), config)
-	}
-	if urlCh != nil {
-		urlCh <- u.String()
 	}
 
 	return nil

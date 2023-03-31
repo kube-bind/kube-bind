@@ -64,6 +64,9 @@ type BindOptions struct {
 	// skipKonnector skips the deployment of the konnector.
 	SkipKonnector bool
 
+	// The konnector image to use and override default konnector image
+	KonnectorImageOverride string
+
 	// Runner is runs the command. It can be replaced in tests.
 	Runner func(cmd *exec.Cmd) error
 
@@ -95,6 +98,7 @@ func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
+	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
 }
 
 // Complete ensures all fields are initialized.
@@ -271,6 +275,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 			"apiservice",
 			"--remote-kubeconfig-namespace", secret.Namespace,
 			"--remote-kubeconfig-name", secret.Name,
+			"--konnector-image", b.KonnectorImageOverride,
 			"-f", "-",
 		}
 		b.flags.VisitAll(func(flag *pflag.Flag) {

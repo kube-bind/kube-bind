@@ -114,7 +114,7 @@ func CRD(fs embed.FS, gr metav1.GroupResource) (*apiextensionsv1.CustomResourceD
 
 	crd, ok := obj.(*apiextensionsv1.CustomResourceDefinition)
 	if !ok {
-		return nil, fmt.Errorf("decoded CRD %s into incorrect type, got %T, wanted %T", gr.String(), crd, &apiextensionsv1.CustomResourceDefinition{})
+		return nil, fmt.Errorf("decoded CRD %s into incorrect type, got %T, wanted %T", gr.String(), obj, &apiextensionsv1.CustomResourceDefinition{})
 	}
 
 	return crd, nil

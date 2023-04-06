@@ -275,7 +275,6 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 			"apiservice",
 			"--remote-kubeconfig-namespace", secret.Namespace,
 			"--remote-kubeconfig-name", secret.Name,
-			"--konnector-image", b.KonnectorImageOverride,
 			"-f", "-",
 		}
 		b.flags.VisitAll(func(flag *pflag.Flag) {
@@ -283,6 +282,10 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 				args = append(args, "--"+flag.Name+"="+flag.Value.String())
 			}
 		})
+
+		if b.KonnectorImageOverride != "" {
+			args = append(args, "--konnector-image"+b.KonnectorImageOverride)
+		}
 
 		// TODO: support passing through the base options
 

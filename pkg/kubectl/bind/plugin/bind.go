@@ -284,7 +284,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		})
 
 		if b.KonnectorImageOverride != "" {
-			args = append(args, "--konnector-image"+b.KonnectorImageOverride)
+			args = append(args, "--konnector-image"+"="+b.KonnectorImageOverride)
 		}
 
 		// TODO: support passing through the base options

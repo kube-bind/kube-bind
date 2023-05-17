@@ -256,11 +256,6 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	if !ok {
-		logger.Info("failed to get id_token from token", "error", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
 
 	sessionCookie := cookie.SessionState{
 		CreatedAt:    time.Now(),

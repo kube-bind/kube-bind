@@ -77,7 +77,7 @@ spec:
                       properties:
                         donate:
                           description: donate set to true means that a newly created
-                            object by the provider is immediately owned by hte consumer.
+                            object by the provider is immediately owned by the consumer.
                             If false, the object stays in ownership of the provider
                           type: boolean
                       type: object

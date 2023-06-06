@@ -170,7 +170,7 @@ type OnConflictOptions struct {
 }
 
 type CreateOptions struct {
-	// donate set to true means that a newly created object by the provider is immediately owned by hte consumer.
+	// donate set to true means that a newly created object by the provider is immediately owned by the consumer.
 	// If false, the object stays in ownership of the provider
 	Donate bool `json:"donate,omitempty"`
 }

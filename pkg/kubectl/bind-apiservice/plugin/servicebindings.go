@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kube Bind Authors.
+Copyright 2023 The Kube Bind Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,8 +18,10 @@ package plugin
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -139,13 +141,156 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 	return bindings, nil
 }
 
+func printPermissionClaim(w io.Writer, p kubebindv1alpha1.PermissionClaim) error {
+	var b bytes.Buffer
+
+	var groupResource string
+	if p.GroupResource.Group != "" {
+		groupResource = fmt.Sprintf("%s objects (apiVersion: \"%s/%s\")", p.GroupResource.Resource, p.GroupResource.Group, p.Version)
+	} else {
+		groupResource = fmt.Sprintf("%s objects (apiVersion: \"%s\")", p.GroupResource.Resource, p.Version)
+	}
+
+	if err := writeFirstLines(&b, groupResource, p); err != nil {
+		return err
+	}
+
+	if err := writeOnConflict(&b, p); err != nil {
+		return err
+	}
+
+	if err := writeUpdateClause(&b, p); err != nil {
+		return err
+	}
+
+	if err := writeRequiredAndAcceptance(&b, p.Required); err != nil {
+		return err
+	}
+
+	_, err := fmt.Fprint(w, b.String())
+	return err
+}
+
+func writeFirstLines(b *bytes.Buffer, groupResource string, claim kubebindv1alpha1.PermissionClaim) error {
+	var err error
+
+	donate := false
+	if claim.Create != nil {
+		donate = claim.Create.Donate
+	}
+	adopt := claim.Adopt
+
+	name := ""
+	var owner kubebindv1alpha1.Owner
+	if (claim.Selector != kubebindv1alpha1.ResourceSelector{}) {
+		name = claim.Selector.Name
+		owner = claim.Selector.Owner
+	}
+
+	switch {
+	case !donate && !adopt:
+		groupResource = "read " + groupResource
+	case donate && !adopt:
+		groupResource = "create user owned " + groupResource
+	case !donate && adopt:
+		groupResource = "have ownership of " + groupResource
+	}
+
+	_, err = fmt.Fprintf(b, "The provider wants to %s on your cluster.", groupResource)
+
+	if owner == kubebindv1alpha1.Consumer {
+		owner = "you"
+	}
+	if owner == kubebindv1alpha1.Provider {
+		owner = "the provider"
+	}
+	switch {
+	case owner == "" && name == "":
+		_, err = fmt.Fprintf(b, "\n")
+	case owner != "" && name == "":
+		_, err = fmt.Fprintf(b, " This only applies to objects which are owned by %s.\n", owner)
+	case owner == "" && name != "":
+		_, err = fmt.Fprintf(b, " This only applies to objects which are referenced with:\n\tname: \"%s\"\n", name)
+	case owner != "" && name != "":
+		_, err = fmt.Fprintf(b, " This only applies to objects which are owned by %s and to objects which are referenced with:\n	name: \"%s\"\n", owner, name)
+	}
+
+	return err
+
+}
+
+func writeOnConflict(b *bytes.Buffer, claim kubebindv1alpha1.PermissionClaim) error {
+	var err error
+
+	if claim.OnConflict != nil {
+		switch {
+		case claim.OnConflict.ProviderOverwrites && claim.OnConflict.RecreateWhenConsumerSideDeleted:
+			_, err = b.WriteString("Conflicting objects will be overwritten and created objects will be recreated upon deletion.\n")
+		case claim.OnConflict.ProviderOverwrites:
+			_, err = b.WriteString("Conflicting objects will be overwritten and created objects will not be recreated upon deletion.\n")
+		case claim.OnConflict.RecreateWhenConsumerSideDeleted:
+			_, err = b.WriteString("Conflicting objects will not be overwritten and created objects will be recreated upon deletion.\n")
+		default: //Do nothing
+		}
+	}
+	return err
+}
+
+func writeUpdateClause(b *bytes.Buffer, claim kubebindv1alpha1.PermissionClaim) error {
+	var err error
+
+	if claim.Update == nil {
+		return nil
+	}
+
+	if claim.Update.Fields != nil {
+		owner := "the provider"
+		if claim.Create != nil && claim.Create.Donate {
+			owner = "the user"
+		}
+		_, err = fmt.Fprintf(b, "The following fields of the objects will still be able to be changed by %s:\n", owner)
+	}
+	if claim.Update.Preserving != nil {
+		_, err = b.WriteString("The following fields of the objects will be overwritten with their initial values, if they are modified:\n")
+	}
+
+	for _, s := range append(claim.Update.Fields, claim.Update.Preserving...) {
+		_, err = fmt.Fprintf(b, "\t\"%s\"\n", s)
+	}
+
+	if claim.Update.AlwaysRecreate {
+		_, err = b.WriteString("Modification of said objects will by handled by deletion and recreation of said objects.\n")
+	}
+
+	return err
+}
+
+func writeRequiredAndAcceptance(b *bytes.Buffer, required bool) error {
+	var err error
+
+	if required {
+		_, err = fmt.Fprint(b, "Accepting this Permission is required in order to proceed.\n")
+	}
+	if !required {
+		_, err = fmt.Fprint(b, "Accepting this Permission is optional.\n")
+	}
+	if err != nil {
+		return nil
+	}
+
+	_, err = fmt.Fprint(b, "Do you accept this Permission? [No,Yes]\n")
+
+	return err
+}
+
 func (opt BindAPIServiceOptions) promptYesNo(p kubebindv1alpha1.PermissionClaim) (bool, error) {
 
-	fmt.Printf("%+v", opt.Options.IOStreams)
 	reader := bufio.NewReader(opt.Options.IOStreams.In)
 
 	for {
-		fmt.Fprintf(opt.Options.IOStreams.Out, "binding wants permission\n%+v\n[Y/N]", p)
+		if err := printPermissionClaim(opt.Options.Out, p); err != nil {
+			return false, err
+		}
 
 		response, err := reader.ReadString('\n')
 		if err != nil {

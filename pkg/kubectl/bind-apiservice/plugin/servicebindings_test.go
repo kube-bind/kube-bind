@@ -46,7 +46,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required: true,
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -62,7 +62,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required: false,
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is optional.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -79,8 +79,9 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required: true,
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider and to objects which are referenced with:\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") which are referenced with:\n" +
 				"\tname: \"bar\"\n" +
+				"on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -96,7 +97,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required: true,
 			},
-			"The provider wants to read foo objects (apiVersion: \"example.com/v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"example.com/v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -113,8 +114,9 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required: true,
 			},
-			"The provider wants to read foo objects (apiVersion: \"example.com/v1\") on your cluster. This only applies to objects which are owned by the provider and to objects which are referenced with:\n" +
+			"The provider wants to write foo objects (apiVersion: \"example.com/v1\") which are referenced with:\n" +
 				"\tname: \"bar\"\n" +
+				"on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -131,11 +133,11 @@ func TestHumanReadablePromt(t *testing.T) {
 				Required: true,
 				Create:   &kubebindv1alpha1.CreateOptions{},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
-		{"Owner=Provider,CreateOptions=false",
+		{"Owner=Provider,CreateOptions.Donate=false",
 			kubebindv1alpha1.PermissionClaim{
 				GroupResource: kubebindv1alpha1.GroupResource{
 					Group:    "",
@@ -150,7 +152,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Donate: false,
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -169,7 +171,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Donate: true,
 				},
 			},
-			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -186,7 +188,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				Required:   true,
 				OnConflict: &kubebindv1alpha1.OnConflictOptions{},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -205,7 +207,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					ProviderOverwrites: false,
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -224,7 +226,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					ProviderOverwrites: true,
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Conflicting objects will be overwritten and created objects will not be recreated upon deletion.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
@@ -244,7 +246,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					RecreateWhenConsumerSideDeleted: false,
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -263,7 +265,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					RecreateWhenConsumerSideDeleted: true,
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Conflicting objects will not be overwritten and created objects will be recreated upon deletion.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
@@ -281,7 +283,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				Required: true,
 				Update:   &kubebindv1alpha1.UpdateOptions{},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -300,8 +302,8 @@ func TestHumanReadablePromt(t *testing.T) {
 					Fields: []string{"foo", "bar"},
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
-				"The following fields of the objects will still be able to be changed by the provider:\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
+				"The following fields of the objects will still be able to be changed by the provider:\n" + // TODO
 				"\t\"foo\"\n" +
 				"\t\"bar\"\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
@@ -322,8 +324,9 @@ func TestHumanReadablePromt(t *testing.T) {
 					Preserving: []string{"foo", "bar"},
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
-				"The following fields of the objects will be overwritten with their initial values, if they are modified:\n" + "	\"foo\"\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
+				"The following fields of the objects will be preserved by the provider:\n" +
+				"\t\"foo\"\n" +
 				"\t\"bar\"\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
@@ -343,7 +346,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					AlwaysRecreate: true,
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
+			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Modification of said objects will by handled by deletion and recreation of said objects.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
@@ -366,8 +369,8 @@ func TestHumanReadablePromt(t *testing.T) {
 					Fields: []string{"foo", "bar"},
 				},
 			},
-			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
-				"The following fields of the objects will still be able to be changed by the user:\n" +
+			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster.\n" +
+				"The following fields of the objects will still be able to be changed by the provider:\n" +
 				"\t\"foo\"\n" +
 				"\t\"bar\"\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
@@ -391,8 +394,9 @@ func TestHumanReadablePromt(t *testing.T) {
 					Preserving: []string{"foo", "bar"},
 				},
 			},
-			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by the provider.\n" +
-				"The following fields of the objects will be overwritten with their initial values, if they are modified:\n" + "	\"foo\"\n" +
+			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster.\n" +
+				"The following fields of the objects will be preserved by the provider:\n" +
+				"\t\"foo\"\n" +
 				"\t\"bar\"\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
@@ -409,7 +413,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required: true,
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
+			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -426,8 +430,9 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required: true,
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you and to objects which are referenced with:\n" +
+			"The provider wants to read foo objects (apiVersion: \"v1\") which are referenced with:\n" +
 				"\tname: \"bar\"\n" +
+				"on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -443,7 +448,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required: true,
 			},
-			"The provider wants to read foo objects (apiVersion: \"example.com/v1\") on your cluster. This only applies to objects which are owned by you.\n" +
+			"The provider wants to read foo objects (apiVersion: \"example.com/v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -460,8 +465,9 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required: true,
 			},
-			"The provider wants to read foo objects (apiVersion: \"example.com/v1\") on your cluster. This only applies to objects which are owned by you and to objects which are referenced with:\n" +
+			"The provider wants to read foo objects (apiVersion: \"example.com/v1\") which are referenced with:\n" +
 				"\tname: \"bar\"\n" +
+				"on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -478,7 +484,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				Adopt:    true,
 				Required: true,
 			},
-			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
+			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -496,8 +502,9 @@ func TestHumanReadablePromt(t *testing.T) {
 				Adopt:    true,
 				Required: true,
 			},
-			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you and to objects which are referenced with:\n" +
+			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") which are referenced with:\n" +
 				"\tname: \"bar\"\n" +
+				"on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -514,7 +521,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				Required:   true,
 				OnConflict: &kubebindv1alpha1.OnConflictOptions{},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
+			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -533,7 +540,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					ProviderOverwrites: false,
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
+			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -552,7 +559,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					ProviderOverwrites: true,
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
+			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Conflicting objects will be overwritten and created objects will not be recreated upon deletion.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
@@ -570,7 +577,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				Required: true,
 				Update:   &kubebindv1alpha1.UpdateOptions{},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
+			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -589,7 +596,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Fields: []string{"foo", "bar"},
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
+			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"The following fields of the objects will still be able to be changed by the provider:\n" +
 				"\t\"foo\"\n" +
 				"\t\"bar\"\n" +
@@ -611,8 +618,9 @@ func TestHumanReadablePromt(t *testing.T) {
 					Preserving: []string{"foo", "bar"},
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
-				"The following fields of the objects will be overwritten with their initial values, if they are modified:\n" + "	\"foo\"\n" +
+			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
+				"The following fields of the objects will be preserved by the provider:\n" +
+				"\t\"foo\"\n" +
 				"\t\"bar\"\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
@@ -632,7 +640,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					AlwaysRecreate: true,
 				},
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
+			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Modification of said objects will by handled by deletion and recreation of said objects.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
@@ -653,7 +661,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Fields: []string{"foo", "bar"},
 				},
 			},
-			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
+			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"The following fields of the objects will still be able to be changed by the provider:\n" +
 				"\t\"foo\"\n" +
 				"\t\"bar\"\n" +
@@ -676,8 +684,8 @@ func TestHumanReadablePromt(t *testing.T) {
 					Preserving: []string{"foo", "bar"},
 				},
 			},
-			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are owned by you.\n" +
-				"The following fields of the objects will be overwritten with their initial values, if they are modified:\n" + "	\"foo\"\n" +
+			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster.\n" +
+				"The following fields of the objects will be preserved by the provider:\n" + "	\"foo\"\n" +
 				"\t\"bar\"\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
@@ -692,7 +700,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				Selector: kubebindv1alpha1.ResourceSelector{},
 				Required: true,
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
+			"The provider wants to read and write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -708,8 +716,9 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required: true,
 			},
-			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster. This only applies to objects which are referenced with:\n" +
+			"The provider wants to read and write foo objects (apiVersion: \"v1\") which are referenced with:\n" +
 				"\tname: \"bar\"\n" +
+				"on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
@@ -746,7 +755,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 			},
 			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster.\n" +
-				"The following fields of the objects will still be able to be changed by the user:\n" +
+				"The following fields of the objects will still be able to be changed by the provider:\n" +
 				"\t\"spec\"\n" +
 				"Accepting this Permission is optional.\n" +
 				"Do you accept this Permission? [No,Yes]\n",

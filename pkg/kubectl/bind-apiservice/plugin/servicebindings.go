@@ -187,33 +187,33 @@ func writeFirstLines(b *bytes.Buffer, groupResource string, claim kubebindv1alph
 		owner = claim.Selector.Owner
 	}
 
+	var verb string
+	switch owner {
+	case kubebindv1alpha1.Provider:
+		verb = "write"
+	case kubebindv1alpha1.Consumer:
+		verb = "read"
+	default:
+		verb = "read and write"
+	}
+
 	switch {
 	case !donate && !adopt:
-		groupResource = "read " + groupResource
+		groupResource = verb + " " + groupResource
 	case donate && !adopt:
 		groupResource = "create user owned " + groupResource
 	case !donate && adopt:
 		groupResource = "have ownership of " + groupResource
 	}
 
-	_, err = fmt.Fprintf(b, "The provider wants to %s on your cluster.", groupResource)
+	var ref string
+	if name != "" {
+		ref = fmt.Sprintf(" which are referenced with:\n\tname: \"%s\"\n", name)
+	} else {
+		ref = " "
+	}
 
-	if owner == kubebindv1alpha1.Consumer {
-		owner = "you"
-	}
-	if owner == kubebindv1alpha1.Provider {
-		owner = "the provider"
-	}
-	switch {
-	case owner == "" && name == "":
-		_, err = fmt.Fprintf(b, "\n")
-	case owner != "" && name == "":
-		_, err = fmt.Fprintf(b, " This only applies to objects which are owned by %s.\n", owner)
-	case owner == "" && name != "":
-		_, err = fmt.Fprintf(b, " This only applies to objects which are referenced with:\n\tname: \"%s\"\n", name)
-	case owner != "" && name != "":
-		_, err = fmt.Fprintf(b, " This only applies to objects which are owned by %s and to objects which are referenced with:\n	name: \"%s\"\n", owner, name)
-	}
+	_, err = fmt.Fprintf(b, "The provider wants to %s%son your cluster.\n", groupResource, ref)
 
 	return err
 
@@ -244,14 +244,10 @@ func writeUpdateClause(b *bytes.Buffer, claim kubebindv1alpha1.PermissionClaim) 
 	}
 
 	if claim.Update.Fields != nil {
-		owner := "the provider"
-		if claim.Create != nil && claim.Create.Donate {
-			owner = "the user"
-		}
-		_, err = fmt.Fprintf(b, "The following fields of the objects will still be able to be changed by %s:\n", owner)
+		_, err = fmt.Fprintf(b, "The following fields of the objects will still be able to be changed by the provider:\n")
 	}
 	if claim.Update.Preserving != nil {
-		_, err = b.WriteString("The following fields of the objects will be overwritten with their initial values, if they are modified:\n")
+		_, err = b.WriteString("The following fields of the objects will be preserved by the provider:\n")
 	}
 
 	for _, s := range append(claim.Update.Fields, claim.Update.Preserving...) {

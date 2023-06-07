@@ -219,11 +219,6 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 			continue
 		}
 
-		if claim.Selector.Owner == kubebindv1alpha1.Consumer {
-			// TODO implement upsync
-			continue
-		}
-
 		claimGVR := runtimeschema.GroupVersionResource{
 			Group:    claim.Group,
 			Version:  claim.Version,
@@ -252,6 +247,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 		}
 		claimedCtrl, err := claimedresources.NewController(
 			claimGVR,
+			claim.PermissionClaim,
 			r.providerNamespace,
 			r.consumerConfig,
 			r.providerConfig,

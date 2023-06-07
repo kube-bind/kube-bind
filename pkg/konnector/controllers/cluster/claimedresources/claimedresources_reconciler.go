@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kube Bind Authors.
+Copyright 2023 The Kube Bind Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"context"
 	"reflect"
 
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -28,11 +29,14 @@ import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
-const annotation = "kube-bind.io/claimedresource"
+const annotation = "kube-bind.io/resource-owner"
 
 type readReconciler struct {
-	getServiceNamespace func(upstreamNamespace string) (*kubebindv1alpha1.APIServiceNamespace, error)
-	getProviderObject   func(ns, name string) (*unstructured.Unstructured, error)
+	getServiceNamespace  func(upstreamNamespace string) (*kubebindv1alpha1.APIServiceNamespace, error)
+	getProviderObject    func(ns, name string) (*unstructured.Unstructured, error)
+	createProviderObject func(ctx context.Context, obj *unstructured.Unstructured) error
+	updateProviderObject func(ctx context.Context, obj *unstructured.Unstructured) error
+	deleteProviderObject func(ctx context.Context, ns, name string) error
 
 	getConsumerObject    func(ctx context.Context, ns, name string) (*unstructured.Unstructured, error)
 	updateConsumerObject func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
@@ -41,14 +45,14 @@ type readReconciler struct {
 }
 
 // reconcile syncs upstream claimed resources to downstream.
-func (r *readReconciler) reconcile(ctx context.Context, upstreamNS, name string) error {
+func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string) error {
 	logger := klog.FromContext(ctx)
-	logger = logger.WithValues("name", name, "upstreamNamespace", upstreamNS)
+	logger = logger.WithValues("name", name, "providerNamespace", providerNS)
 
 	logger.Info("reconciling object")
-	downstreamNS := ""
-	if upstreamNS != "" {
-		sn, err := r.getServiceNamespace(upstreamNS)
+	consumerNS := ""
+	if providerNS != "" {
+		sn, err := r.getServiceNamespace(providerNS)
 		if err != nil && !errors.IsNotFound(err) {
 			return err
 		} else if errors.IsNotFound(err) {
@@ -60,31 +64,135 @@ func (r *readReconciler) reconcile(ctx context.Context, upstreamNS, name string)
 			return err // hoping the status is set soon.
 		}
 
-		logger = logger.WithValues("upstreamNamespace", sn.Status.Namespace)
+		logger = logger.WithValues("providerNamespace", sn.Status.Namespace)
+		consumerNS = sn.Name
+		logger = logger.WithValues("consumerNamespace", consumerNS)
+
 		ctx = klog.NewContext(ctx, logger)
-
-		// continue with downstream namespace
-		downstreamNS = sn.Name
-		logger = logger.WithValues("downstreamNamespace", downstreamNS)
 	}
 
-	obj, err := r.getProviderObject(upstreamNS, name)
-	if errors.IsNotFound(err) {
-		err := r.deleteConsumerObject(ctx, downstreamNS, name)
-		if errors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	} else if err != nil {
-		return err
+	providerObj, providerErr := r.getProviderObject(providerNS, name)
+	if providerErr != nil && !errors.IsNotFound(providerErr) {
+		return providerErr
+	}
+	consumerObj, consumerErr := r.getConsumerObject(ctx, consumerNS, name)
+	if consumerErr != nil && !errors.IsNotFound(consumerErr) {
+		return consumerErr
 	}
 
-	if obj.GetDeletionTimestamp() != nil && !obj.GetDeletionTimestamp().IsZero() {
-		logger.Info("Deleting downstream object because it has been deleted upstream", "downStreamNamespace", upstreamNS, "downstreamName", obj.GetName())
-		if err := r.deleteConsumerObject(ctx, upstreamNS, obj.GetName()); err != nil {
+	if errors.IsNotFound(providerErr) && errors.IsNotFound(consumerErr) {
+		// Nothing to do
+		return nil
+	}
+
+	// Determine owner
+	owner := determineOwner(providerObj, consumerObj)
+	logger = logger.WithValues("owner", owner)
+
+	switch owner {
+	case kubebindv1alpha1.Provider:
+		if errors.IsNotFound(providerErr) {
+			err := r.deleteConsumerObject(ctx, consumerNS, name)
+			if errors.IsNotFound(err) {
+				return nil
+			}
 			return err
 		}
+		ownerCandidate := providerObj.DeepCopy()
+
+		// Set owner annotation if needed
+		r.makeProviderOwner(ctx, ownerCandidate)
+		if !equality.Semantic.DeepEqual(providerObj, ownerCandidate) {
+			if err := r.updateProviderObject(ctx, ownerCandidate); err != nil {
+				return err
+			}
+		}
+
+		if errors.IsNotFound(consumerErr) {
+			logger.Info("Creating missing downstream object", "downstreamNamespace", providerNS, "downstreamName", providerObj.GetName())
+
+			candidate := candidateFromOwnerObj(consumerNS, providerObj)
+			r.makeProviderOwner(ctx, candidate)
+
+			if _, err := r.createConsumerObject(ctx, candidate); err != nil {
+				return err
+			}
+
+			return nil
+		}
+
+		if providerObj.GetDeletionTimestamp() != nil && !providerObj.GetDeletionTimestamp().IsZero() {
+			logger.Info("Deleting downstream object because it has been deleted upstream", "downStreamNamespace", providerNS, "downstreamName", providerObj.GetName())
+			if err := r.deleteConsumerObject(ctx, providerNS, providerObj.GetName()); err != nil {
+				return err
+			}
+		}
+
+		candidate := candidateFromOwnerObj(consumerNS, providerObj)
+		if !reflect.DeepEqual(candidate, consumerObj) {
+			logger.Info("Updating downstream object data", "downstreamNamespace", consumerNS, "downstreamName", consumerObj.GetName())
+			if _, err := r.updateConsumerObject(ctx, candidate); err != nil {
+				logger.Error(err, "error updating consumer object")
+				return err
+			}
+		}
+
+	case kubebindv1alpha1.Consumer:
+		if errors.IsNotFound(consumerErr) {
+			logger.Info("Owner copy of the object is gone, deleting downstream object", "name", name, "namespace", providerNS)
+			err := r.deleteProviderObject(ctx, providerNS, name)
+			if errors.IsNotFound(err) {
+				return nil
+			}
+			return err
+		}
+
+		ownerCandidate := consumerObj.DeepCopy()
+		r.makeConsumerOwner(ownerCandidate)
+		if !equality.Semantic.DeepEqual(consumerObj, ownerCandidate) {
+			logger.Info("setting owner annotation for Consumer object")
+			if _, err := r.updateConsumerObject(ctx, ownerCandidate); err != nil {
+				return err
+			}
+		}
+
+		candidate := candidateFromOwnerObj(providerNS, ownerCandidate)
+		r.makeConsumerOwner(candidate)
+
+		if errors.IsNotFound(providerErr) {
+			logger.Info("creating consumer owned object at provider")
+			return r.createProviderObject(ctx, candidate)
+		}
+
+		if !equality.Semantic.DeepEqual(providerObj, candidate) {
+			logger.Info("updating consumer owned object at provider")
+			return r.updateProviderObject(ctx, candidate)
+		}
 	}
+
+	return nil
+}
+
+func (r readReconciler) makeConsumerOwner(obj *unstructured.Unstructured) {
+	a := obj.GetAnnotations()
+	if a == nil {
+		a = map[string]string{}
+	}
+	a[annotation] = string(kubebindv1alpha1.Consumer)
+	obj.SetAnnotations(a)
+}
+
+func (r readReconciler) makeProviderOwner(ctx context.Context, obj *unstructured.Unstructured) {
+
+	a := obj.GetAnnotations()
+	if a == nil {
+		a = map[string]string{}
+	}
+	a[annotation] = string(kubebindv1alpha1.Provider)
+	obj.SetAnnotations(a)
+}
+
+func candidateFromOwnerObj(downstreamNS string, obj *unstructured.Unstructured) *unstructured.Unstructured {
 	// clean up object
 	candidate := obj.DeepCopy()
 	candidate.SetUID("")
@@ -95,31 +203,38 @@ func (r *readReconciler) reconcile(ctx context.Context, upstreamNS, name string)
 	candidate.SetDeletionGracePeriodSeconds(nil)
 	candidate.SetOwnerReferences(nil)
 	candidate.SetFinalizers(nil)
-	candidate.SetAnnotations(map[string]string{
-		annotation: "true"},
-	)
 	candidate.SetNamespace(downstreamNS)
 
-	downstream, err := r.getConsumerObject(ctx, downstreamNS, name)
+	return candidate
+}
 
-	if err != nil && !errors.IsNotFound(err) {
-		logger.Info("failed to get downstream object", "error", err, "downstreamNamespace", upstreamNS, "downstreamName", obj.GetName())
-		return err
-	} else if errors.IsNotFound(err) {
-		logger.Info("Creating missing downstream object", "downstreamNamespace", upstreamNS, "downstreamName", obj.GetName())
-		if _, err := r.createConsumerObject(ctx, candidate); err != nil {
-			return err
+// determineOwner determines the owner of a resource given at least one object exists either on the
+// consumer or provider side
+func determineOwner(providerObj, consumerObj *unstructured.Unstructured) kubebindv1alpha1.Owner {
+	if providerObj != nil {
+		ownerAnn := providerObj.GetAnnotations()[annotation]
+		switch ownerAnn {
+		case "Provider":
+			return kubebindv1alpha1.Provider
+		case "Consumer":
+			return kubebindv1alpha1.Consumer
 		}
-
-		return nil
-	}
-
-	if !reflect.DeepEqual(candidate, downstream) {
-		logger.Info("Updating downstream object data", "downstreamNamespace", upstreamNS, "downstreamName", downstream.GetName())
-		if _, err := r.updateConsumerObject(ctx, candidate); err != nil {
-			return err
+		if ownerAnn == "" && consumerObj == nil {
+			return kubebindv1alpha1.Provider
 		}
 	}
 
-	return nil
+	if consumerObj != nil {
+		ownerAnn := consumerObj.GetAnnotations()[annotation]
+		switch ownerAnn {
+		case "Provider":
+			return kubebindv1alpha1.Provider
+		case "Consumer":
+			return kubebindv1alpha1.Consumer
+		}
+		if ownerAnn == "" && providerObj == nil {
+			return kubebindv1alpha1.Consumer
+		}
+	}
+	panic("should not happen")
 }

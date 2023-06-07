@@ -32,6 +32,8 @@ func TestDownstreamCreation(t *testing.T) {
 	t.Parallel()
 
 	var createdObj *unstructured.Unstructured
+	var providerObj *unstructured.Unstructured
+
 	r := readReconciler{
 		getServiceNamespace: defaultNamespace,
 		getProviderObject: func(ns, name string) (*unstructured.Unstructured, error) {
@@ -49,6 +51,10 @@ func TestDownstreamCreation(t *testing.T) {
 			createdObj = ob
 			return ob, nil
 		},
+		updateProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) error {
+			providerObj = obj
+			return nil
+		},
 	}
 
 	err := r.reconcile(context.TODO(), "cluster-x-default", "dummy")
@@ -60,8 +66,59 @@ func TestDownstreamCreation(t *testing.T) {
 		t.Error("reconcile did not create an object", createdObj)
 	}
 
-	if v, ok := createdObj.GetAnnotations()["kube-bind.io/claimedresource"]; !ok || v != "true" {
-		t.Error("created object did not have 'kube-bind.io/claimedresource: true' annotation")
+	if v, ok := createdObj.GetAnnotations()["kube-bind.io/resource-owner"]; !ok || v != "Provider" {
+		t.Error("created object did not have 'kube-bind.io/resource-owner: Provider' annotation", createdObj)
+	}
+	if v, ok := providerObj.GetAnnotations()["kube-bind.io/resource-owner"]; !ok || v != "Provider" {
+		t.Error("pre-existing object was not updated to be the owner")
+	}
+}
+
+func TestUpstreamCreation(t *testing.T) {
+	t.Parallel()
+
+	var createdObj *unstructured.Unstructured
+	var providerObj *unstructured.Unstructured
+
+	r := readReconciler{
+		getServiceNamespace: defaultNamespace,
+		getProviderObject: func(ns, name string) (*unstructured.Unstructured, error) {
+			return notFound(context.TODO(), ns, name)
+		},
+		getConsumerObject: func(ctx context.Context, ns, name string) (*unstructured.Unstructured, error) {
+			return &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"name":      "dummy",
+						"namespace": "cluster-x-default",
+					},
+				},
+			}, nil
+		},
+		createProviderObject: func(ctx context.Context, ob *unstructured.Unstructured) error {
+			createdObj = ob
+			return nil
+		},
+		updateConsumerObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+			providerObj = obj
+			return obj, nil
+		},
+	}
+
+	err := r.reconcile(context.TODO(), "cluster-x-default", "dummy")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if createdObj == nil {
+		t.Error("reconcile did not create an object", createdObj)
+	}
+
+	if v, ok := createdObj.GetAnnotations()["kube-bind.io/resource-owner"]; !ok || v != "Consumer" {
+		t.Error("created object did not have 'kube-bind.io/resource-owner: Consumer' annotation", createdObj)
+	}
+	if v, ok := providerObj.GetAnnotations()["kube-bind.io/resource-owner"]; !ok || v != "Consumer" {
+		t.Error("pre-existing object was not updated to be the owner")
 	}
 }
 
@@ -81,7 +138,46 @@ func defaultNamespace(upstreamNamespace string) (*v1alpha1.APIServiceNamespace, 
 func notFound(_ context.Context, ns, name string) (*unstructured.Unstructured, error) {
 	return nil, errors.NewNotFound(v1.Resource("Secret"), name)
 }
+func TestUpstreamDeletion(t *testing.T) {
+	t.Parallel()
 
+	var deleteNsn struct {
+		ns, name string
+	}
+	r := readReconciler{
+		getServiceNamespace: defaultNamespace,
+		getConsumerObject:   notFound,
+		getProviderObject: func(ns, name string) (*unstructured.Unstructured, error) {
+			return &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							"kube-bind.io/resource-owner": "Consumer",
+						},
+						"name":      "dummy",
+						"namespace": "default",
+					},
+				},
+			}, nil
+		},
+		deleteProviderObject: func(ctx context.Context, ns, name string) error {
+			deleteNsn = struct {
+				ns   string
+				name string
+			}{ns: ns, name: name}
+			return nil
+		},
+	}
+
+	err := r.reconcile(context.TODO(), "cluster-x-default", "dummy")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if deleteNsn.name != "dummy" || deleteNsn.ns != "cluster-x-default" {
+		t.Error("reconcile deleted the wrong object", deleteNsn)
+	}
+}
 func TestDownstreamDeletion(t *testing.T) {
 	t.Parallel()
 
@@ -93,7 +189,19 @@ func TestDownstreamDeletion(t *testing.T) {
 		getProviderObject: func(ns, name string) (*unstructured.Unstructured, error) {
 			return nil, errors.NewNotFound(v1.Resource("Secret"), name)
 		},
-		getConsumerObject: notFound,
+		getConsumerObject: func(ctx context.Context, ns, name string) (*unstructured.Unstructured, error) {
+			return &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							"kube-bind.io/resource-owner": "Provider",
+						},
+						"name":      "dummy",
+						"namespace": "cluster-x-default",
+					},
+				},
+			}, nil
+		},
 		deleteConsumerObject: func(ctx context.Context, ns, name string) error {
 			deleteNsn = struct {
 				ns   string
@@ -124,14 +232,25 @@ func TestDownstreamDeletionAlreadyGone(t *testing.T) {
 		getProviderObject: func(ns, name string) (*unstructured.Unstructured, error) {
 			return nil, errors.NewNotFound(v1.Resource("Secret"), name)
 		},
-		getConsumerObject: notFound,
+		getConsumerObject: func(ctx context.Context, ns, name string) (*unstructured.Unstructured, error) {
+			return &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"annotations": map[string]interface{}{
+							"kube-bind.io/resource-owner": "Provider",
+						},
+						"name":      "dummy",
+						"namespace": "cluster-x-default",
+					},
+				},
+			}, nil
+		},
 		deleteConsumerObject: func(ctx context.Context, ns, name string) error {
 			deleteNsn = struct {
 				ns   string
 				name string
 			}{ns: ns, name: name}
 			return errors.NewNotFound(v1.Resource("Secret"), name)
-
 		},
 	}
 
@@ -142,6 +261,65 @@ func TestDownstreamDeletionAlreadyGone(t *testing.T) {
 
 	if deleteNsn.name != "dummy" || deleteNsn.ns != "default" {
 		t.Error("reconcile deleted the wrong object", deleteNsn)
+	}
+}
+
+func TestDownstreamUpdate(t *testing.T) {
+	t.Parallel()
+
+	var updateObj *unstructured.Unstructured
+	r := readReconciler{
+		getServiceNamespace: defaultNamespace,
+		getConsumerObject: func(ctx context.Context, ns, name string) (*unstructured.Unstructured, error) {
+			obj := &unstructured.Unstructured{}
+			obj.SetUnstructuredContent(
+				map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"name":      "dummy",
+						"namespace": "cluster-x-default",
+						"annotations": map[string]interface{}{
+							"kube-bind.io/resource-owner": "Consumer",
+						},
+					},
+					"data": map[string]interface{}{
+						"username": "user",
+						"password": "pass",
+					},
+				},
+			)
+			return obj, nil
+		},
+		getProviderObject: func(ns, name string) (*unstructured.Unstructured, error) {
+			obj := &unstructured.Unstructured{}
+			obj.SetUnstructuredContent(
+				map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"name":      "dummy",
+						"namespace": "default",
+					},
+					"data": map[string]interface{}{
+						"username": "user",
+					},
+				},
+			)
+			return obj, nil
+		},
+		updateProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) error {
+			updateObj = obj
+			return nil
+		},
+	}
+
+	err := r.reconcile(context.TODO(), "cluster-x-default", "dummy")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if updateObj == nil {
+		t.Fatal("update object nil")
+	}
+	if v, ok := updateObj.GetAnnotations()["kube-bind.io/resource-owner"]; !ok || v != "Consumer" {
+		t.Error("updated object did not have 'kube-bind.io/resource-owner: Consumer' annotation")
 	}
 }
 
@@ -158,6 +336,9 @@ func TestUpdate(t *testing.T) {
 					"metadata": map[string]interface{}{
 						"name":      "dummy",
 						"namespace": "cluster-x-default",
+						"annotations": map[string]interface{}{
+							"kube-bind.io/resource-owner": "Provider",
+						},
 					},
 					"data": map[string]interface{}{
 						"username": "user",
@@ -174,9 +355,6 @@ func TestUpdate(t *testing.T) {
 					"metadata": map[string]interface{}{
 						"name":      "dummy",
 						"namespace": "default",
-						"annotations": map[string]interface{}{
-							"kube-bind.io/claimedresource": "true",
-						},
 					},
 					"data": map[string]interface{}{
 						"username": "user",
@@ -199,8 +377,8 @@ func TestUpdate(t *testing.T) {
 	if updateObj == nil {
 		t.Fatal("update object nil")
 	}
-	if v, ok := updateObj.GetAnnotations()["kube-bind.io/claimedresource"]; !ok || v != "true" {
-		t.Error("updated object did not have 'kube-bind.io/claimedresource: true' annotation")
+	if v, ok := updateObj.GetAnnotations()["kube-bind.io/resource-owner"]; !ok || v != "Provider" {
+		t.Error("updated object did not have 'kube-bind.io/resource-owner: Provider' annotation")
 	}
 }
 func TestUpdateNotNeeded(t *testing.T) {
@@ -213,8 +391,9 @@ func TestUpdateNotNeeded(t *testing.T) {
 			obj.SetUnstructuredContent(
 				map[string]interface{}{
 					"metadata": map[string]interface{}{
-						"name":      "dummy",
-						"namespace": "cluster-x-default",
+						"name":        "dummy",
+						"namespace":   "cluster-x-default",
+						"annotations": map[string]interface{}{"kube-bind.io/resource-owner": "Provider"},
 					},
 					"data": map[string]interface{}{
 						"username": "user",
@@ -239,7 +418,7 @@ func TestUpdateNotNeeded(t *testing.T) {
 				},
 			)
 			obj.SetAnnotations(map[string]string{
-				"kube-bind.io/claimedresource": "true",
+				"kube-bind.io/resource-owner": "Provider",
 			})
 			return obj, nil
 		},

@@ -1,0 +1,15 @@
+kind: APIServiceExportTemplate
+apiVersion: kube-bind.io/v1alpha1
+metadata:
+  name: "mangodbs"
+  namespace: default
+spec:
+  APIServiceSelector:
+    resource: mangodbs
+    group: mangodb.com
+  permissionClaims:
+    - group: ""
+      resource: secrets
+      version: v1
+      selector:
+        owner: Consumer

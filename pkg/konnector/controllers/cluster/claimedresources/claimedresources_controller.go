@@ -49,6 +49,7 @@ const (
 // NewController returns a new controller reconciling downstream objects to upstream.
 func NewController(
 	gvr schema.GroupVersionResource,
+	claim kubebindv1alpha1.PermissionClaim,
 	providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
 	consumerDynamicInformer informers.GenericInformer,
@@ -74,6 +75,8 @@ func NewController(
 	dynamicConsumerLister := dynamiclister.New(consumerDynamicInformer.Informer().GetIndexer(), gvr)
 	c := &controller{
 		queue: queue,
+
+		claim: claim,
 
 		consumerClient: consumerClient,
 		providerClient: providerClient,
@@ -109,6 +112,17 @@ func NewController(
 				}
 				return obj.(*unstructured.Unstructured), nil
 			},
+			createProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) error {
+				_, err := providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
+				return err
+			},
+			updateProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) error {
+				_, err := providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{})
+				return err
+			},
+			deleteProviderObject: func(ctx context.Context, ns, name string) error {
+				return providerClient.Resource(gvr).Namespace(ns).Delete(ctx, name, metav1.DeleteOptions{})
+			},
 			deleteConsumerObject: func(ctx context.Context, ns, name string) error {
 				return consumerClient.Resource(gvr).Namespace(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
@@ -118,14 +132,6 @@ func NewController(
 			createConsumerObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				return consumerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
 			},
-			// requeue: func(obj *unstructured.Unstructured, after time.Duration) error {
-			// 	key, err := cache.MetaNamespaceKeyFunc(obj)
-			// 	if err != nil {
-			// 		return err
-			// 	}
-			// 	queue.AddAfter(key, after)
-			// 	return nil
-			// },
 		},
 	}
 
@@ -160,6 +166,8 @@ func NewController(
 type controller struct {
 	queue workqueue.RateLimitingInterface
 
+	claim kubebindv1alpha1.PermissionClaim
+
 	consumerClient dynamicclient.Interface
 	providerClient dynamicclient.Interface
 
@@ -175,18 +183,25 @@ type controller struct {
 	readReconciler
 }
 
-func isClaimed(obj *unstructured.Unstructured) bool {
-	for k, v := range obj.GetAnnotations() {
-		if k == annotation && v == "true" {
-			return true
+func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
+	if c.claim.Selector.Owner != "" {
+		for k, v := range obj.GetAnnotations() {
+			if k == annotation {
+				return kubebindv1alpha1.Owner(v) == c.claim.Selector.Owner
+			}
 		}
 	}
-	return false
+
+	if c.claim.Selector.Name != "" && obj.GetName() != c.claim.Selector.Name {
+		return false
+	}
+
+	return true
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 	o := obj.(*unstructured.Unstructured)
-	if !isClaimed(o) {
+	if !c.isClaimed(o) {
 		return
 	}
 

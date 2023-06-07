@@ -157,7 +157,7 @@ type PermissionClaim struct {
 
 type OnConflictOptions struct {
 	// providerOverrides will make the provider override any object that might already exist
-	// in the consumer cluster if it has the same namespaced name as a resource created by the
+	// in the consumer cluster if it has the same resource identifier as a resource created by the
 	// provider, but is not the result of syncing.
 	ProviderOverwrites bool `json:"providerOverrides"`
 
@@ -176,14 +176,15 @@ type CreateOptions struct {
 }
 
 type UpdateOptions struct {
-	// fields are the fields owned by the owner of the claim. If the owner sets values of those
-	// fields, they will be synced to the other participant.
+	// fields are a list of JSON Paths describing which parts of an object the provider wants to control in case
+	// the object is owned by the consumer as a whole. This field cannot be set if provider owned objects
+	// are selected in this claim, and must be non-empty otherwise.
 	// Mutually exclusive with preservings.
 	Fields []string `json:"fields,omitempty"`
 
-	// Preservings are the fields that are preserved by the konnector during synchronization.
-	// The owner is not able to set those fields. If the owner changes the value of these fields,
-	// their change will be overwritten.
+	// preserving is a list of JSON Paths describing fields that should be preserved while updating with the
+	// object state on the provider side. This field cannot be set if consumer owned objects are selected in
+	// this claim.
 	Preserving []string `json:"preservings,omitempty"`
 
 	// alwaysRecreate, when true will make the konnector delete the old object and create a new one

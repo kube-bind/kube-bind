@@ -332,7 +332,12 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.consumerDynamicLister.Namespace(ns).Get(name)
+	var obj *unstructured.Unstructured
+	if ns == "" {
+		obj, err = c.consumerDynamicLister.Get(name)
+	} else {
+		obj, err = c.consumerDynamicLister.Namespace(ns).Get(name)
+	}
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {

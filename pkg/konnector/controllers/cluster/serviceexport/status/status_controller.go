@@ -104,7 +104,11 @@ func NewController(
 				return sns[0].(*kubebindv1alpha1.APIServiceNamespace), nil
 			},
 			getConsumerObject: func(ns, name string) (*unstructured.Unstructured, error) {
-				return dynamicConsumerLister.Namespace(ns).Get(name)
+				if ns != "" {
+					return dynamicConsumerLister.Namespace(ns).Get(name)
+				} else {
+					return dynamicConsumerLister.Get(name)
+				}
 			},
 			updateConsumerObjectStatus: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				return consumerClient.Resource(gvr).Namespace(obj.GetNamespace()).UpdateStatus(ctx, obj, metav1.UpdateOptions{})

@@ -38,7 +38,7 @@ var (
 	# bind to a remote API service via a request manifest from a https URL.
 	%[1]s apiservice --remote-kubeconfig file https://some-url.com/apiservice-export-requests.yaml
 
-    # bind to a API service directly without any remote agent or service provider.
+	# bind to a API service directly without any remote agent or service provider.
 	%[1]s apiservice --remote-kubeconfig file -n remote-namespace resources.group/v1
 	`
 )

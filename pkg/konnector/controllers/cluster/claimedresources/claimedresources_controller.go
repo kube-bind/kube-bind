@@ -58,7 +58,7 @@ func NewController(
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
-	logger := klog.Background().WithValues("controller", controllerName)
+	logger := klog.Background().WithValues("controller", controllerName, "gvr", gvr)
 
 	providerConfig = rest.CopyConfig(providerConfig)
 	providerConfig = rest.AddUserAgent(providerConfig, controllerName)

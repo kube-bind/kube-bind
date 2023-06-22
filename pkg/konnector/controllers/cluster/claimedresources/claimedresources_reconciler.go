@@ -18,6 +18,7 @@ package claimedresources
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -86,7 +87,11 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string)
 	}
 
 	// Determine owner
-	owner := determineOwner(providerObj, consumerObj)
+	owner, err := determineOwner(providerObj, consumerObj)
+	if err != nil { // nothing we can do
+		logger.Error(err, "could not determine owner")
+		return nil
+	}
 	logger = logger.WithValues("owner", owner)
 
 	switch owner {
@@ -210,17 +215,17 @@ func candidateFromOwnerObj(downstreamNS string, obj *unstructured.Unstructured) 
 
 // determineOwner determines the owner of a resource given at least one object exists either on the
 // consumer or provider side
-func determineOwner(providerObj, consumerObj *unstructured.Unstructured) kubebindv1alpha1.Owner {
+func determineOwner(providerObj, consumerObj *unstructured.Unstructured) (kubebindv1alpha1.Owner, error) {
 	if providerObj != nil {
 		ownerAnn := providerObj.GetAnnotations()[annotation]
 		switch ownerAnn {
 		case "Provider":
-			return kubebindv1alpha1.Provider
+			return kubebindv1alpha1.Provider, nil
 		case "Consumer":
-			return kubebindv1alpha1.Consumer
+			return kubebindv1alpha1.Consumer, nil
 		}
 		if ownerAnn == "" && consumerObj == nil {
-			return kubebindv1alpha1.Provider
+			return kubebindv1alpha1.Provider, nil
 		}
 	}
 
@@ -228,13 +233,13 @@ func determineOwner(providerObj, consumerObj *unstructured.Unstructured) kubebin
 		ownerAnn := consumerObj.GetAnnotations()[annotation]
 		switch ownerAnn {
 		case "Provider":
-			return kubebindv1alpha1.Provider
+			return kubebindv1alpha1.Provider, nil
 		case "Consumer":
-			return kubebindv1alpha1.Consumer
+			return kubebindv1alpha1.Consumer, nil
 		}
 		if ownerAnn == "" && providerObj == nil {
-			return kubebindv1alpha1.Consumer
+			return kubebindv1alpha1.Consumer, nil
 		}
 	}
-	panic("should not happen")
+	return "", fmt.Errorf("unable to determine owner")
 }

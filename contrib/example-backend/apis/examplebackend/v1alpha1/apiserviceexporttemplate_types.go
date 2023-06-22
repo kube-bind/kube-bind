@@ -18,6 +18,8 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
 // APIServiceExportTemplate specifies the resource to be exported.
@@ -47,7 +49,7 @@ type APIServiceExportTemplate struct {
 type APIServiceExportTemplateSpec struct {
 	APIServiceSelector APIServiceSelector `json:"APIServiceSelector"`
 	// +optional
-	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
+	PermissionClaims []v1alpha1.PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 type APIServiceExportTemplateStatus struct{}

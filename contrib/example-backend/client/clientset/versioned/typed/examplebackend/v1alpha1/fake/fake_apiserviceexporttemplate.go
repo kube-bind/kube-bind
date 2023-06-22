@@ -28,18 +28,18 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
 
-	v1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	v1alpha1 "github.com/kube-bind/kube-bind/contrib/example-backend/apis/examplebackend/v1alpha1"
 )
 
 // FakeAPIServiceExportTemplates implements APIServiceExportTemplateInterface
 type FakeAPIServiceExportTemplates struct {
-	Fake *FakeKubeBindV1alpha1
+	Fake *FakeExampleBackendV1alpha1
 	ns   string
 }
 
-var apiserviceexporttemplatesResource = schema.GroupVersionResource{Group: "kube-bind.io", Version: "v1alpha1", Resource: "apiserviceexporttemplates"}
+var apiserviceexporttemplatesResource = schema.GroupVersionResource{Group: "example.com", Version: "v1alpha1", Resource: "apiserviceexporttemplates"}
 
-var apiserviceexporttemplatesKind = schema.GroupVersionKind{Group: "kube-bind.io", Version: "v1alpha1", Kind: "APIServiceExportTemplate"}
+var apiserviceexporttemplatesKind = schema.GroupVersionKind{Group: "example.com", Version: "v1alpha1", Kind: "APIServiceExportTemplate"}
 
 // Get takes name of the aPIServiceExportTemplate, and returns the corresponding aPIServiceExportTemplate object, and an error if there is any.
 func (c *FakeAPIServiceExportTemplates) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.APIServiceExportTemplate, err error) {

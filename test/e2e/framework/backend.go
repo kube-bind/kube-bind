@@ -35,7 +35,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
+	backendcrd "github.com/kube-bind/kube-bind/contrib/deploy/crd"
 	backend "github.com/kube-bind/kube-bind/contrib/example-backend"
+	backendv1alpha1 "github.com/kube-bind/kube-bind/contrib/example-backend/apis/examplebackend/v1alpha1"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
 	"github.com/kube-bind/kube-bind/deploy/crd"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
@@ -67,7 +69,12 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiserviceexports"},
 		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiservicenamespaces"},
 		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiserviceexportrequests"},
-		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiserviceexporttemplates"},
+	)
+	require.NoError(t, err)
+
+	err = backendcrd.Create(ctx,
+		crdClient.ApiextensionsV1().CustomResourceDefinitions(),
+		metav1.GroupResource{Group: backendv1alpha1.GroupName, Resource: "apiserviceexporttemplates"},
 	)
 	require.NoError(t, err)
 

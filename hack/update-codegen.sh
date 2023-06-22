@@ -36,6 +36,17 @@ cd pkg/apis
     output:crd:artifacts:config=../../deploy/crd
 cd -
 
+# Update generated CRD YAML
+cd contrib/example-backend/apis
+../../../${CONTROLLER_GEN} \
+    crd \
+    rbac:roleName=manager-role \
+    webhook \
+    paths="./..." \
+    output:crd:artifacts:config=../../../contrib/deploy/crd
+cd -
+
+
 cd deploy/crd
 for CRD in *.yaml; do
     if [ -f "../patches/${CRD}-patch" ]; then

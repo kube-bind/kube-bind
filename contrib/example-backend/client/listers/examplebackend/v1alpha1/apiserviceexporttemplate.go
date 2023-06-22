@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 
-	v1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	v1alpha1 "github.com/kube-bind/kube-bind/contrib/example-backend/apis/examplebackend/v1alpha1"
 )
 
 // APIServiceExportTemplateLister helps list APIServiceExportTemplates.

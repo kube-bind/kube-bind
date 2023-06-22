@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kube Bind Authors.
+Copyright 2023 The Kube Bind Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ var (
 
 const (
 	// GroupName is the group name used in this package
-	GroupName = "kube-bind.io"
+	GroupName = "example.com"
 
 	// GroupVersion is the group version used in this package
 	GroupVersion = "v1alpha1"
@@ -46,18 +46,8 @@ func Resource(resource string) schema.GroupResource {
 // Adds the list of known types to api.Scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&APIServiceExport{},
-		&APIServiceExportList{},
-		&APIServiceBinding{},
-		&APIServiceBindingList{},
-		&APIServiceExportRequest{},
-		&APIServiceExportRequestList{},
-		&APIServiceNamespace{},
-		&APIServiceNamespaceList{},
-		&ClusterBinding{},
-		&ClusterBindingList{},
-		&BindingProvider{},
-		&BindingResponse{},
+		&APIServiceExportTemplate{},
+		&APIServiceExportTemplateList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

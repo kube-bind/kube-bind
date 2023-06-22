@@ -27,8 +27,8 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	rest "k8s.io/client-go/rest"
 
-	v1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	scheme "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/kube-bind/kube-bind/contrib/example-backend/apis/examplebackend/v1alpha1"
+	scheme "github.com/kube-bind/kube-bind/contrib/example-backend/client/clientset/versioned/scheme"
 )
 
 // APIServiceExportTemplatesGetter has a method to return a APIServiceExportTemplateInterface.
@@ -58,7 +58,7 @@ type aPIServiceExportTemplates struct {
 }
 
 // newAPIServiceExportTemplates returns a APIServiceExportTemplates
-func newAPIServiceExportTemplates(c *KubeBindV1alpha1Client, namespace string) *aPIServiceExportTemplates {
+func newAPIServiceExportTemplates(c *ExampleBackendV1alpha1Client, namespace string) *aPIServiceExportTemplates {
 	return &aPIServiceExportTemplates{
 		client: c.RESTClient(),
 		ns:     namespace,

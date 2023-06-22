@@ -27,10 +27,10 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	versioned "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
+	examplebackendv1alpha1 "github.com/kube-bind/kube-bind/contrib/example-backend/apis/examplebackend/v1alpha1"
+	versioned "github.com/kube-bind/kube-bind/contrib/example-backend/client/clientset/versioned"
+	internalinterfaces "github.com/kube-bind/kube-bind/contrib/example-backend/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/kube-bind/kube-bind/contrib/example-backend/client/listers/examplebackend/v1alpha1"
 )
 
 // APIServiceExportTemplateInformer provides access to a shared informer and lister for
@@ -63,16 +63,16 @@ func NewFilteredAPIServiceExportTemplateInformer(client versioned.Interface, nam
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha1().APIServiceExportTemplates(namespace).List(context.TODO(), options)
+				return client.ExampleBackendV1alpha1().APIServiceExportTemplates(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha1().APIServiceExportTemplates(namespace).Watch(context.TODO(), options)
+				return client.ExampleBackendV1alpha1().APIServiceExportTemplates(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubebindv1alpha1.APIServiceExportTemplate{},
+		&examplebackendv1alpha1.APIServiceExportTemplate{},
 		resyncPeriod,
 		indexers,
 	)
@@ -83,7 +83,7 @@ func (f *aPIServiceExportTemplateInformer) defaultInformer(client versioned.Inte
 }
 
 func (f *aPIServiceExportTemplateInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubebindv1alpha1.APIServiceExportTemplate{}, f.defaultInformer)
+	return f.factory.InformerFor(&examplebackendv1alpha1.APIServiceExportTemplate{}, f.defaultInformer)
 }
 
 func (f *aPIServiceExportTemplateInformer) Lister() v1alpha1.APIServiceExportTemplateLister {

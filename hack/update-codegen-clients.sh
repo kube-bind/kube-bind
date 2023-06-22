@@ -30,3 +30,10 @@ bash "${CODEGEN_PKG}"/generate-groups.sh "deepcopy,client,informer,lister" \
   --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate/boilerplate.generatego.txt \
   --output-base "${SCRIPT_ROOT}" \
   --trim-path-prefix github.com/kube-bind/kube-bind
+
+bash "${CODEGEN_PKG}"/generate-groups.sh "deepcopy,client,informer,lister" \
+  github.com/kube-bind/kube-bind/contrib/example-backend/client github.com/kube-bind/kube-bind/contrib/example-backend/apis \
+  "examplebackend:v1alpha1" \
+  --go-header-file "${SCRIPT_ROOT}"/hack/boilerplate/boilerplate.generatego.txt \
+  --output-base "${SCRIPT_ROOT}" \
+  --trim-path-prefix github.com/kube-bind/kube-bind

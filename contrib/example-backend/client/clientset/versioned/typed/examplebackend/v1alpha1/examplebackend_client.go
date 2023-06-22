@@ -23,48 +23,28 @@ import (
 
 	rest "k8s.io/client-go/rest"
 
-	v1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	"github.com/kube-bind/kube-bind/pkg/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/kube-bind/kube-bind/contrib/example-backend/apis/examplebackend/v1alpha1"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/client/clientset/versioned/scheme"
 )
 
-type KubeBindV1alpha1Interface interface {
+type ExampleBackendV1alpha1Interface interface {
 	RESTClient() rest.Interface
-	APIServiceBindingsGetter
-	APIServiceExportsGetter
-	APIServiceExportRequestsGetter
-	APIServiceNamespacesGetter
-	ClusterBindingsGetter
+	APIServiceExportTemplatesGetter
 }
 
-// KubeBindV1alpha1Client is used to interact with features provided by the kube-bind.io group.
-type KubeBindV1alpha1Client struct {
+// ExampleBackendV1alpha1Client is used to interact with features provided by the example.com group.
+type ExampleBackendV1alpha1Client struct {
 	restClient rest.Interface
 }
 
-func (c *KubeBindV1alpha1Client) APIServiceBindings() APIServiceBindingInterface {
-	return newAPIServiceBindings(c)
+func (c *ExampleBackendV1alpha1Client) APIServiceExportTemplates(namespace string) APIServiceExportTemplateInterface {
+	return newAPIServiceExportTemplates(c, namespace)
 }
 
-func (c *KubeBindV1alpha1Client) APIServiceExports(namespace string) APIServiceExportInterface {
-	return newAPIServiceExports(c, namespace)
-}
-
-func (c *KubeBindV1alpha1Client) APIServiceExportRequests(namespace string) APIServiceExportRequestInterface {
-	return newAPIServiceExportRequests(c, namespace)
-}
-
-func (c *KubeBindV1alpha1Client) APIServiceNamespaces(namespace string) APIServiceNamespaceInterface {
-	return newAPIServiceNamespaces(c, namespace)
-}
-
-func (c *KubeBindV1alpha1Client) ClusterBindings(namespace string) ClusterBindingInterface {
-	return newClusterBindings(c, namespace)
-}
-
-// NewForConfig creates a new KubeBindV1alpha1Client for the given config.
+// NewForConfig creates a new ExampleBackendV1alpha1Client for the given config.
 // NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
 // where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*KubeBindV1alpha1Client, error) {
+func NewForConfig(c *rest.Config) (*ExampleBackendV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -76,9 +56,9 @@ func NewForConfig(c *rest.Config) (*KubeBindV1alpha1Client, error) {
 	return NewForConfigAndClient(&config, httpClient)
 }
 
-// NewForConfigAndClient creates a new KubeBindV1alpha1Client for the given config and http client.
+// NewForConfigAndClient creates a new ExampleBackendV1alpha1Client for the given config and http client.
 // Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*KubeBindV1alpha1Client, error) {
+func NewForConfigAndClient(c *rest.Config, h *http.Client) (*ExampleBackendV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -87,12 +67,12 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*KubeBindV1alpha1Cli
 	if err != nil {
 		return nil, err
 	}
-	return &KubeBindV1alpha1Client{client}, nil
+	return &ExampleBackendV1alpha1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new KubeBindV1alpha1Client for the given config and
+// NewForConfigOrDie creates a new ExampleBackendV1alpha1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *KubeBindV1alpha1Client {
+func NewForConfigOrDie(c *rest.Config) *ExampleBackendV1alpha1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -100,9 +80,9 @@ func NewForConfigOrDie(c *rest.Config) *KubeBindV1alpha1Client {
 	return client
 }
 
-// New creates a new KubeBindV1alpha1Client for the given RESTClient.
-func New(c rest.Interface) *KubeBindV1alpha1Client {
-	return &KubeBindV1alpha1Client{c}
+// New creates a new ExampleBackendV1alpha1Client for the given RESTClient.
+func New(c rest.Interface) *ExampleBackendV1alpha1Client {
+	return &ExampleBackendV1alpha1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -120,7 +100,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *KubeBindV1alpha1Client) RESTClient() rest.Interface {
+func (c *ExampleBackendV1alpha1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

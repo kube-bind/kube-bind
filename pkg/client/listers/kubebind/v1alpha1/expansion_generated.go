@@ -38,14 +38,6 @@ type APIServiceExportRequestListerExpansion interface{}
 // APIServiceExportRequestNamespaceLister.
 type APIServiceExportRequestNamespaceListerExpansion interface{}
 
-// APIServiceExportTemplateListerExpansion allows custom methods to be added to
-// APIServiceExportTemplateLister.
-type APIServiceExportTemplateListerExpansion interface{}
-
-// APIServiceExportTemplateNamespaceListerExpansion allows custom methods to be added to
-// APIServiceExportTemplateNamespaceLister.
-type APIServiceExportTemplateNamespaceListerExpansion interface{}
-
 // APIServiceNamespaceListerExpansion allows custom methods to be added to
 // APIServiceNamespaceLister.
 type APIServiceNamespaceListerExpansion interface{}

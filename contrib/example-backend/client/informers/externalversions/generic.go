@@ -24,7 +24,7 @@ import (
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 
-	v1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	v1alpha1 "github.com/kube-bind/kube-bind/contrib/example-backend/apis/examplebackend/v1alpha1"
 )
 
 // GenericInformer is type of SharedIndexInformer which will locate and delegate to other
@@ -53,17 +53,9 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=kube-bind.io, Version=v1alpha1
-	case v1alpha1.SchemeGroupVersion.WithResource("apiservicebindings"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceBindings().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("apiserviceexports"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceExports().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("apiserviceexportrequests"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceExportRequests().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("apiservicenamespaces"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceNamespaces().Informer()}, nil
-	case v1alpha1.SchemeGroupVersion.WithResource("clusterbindings"):
-		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ClusterBindings().Informer()}, nil
+	// Group=example.com, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("apiserviceexporttemplates"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.ExampleBackend().V1alpha1().APIServiceExportTemplates().Informer()}, nil
 
 	}
 

@@ -28,8 +28,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	templates "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/apis/examplebackend/v1alpha1"
+	templates "github.com/kube-bind/kube-bind/contrib/example-backend/client/clientset/versioned"
 )
 
 type Index struct {
@@ -54,7 +54,7 @@ func (i Index) GetExported(ctx context.Context) ([]apiextensionsv1.CustomResourc
 	if err != nil {
 		return nil, err
 	}
-	exports, err := i.templates.KubeBindV1alpha1().APIServiceExportTemplates(i.clusterNs).List(ctx, v1.ListOptions{})
+	exports, err := i.templates.ExampleBackendV1alpha1().APIServiceExportTemplates(i.clusterNs).List(ctx, v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -77,10 +77,10 @@ func (i Index) GetExported(ctx context.Context) ([]apiextensionsv1.CustomResourc
 	return exported, nil
 }
 
-func (i Index) TemplateFor(ctx context.Context, group, resource string) (kubebindv1alpha1.APIServiceExportTemplate, error) {
-	exports, err := i.templates.KubeBindV1alpha1().APIServiceExportTemplates(i.clusterNs).List(ctx, v1.ListOptions{})
+func (i Index) TemplateFor(ctx context.Context, group, resource string) (v1alpha1.APIServiceExportTemplate, error) {
+	exports, err := i.templates.ExampleBackendV1alpha1().APIServiceExportTemplates(i.clusterNs).List(ctx, v1.ListOptions{})
 	if err != nil {
-		return kubebindv1alpha1.APIServiceExportTemplate{}, nil
+		return v1alpha1.APIServiceExportTemplate{}, nil
 	}
 
 	for _, e := range exports.Items {
@@ -89,5 +89,5 @@ func (i Index) TemplateFor(ctx context.Context, group, resource string) (kubebin
 		}
 	}
 
-	return kubebindv1alpha1.APIServiceExportTemplate{}, fmt.Errorf("not found: %s/%s", group, resource)
+	return v1alpha1.APIServiceExportTemplate{}, fmt.Errorf("not found: %s/%s", group, resource)
 }

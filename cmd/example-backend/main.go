@@ -52,7 +52,7 @@ func main() {
 	logger := klog.FromContext(ctx)
 	logger.Info("Starting example-backend", "version", ver)
 
-	// craate server
+	// create server
 	completed, err := options.Complete()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck

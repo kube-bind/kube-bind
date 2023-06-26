@@ -123,7 +123,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 		r.lock.Lock()
 		defer r.lock.Unlock()
 		if c, found := r.syncContext[export.Name]; found {
-			logger.V(1).Info("Stopping APIServiceExport sync", "reason", "NoAPIServiceExport")
+			logger.V(1).Info("Stopping APIServiceExport sync", "reason", "NoAPIServiceBinding")
 			c.cancel()
 			delete(r.syncContext, export.Name)
 		}

@@ -89,7 +89,7 @@ spec:
                   requested by the API service provider. Individual claims can be
                   accepted or rejected. If accepted, the API service provider gets
                   the requested access to the specified resources in this workspace.
-                  Access is granted per GroupResource, identity, and other properties.
+                  Access is granted per GroupResource and other properties like selectors.
                 items:
                   properties:
                     autoAdopt:
@@ -108,7 +108,7 @@ spec:
                         provider side down to the consumer cluster."
                       properties:
                         replaceExisting:
-                          description: "ReplaceExisting means that an existing object
+                          description: "replaceExisting means that an existing object
                             owned by the consumer will be replaced by the provider
                             object. \n If set to false, and a conflicting consumer
                             object exists, it is not touched."
@@ -126,7 +126,7 @@ spec:
                       properties:
                         recreateWhenConsumerSideDeleted:
                           default: true
-                          description: "RecreateWhenConsumerSideDeleted set to true
+                          description: "recreateWhenConsumerSideDeleted set to true
                             (the default) means the provider will recreate the object
                             in case the object is missing on the consumer side, but
                             has been synchronized before. \n If set to false, deleted
@@ -139,12 +139,15 @@ spec:
                           type: boolean
                       type: object
                     read:
+                      description: read contains extra labels and annotations the
+                        provider will read from objects on the consumer cluster. By
+                        default no labels and annotations are read.
                       properties:
                         annotations:
-                          description: Annotations is a list of claimed annotation
+                          description: annotations is a list of claimed annotation
                             key wildcard patterns that are synchronized from the consumer
                             side to the provider on objects that are owned by the
-                            consumer
+                            consumer.
                           items:
                             properties:
                               pattern:
@@ -152,9 +155,9 @@ spec:
                             type: object
                           type: array
                         labels:
-                          description: Labels is a list of claimed label key wildcard
+                          description: labels is a list of claimed label key wildcard
                             patterns that are synchronized from the consumer side
-                            to the provider on objects that are owned by the consumer
+                            to the provider on objects that are owned by the consumer.
                           items:
                             properties:
                               pattern:
@@ -173,7 +176,7 @@ spec:
                             type: object
                           type: array
                         overrideAnnotations:
-                          description: OverrideAnnotations is a list of claimed annotation
+                          description: overrideAnnotations is a list of claimed annotation
                             key wildcard patterns that are synchronized from the consumer
                             side to the provider on objects owned by the provider.
                           items:
@@ -198,13 +201,13 @@ spec:
                         this claim.
                       properties:
                         fieldSelectors:
-                          description: FieldSelectors is a list of field selectors
+                          description: fieldSelectors is a list of field selectors
                             matching selected resources, see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/.
                           items:
                             type: string
                           type: array
                         labelSelectors:
-                          description: LabelSelectors is a list of label selectors
+                          description: labelSelectors is a list of label selectors
                             matching selected resources. label selectors follow the
                             same rules as kubernetes label selectors, see https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/.
                           items:
@@ -215,7 +218,7 @@ spec:
                         names:
                           default:
                           - '*'
-                          description: Names is a list of specific resource names
+                          description: names is a list of specific resource names
                             to select. Names matches the metadata.name field of the
                             underlying object. An entry of "*" anywhere in the list
                             means all object names of the group/resource within the
@@ -226,11 +229,11 @@ spec:
                           type: array
                           x-kubernetes-validations:
                           - message: only names or * are allowed
-                            rule: self.all(n, n.matches('^[A-z]*|[*]$'))
+                            rule: self.all(n, n.matches('^[A-z-]+|[*]$'))
                         namespaces:
                           default:
                           - '*'
-                          description: Namespaces represents namespaces where an object
+                          description: namespaces represents namespaces where an object
                             of the given group/resoruce may be managed. Namespaces
                             matches against the metadata.namespace field. A value
                             of "*" matches namespaced objects across all namespaces.
@@ -243,7 +246,7 @@ spec:
                           type: array
                           x-kubernetes-validations:
                           - message: only names or * are allowed
-                            rule: self.all(n, n.matches('^[A-z]*|[*]$'))
+                            rule: self.all(n, n.matches('^[A-z-]+|[*]$'))
                         owner:
                           enum:
                           - Provider
@@ -256,17 +259,17 @@ spec:
                       - Rejected
                       type: string
                     update:
-                      description: Update lists a number of claimed permissions for
-                        the provider. "field" and "preserving" are mutually exclusive.
+                      description: update lists which updates to objects on the consumer
+                        side are claimed.
                       properties:
                         alwaysRecreate:
-                          description: "AlwaysRecreate, when true will delete the
+                          description: "alwaysRecreate, when true will delete the
                             old object and create new ones instead of updating. Useful
                             for immutable objects. \n This does not apply to metadata
                             field updates."
                           type: boolean
                         annotations:
-                          description: "Annotations is a list of claimed annotation
+                          description: "annotations is a list of claimed annotation
                             keys or annotation wildcard patterns that are synchronized
                             from the provider to the consumer for objects owned by
                             the provider. \n By default, no annotations are synced."
@@ -277,7 +280,7 @@ spec:
                             type: object
                           type: array
                         fields:
-                          description: "Fields are a list of JSON Paths describing
+                          description: "fields are a list of JSON Paths describing
                             which parts of an object the provider wants to control.
                             \n This field is ignored if the owner in the claim selector
                             is set to \"Provider\"."
@@ -285,7 +288,7 @@ spec:
                             type: string
                           type: array
                         labels:
-                          description: "Labels is a list of claimed label keys or
+                          description: "labels is a list of claimed label keys or
                             label wildcard patterns that are synchronized from the
                             provider to the consumer for objects owned by the provider.
                             \n By default, no labels are synced."
@@ -296,7 +299,7 @@ spec:
                             type: object
                           type: array
                         overrideAnnotations:
-                          description: "OverrideAnnotations is a list of claiemd annotation
+                          description: "overrideAnnotations is a list of claiemd annotation
                             key wildcard patterns that are synchronized from the provider
                             to the consumer for objects owned by the consumer. \n
                             By default, no annotations are synced."
@@ -307,7 +310,7 @@ spec:
                             type: object
                           type: array
                         overrideLabels:
-                          description: "OverrideLabels is a list of claiemd label
+                          description: "overrideLabels is a list of claiemd label
                             key wildcard patterns that are synchronized from the provider
                             to the consumer for objects owned by the consumer. \n
                             By default, no labels are synced."
@@ -318,7 +321,7 @@ spec:
                             type: object
                           type: array
                         preservings:
-                          description: "Preserving is a list of JSON Paths describing
+                          description: "preserving is a list of JSON Paths describing
                             which parts of an object owned by the provider the consumer
                             keeps controlling. \n This field is ignored if the owner
                             in the claim selector is set to \"Consumer\"."
@@ -327,6 +330,7 @@ spec:
                           type: array
                       type: object
                     version:
+                      minLength: 1
                       type: string
                   required:
                   - resource

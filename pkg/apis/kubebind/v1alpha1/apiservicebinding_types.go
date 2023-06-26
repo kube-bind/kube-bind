@@ -91,7 +91,7 @@ type APIServiceBindingSpec struct {
 	// permissionClaims records decisions about permission claims requested by the API service provider.
 	// Individual claims can be accepted or rejected. If accepted, the API service provider gets the
 	// requested access to the specified resources in this workspace. Access is granted per
-	// GroupResource, identity, and other properties.
+	// GroupResource and other properties like selectors.
 	//
 	// +optional
 	PermissionClaims []AcceptablePermissionClaim `json:"permissionClaims,omitempty"`
@@ -123,15 +123,20 @@ type PermissionClaim struct {
 	GroupResource `json:","`
 
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength:=1
 	Version string `json:"version"`
 
 	// Selector selects which resources are affected by this claim.
 	// +optional
+	// +kubebuilder:default:={}
 	Selector *ResourceSelector `json:"selector,omitempty"`
 
 	// Required indicates whether the APIServiceBinding will work if this claim is not accepted.
 	Required bool `json:"required"`
 
+	// read contains extra labels and annotations the provider will read from objects on the consumer cluster.
+	// By default no labels and annotations are read.
+	//
 	// +optional
 	// +kubebuilder:default={}
 	Read *ReadOptions `json:"read,omitempty"`
@@ -160,19 +165,19 @@ type PermissionClaim struct {
 	// will be resolved.
 	//
 	// +optional
+	// +kubebuilder:default:={}
 	OnConflict *OnConflictOptions `json:"onConflict,omitempty"`
 
-	// Update lists a number of claimed permissions for the provider.
-	// "field" and "preserving" are mutually exclusive.
+	// update lists which updates to objects on the consumer side are claimed.
 	//
 	// +optional
 	Update *UpdateOptions `json:"update,omitempty"`
 }
 
 type ReadOptions struct {
-	// Labels is a list of claimed label key wildcard patterns
+	// labels is a list of claimed label key wildcard patterns
 	// that are synchronized from the consumer side to the provider on
-	// objects that are owned by the consumer
+	// objects that are owned by the consumer.
 	//
 	// +optional
 	Labels []Matcher `json:"labels,omitempty"`
@@ -184,14 +189,14 @@ type ReadOptions struct {
 	// +optional
 	LabelsOnProviderOwnedObjects []Matcher `json:"labelsOnProviderOwnedObjects,omitempty"`
 
-	// Annotations is a list of claimed annotation key wildcard patterns
+	// annotations is a list of claimed annotation key wildcard patterns
 	// that are synchronized from the consumer side to the provider on
-	// objects that are owned by the consumer
+	// objects that are owned by the consumer.
 	//
 	// +optional
 	Annotations []Matcher `json:"annotations,omitempty"`
 
-	// OverrideAnnotations is a list of claimed annotation key wildcard
+	// overrideAnnotations is a list of claimed annotation key wildcard
 	// patterns that are synchronized from the consumer side
 	// to the provider on objects owned by the provider.
 	//
@@ -205,7 +210,7 @@ type Matcher struct {
 }
 
 type OnConflictOptions struct {
-	// RecreateWhenConsumerSideDeleted set to true (the default) means the provider will recreate the object
+	// recreateWhenConsumerSideDeleted set to true (the default) means the provider will recreate the object
 	// in case the object is missing on the consumer side, but has been synchronized before.
 	//
 	// If set to false, deleted provider-owned objects get deleted on the provider side as well.
@@ -220,52 +225,59 @@ type OnConflictOptions struct {
 }
 
 type CreateOptions struct {
-	// ReplaceExisting means that an existing object owned by the consumer will be replaced by the provider object.
+	// replaceExisting means that an existing object owned by the consumer will be replaced by the provider object.
 	//
 	// If set to false, and a conflicting consumer object exists, it is not touched.
+	//
 	// +optional
 	ReplaceExisting bool `json:"replaceExisting,omitempty"`
 }
 
 type UpdateOptions struct {
-	// Fields are a list of JSON Paths describing which parts of an object the provider wants to control.
+	// fields are a list of JSON Paths describing which parts of an object the provider wants to control.
 	//
 	// This field is ignored if the owner in the claim selector is set to "Provider".
+	//
+	// +optional
 	Fields []string `json:"fields,omitempty"`
 
-	// Preserving is a list of JSON Paths describing which parts of an object owned by the provider the consumer keeps controlling.
+	// preserving is a list of JSON Paths describing which parts of an object owned by the provider the consumer keeps controlling.
 	//
 	// This field is ignored if the owner in the claim selector is set to "Consumer".
+	//
+	// +optional
 	Preserving []string `json:"preservings,omitempty"`
 
-	// AlwaysRecreate, when true will delete the old object and create new ones
+	// alwaysRecreate, when true will delete the old object and create new ones
 	// instead of updating. Useful for immutable objects.
 	//
 	// This does not apply to metadata field updates.
+	//
+	// +optional
 	AlwaysRecreate bool `json:"alwaysRecreate,omitempty"`
 
-	// Labels is a list of claimed label keys or label wildcard patterns that are synchronized from the provider to the consumer for objects owned by the provider.
+	// labels is a list of claimed label keys or label wildcard patterns that are synchronized from the provider to the consumer for objects owned by the provider.
 	//
 	// By default, no labels are synced.
 	//
 	// +optional
 	Labels []Matcher `json:"labels,omitempty"`
 
-	// OverrideLabels is a list of claiemd label key wildcard patterns that are synchronized from the provider to the consumer for objects owned by the consumer.
+	// overrideLabels is a list of claiemd label key wildcard patterns that are synchronized from the provider to the consumer for objects owned by the consumer.
 	//
 	// By default, no labels are synced.
 	//
 	// +optional
 	OverrideLabels []Matcher `json:"overrideLabels,omitempty"`
 
-	// Annotations is a list of claimed annotation keys or annotation wildcard patterns that are synchronized from the provider to the consumer for objects owned by the provider.
+	// annotations is a list of claimed annotation keys or annotation wildcard patterns that are synchronized from the provider to the consumer for objects owned by the provider.
 	//
 	// By default, no annotations are synced.
 	//
 	// +optional
 	Annotations []Matcher `json:"annotations,omitempty"`
 
-	// OverrideAnnotations is a list of claiemd annotation key wildcard patterns that are synchronized from the provider to the consumer for objects owned by the consumer.
+	// overrideAnnotations is a list of claiemd annotation key wildcard patterns that are synchronized from the provider to the consumer for objects owned by the consumer.
 	//
 	// By default, no annotations are synced.
 	//
@@ -274,31 +286,31 @@ type UpdateOptions struct {
 }
 
 type ResourceSelector struct {
-	// Names is a list of specific resource names to select.
+	// names is a list of specific resource names to select.
 	// Names matches the metadata.name field of the underlying object.
 	// An entry of "*" anywhere in the list means all object names of the group/resource within the "namespaces" field are claimed.
 	// Wildcard entries other than "*" and regular expressions are currently unsupported.
 	//
-	// +kubebuilder:validation:XValidation:rule="self.all(n, n.matches('^[A-z]*|[*]$'))",message="only names or * are allowed"
+	// +kubebuilder:validation:XValidation:rule="self.all(n, n.matches('^[A-z-]+|[*]$'))",message="only names or * are allowed"
 	// +kubebuilder:default:={"*"}
 	// +optional
 	Names []string `json:"names,omitempty"`
 
-	// Namespaces represents namespaces where an object of the given group/resoruce may be managed.
+	// namespaces represents namespaces where an object of the given group/resoruce may be managed.
 	// Namespaces matches against the metadata.namespace field. A value of "*" matches namespaced objects across all
 	// namespaces. If namespaces is not set (an empty list), matches cluster-scoped resources.
 	// If the "names" field is unset, all objects of the group/resource within the listed namespaces (or cluster) will be claimed.
 	//
-	// +kubebuilder:validation:XValidation:rule="self.all(n, n.matches('^[A-z]*|[*]$'))",message="only names or * are allowed"
+	// +kubebuilder:validation:XValidation:rule="self.all(n, n.matches('^[A-z-]+|[*]$'))",message="only names or * are allowed"
 	// +kubebuilder:default:={"*"}
 	// +optional
 	Namespaces []string `json:"namespaces,omitempty"`
 
-	// LabelSelectors is a list of label selectors matching selected resources. label selectors follow the same rules as kubernetes label selectors,
+	// labelSelectors is a list of label selectors matching selected resources. label selectors follow the same rules as kubernetes label selectors,
 	// see https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/.
 	LabelSelectors []map[string]string `json:"labelSelectors,omitempty"`
 
-	// FieldSelectors is a list of field selectors matching selected resources,
+	// fieldSelectors is a list of field selectors matching selected resources,
 	// see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/.
 	FieldSelectors []string `json:"fieldSelectors,omitempty"`
 
@@ -309,10 +321,10 @@ type ResourceSelector struct {
 
 type Owner string
 
-// Provider means that the owner of the resource is the Provider.
+// provider means that the owner of the resource is the Provider.
 const Provider Owner = "Provider"
 
-// Consumer means that the owner of the resource is the Consumer.
+// consumer means that the owner of the resource is the Consumer.
 const Consumer Owner = "Consumer"
 
 type APIServiceBindingStatus struct {

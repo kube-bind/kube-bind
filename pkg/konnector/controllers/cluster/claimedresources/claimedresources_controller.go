@@ -184,19 +184,37 @@ type controller struct {
 }
 
 func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
-	if c.claim.Selector.Owner != "" {
-		for k, v := range obj.GetAnnotations() {
-			if k == annotation {
-				return kubebindv1alpha1.Owner(v) == c.claim.Selector.Owner
+
+	var found string
+	for k, v := range obj.GetAnnotations() {
+		if k == annotation {
+			found = v
+			break
+		}
+	}
+
+	annotationMatches := false
+	if c.claim.Selector == nil || c.claim.Selector.Owner == "" {
+		annotationMatches = true
+	} else {
+		annotationMatches = found == "" || found == string(c.claim.Selector.Owner)
+	}
+
+	nameMatch := false
+	if len(c.claim.Selector.Names) == 0 {
+		nameMatch = true
+	} else {
+		for _, name := range c.claim.Selector.Names {
+			if name == obj.GetName() || name == "*" {
+				nameMatch = true
+				break
 			}
 		}
 	}
 
-	if c.claim.Selector.Name != "" && obj.GetName() != c.claim.Selector.Name {
-		return false
-	}
+	// TODO namespace match
 
-	return true
+	return nameMatch && annotationMatches
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {

@@ -13,3 +13,5 @@ spec:
       version: v1
       selector:
         owner: Provider
+        namespaces:
+          - "*"

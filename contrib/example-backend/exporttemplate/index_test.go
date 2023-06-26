@@ -26,8 +26,8 @@ import (
 	crd "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	templates "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned/fake"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/apis/examplebackend/v1alpha1"
+	templates "github.com/kube-bind/kube-bind/contrib/example-backend/client/clientset/versioned/fake"
 )
 
 var mangodb = apiextensions.CustomResourceDefinition{

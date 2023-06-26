@@ -226,7 +226,10 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 		}
 
 		var providerInf multinsinformer.GetterInformer
-		if claim.Global {
+
+		syncClusterScoped := claim.Selector != nil && claim.Selector.Namespaces == nil
+
+		if syncClusterScoped {
 			factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
 			factory.ForResource(claimGVR).Lister() // wire the GVR up in the informer factory
 			providerInf = multinsinformer.GetterInformerWrapper{

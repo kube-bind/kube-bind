@@ -118,93 +118,193 @@ const (
 // PermissionClaim selects objects of a GVR that a service provider may
 // request and that a consumer may accept and allow the service provider access to.
 //
-// TODO fix validation +kubebuilder:validation:XValidation:rule="!(self.create.donate && self.adopt)",message="donate and adopt are mutually exclusive"
+// +kubebuilder:validation:XValidation:rule="!(has(self.autoDonate) && self.autoDonate && has(self.autoAdopt) && self.autoAdopt)",message="donate and adopt are mutually exclusive"
 type PermissionClaim struct {
 	GroupResource `json:","`
 
 	// +kubebuilder:validation:Required
 	Version string `json:"version"`
 
-	// selector selects which resources are affected by this claim.
-	Selector ResourceSelector `json:"selector"`
+	// Selector selects which resources are affected by this claim.
+	// +optional
+	Selector *ResourceSelector `json:"selector,omitempty"`
 
-	// required indicates whether the APIServiceBinding will work if this claim is not accepted.
+	// Required indicates whether the APIServiceBinding will work if this claim is not accepted.
 	Required bool `json:"required"`
 
-	// Global claims global resources for the given group/resource.
-	// This is mutually exclusive with resourceSelector.
 	// +optional
-	Global bool `json:"global,omitempty"`
+	// +kubebuilder:default={}
+	Read *ReadOptions `json:"read,omitempty"`
 
 	// only for owner Provider
 	//
-	// create determines whether the kube-bind konnector will sync matching objects from the
+	// Create determines whether the kube-bind konnector will sync matching objects from the
 	// provider side down to the consumer cluster.
-	Create *CreateOptions `json:"create"`
+	//
+	// +optional
+	Create *CreateOptions `json:"create,omitempty"`
 
-	// adopt set to true means that objects created by the consumer are adopted by the provider.
+	// AutoAdopt set to true means that objects created by the consumer are adopted by the provider.
 	// i.e. the provider will become the owner.
-	Adopt bool `json:"adopt,omitempty"`
+	//
+	// +optional
+	AutoAdopt bool `json:"autoAdopt,omitempty"`
+
+	// AutoDonate set to true means that a newly created object by the provider is immediately owned by the consumer.
+	// If false, the object stays in ownership of the provider.
+	//
+	// +optional
+	AutoDonate bool `json:"autoDonate,omitempty"`
 
 	// onConflict determines how the conflicts between objects on the consumer side
 	// will be resolved.
+	//
+	// +optional
 	OnConflict *OnConflictOptions `json:"onConflict,omitempty"`
 
-	// update lists a number of claimed permissions for the provider.
+	// Update lists a number of claimed permissions for the provider.
 	// "field" and "preserving" are mutually exclusive.
+	//
+	// +optional
 	Update *UpdateOptions `json:"update,omitempty"`
 }
 
-type OnConflictOptions struct {
-	// providerOverrides will make the provider override any object that might already exist
-	// in the consumer cluster if it has the same resource identifier as a resource created by the
-	// provider, but is not the result of syncing.
-	ProviderOverwrites bool `json:"providerOverrides"`
+type ReadOptions struct {
+	// Labels is a list of claimed label key wildcard patterns
+	// that are synchronized from the consumer side to the provider on
+	// objects that are owned by the consumer
+	//
+	// +optional
+	Labels []Matcher `json:"labels,omitempty"`
 
-	// recreateWhenConsumerSideDeleted set to true means the provider will recreate the object
-	// in case the object is missing on the consumer side. Even if the consumer mistakenly or intentionally
-	// deletes the objet, the provider will recreate it. If the field is set as false,
+	// labelsOnProviderOwnedObjects is a list of claimed label key wildcard
+	// patterns that are synchronized from the consumer side
+	// to the provider on objects owned by the provider.
+	//
+	// +optional
+	LabelsOnProviderOwnedObjects []Matcher `json:"labelsOnProviderOwnedObjects,omitempty"`
+
+	// Annotations is a list of claimed annotation key wildcard patterns
+	// that are synchronized from the consumer side to the provider on
+	// objects that are owned by the consumer
+	//
+	// +optional
+	Annotations []Matcher `json:"annotations,omitempty"`
+
+	// OverrideAnnotations is a list of claimed annotation key wildcard
+	// patterns that are synchronized from the consumer side
+	// to the provider on objects owned by the provider.
+	//
+	// +optional
+	OverrideAnnotations []Matcher `json:"overrideAnnotations,omitempty"`
+}
+
+type Matcher struct {
+	// +optional
+	Pattern string `json:"pattern,omitempty"`
+}
+
+type OnConflictOptions struct {
+	// RecreateWhenConsumerSideDeleted set to true (the default) means the provider will recreate the object
+	// in case the object is missing on the consumer side, but has been synchronized before.
+	//
+	// If set to false, deleted provider-owned objects get deleted on the provider side as well.
+	//
+	// Even if the consumer mistakenly or intentionally
+	// deletes the object, the provider will recreate it. If the field is set as false,
 	// the provider will not recreate the object in case the object is deleted on the RecreateWhenConsumerSideDeleted
 	// side.
+	//
+	// +kubebuilder:default:=true
 	RecreateWhenConsumerSideDeleted bool `json:"recreateWhenConsumerSideDeleted"`
 }
 
 type CreateOptions struct {
-	// donate set to true means that a newly created object by the provider is immediately owned by the consumer.
-	// If false, the object stays in ownership of the provider
-	Donate bool `json:"donate,omitempty"`
+	// ReplaceExisting means that an existing object owned by the consumer will be replaced by the provider object.
+	//
+	// If set to false, and a conflicting consumer object exists, it is not touched.
+	// +optional
+	ReplaceExisting bool `json:"replaceExisting,omitempty"`
 }
 
 type UpdateOptions struct {
-	// fields are a list of JSON Paths describing which parts of an object the provider wants to control in case
-	// the object is owned by the consumer as a whole. This field cannot be set if provider owned objects
-	// are selected in this claim, and must be non-empty otherwise.
-	// Mutually exclusive with preservings.
+	// Fields are a list of JSON Paths describing which parts of an object the provider wants to control.
+	//
+	// This field is ignored if the owner in the claim selector is set to "Provider".
 	Fields []string `json:"fields,omitempty"`
 
-	// preserving is a list of JSON Paths describing fields that should be preserved while updating with the
-	// object state on the provider side. This field cannot be set if consumer owned objects are selected in
-	// this claim.
+	// Preserving is a list of JSON Paths describing which parts of an object owned by the provider the consumer keeps controlling.
+	//
+	// This field is ignored if the owner in the claim selector is set to "Consumer".
 	Preserving []string `json:"preservings,omitempty"`
 
-	// alwaysRecreate, when true will make the konnector delete the old object and create a new one
+	// AlwaysRecreate, when true will delete the old object and create new ones
 	// instead of updating. Useful for immutable objects.
+	//
+	// This does not apply to metadata field updates.
 	AlwaysRecreate bool `json:"alwaysRecreate,omitempty"`
+
+	// Labels is a list of claimed label keys or label wildcard patterns that are synchronized from the provider to the consumer for objects owned by the provider.
+	//
+	// By default, no labels are synced.
+	//
+	// +optional
+	Labels []Matcher `json:"labels,omitempty"`
+
+	// OverrideLabels is a list of claiemd label key wildcard patterns that are synchronized from the provider to the consumer for objects owned by the consumer.
+	//
+	// By default, no labels are synced.
+	//
+	// +optional
+	OverrideLabels []Matcher `json:"overrideLabels,omitempty"`
+
+	// Annotations is a list of claimed annotation keys or annotation wildcard patterns that are synchronized from the provider to the consumer for objects owned by the provider.
+	//
+	// By default, no annotations are synced.
+	//
+	// +optional
+	Annotations []Matcher `json:"annotations,omitempty"`
+
+	// OverrideAnnotations is a list of claiemd annotation key wildcard patterns that are synchronized from the provider to the consumer for objects owned by the consumer.
+	//
+	// By default, no annotations are synced.
+	//
+	// +optional
+	OverrideAnnotations []Matcher `json:"overrideAnnotations,omitempty"`
 }
 
 type ResourceSelector struct {
-	// name of an object within a claimed group/resource.
-	// It matches the metadata.name field of the underlying object.
-	// If name is unset, all objects in bound namespaces will be claimed.
+	// Names is a list of specific resource names to select.
+	// Names matches the metadata.name field of the underlying object.
+	// An entry of "*" anywhere in the list means all object names of the group/resource within the "namespaces" field are claimed.
+	// Wildcard entries other than "*" and regular expressions are currently unsupported.
 	//
+	// +kubebuilder:validation:XValidation:rule="self.all(n, n.matches('^[A-z]*|[*]$'))",message="only names or * are allowed"
+	// +kubebuilder:default:={"*"}
 	// +optional
-	// +kubebuilder:validation:Pattern="^([a-z0-9][-a-z0-9_.]*)?[a-z0-9]$"
-	// +kubebuilder:validation:MaxLength=253
-	// +kubebuilder:validation:MinLength=1
-	Name string `json:"name,omitempty"`
+	Names []string `json:"names,omitempty"`
+
+	// Namespaces represents namespaces where an object of the given group/resoruce may be managed.
+	// Namespaces matches against the metadata.namespace field. A value of "*" matches namespaced objects across all
+	// namespaces. If namespaces is not set (an empty list), matches cluster-scoped resources.
+	// If the "names" field is unset, all objects of the group/resource within the listed namespaces (or cluster) will be claimed.
+	//
+	// +kubebuilder:validation:XValidation:rule="self.all(n, n.matches('^[A-z]*|[*]$'))",message="only names or * are allowed"
+	// +kubebuilder:default:={"*"}
+	// +optional
+	Namespaces []string `json:"namespaces,omitempty"`
+
+	// LabelSelectors is a list of label selectors matching selected resources. label selectors follow the same rules as kubernetes label selectors,
+	// see https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/.
+	LabelSelectors []map[string]string `json:"labelSelectors,omitempty"`
+
+	// FieldSelectors is a list of field selectors matching selected resources,
+	// see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/.
+	FieldSelectors []string `json:"fieldSelectors,omitempty"`
 
 	// +kubebuilder:validation:Enum=Provider;Consumer
-	Owner Owner `json:"owner"`
+	// +optional
+	Owner Owner `json:"owner,omitempty"`
 }
 
 type Owner string

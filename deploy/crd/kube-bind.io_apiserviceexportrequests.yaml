@@ -71,34 +71,33 @@ spec:
                         in this workspace. Access is granted per GroupResource, identity,
                         and other properties.
                       items:
-                        description: "PermissionClaim selects objects of a GVR that
+                        description: PermissionClaim selects objects of a GVR that
                           a service provider may request and that a consumer may accept
-                          and allow the service provider access to. \n TODO fix validation
-                          +kubebuilder:validation:XValidation:rule=\"!(self.create.donate
-                          && self.adopt)\",message=\"donate and adopt are mutually
-                          exclusive\""
+                          and allow the service provider access to.
                         properties:
-                          adopt:
-                            description: adopt set to true means that objects created
-                              by the consumer are adopted by the provider. i.e. the
-                              provider will become the owner.
+                          autoAdopt:
+                            description: AutoAdopt set to true means that objects
+                              created by the consumer are adopted by the provider.
+                              i.e. the provider will become the owner.
+                            type: boolean
+                          autoDonate:
+                            description: AutoDonate set to true means that a newly
+                              created object by the provider is immediately owned
+                              by the consumer. If false, the object stays in ownership
+                              of the provider.
                             type: boolean
                           create:
-                            description: "only for owner Provider \n create determines
+                            description: "only for owner Provider \n Create determines
                               whether the kube-bind konnector will sync matching objects
                               from the provider side down to the consumer cluster."
                             properties:
-                              donate:
-                                description: donate set to true means that a newly
-                                  created object by the provider is immediately owned
-                                  by the consumer. If false, the object stays in ownership
-                                  of the provider
+                              replaceExisting:
+                                description: "ReplaceExisting means that an existing
+                                  object owned by the consumer will be replaced by
+                                  the provider object. \n If set to false, and a conflicting
+                                  consumer object exists, it is not touched."
                                 type: boolean
                             type: object
-                          global:
-                            description: Global claims global resources for the given
-                              group/resource. This is mutually exclusive with resourceSelector.
-                            type: boolean
                           group:
                             default: ""
                             description: group is the name of an API group. For core
@@ -109,26 +108,70 @@ spec:
                             description: onConflict determines how the conflicts between
                               objects on the consumer side will be resolved.
                             properties:
-                              providerOverrides:
-                                description: providerOverrides will make the provider
-                                  override any object that might already exist in
-                                  the consumer cluster if it has the same resource
-                                  identifier as a resource created by the provider,
-                                  but is not the result of syncing.
-                                type: boolean
                               recreateWhenConsumerSideDeleted:
-                                description: recreateWhenConsumerSideDeleted set to
-                                  true means the provider will recreate the object
-                                  in case the object is missing on the consumer side.
-                                  Even if the consumer mistakenly or intentionally
-                                  deletes the objet, the provider will recreate it.
-                                  If the field is set as false, the provider will
-                                  not recreate the object in case the object is deleted
-                                  on the RecreateWhenConsumerSideDeleted side.
+                                default: true
+                                description: "RecreateWhenConsumerSideDeleted set
+                                  to true (the default) means the provider will recreate
+                                  the object in case the object is missing on the
+                                  consumer side, but has been synchronized before.
+                                  \n If set to false, deleted provider-owned objects
+                                  get deleted on the provider side as well. \n Even
+                                  if the consumer mistakenly or intentionally deletes
+                                  the object, the provider will recreate it. If the
+                                  field is set as false, the provider will not recreate
+                                  the object in case the object is deleted on the
+                                  RecreateWhenConsumerSideDeleted side."
                                 type: boolean
                             type: object
+                          read:
+                            properties:
+                              annotations:
+                                description: Annotations is a list of claimed annotation
+                                  key wildcard patterns that are synchronized from
+                                  the consumer side to the provider on objects that
+                                  are owned by the consumer
+                                items:
+                                  properties:
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
+                              labels:
+                                description: Labels is a list of claimed label key
+                                  wildcard patterns that are synchronized from the
+                                  consumer side to the provider on objects that are
+                                  owned by the consumer
+                                items:
+                                  properties:
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
+                              labelsOnProviderOwnedObjects:
+                                description: labelsOnProviderOwnedObjects is a list
+                                  of claimed label key wildcard patterns that are
+                                  synchronized from the consumer side to the provider
+                                  on objects owned by the provider.
+                                items:
+                                  properties:
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
+                              overrideAnnotations:
+                                description: OverrideAnnotations is a list of claimed
+                                  annotation key wildcard patterns that are synchronized
+                                  from the consumer side to the provider on objects
+                                  owned by the provider.
+                                items:
+                                  properties:
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
+                            type: object
                           required:
-                            description: required indicates whether the APIServiceBinding
+                            description: Required indicates whether the APIServiceBinding
                               will work if this claim is not accepted.
                             type: boolean
                           resource:
@@ -139,18 +182,59 @@ spec:
                             pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
                             type: string
                           selector:
-                            description: selector selects which resources are affected
+                            description: Selector selects which resources are affected
                               by this claim.
                             properties:
-                              name:
-                                description: name of an object within a claimed group/resource.
-                                  It matches the metadata.name field of the underlying
-                                  object. If name is unset, all objects in bound namespaces
-                                  will be claimed.
-                                maxLength: 253
-                                minLength: 1
-                                pattern: ^([a-z0-9][-a-z0-9_.]*)?[a-z0-9]$
-                                type: string
+                              fieldSelectors:
+                                description: FieldSelectors is a list of field selectors
+                                  matching selected resources, see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/.
+                                items:
+                                  type: string
+                                type: array
+                              labelSelectors:
+                                description: LabelSelectors is a list of label selectors
+                                  matching selected resources. label selectors follow
+                                  the same rules as kubernetes label selectors, see
+                                  https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/.
+                                items:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                                type: array
+                              names:
+                                default:
+                                - '*'
+                                description: Names is a list of specific resource
+                                  names to select. Names matches the metadata.name
+                                  field of the underlying object. An entry of "*"
+                                  anywhere in the list means all object names of the
+                                  group/resource within the "namespaces" field are
+                                  claimed. Wildcard entries other than "*" and regular
+                                  expressions are currently unsupported.
+                                items:
+                                  type: string
+                                type: array
+                                x-kubernetes-validations:
+                                - message: only names or * are allowed
+                                  rule: self.all(n, n.matches('^[A-z]*|[*]$'))
+                              namespaces:
+                                default:
+                                - '*'
+                                description: Namespaces represents namespaces where
+                                  an object of the given group/resoruce may be managed.
+                                  Namespaces matches against the metadata.namespace
+                                  field. A value of "*" matches namespaced objects
+                                  across all namespaces. If namespaces is not set
+                                  (an empty list), matches cluster-scoped resources.
+                                  If the "names" field is unset, all objects of the
+                                  group/resource within the listed namespaces (or
+                                  cluster) will be claimed.
+                                items:
+                                  type: string
+                                type: array
+                                x-kubernetes-validations:
+                                - message: only names or * are allowed
+                                  rule: self.all(n, n.matches('^[A-z]*|[*]$'))
                               owner:
                                 enum:
                                 - Provider
@@ -158,31 +242,75 @@ spec:
                                 type: string
                             type: object
                           update:
-                            description: update lists a number of claimed permissions
+                            description: Update lists a number of claimed permissions
                               for the provider. "field" and "preserving" are mutually
                               exclusive.
                             properties:
                               alwaysRecreate:
-                                description: alwaysRecreate, when true will make the
-                                  konnector delete the old object and create a new
-                                  one instead of updating. Useful for immutable objects.
+                                description: "AlwaysRecreate, when true will delete
+                                  the old object and create new ones instead of updating.
+                                  Useful for immutable objects. \n This does not apply
+                                  to metadata field updates."
                                 type: boolean
+                              annotations:
+                                description: "Annotations is a list of claimed annotation
+                                  keys or annotation wildcard patterns that are synchronized
+                                  from the provider to the consumer for objects owned
+                                  by the provider. \n By default, no annotations are
+                                  synced."
+                                items:
+                                  properties:
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
                               fields:
-                                description: fields are a list of JSON Paths describing
-                                  which parts of an object the provider wants to control
-                                  in case the object is owned by the consumer as a
-                                  whole. This field cannot be set if provider owned
-                                  objects are selected in this claim, and must be
-                                  non-empty otherwise. Mutually exclusive with preservings.
+                                description: "Fields are a list of JSON Paths describing
+                                  which parts of an object the provider wants to control.
+                                  \n This field is ignored if the owner in the claim
+                                  selector is set to \"Provider\"."
                                 items:
                                   type: string
                                 type: array
+                              labels:
+                                description: "Labels is a list of claimed label keys
+                                  or label wildcard patterns that are synchronized
+                                  from the provider to the consumer for objects owned
+                                  by the provider. \n By default, no labels are synced."
+                                items:
+                                  properties:
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
+                              overrideAnnotations:
+                                description: "OverrideAnnotations is a list of claiemd
+                                  annotation key wildcard patterns that are synchronized
+                                  from the provider to the consumer for objects owned
+                                  by the consumer. \n By default, no annotations are
+                                  synced."
+                                items:
+                                  properties:
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
+                              overrideLabels:
+                                description: "OverrideLabels is a list of claiemd
+                                  label key wildcard patterns that are synchronized
+                                  from the provider to the consumer for objects owned
+                                  by the consumer. \n By default, no labels are synced."
+                                items:
+                                  properties:
+                                    pattern:
+                                      type: string
+                                  type: object
+                                type: array
                               preservings:
-                                description: preserving is a list of JSON Paths describing
-                                  fields that should be preserved while updating with
-                                  the object state on the provider side. This field
-                                  cannot be set if consumer owned objects are selected
-                                  in this claim.
+                                description: "Preserving is a list of JSON Paths describing
+                                  which parts of an object owned by the provider the
+                                  consumer keeps controlling. \n This field is ignored
+                                  if the owner in the claim selector is set to \"Consumer\"."
                                 items:
                                   type: string
                                 type: array
@@ -193,6 +321,10 @@ spec:
                         - resource
                         - version
                         type: object
+                        x-kubernetes-validations:
+                        - message: donate and adopt are mutually exclusive
+                          rule: '!(has(self.autoDonate) && self.autoDonate && has(self.autoAdopt)
+                            && self.autoAdopt)'
                       type: array
                     resource:
                       description: 'resource is the name of the resource. Note: it

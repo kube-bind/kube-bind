@@ -155,6 +155,10 @@ func printPermissionClaim(w io.Writer, p kubebindv1alpha1.PermissionClaim) error
 		return err
 	}
 
+	if err := writeCreate(&b, p); err != nil {
+		return err
+	}
+
 	if err := writeOnConflict(&b, p); err != nil {
 		return err
 	}
@@ -174,16 +178,14 @@ func printPermissionClaim(w io.Writer, p kubebindv1alpha1.PermissionClaim) error
 func writeFirstLines(b *bytes.Buffer, groupResource string, claim kubebindv1alpha1.PermissionClaim) error {
 	var err error
 
-	donate := false
-	if claim.Create != nil {
-		donate = claim.Create.Donate
-	}
-	adopt := claim.Adopt
+	donate := claim.AutoDonate
 
-	name := ""
+	adopt := claim.AutoAdopt
+
+	var names []string
 	var owner kubebindv1alpha1.Owner
-	if (claim.Selector != kubebindv1alpha1.ResourceSelector{}) {
-		name = claim.Selector.Name
+	if claim.Selector != nil {
+		names = claim.Selector.Names
 		owner = claim.Selector.Owner
 	}
 
@@ -207,10 +209,14 @@ func writeFirstLines(b *bytes.Buffer, groupResource string, claim kubebindv1alph
 	}
 
 	var ref string
-	if name != "" {
-		ref = fmt.Sprintf(" which are referenced with:\n\tname: \"%s\"\n", name)
+	if len(names) > 0 {
+		ref = " which are referenced with:"
+		for _, name := range names {
+			ref = fmt.Sprintf("%s\n\t- name: \"%s\"", ref, name)
+		}
+		ref += "\n"
 	} else {
-		ref = " "
+		ref += " "
 	}
 
 	_, err = fmt.Fprintf(b, "The provider wants to %s%son your cluster.\n", groupResource, ref)
@@ -219,20 +225,30 @@ func writeFirstLines(b *bytes.Buffer, groupResource string, claim kubebindv1alph
 
 }
 
-func writeOnConflict(b *bytes.Buffer, claim kubebindv1alpha1.PermissionClaim) error {
+func writeCreate(b io.StringWriter, claim kubebindv1alpha1.PermissionClaim) error {
 	var err error
 
-	if claim.OnConflict != nil {
-		switch {
-		case claim.OnConflict.ProviderOverwrites && claim.OnConflict.RecreateWhenConsumerSideDeleted:
-			_, err = b.WriteString("Conflicting objects will be overwritten and created objects will be recreated upon deletion.\n")
-		case claim.OnConflict.ProviderOverwrites:
-			_, err = b.WriteString("Conflicting objects will be overwritten and created objects will not be recreated upon deletion.\n")
-		case claim.OnConflict.RecreateWhenConsumerSideDeleted:
-			_, err = b.WriteString("Conflicting objects will not be overwritten and created objects will be recreated upon deletion.\n")
-		default: //Do nothing
-		}
+	switch {
+	case claim.Create == nil || !claim.Create.ReplaceExisting:
+		//_, err = b.WriteString("Conflicting objects will not be overwritten. ")
+	case claim.Create.ReplaceExisting:
+		_, err = b.WriteString("Conflicting objects will be replaced by the provider. ")
 	}
+
+	return err
+}
+
+func writeOnConflict(b io.StringWriter, claim kubebindv1alpha1.PermissionClaim) error {
+	var err error
+
+	switch {
+	case claim.OnConflict == nil || !claim.OnConflict.RecreateWhenConsumerSideDeleted:
+		//_, err = b.WriteString("Created objects will not be recreated upon deletion. ")
+	case claim.OnConflict.RecreateWhenConsumerSideDeleted:
+		_, err = b.WriteString("Created objects will be recreated upon deletion. ")
+	default: //Do nothing
+	}
+
 	return err
 }
 

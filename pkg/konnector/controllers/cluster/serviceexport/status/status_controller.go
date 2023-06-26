@@ -187,6 +187,9 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 		}
 		logger.V(3).Info("skipping because consumer mismatch", "key", key)
 	}
+
+	logger.V(2).Info("queueing Unstructured", "key", key)
+	c.queue.Add(key)
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {

@@ -182,7 +182,7 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(dataCode)
+	encoded := base64.URLEncoding.EncodeToString(dataCode)
 	authURL := h.oidc.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
@@ -414,7 +414,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(payload)
+	encoded := base64.URLEncoding.EncodeToString(payload)
 
 	parsedAuthURL, err := url.Parse(state.RedirectURL)
 	if err != nil {

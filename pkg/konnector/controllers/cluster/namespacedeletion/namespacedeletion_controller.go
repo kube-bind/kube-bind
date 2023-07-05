@@ -47,6 +47,7 @@ const (
 // NewController returns a new controller deleting old ServiceNamespaces.
 func NewController(
 	config *rest.Config,
+	providerNamespace string,
 	serviceNamespaceInformer bindinformers.APIServiceNamespaceInformer,
 	namespaceInformer dynamic.Informer[corelisters.NamespaceLister],
 ) (*controller, error) {
@@ -76,6 +77,8 @@ func NewController(
 		serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
 
 		namespaceInformer: namespaceInformer,
+
+		providerNamespace: providerNamespace,
 
 		getNamespace: namespaceInformer.Lister().Get,
 
@@ -112,6 +115,8 @@ type controller struct {
 
 	namespaceInformer dynamic.Informer[corelisters.NamespaceLister]
 
+	providerNamespace string
+
 	serviceNamespaceLister  bindlisters.APIServiceNamespaceLister
 	serviceNamespaceIndexer cache.Indexer
 
@@ -132,13 +137,14 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 }
 
 func (c *controller) enqueueNamespace(logger klog.Logger, obj interface{}) {
-	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	nsKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	logger.V(2).Info("queueing APIServiceNamespace", "key", key, "reason", "Namespace", "NamespaceKey", key)
+	key := fmt.Sprintf("%s/%s", c.providerNamespace, nsKey)
+	logger.V(2).Info("queueing APIServiceNamespace", "key", key, "reason", "Namespace", "NamespaceKey", nsKey)
 	c.queue.Add(key)
 }
 

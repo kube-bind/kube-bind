@@ -117,6 +117,7 @@ func NewController(
 	}
 	namespacedeletionCtrl, err := namespacedeletion.NewController(
 		providerConfig,
+		providerNamespace,
 		providerBindInformers.KubeBind().V1alpha1().APIServiceNamespaces(),
 		namespaceInformer,
 	)

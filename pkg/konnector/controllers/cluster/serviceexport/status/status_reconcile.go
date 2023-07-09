@@ -92,7 +92,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		unstructured.RemoveNestedField(downstream.Object, "status")
 	}
 	if !reflect.DeepEqual(orig, downstream) {
-		logger.Info("Updating downstream object status", "downstreamNamespace", ns, "downstreamName", obj.GetName())
+		logger.Info("Updating downstream object status")
 		if _, err := r.updateConsumerObjectStatus(ctx, downstream); err != nil {
 			return err
 		}

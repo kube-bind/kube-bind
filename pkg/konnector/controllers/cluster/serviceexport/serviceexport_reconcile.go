@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeschema "k8s.io/apimachinery/pkg/runtime/schema"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -160,6 +161,18 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 
 	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
 	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
+
+	providerNamespaceUID := ""
+	if pns, err := dynamicProviderClient.Resource(runtimeschema.GroupVersionResource{
+		Group:    "",
+		Version:  "v1",
+		Resource: "namespaces",
+	}).Get(ctx, r.providerNamespace, metav1.GetOptions{}); err != nil {
+		return err
+	} else {
+		providerNamespaceUID = string(pns.GetUID())
+	}
+
 	consumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
 
 	var providerInf multinsinformer.GetterInformer
@@ -185,6 +198,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	specCtrl, err := spec.NewController(
 		gvr,
 		r.providerNamespace,
+		providerNamespaceUID,
 		r.consumerConfig,
 		r.providerConfig,
 		consumerInf.ForResource(gvr),
@@ -198,6 +212,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	statusCtrl, err := status.NewController(
 		gvr,
 		r.providerNamespace,
+		providerNamespaceUID,
 		r.consumerConfig,
 		r.providerConfig,
 		consumerInf.ForResource(gvr),

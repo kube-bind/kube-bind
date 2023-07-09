@@ -50,6 +50,7 @@ const (
 func NewController(
 	gvr schema.GroupVersionResource,
 	providerNamespace string,
+	providerNamespaceUID string,
 	consumerConfig, providerConfig *rest.Config,
 	consumerDynamicInformer informers.GenericInformer,
 	providerDynamicInformer multinsinformer.GetterInformer,

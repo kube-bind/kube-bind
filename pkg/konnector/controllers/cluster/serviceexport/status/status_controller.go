@@ -227,8 +227,9 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	logger.V(2).Info("queueing Unstructured", "key", downstreamKey)
-	c.queue.Add(downstreamKey)
+	upstreamKey := clusterscoped.Prepend(downstreamKey, c.providerNamespace)
+	logger.V(2).Info("queueing Unstructured", "key", upstreamKey)
+	c.queue.Add(upstreamKey)
 }
 
 func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {

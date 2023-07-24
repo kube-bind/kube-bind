@@ -38,6 +38,7 @@ import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	clusterscoped "github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/cluster-scoped"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
@@ -107,11 +108,26 @@ func NewController(
 				if ns != "" {
 					return dynamicConsumerLister.Namespace(ns).Get(name)
 				} else {
-					return dynamicConsumerLister.Get(name)
+					obj, err := dynamicConsumerLister.Get(clusterscoped.Behead(name, providerNamespace))
+					if err != nil {
+						return nil, err
+					}
+					return clusterscoped.TranslateFromDownstream(obj.DeepCopy(), providerNamespace, providerNamespaceUID)
 				}
 			},
 			updateConsumerObjectStatus: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-				return consumerClient.Resource(gvr).Namespace(obj.GetNamespace()).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
+				ns := obj.GetNamespace()
+				if ns == "" {
+					clusterscoped.TranslateFromUpstream(obj)
+				}
+				updated, err := consumerClient.Resource(gvr).Namespace(obj.GetNamespace()).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
+				if err != nil {
+					return nil, err
+				}
+				if ns == "" {
+					return clusterscoped.TranslateFromDownstream(updated, providerNamespace, providerNamespaceUID)
+				}
+				return updated, nil
 			},
 			deleteProviderObject: func(ctx context.Context, ns, name string) error {
 				return providerClient.Resource(gvr).Namespace(ns).Delete(ctx, name, metav1.DeleteOptions{})

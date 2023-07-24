@@ -42,6 +42,7 @@ import (
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	clusterscoped "github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/cluster-scoped"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
@@ -105,25 +106,60 @@ func NewController(
 				return providerBindClient.KubeBindV1alpha1().APIServiceNamespaces(providerNamespace).Create(ctx, sn, metav1.CreateOptions{})
 			},
 			getProviderObject: func(ns, name string) (*unstructured.Unstructured, error) {
-				obj, err := providerDynamicInformer.Get(ns, name)
-				if err != nil {
-					return nil, err
+				if ns != "" {
+					obj, err := providerDynamicInformer.Get(ns, name)
+					if err != nil {
+						return nil, err
+					}
+					return obj.(*unstructured.Unstructured), nil
+				} else {
+					got, err := providerDynamicInformer.Get(ns, clusterscoped.Prepend(name, providerNamespace))
+					if err != nil {
+						return nil, err
+					}
+					obj := got.(*unstructured.Unstructured)
+					return clusterscoped.TranslateFromUpstream(obj.DeepCopy())
 				}
-				return obj.(*unstructured.Unstructured), nil
 			},
 			createProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-				return providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
+				if ns := obj.GetNamespace(); ns != "" {
+					return providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
+				} else {
+					obj, err := clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID)
+					if err != nil {
+						return nil, err
+					}
+					if created, err := providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{}); err != nil {
+						return nil, err
+					} else {
+						return clusterscoped.TranslateFromUpstream(created)
+					}
+				}
 			},
 			updateProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+				ns := obj.GetNamespace()
+				if ns == "" {
+					clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID)
+				}
 				data, err := json.Marshal(obj.Object)
 				if err != nil {
 					return nil, err
 				}
-				return providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Patch(ctx,
+				patched, err := providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Patch(ctx,
 					obj.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: applyManager, Force: pointer.Bool(true)},
 				)
+				if err != nil {
+					return nil, err
+				}
+				if ns == "" {
+					return clusterscoped.TranslateFromUpstream(patched)
+				}
+				return patched, nil
 			},
 			deleteProviderObject: func(ctx context.Context, ns, name string) error {
+				if ns == "" {
+					name = clusterscoped.Prepend(name, providerNamespace)
+				}
 				return providerClient.Resource(gvr).Namespace(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
 			updateConsumerObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {

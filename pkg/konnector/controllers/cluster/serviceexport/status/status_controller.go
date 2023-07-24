@@ -210,6 +210,10 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 		return
 	}
 
+	if clusterscoped.Behead(key, c.providerNamespace) == key {
+		logger.V(3).Info("skipping because consumer mismatch", "key", key)
+		return
+	}
 	logger.V(2).Info("queueing Unstructured", "key", key)
 	c.queue.Add(key)
 }

@@ -112,34 +112,42 @@ func NewController(
 						return nil, err
 					}
 					return obj.(*unstructured.Unstructured), nil
-				} else {
-					got, err := providerDynamicInformer.Get(ns, clusterscoped.Prepend(name, providerNamespace))
-					if err != nil {
-						return nil, err
-					}
-					obj := got.(*unstructured.Unstructured)
-					return clusterscoped.TranslateFromUpstream(obj.DeepCopy())
 				}
+				got, err := providerDynamicInformer.Get(ns, clusterscoped.Prepend(name, providerNamespace))
+				if err != nil {
+					return nil, err
+				}
+				obj := got.(*unstructured.Unstructured).DeepCopy()
+				err = clusterscoped.TranslateFromUpstream(obj)
+				if err != nil {
+					return nil, err
+				}
+				return obj, nil
 			},
 			createProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				if ns := obj.GetNamespace(); ns != "" {
 					return providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
-				} else {
-					obj, err := clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID)
-					if err != nil {
-						return nil, err
-					}
-					if created, err := providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{}); err != nil {
-						return nil, err
-					} else {
-						return clusterscoped.TranslateFromUpstream(created)
-					}
 				}
+				err := clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID)
+				if err != nil {
+					return nil, err
+				}
+				created, err := providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
+				if err != nil {
+					return nil, err
+				}
+				err = clusterscoped.TranslateFromUpstream(created)
+				if err != nil {
+					return nil, err
+				}
+				return created, nil
 			},
 			updateProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				ns := obj.GetNamespace()
 				if ns == "" {
-					clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID)
+					if err := clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID); err != nil {
+						return nil, err
+					}
 				}
 				data, err := json.Marshal(obj.Object)
 				if err != nil {
@@ -152,7 +160,11 @@ func NewController(
 					return nil, err
 				}
 				if ns == "" {
-					return clusterscoped.TranslateFromUpstream(patched)
+					err = clusterscoped.TranslateFromUpstream(patched)
+					if err != nil {
+						return nil, err
+					}
+					return patched, nil
 				}
 				return patched, nil
 			},

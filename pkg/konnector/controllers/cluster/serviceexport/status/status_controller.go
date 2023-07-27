@@ -107,25 +107,35 @@ func NewController(
 			getConsumerObject: func(ns, name string) (*unstructured.Unstructured, error) {
 				if ns != "" {
 					return dynamicConsumerLister.Namespace(ns).Get(name)
-				} else {
-					obj, err := dynamicConsumerLister.Get(clusterscoped.Behead(name, providerNamespace))
-					if err != nil {
-						return nil, err
-					}
-					return clusterscoped.TranslateFromDownstream(obj.DeepCopy(), providerNamespace, providerNamespaceUID)
 				}
+				got, err := dynamicConsumerLister.Get(clusterscoped.Behead(name, providerNamespace))
+				if err != nil {
+					return nil, err
+				}
+				obj := got.DeepCopy()
+				err = clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID)
+				if err != nil {
+					return nil, err
+				}
+				return obj, nil
 			},
 			updateConsumerObjectStatus: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				ns := obj.GetNamespace()
 				if ns == "" {
-					clusterscoped.TranslateFromUpstream(obj)
+					if err := clusterscoped.TranslateFromUpstream(obj); err != nil {
+						return nil, err
+					}
 				}
 				updated, err := consumerClient.Resource(gvr).Namespace(obj.GetNamespace()).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
 				if err != nil {
 					return nil, err
 				}
 				if ns == "" {
-					return clusterscoped.TranslateFromDownstream(updated, providerNamespace, providerNamespaceUID)
+					err = clusterscoped.TranslateFromDownstream(updated, providerNamespace, providerNamespaceUID)
+					if err != nil {
+						return nil, err
+					}
+					return updated, nil
 				}
 				return updated, nil
 			},

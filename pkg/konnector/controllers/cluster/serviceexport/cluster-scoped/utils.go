@@ -121,26 +121,35 @@ func ClearClusterNs(obj *unstructured.Unstructured, clusterNs string) error {
 	return nil
 }
 
-func TranslateFromDownstream(obj *unstructured.Unstructured, clusterNs, clusterNsUID string) (*unstructured.Unstructured, error) {
-	err := InjectClusterNs(obj, clusterNs, clusterNsUID)
+// TranslateFromDownstream mutates a cluster-scoped object in place by injecting the cluster namespace
+// and switching to its corresponding upstream name
+func TranslateFromDownstream(obj *unstructured.Unstructured, clusterNs, clusterNsUID string) error {
+	copy := obj.DeepCopy()
+	err := InjectClusterNs(copy, clusterNs, clusterNsUID)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	SwitchToUpstreamName(obj, clusterNs)
-	return obj, nil
+	SwitchToUpstreamName(copy, clusterNs)
+	*obj = *copy
+	return nil
 }
 
-func TranslateFromUpstream(obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+// TranslateFromUpstream mutates a cluster-scoped object in place by clearing the injected cluster namespace
+// and switching to its corresponding downstream name
+func TranslateFromUpstream(obj *unstructured.Unstructured) error {
 	clusterNs, err := ExtractClusterNs(obj)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	err = ClearClusterNs(obj, clusterNs)
+
+	copy := obj.DeepCopy()
+	err = ClearClusterNs(copy, clusterNs)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	SwitchToDownstreamName(obj, clusterNs)
-	return obj, nil
+	SwitchToDownstreamName(copy, clusterNs)
+	*obj = *copy
+	return nil
 }
 
 func findOwnerReferenceToClusterNs(ors []metav1.OwnerReference, clusterNs string) (int, bool) {

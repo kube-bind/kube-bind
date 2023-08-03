@@ -111,7 +111,7 @@ type APIServiceExportRequestResource struct {
 	// a sensible default is chosen by the service provider.
 	Versions []string `json:"versions,omitempty"`
 
-	// permissionClaims records decisions about permission claims requested by the API service provider.
+	// permissionClaims records decisions about permission claims requested by the service provider.
 	// Individual claims can be accepted or rejected. If accepted, the API service provider gets the
 	// requested access to the specified resources in this workspace. Access is granted per
 	// GroupResource, identity, and other properties.

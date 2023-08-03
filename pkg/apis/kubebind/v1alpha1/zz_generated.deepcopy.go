@@ -1099,8 +1099,8 @@ func (in *UpdateOptions) DeepCopyInto(out *UpdateOptions) {
 		*out = make([]Matcher, len(*in))
 		copy(*out, *in)
 	}
-	if in.OverrideLabels != nil {
-		in, out := &in.OverrideLabels, &out.OverrideLabels
+	if in.LabelsOnConsumerOwnedObjects != nil {
+		in, out := &in.LabelsOnConsumerOwnedObjects, &out.LabelsOnConsumerOwnedObjects
 		*out = make([]Matcher, len(*in))
 		copy(*out, *in)
 	}
@@ -1109,8 +1109,8 @@ func (in *UpdateOptions) DeepCopyInto(out *UpdateOptions) {
 		*out = make([]Matcher, len(*in))
 		copy(*out, *in)
 	}
-	if in.OverrideAnnotations != nil {
-		in, out := &in.OverrideAnnotations, &out.OverrideAnnotations
+	if in.AnnotationsOnConsumerOwnedObjects != nil {
+		in, out := &in.AnnotationsOnConsumerOwnedObjects, &out.AnnotationsOnConsumerOwnedObjects
 		*out = make([]Matcher, len(*in))
 		copy(*out, *in)
 	}

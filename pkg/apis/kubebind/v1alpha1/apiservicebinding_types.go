@@ -97,11 +97,12 @@ type APIServiceBindingSpec struct {
 	PermissionClaims []AcceptablePermissionClaim `json:"permissionClaims,omitempty"`
 }
 
+// acceptablePermissionClaim is a permission claim that stores the users acceptance in the field state. Only accepted permission claims are reconciled.
 type AcceptablePermissionClaim struct {
 	PermissionClaim `json:",inline"`
 
 	// state indicates if the claim is accepted or rejected.
-
+	//
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum=Accepted;Rejected
@@ -115,60 +116,69 @@ const (
 	ClaimRejected AcceptablePermissionClaimState = "Rejected"
 )
 
-// PermissionClaim selects objects of a GVR that a service provider may
+// permissionClaim selects objects of a GVR that a service provider may
 // request and that a consumer may accept and allow the service provider access to.
 //
 // +kubebuilder:validation:XValidation:rule="!(has(self.autoDonate) && self.autoDonate && has(self.autoAdopt) && self.autoAdopt)",message="donate and adopt are mutually exclusive"
 type PermissionClaim struct {
 	GroupResource `json:","`
 
+	// version is the version of the claimed resource.
+	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinLength:=1
 	Version string `json:"version"`
 
-	// Selector selects which resources are affected by this claim.
+	// selector selects which resources are being claimed.
+	// If unset, all resources across all namespaces are being claimed.
+	//
 	// +optional
 	// +kubebuilder:default:={}
 	Selector *ResourceSelector `json:"selector,omitempty"`
 
-	// Required indicates whether the APIServiceBinding will work if this claim is not accepted.
+	// required indicates whether the APIServiceBinding will work if this claim is not accepted. If a required claim is denied, the binding is aborted.
 	Required bool `json:"required"`
 
-	// read contains extra labels and annotations the provider will read from objects on the consumer cluster.
-	// By default no labels and annotations are read.
+	// read claims read access to matching objects for the provider.
+	// reading of the claimed object(s) is always claimed.
+	// By default no labels and annotations are read. Reading of labels and annotations can be claimed
+	// optionally by adding labels and annotations items.
+	// If labels on consumer owned objects that are set by the consumer are read, labelsOnProviderOwnedObjects and
+	// annotationsOnProviderOwnedObjects can be set.
 	//
 	// +optional
 	// +kubebuilder:default={}
 	Read *ReadOptions `json:"read,omitempty"`
 
+	// create determines whether the kube-bind konnector will sync matching objects from the
+	// provider cluster down to the consumer cluster.
 	// only for owner Provider
-	//
-	// Create determines whether the kube-bind konnector will sync matching objects from the
-	// provider side down to the consumer cluster.
 	//
 	// +optional
 	Create *CreateOptions `json:"create,omitempty"`
 
-	// AutoAdopt set to true means that objects created by the consumer are adopted by the provider.
+	// autoAdopt set to true means that objects created by the consumer are adopted by the provider.
 	// i.e. the provider will become the owner.
+	// Mutually exclusive with autoDonate.
 	//
 	// +optional
 	AutoAdopt bool `json:"autoAdopt,omitempty"`
 
-	// AutoDonate set to true means that a newly created object by the provider is immediately owned by the consumer.
+	// autoDonate set to true means that a newly created object by the provider is immediately owned by the consumer.
 	// If false, the object stays in ownership of the provider.
+	// Mutually exclusive with autoDonate.
 	//
 	// +optional
 	AutoDonate bool `json:"autoDonate,omitempty"`
 
-	// onConflict determines how the conflicts between objects on the consumer side
-	// will be resolved.
+	// onConflict determines how the conflicts between objects on the consumer cluster will be resolved.
 	//
 	// +optional
 	// +kubebuilder:default:={}
 	OnConflict *OnConflictOptions `json:"onConflict,omitempty"`
 
-	// update lists which updates to objects on the consumer side are claimed.
+	// update lists which updates to objects on the consumer cluster are claimed.
+	// By default, the whole object is synced, but metadata is not.
 	//
 	// +optional
 	Update *UpdateOptions `json:"update,omitempty"`
@@ -176,28 +186,28 @@ type PermissionClaim struct {
 
 type ReadOptions struct {
 	// labels is a list of claimed label key wildcard patterns
-	// that are synchronized from the consumer side to the provider on
+	// that are synchronized from the consumer cluster to the provider on
 	// objects that are owned by the consumer.
 	//
 	// +optional
 	Labels []Matcher `json:"labels,omitempty"`
 
 	// labelsOnProviderOwnedObjects is a list of claimed label key wildcard
-	// patterns that are synchronized from the consumer side
+	// patterns that are synchronized from the consumer cluster
 	// to the provider on objects owned by the provider.
 	//
 	// +optional
 	LabelsOnProviderOwnedObjects []Matcher `json:"labelsOnProviderOwnedObjects,omitempty"`
 
 	// annotations is a list of claimed annotation key wildcard patterns
-	// that are synchronized from the consumer side to the provider on
+	// that are synchronized from the consumer cluster to the provider on
 	// objects that are owned by the consumer.
 	//
 	// +optional
 	Annotations []Matcher `json:"annotations,omitempty"`
 
 	// overrideAnnotations is a list of claimed annotation key wildcard
-	// patterns that are synchronized from the consumer side
+	// patterns that are synchronized from the consumer cluster
 	// to the provider on objects owned by the provider.
 	//
 	// +optional
@@ -211,14 +221,13 @@ type Matcher struct {
 
 type OnConflictOptions struct {
 	// recreateWhenConsumerSideDeleted set to true (the default) means the provider will recreate the object
-	// in case the object is missing on the consumer side, but has been synchronized before.
+	// in case the object is missing on the consumer cluster, but has been synchronized before.
 	//
-	// If set to false, deleted provider-owned objects get deleted on the provider side as well.
+	// If set to false, deleted provider-owned objects get deleted on the provider cluster as well.
 	//
 	// Even if the consumer mistakenly or intentionally
 	// deletes the object, the provider will recreate it. If the field is set as false,
-	// the provider will not recreate the object in case the object is deleted on the RecreateWhenConsumerSideDeleted
-	// side.
+	// the provider will not recreate the object in case the object is deleted on the consumer cluster.
 	//
 	// +kubebuilder:default:=true
 	RecreateWhenConsumerSideDeleted bool `json:"recreateWhenConsumerSideDeleted"`
@@ -246,7 +255,7 @@ type UpdateOptions struct {
 	// This field is ignored if the owner in the claim selector is set to "Consumer".
 	//
 	// +optional
-	Preserving []string `json:"preservings,omitempty"`
+	Preserving []string `json:"preserving,omitempty"`
 
 	// alwaysRecreate, when true will delete the old object and create new ones
 	// instead of updating. Useful for immutable objects.
@@ -263,12 +272,12 @@ type UpdateOptions struct {
 	// +optional
 	Labels []Matcher `json:"labels,omitempty"`
 
-	// overrideLabels is a list of claiemd label key wildcard patterns that are synchronized from the provider to the consumer for objects owned by the consumer.
+	// labelsOnConsumerOwnedObjects is a list of claimed label key wildcard patterns that are synchronized from the provider to the consumer for objects owned by the consumer.
 	//
 	// By default, no labels are synced.
 	//
 	// +optional
-	OverrideLabels []Matcher `json:"overrideLabels,omitempty"`
+	LabelsOnConsumerOwnedObjects []Matcher `json:"labelsOnConsumerOwnedObjects,omitempty"`
 
 	// annotations is a list of claimed annotation keys or annotation wildcard patterns that are synchronized from the provider to the consumer for objects owned by the provider.
 	//
@@ -277,12 +286,12 @@ type UpdateOptions struct {
 	// +optional
 	Annotations []Matcher `json:"annotations,omitempty"`
 
-	// overrideAnnotations is a list of claiemd annotation key wildcard patterns that are synchronized from the provider to the consumer for objects owned by the consumer.
+	// annotationsOnConsumerOwnedObjects is a list of claimed annotation key wildcard patterns that are synchronized from the provider to the consumer for objects owned by the consumer.
 	//
 	// By default, no annotations are synced.
 	//
 	// +optional
-	OverrideAnnotations []Matcher `json:"overrideAnnotations,omitempty"`
+	AnnotationsOnConsumerOwnedObjects []Matcher `json:"annotationsOnConsumerOwnedObjects,omitempty"`
 }
 
 type ResourceSelector struct {
@@ -290,18 +299,20 @@ type ResourceSelector struct {
 	// Names matches the metadata.name field of the underlying object.
 	// An entry of "*" anywhere in the list means all object names of the group/resource within the "namespaces" field are claimed.
 	// Wildcard entries other than "*" and regular expressions are currently unsupported.
+	// If a resources name matches any value in names, the resource name is considered matching.
 	//
-	// +kubebuilder:validation:XValidation:rule="self.all(n, n.matches('^[A-z-]+|[*]$'))",message="only names or * are allowed"
+	// // +kubebuilder:validation:XValidation:rule="self.all(n, n.matches('^[A-z-]+|[*]$'))",message="only names or * are allowed"
 	// +kubebuilder:default:={"*"}
 	// +optional
 	Names []string `json:"names,omitempty"`
 
-	// namespaces represents namespaces where an object of the given group/resoruce may be managed.
-	// Namespaces matches against the metadata.namespace field. A value of "*" matches namespaced objects across all
-	// namespaces. If namespaces is not set (an empty list), matches cluster-scoped resources.
+	// namespaces represents namespaces where an object of the given group/resource may be managed.
+	// Namespaces matches against the metadata.namespace field. A value of "*" matches namespaced objects across all namespaces.
+	// If a resources namespace matches any value in namespaces, the resource namespace is considered matching.
+	// If the claim is for a cluster-scoped resource, namespaces has to explicitly be set to an empty array to prevent defaulting to "*".
 	// If the "names" field is unset, all objects of the group/resource within the listed namespaces (or cluster) will be claimed.
 	//
-	// +kubebuilder:validation:XValidation:rule="self.all(n, n.matches('^[A-z-]+|[*]$'))",message="only names or * are allowed"
+	// // +kubebuilder:validation:XValidation:rule="self.all(n, n.matches('^[A-z-]+|[*]$'))",message="only names or * are allowed"
 	// +kubebuilder:default:={"*"}
 	// +optional
 	Namespaces []string `json:"namespaces,omitempty"`
@@ -314,6 +325,12 @@ type ResourceSelector struct {
 	// see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/.
 	FieldSelectors []string `json:"fieldSelectors,omitempty"`
 
+	// owner matches the resource's owner. If an owner selector is set, resources owned by other owners will not be claimed.
+	// Resources without a present owner will be considered, if configured owner could be the owner of the object.
+	// For example, if the consumer creates a resource that is claimed by the provider for reading. In this case the resource
+	// will be marked as owned by the consumer, and handled as such in further reconciliations.
+	// An unset owner selector means objects from both sides are considered.
+	//
 	// +kubebuilder:validation:Enum=Provider;Consumer
 	// +optional
 	Owner Owner `json:"owner,omitempty"`
@@ -321,11 +338,13 @@ type ResourceSelector struct {
 
 type Owner string
 
-// provider means that the owner of the resource is the Provider.
-const Provider Owner = "Provider"
+const (
+	// provider means that the owner of the resource is the Provider.
+	Provider Owner = "Provider"
 
-// consumer means that the owner of the resource is the Consumer.
-const Consumer Owner = "Consumer"
+	// consumer means that the owner of the resource is the Consumer.
+	Consumer Owner = "Consumer"
+)
 
 type APIServiceBindingStatus struct {
 	// providerPrettyName is the pretty name of the service provider cluster. This

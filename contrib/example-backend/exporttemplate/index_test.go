@@ -28,6 +28,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/apis/examplebackend/v1alpha1"
 	templates "github.com/kube-bind/kube-bind/contrib/example-backend/client/clientset/versioned/fake"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
 var mangodb = apiextensions.CustomResourceDefinition{
@@ -61,8 +62,10 @@ var dummy = apiextensions.CustomResourceDefinition{
 var export = v1alpha1.APIServiceExportTemplate{
 	Spec: v1alpha1.APIServiceExportTemplateSpec{
 		APIServiceSelector: v1alpha1.APIServiceSelector{
-			Resource: "mangodbs",
-			Group:    "mangodb.com",
+			GroupResource: kubebindv1alpha1.GroupResource{
+				Resource: "mangodbs",
+				Group:    "mangodb.com",
+			},
 		},
 	},
 	ObjectMeta: v1.ObjectMeta{

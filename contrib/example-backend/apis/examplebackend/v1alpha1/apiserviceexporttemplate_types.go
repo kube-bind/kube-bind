@@ -47,7 +47,14 @@ type APIServiceExportTemplate struct {
 }
 
 type APIServiceExportTemplateSpec struct {
+	// apiServiceSelector describes the groupresource and versions of the api that will be offered to bind to consumer clusters.
+	//
+	// +required
 	APIServiceSelector APIServiceSelector `json:"APIServiceSelector"`
+
+	// permissionClaims are a list of permission claims for the provider to read or create/update additional resources on the
+	// consumers cluster. Empty by default.
+	//
 	// +optional
 	PermissionClaims []v1alpha1.PermissionClaim `json:"permissionClaims,omitempty"`
 }
@@ -55,9 +62,11 @@ type APIServiceExportTemplateSpec struct {
 type APIServiceExportTemplateStatus struct{}
 
 type APIServiceSelector struct {
-	Group    string   `json:"group"`
-	Resource string   `json:"resource"`
-	Versions []string `json:"versions"`
+	v1alpha1.GroupResource `json:","`
+
+	// +required
+	// +kubebuilder:validation:MinLength:=1
+	Version string `json:"version"`
 }
 
 // APIServiceExportRequestList is the list of APIServiceExportRequest.

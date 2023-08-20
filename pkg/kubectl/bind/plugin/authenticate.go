@@ -123,7 +123,7 @@ func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, c
 	values.Add("c", clusterID)
 	u.RawQuery = values.Encode()
 
-	fmt.Fprintf(b.Options.ErrOut, "\nTo authenticate, visit in your browser:\n\n\t%s", u.String()) // nolint: errcheck
+	fmt.Fprintf(b.Options.ErrOut, "\nTo authenticate, visit in your browser:\n\n\t%s\n", u.String()) // nolint: errcheck
 
 	// TODO(sttts): callback backend, not 127.0.0.1
 	if false {

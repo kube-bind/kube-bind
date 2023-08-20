@@ -121,10 +121,10 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 		ns = nss[0].(*corev1.Namespace).Name
 	} else {
 		nsObj, err := kuberesources.CreateNamespace(ctx, m.kubeClient, m.namespacePrefix, identity)
-		logger.Info("Created namespace", "namespace", nsObj.Name)
 		if err != nil {
 			return nil, err
 		}
+		logger.Info("Created namespace", "namespace", nsObj.Name)
 		ns = nsObj.Name
 	}
 	logger = logger.WithValues("namespace", ns)

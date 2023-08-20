@@ -62,7 +62,7 @@ LOGCHECK_BIN := logcheck
 LOGCHECK := $(TOOLS_GOBIN_DIR)/$(LOGCHECK_BIN)-$(LOGCHECK_VER)
 export LOGCHECK # so hack scripts can use it
 
-KCP_VER := v0.9.1
+KCP_VER := v0.11.0
 KCP_BIN := kcp
 KCP := $(TOOLS_GOBIN_DIR)/$(KCP_BIN)-$(KCP_VER)
 

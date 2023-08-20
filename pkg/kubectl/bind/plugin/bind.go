@@ -37,10 +37,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/printers"
 	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
@@ -55,8 +53,9 @@ type BindOptions struct {
 	*base.Options
 	Logs *logs.Options
 
-	Print  *genericclioptions.PrintFlags
-	DryRun bool
+	Print   *genericclioptions.PrintFlags
+	printer printers.ResourcePrinter
+	DryRun  bool
 
 	// url is the argument accepted by the command. It contains the
 	// reference to where an APIService exists.
@@ -64,6 +63,9 @@ type BindOptions struct {
 
 	// skipKonnector skips the deployment of the konnector.
 	SkipKonnector bool
+
+	// The konnector image to use and override default konnector image
+	KonnectorImageOverride string
 
 	// Runner is runs the command. It can be replaced in tests.
 	Runner func(cmd *exec.Cmd) error
@@ -76,7 +78,7 @@ func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 	opts := &BindOptions{
 		Options: base.NewOptions(streams),
 		Logs:    logs.NewOptions(),
-		Print:   genericclioptions.NewPrintFlags("kubectl-bind"),
+		Print:   genericclioptions.NewPrintFlags("kubectl-bind").WithDefaultOutput("yaml"),
 
 		Runner: func(cmd *exec.Cmd) error {
 			return cmd.Run()
@@ -96,6 +98,7 @@ func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
+	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
 }
 
 // Complete ensures all fields are initialized.
@@ -107,6 +110,14 @@ func (b *BindOptions) Complete(args []string) error {
 	if len(args) > 0 {
 		b.URL = args[0]
 	}
+
+	printer, err := b.Print.ToPrinter()
+	if err != nil {
+		return err
+	}
+
+	b.printer = printer
+
 	return nil
 }
 
@@ -120,13 +131,6 @@ func (b *BindOptions) Validate() error {
 		return fmt.Errorf("invalid url %q: %w", b.URL, err)
 	}
 
-	if allowed := sets.NewString(b.Print.AllowedFormats()...); *b.Print.OutputFormat != "" && !allowed.Has(*b.Print.OutputFormat) {
-		return fmt.Errorf("invalid output format %q (allowed: %s)", *b.Print.OutputFormat, strings.Join(allowed.List(), ", "))
-	}
-	if b.DryRun && *b.Print.OutputFormat == "" {
-		return errors.New("output format is required when dry-run is enabled")
-	}
-
 	return b.Options.Validate()
 }
 
@@ -137,17 +141,6 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return err
 	}
 	kubeClient, err := kubeclient.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-
-	var gvk schema.GroupVersionKind
-	var response runtime.Object
-	auth, err := authenticator.NewDefaultAuthenticator(10*time.Minute, func(ctx context.Context, what schema.GroupVersionKind, obj runtime.Object) error {
-		response = obj
-		gvk = what
-		return nil
-	})
 	if err != nil {
 		return err
 	}
@@ -177,19 +170,28 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		}
 		if ns, err = kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 			return err
+		} else {
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "📦 Created kube-bind namespace.\n") // nolint: errcheck
 		}
 	}
-	sessionID := SessionID()
-	if err := b.authenticate(provider, auth.Endpoint(ctx), sessionID, ClusterID(ns), urlCh); err != nil {
-		return err
-	}
 
-	err = auth.Execute(ctx)
+	auth := authenticator.NewLocalhostCallbackAuthenticator()
+	err = auth.Start()
 	fmt.Fprintf(b.Options.ErrOut, "\n\n")
 	if err != nil {
 		return err
-	} else if response == nil {
-		return fmt.Errorf("authentication timeout")
+	}
+
+	sessionID := SessionID()
+	if err := b.authenticate(provider, auth.Endpoint(), sessionID, ClusterID(ns), urlCh); err != nil {
+		return err
+	}
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer cancel()
+	response, gvk, err := auth.WaitForResponse(timeoutCtx)
+	if err != nil {
+		return err
 	}
 
 	fmt.Fprintf(b.IOStreams.ErrOut, "🔑 Successfully authenticated to %s\n", exportURL.String()) // nolint: errcheck
@@ -226,17 +228,6 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		apiRequests = append(apiRequests, &apiRequest)
 	}
 
-	// create kube-bind namespace
-	if _, err := kubeClient.CoreV1().Namespaces().Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "kube-bind",
-		},
-	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
-		return err
-	} else if err == nil {
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "📦 Created kube-binding namespace.\n") // nolint: errcheck
-	}
-
 	// copy kubeconfig into local cluster
 	remoteHost, remoteNamespace, err := base.ParseRemoteKubeconfig(bindingResponse.Kubeconfig)
 	if err != nil {
@@ -258,20 +249,10 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 
 	// print the request in dry-run mode
 	if b.DryRun {
-		printer, err := b.Print.ToPrinter()
-		if err != nil {
-			return err
-		}
-		first := true
 		for _, request := range apiRequests {
-			printer.PrintObj(request, b.IOStreams.Out) // nolint: errcheck
-
-			// TODO: this is a hack to separate the objects. Is there anything better in the printer?
-			if !first && *b.Print.OutputFormat == "yaml" {
-				fmt.Fprintln(b.IOStreams.Out, "---") // nolint: errcheck
+			if err = b.printer.PrintObj(request, b.IOStreams.Out); err != nil {
+				return err
 			}
-
-			first = false
 		}
 	}
 
@@ -301,6 +282,10 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 				args = append(args, "--"+flag.Name+"="+flag.Value.String())
 			}
 		})
+
+		if b.KonnectorImageOverride != "" {
+			args = append(args, "--konnector-image"+"="+b.KonnectorImageOverride)
+		}
 
 		// TODO: support passing through the base options
 

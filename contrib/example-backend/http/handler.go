@@ -182,7 +182,7 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(dataCode)
+	encoded := base64.URLEncoding.EncodeToString(dataCode)
 	authURL := h.oidc.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
@@ -253,11 +253,6 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	jwt, err := parseJWT(jwtStr)
 	if err != nil {
 		logger.Info("failed to parse jwt", "error", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-	if !ok {
-		logger.Info("failed to get id_token from token", "error", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -419,7 +414,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	encoded := base64.StdEncoding.EncodeToString(payload)
+	encoded := base64.URLEncoding.EncodeToString(payload)
 
 	parsedAuthURL, err := url.Parse(state.RedirectURL)
 	if err != nil {

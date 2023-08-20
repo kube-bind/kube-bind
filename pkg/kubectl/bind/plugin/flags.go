@@ -34,6 +34,7 @@ var (
 		"template",
 		"v",
 		"vmodule",
+		"konnector-image",
 	)
 
 	// passOnEnvVars are the flags we DO NOT pass to downstream commands like kubectl-bind-apiservice.

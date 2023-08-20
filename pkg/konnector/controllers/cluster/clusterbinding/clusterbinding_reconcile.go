@@ -108,7 +108,7 @@ func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebind
 	}
 
 	consumerSecret, err := r.getConsumerSecret()
-	if err != nil || !errors.IsNotFound(err) {
+	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}
 

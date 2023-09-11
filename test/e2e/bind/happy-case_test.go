@@ -17,8 +17,10 @@ limitations under the License.
 package bind
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/headzoo/surf.v1"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -59,11 +62,11 @@ func testHappyCase(t *testing.T, scope kubebindv1alpha1.Scope) {
 	t.Logf("Creating provider workspace")
 	providerConfig, providerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithGenerateName("test-happy-case-provider"))
 
-	t.Logf("Creating MangoDB CRD on provider side")
-	providerfixtures.Bootstrap(t, framework.DiscoveryClient(t, providerConfig), framework.DynamicClient(t, providerConfig), nil)
-
 	t.Logf("Starting backend with random port")
 	addr, _ := framework.StartBackend(t, providerConfig, "--kubeconfig="+providerKubeconfig, "--listen-port=0", "--consumer-scope="+string(scope))
+
+	t.Logf("Creating MangoDB CRD on provider side")
+	providerfixtures.Bootstrap(t, framework.DiscoveryClient(t, providerConfig), framework.DynamicClient(t, providerConfig), nil)
 
 	t.Logf("Creating consumer workspace and starting konnector")
 	consumerConfig, consumerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithGenerateName("test-happy-case-consumer"))
@@ -75,8 +78,10 @@ func testHappyCase(t *testing.T, scope kubebindv1alpha1.Scope) {
 	providerClient := framework.DynamicClient(t, providerConfig).Resource(
 		schema.GroupVersionResource{Group: "mangodb.com", Version: "v1alpha1", Resource: "mangodbs"},
 	)
-
+	providerKubeClient := framework.KubeClient(t, providerConfig)
+	consumerKubeClient := framework.KubeClient(t, consumerConfig)
 	upstreamNS := "unknown"
+	downstreamNS := "unknown"
 
 	for _, tc := range []struct {
 		name string
@@ -96,14 +101,15 @@ func testHappyCase(t *testing.T, scope kubebindv1alpha1.Scope) {
 		{
 			name: "MangoDB is bound",
 			step: func(t *testing.T) {
+				in := bytes.NewBufferString("y\n")
 				iostreams, _, _, _ := genericclioptions.NewTestIOStreams()
 				authURLCh := make(chan string, 1)
 				go simulateBrowser(t, authURLCh, "mangodbs")
 				invocations := make(chan framework.SubCommandInvocation, 1)
 				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
 				inv := <-invocations
-				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
-				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
+				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "*", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
+				framework.BindAPIService(t, in, "", inv.Args...)
 
 				t.Logf("Waiting for MangoDB CRD to be created on consumer side")
 				crdClient := framework.ApiextensionsClient(t, consumerConfig).ApiextensionsV1().CustomResourceDefinitions()
@@ -130,6 +136,17 @@ spec:
 					return err == nil
 				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for MangoDB CRD to be created on consumer side")
 
+				t.Logf("Waiting for the MangoDB instance to be created on consumer side")
+				var consumerMangos *unstructured.UnstructuredList
+				require.Eventually(t, func() bool {
+					var err error
+					consumerMangos, err = consumerClient.List(ctx, metav1.ListOptions{})
+					return err == nil && len(consumerMangos.Items) == 1
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the MangoDB instance to be created on consumer side")
+
+				// this is used everywhere further down
+				downstreamNS = consumerMangos.Items[0].GetNamespace()
+
 				t.Logf("Waiting for the MangoDB instance to be created on provider side")
 				var mangos *unstructured.UnstructuredList
 				require.Eventually(t, func() bool {
@@ -152,6 +169,80 @@ spec:
 					_, err := providerClient.Namespace(upstreamNS).Get(ctx, "test", metav1.GetOptions{})
 					return err == nil
 				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the MangoDB instance to be recreated upstream")
+			},
+		},
+		{
+			name: "claimed resource created upstream is created downstream",
+			step: func(t *testing.T) {
+				testSecret := corev1.Secret{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "Secret",
+						APIVersion: "v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-secret",
+						Namespace: upstreamNS,
+					},
+					Data: map[string][]byte{
+						"test": []byte("dummy"),
+					},
+				}
+
+				_, err := providerKubeClient.CoreV1().Secrets(upstreamNS).Create(ctx, &testSecret, metav1.CreateOptions{})
+				require.NoError(t, err)
+
+				require.Eventually(t, func() bool {
+					s, err := consumerKubeClient.CoreV1().Secrets(downstreamNS).Get(ctx, "test-secret", metav1.GetOptions{})
+					return err == nil && reflect.DeepEqual(testSecret.Data, s.Data)
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the claimed resource to be created downstream")
+			},
+		},
+		{
+			name: "claimed resource recreated downstream if created upstream",
+			step: func(t *testing.T) {
+				err := consumerKubeClient.CoreV1().Secrets(downstreamNS).Delete(ctx, "test-secret", metav1.DeleteOptions{})
+				require.NoError(t, err)
+
+				require.Eventually(t, func() bool {
+					_, err := consumerKubeClient.CoreV1().Secrets(downstreamNS).Get(ctx, "test-secret", metav1.GetOptions{})
+					return err == nil
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the claimed resource to be created downstream")
+			},
+		},
+		{
+			name: "claimed resource updated upstream is updated downstream",
+			step: func(t *testing.T) {
+				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+					obj, err := providerKubeClient.CoreV1().Secrets(upstreamNS).Get(ctx, "test-secret", metav1.GetOptions{})
+					require.NoError(t, err)
+					obj.Data["test"] = []byte("updated")
+					_, err = providerKubeClient.CoreV1().Secrets(upstreamNS).Update(ctx, obj, metav1.UpdateOptions{})
+					return err
+				})
+				require.NoError(t, err)
+
+				require.Eventually(t, func() bool {
+					obj, err := consumerKubeClient.CoreV1().Secrets(downstreamNS).Get(ctx, "test-secret", metav1.GetOptions{})
+					require.NoError(t, err)
+					updatedValue, ok := obj.Data["test"]
+					if !ok {
+						return false
+					}
+
+					return string(updatedValue) == "updated"
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for claimed secret to be updated downstream")
+			},
+		},
+		{
+			name: "claimed resources deleted by the provider are deleted downstream",
+			step: func(t *testing.T) {
+				err := providerKubeClient.CoreV1().Secrets(upstreamNS).Delete(ctx, "test-secret", metav1.DeleteOptions{})
+				require.NoError(t, err)
+
+				require.Eventually(t, func() bool {
+					_, err := consumerKubeClient.CoreV1().Secrets(upstreamNS).Get(ctx, "test-secret", metav1.GetOptions{})
+					return errors.IsNotFound(err)
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for claimed secret to be deleted on consumer side")
 			},
 		},
 		{
@@ -238,8 +329,8 @@ spec:
 				invocations := make(chan framework.SubCommandInvocation, 1)
 				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
 				inv := <-invocations
-				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
-				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
+				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "*", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
+				framework.BindAPIService(t, bytes.NewBufferString("y\n"), "", inv.Args...)
 			},
 		},
 	} {

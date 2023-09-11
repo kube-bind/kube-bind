@@ -79,6 +79,9 @@ func (in *APIServiceExport) SetConditions(conditions conditionsapi.Conditions) {
 type APIServiceExportSpec struct {
 	APIServiceExportCRDSpec `json:",inline"`
 
+	// +optional
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
+
 	// informerScope is the scope of the APIServiceExport. It can be either Cluster or Namespace.
 	//
 	// Cluster:    The konnector has permission to watch all namespaces at once and cluster-scoped resources.

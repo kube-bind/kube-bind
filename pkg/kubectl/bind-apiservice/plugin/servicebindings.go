@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kube Bind Authors.
+Copyright 2023 The Kube Bind Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,8 +17,12 @@ limitations under the License.
 package plugin
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	apiextensionsclientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -69,6 +73,26 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 			continue
 		}
 
+		var permissionClaims []kubebindv1alpha1.AcceptablePermissionClaim
+		for _, c := range resource.PermissionClaims {
+			accepted, err := b.promptYesNo(c)
+			if err != nil {
+				return nil, err
+			}
+
+			var state kubebindv1alpha1.AcceptablePermissionClaimState
+			if accepted {
+				state = kubebindv1alpha1.ClaimAccepted
+			} else {
+				state = kubebindv1alpha1.ClaimRejected
+			}
+
+			permissionClaims = append(permissionClaims, kubebindv1alpha1.AcceptablePermissionClaim{
+				PermissionClaim: c,
+				State:           state,
+			})
+		}
+
 		// create new APIServiceBinding.
 		first := true
 		if err := wait.PollInfinite(1*time.Second, func() (bool, error) {
@@ -89,6 +113,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 						},
 						Namespace: "kube-bind",
 					},
+					PermissionClaims: permissionClaims,
 				},
 			}, metav1.CreateOptions{})
 			if err != nil {
@@ -114,4 +139,181 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 	}
 
 	return bindings, nil
+}
+
+func printPermissionClaim(w io.Writer, p kubebindv1alpha1.PermissionClaim) error {
+	var b bytes.Buffer
+
+	var groupResource string
+	if p.GroupResource.Group != "" {
+		groupResource = fmt.Sprintf("%s objects (apiVersion: \"%s/%s\")", p.GroupResource.Resource, p.GroupResource.Group, p.Version)
+	} else {
+		groupResource = fmt.Sprintf("%s objects (apiVersion: \"%s\")", p.GroupResource.Resource, p.Version)
+	}
+
+	if err := writeFirstLines(&b, groupResource, p); err != nil {
+		return err
+	}
+
+	if err := writeCreate(&b, p); err != nil {
+		return err
+	}
+
+	if err := writeOnConflict(&b, p); err != nil {
+		return err
+	}
+
+	if err := writeUpdateClause(&b, p); err != nil {
+		return err
+	}
+
+	if err := writeRequiredAndAcceptance(&b, p.Required); err != nil {
+		return err
+	}
+
+	_, err := fmt.Fprint(w, b.String())
+	return err
+}
+
+func writeFirstLines(b *bytes.Buffer, groupResource string, claim kubebindv1alpha1.PermissionClaim) error {
+	var err error
+
+	donate := claim.AutoDonate
+
+	adopt := claim.AutoAdopt
+
+	var names []string
+	var owner kubebindv1alpha1.Owner
+	if claim.Selector != nil {
+		names = claim.Selector.Names
+		owner = claim.Selector.Owner
+	}
+
+	var verb string
+	switch owner {
+	case kubebindv1alpha1.Provider:
+		verb = "write"
+	case kubebindv1alpha1.Consumer:
+		verb = "read"
+	default:
+		verb = "read and write"
+	}
+
+	switch {
+	case !donate && !adopt:
+		groupResource = verb + " " + groupResource
+	case donate && !adopt:
+		groupResource = "create user owned " + groupResource
+	case !donate && adopt:
+		groupResource = "have ownership of " + groupResource
+	}
+
+	var ref string
+	if len(names) > 0 {
+		ref = " which are referenced with:"
+		for _, name := range names {
+			ref = fmt.Sprintf("%s\n\t- name: \"%s\"", ref, name)
+		}
+		ref += "\n"
+	} else {
+		ref += " "
+	}
+
+	_, err = fmt.Fprintf(b, "The provider wants to %s%son your cluster.\n", groupResource, ref)
+
+	return err
+
+}
+
+func writeCreate(b io.StringWriter, claim kubebindv1alpha1.PermissionClaim) error {
+	var err error
+
+	switch {
+	case claim.Create == nil || !claim.Create.ReplaceExisting:
+		//_, err = b.WriteString("Conflicting objects will not be overwritten. ")
+	case claim.Create.ReplaceExisting:
+		_, err = b.WriteString("Conflicting objects will be replaced by the provider. ")
+	}
+
+	return err
+}
+
+func writeOnConflict(b io.StringWriter, claim kubebindv1alpha1.PermissionClaim) error {
+	var err error
+
+	switch {
+	case claim.OnConflict == nil || !claim.OnConflict.RecreateWhenConsumerSideDeleted:
+		//_, err = b.WriteString("Created objects will not be recreated upon deletion. ")
+	case claim.OnConflict.RecreateWhenConsumerSideDeleted:
+		_, err = b.WriteString("Created objects will be recreated upon deletion. ")
+	default: //Do nothing
+	}
+
+	return err
+}
+
+func writeUpdateClause(b *bytes.Buffer, claim kubebindv1alpha1.PermissionClaim) error {
+	var err error
+
+	if claim.Update == nil {
+		return nil
+	}
+
+	if claim.Update.Fields != nil {
+		_, err = fmt.Fprintf(b, "The following fields of the objects will still be able to be changed by the provider:\n")
+	}
+	if claim.Update.Preserving != nil {
+		_, err = b.WriteString("The following fields of the objects will be preserved by the provider:\n")
+	}
+
+	for _, s := range append(claim.Update.Fields, claim.Update.Preserving...) {
+		_, err = fmt.Fprintf(b, "\t\"%s\"\n", s)
+	}
+
+	if claim.Update.AlwaysRecreate {
+		_, err = b.WriteString("Modification of said objects will by handled by deletion and recreation of said objects.\n")
+	}
+
+	return err
+}
+
+func writeRequiredAndAcceptance(b *bytes.Buffer, required bool) error {
+	var err error
+
+	if required {
+		_, err = fmt.Fprint(b, "Accepting this Permission is required in order to proceed.\n")
+	}
+	if !required {
+		_, err = fmt.Fprint(b, "Accepting this Permission is optional.\n")
+	}
+	if err != nil {
+		return nil
+	}
+
+	_, err = fmt.Fprint(b, "Do you accept this Permission? [No,Yes]\n")
+
+	return err
+}
+
+func (opt BindAPIServiceOptions) promptYesNo(p kubebindv1alpha1.PermissionClaim) (bool, error) {
+
+	reader := bufio.NewReader(opt.Options.IOStreams.In)
+
+	for {
+		if err := printPermissionClaim(opt.Options.Out, p); err != nil {
+			return false, err
+		}
+
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			return false, err
+		}
+
+		response = strings.ToLower(strings.TrimSpace(response))
+		if response == "y" || response == "yes" {
+			return true, nil
+		} else if response == "n" || response == "no" {
+			return false, nil
+		}
+	}
 }

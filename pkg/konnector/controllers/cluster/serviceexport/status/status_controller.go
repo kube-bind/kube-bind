@@ -186,23 +186,27 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 			}
 		}
 		logger.V(3).Info("skipping because consumer mismatch", "key", key)
+		return
 	}
+
+	logger.V(2).Info("queueing Unstructured", "key", key)
+	c.queue.Add(key)
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
-	upstreamKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	downstreamKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
-	ns, name, err := cache.SplitMetaNamespaceKey(upstreamKey)
+	ns, name, err := cache.SplitMetaNamespaceKey(downstreamKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
 	if ns != "" {
-		sn, err := c.serviceNamespaceInformer.Lister().APIServiceNamespaces(ns).Get(name)
+		sn, err := c.serviceNamespaceInformer.Lister().APIServiceNamespaces(c.providerNamespace).Get(ns)
 		if err != nil {
 			if !errors.IsNotFound(err) {
 				runtime.HandleError(err)
@@ -218,8 +222,8 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	logger.V(2).Info("queueing Unstructured", "key", upstreamKey)
-	c.queue.Add(upstreamKey)
+	logger.V(2).Info("queueing Unstructured", "key", downstreamKey)
+	c.queue.Add(downstreamKey)
 }
 
 func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {

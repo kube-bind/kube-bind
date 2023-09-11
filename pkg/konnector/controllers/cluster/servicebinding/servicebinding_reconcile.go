@@ -159,7 +159,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha1.A
 	}
 
 	// first check this really ours and we don't override something else
-	if !kubebindhelpers.IsOwnedByBinding(binding.Name, binding.UID, crd.OwnerReferences) {
+	if !kubebindhelpers.IsOwnedByBinding(binding.Name, binding.UID, existing.OwnerReferences) {
 		conditions.MarkFalse(
 			binding,
 			kubebindv1alpha1.APIServiceBindingConditionConnected,

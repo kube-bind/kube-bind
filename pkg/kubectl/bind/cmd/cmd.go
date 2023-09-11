@@ -34,7 +34,7 @@ import (
 var (
 	// TODO: add other examples related to permission claim commands.
 	bindExampleUses = `
-    # select a kube-bind.io compatible service from the given URL, e.g. an API service.
+	# select a kube-bind.io compatible service from the given URL, e.g. an API service.
 	%[1]s bind https://mangodb.com/exports
 
 	# authenticate and configure the services to bind, but don't actually bind them.

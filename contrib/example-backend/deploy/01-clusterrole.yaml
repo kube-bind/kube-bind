@@ -38,8 +38,3 @@ rules:
   resources:
     - "apiservicenamespaces"
   verbs: ["create","delete","patch","update","get","list","watch"]
-- apiGroups:
-    - "kube-bind.io"
-  resources:
-    - "apiservicenamespaces"
-  verbs: ["create","delete","patch","update","get","list","watch"]

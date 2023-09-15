@@ -4,11 +4,20 @@
 
 ### Disclaimer: work in progress and not ready for production use. 
 
-kube-bind is a prototype project with the goal to establish a new extension model for Kubernetes clusters:
+You are invited to [contribute](#contributing)!
 
-- APIs should be bindable into a cluster and operated by a service provider
-- these APIs should not require (custom) controllers/operators run locally in the consuming cluster
-- only a single vendor-neutral, OpenSource agent should be required.
+## What is it?
+
+kube-bind is a prototype project that aims to provide better support for service providers and consumers that reside in distinct Kubernetes clusters.
+
+- A service provider defines its API in terms of CRDs and associated permission claims/limitations, and exports it for use from other clusters.
+- Service consumers identify the services they want to consume.
+- The service CRDs get installed in the service consumer clusters, with objects of the defined kinds written and read by the service consumers.
+- The service provider indirectly reads and writes those objects as the interface to the service that it provides.
+- The service provider does not inject controllers/operators into the service consumer's cluster.
+- A single vendor-neutral, OpenSource agent per consumer cluster connects it with the requested services.
+
+## Try it out
 
 This is the 3 line pitch:
 
@@ -21,6 +30,8 @@ BOOM – the MangoDB API is available in the local cluster,
        without anything MangoDB-specific running.
 $ kubectl get mangodbs 
 ```
+
+## For more information
 
 For more information go to https://kubectl-bind.io or watch the [ContainerDays talk](https://www.youtube.com/watch?v=dg0g15Qv5Fo&t=1s)
 or the [KubeCon talk](https://www.youtube.com/watch?v=Uv0ivz5xej4).
@@ -44,6 +55,8 @@ There are several ways to communicate with us:
 ## Technical Overview
 
 <img alt="overview" width="800px" src="./docs/images/overview.png"></img>
+
+All the actions shown between the clusters are done by the konnector, except: the pull at the start is done by the kubectl plugin that installs the konnector.
 
 ## Usage
 

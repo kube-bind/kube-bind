@@ -38,6 +38,7 @@ import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	clusterscoped "github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/cluster-scoped"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
@@ -50,6 +51,7 @@ const (
 func NewController(
 	gvr schema.GroupVersionResource,
 	providerNamespace string,
+	providerNamespaceUID string,
 	consumerConfig, providerConfig *rest.Config,
 	consumerDynamicInformer informers.GenericInformer,
 	providerDynamicInformer multinsinformer.GetterInformer,
@@ -103,10 +105,39 @@ func NewController(
 				return sns[0].(*kubebindv1alpha1.APIServiceNamespace), nil
 			},
 			getConsumerObject: func(ns, name string) (*unstructured.Unstructured, error) {
-				return dynamicConsumerLister.Namespace(ns).Get(name)
+				if ns != "" {
+					return dynamicConsumerLister.Namespace(ns).Get(name)
+				}
+				got, err := dynamicConsumerLister.Get(clusterscoped.Behead(name, providerNamespace))
+				if err != nil {
+					return nil, err
+				}
+				obj := got.DeepCopy()
+				err = clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID)
+				if err != nil {
+					return nil, err
+				}
+				return obj, nil
 			},
 			updateConsumerObjectStatus: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-				return consumerClient.Resource(gvr).Namespace(obj.GetNamespace()).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
+				ns := obj.GetNamespace()
+				if ns == "" {
+					if err := clusterscoped.TranslateFromUpstream(obj); err != nil {
+						return nil, err
+					}
+				}
+				updated, err := consumerClient.Resource(gvr).Namespace(obj.GetNamespace()).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
+				if err != nil {
+					return nil, err
+				}
+				if ns == "" {
+					err = clusterscoped.TranslateFromDownstream(updated, providerNamespace, providerNamespaceUID)
+					if err != nil {
+						return nil, err
+					}
+					return updated, nil
+				}
+				return updated, nil
 			},
 			deleteProviderObject: func(ctx context.Context, ns, name string) error {
 				return providerClient.Resource(gvr).Namespace(ns).Delete(ctx, name, metav1.DeleteOptions{})
@@ -189,6 +220,10 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 		return
 	}
 
+	if clusterscoped.Behead(key, c.providerNamespace) == key {
+		logger.V(3).Info("skipping because consumer mismatch", "key", key)
+		return
+	}
 	logger.V(2).Info("queueing Unstructured", "key", key)
 	c.queue.Add(key)
 }
@@ -222,8 +257,9 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	logger.V(2).Info("queueing Unstructured", "key", downstreamKey)
-	c.queue.Add(downstreamKey)
+	upstreamKey := clusterscoped.Prepend(downstreamKey, c.providerNamespace)
+	logger.V(2).Info("queueing Unstructured", "key", upstreamKey)
+	c.queue.Add(upstreamKey)
 }
 
 func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {

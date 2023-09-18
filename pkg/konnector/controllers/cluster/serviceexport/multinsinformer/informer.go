@@ -287,7 +287,10 @@ type GetterInformerWrapper struct {
 }
 
 func (w GetterInformerWrapper) Get(ns, name string) (runtime.Object, error) {
-	return w.Delegate.ForResource(w.GVR).Lister().ByNamespace(ns).Get(name)
+	if ns != "" {
+		return w.Delegate.ForResource(w.GVR).Lister().ByNamespace(ns).Get(name)
+	}
+	return w.Delegate.ForResource(w.GVR).Lister().Get(name)
 }
 
 func (w GetterInformerWrapper) List(ns string) ([]runtime.Object, error) {

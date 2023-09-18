@@ -42,6 +42,7 @@ import (
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	clusterscoped "github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/cluster-scoped"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 )
@@ -56,6 +57,7 @@ const (
 func NewController(
 	gvr schema.GroupVersionResource,
 	providerNamespace string,
+	providerNamespaceUID string,
 	consumerConfig, providerConfig *rest.Config,
 	consumerDynamicInformer informers.GenericInformer,
 	providerDynamicInformer multinsinformer.GetterInformer,
@@ -104,25 +106,72 @@ func NewController(
 				return providerBindClient.KubeBindV1alpha1().APIServiceNamespaces(providerNamespace).Create(ctx, sn, metav1.CreateOptions{})
 			},
 			getProviderObject: func(ns, name string) (*unstructured.Unstructured, error) {
-				obj, err := providerDynamicInformer.Get(ns, name)
+				if ns != "" {
+					obj, err := providerDynamicInformer.Get(ns, name)
+					if err != nil {
+						return nil, err
+					}
+					return obj.(*unstructured.Unstructured), nil
+				}
+				got, err := providerDynamicInformer.Get(ns, clusterscoped.Prepend(name, providerNamespace))
 				if err != nil {
 					return nil, err
 				}
-				return obj.(*unstructured.Unstructured), nil
+				obj := got.(*unstructured.Unstructured).DeepCopy()
+				err = clusterscoped.TranslateFromUpstream(obj)
+				if err != nil {
+					return nil, err
+				}
+				return obj, nil
 			},
 			createProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
-				return providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
+				if ns := obj.GetNamespace(); ns != "" {
+					return providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
+				}
+				err := clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID)
+				if err != nil {
+					return nil, err
+				}
+				created, err := providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
+				if err != nil {
+					return nil, err
+				}
+				err = clusterscoped.TranslateFromUpstream(created)
+				if err != nil {
+					return nil, err
+				}
+				return created, nil
 			},
 			updateProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+				ns := obj.GetNamespace()
+				if ns == "" {
+					if err := clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID); err != nil {
+						return nil, err
+					}
+				}
 				data, err := json.Marshal(obj.Object)
 				if err != nil {
 					return nil, err
 				}
-				return providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Patch(ctx,
+				patched, err := providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Patch(ctx,
 					obj.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: applyManager, Force: pointer.Bool(true)},
 				)
+				if err != nil {
+					return nil, err
+				}
+				if ns == "" {
+					err = clusterscoped.TranslateFromUpstream(patched)
+					if err != nil {
+						return nil, err
+					}
+					return patched, nil
+				}
+				return patched, nil
 			},
 			deleteProviderObject: func(ctx context.Context, ns, name string) error {
+				if ns == "" {
+					name = clusterscoped.Prepend(name, providerNamespace)
+				}
 				return providerClient.Resource(gvr).Namespace(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
 			updateConsumerObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
@@ -226,8 +275,13 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	logger.V(2).Info("queueing Unstructured", "key", upstreamKey)
-	c.queue.Add(upstreamKey)
+	if clusterscoped.Behead(upstreamKey, c.providerNamespace) == upstreamKey {
+		logger.V(3).Info("skipping because consumer mismatch", "upstreamKey", upstreamKey)
+		return
+	}
+	downstreamKey := clusterscoped.Behead(upstreamKey, c.providerNamespace)
+	logger.V(2).Info("queueing Unstructured", "key", downstreamKey)
+	c.queue.Add(downstreamKey)
 }
 
 func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
@@ -331,7 +385,12 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.consumerDynamicLister.Namespace(ns).Get(name)
+	var obj *unstructured.Unstructured
+	if ns == "" {
+		obj, err = c.consumerDynamicLister.Get(name)
+	} else {
+		obj, err = c.consumerDynamicLister.Namespace(ns).Get(name)
+	}
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {

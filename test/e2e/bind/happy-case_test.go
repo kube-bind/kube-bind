@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/headzoo/surf.v1"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -45,19 +46,19 @@ func TestClusterScoped(t *testing.T) {
 	t.Parallel()
 
 	// cluster scoped resource, with cluster scoped informers
-	testHappyCase(t, kubebindv1alpha1.ClusterScope, kubebindv1alpha1.ClusterScope)
+	testHappyCase(t, apiextensionsv1.ClusterScoped, kubebindv1alpha1.ClusterScope)
 }
 
 func TestNamespacedScoped(t *testing.T) {
 	t.Parallel()
 
 	// namespaced resource, with namespace scoped informers
-	testHappyCase(t, kubebindv1alpha1.NamespacedScope, kubebindv1alpha1.NamespacedScope)
+	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha1.NamespacedScope)
 	// namespaced resource, but with cluster scoped informers
-	testHappyCase(t, kubebindv1alpha1.NamespacedScope, kubebindv1alpha1.ClusterScope)
+	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha1.ClusterScope)
 }
 
-func testHappyCase(t *testing.T, resourceScope, informerScope kubebindv1alpha1.Scope) {
+func testHappyCase(t *testing.T, resourceScope apiextensionsv1.ResourceScope, informerScope kubebindv1alpha1.Scope) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
@@ -75,7 +76,7 @@ func testHappyCase(t *testing.T, resourceScope, informerScope kubebindv1alpha1.S
 	framework.StartKonnector(t, consumerConfig, "--kubeconfig="+consumerKubeconfig)
 
 	serviceGVR := schema.GroupVersionResource{Group: "mangodb.com", Version: "v1alpha1", Resource: "mangodbs"}
-	if resourceScope == kubebindv1alpha1.ClusterScope {
+	if resourceScope == apiextensionsv1.ClusterScoped {
 		serviceGVR = schema.GroupVersionResource{Group: "bar.io", Version: "v1alpha1", Resource: "foos"}
 	}
 	consumerClient := framework.DynamicClient(t, consumerConfig).Resource(serviceGVR)
@@ -143,7 +144,7 @@ spec:
 
 				require.Eventually(t, func() bool {
 					var err error
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						_, err = consumerClient.Namespace(downstreamNs).Create(ctx, toUnstructured(t, mangodbInstance), metav1.CreateOptions{})
 					} else {
 						_, err = consumerClient.Create(ctx, toUnstructured(t, fooInstance), metav1.CreateOptions{})
@@ -161,7 +162,7 @@ spec:
 
 				// these are used everywhere further down
 				upstreamNS = instances.Items[0].GetNamespace()
-				if resourceScope == kubebindv1alpha1.ClusterScope {
+				if resourceScope == apiextensionsv1.ClusterScoped {
 					clusterNs, _ = clusterscoped.ExtractClusterNs(&instances.Items[0])
 					clusterScopedUpInsName = clusterscoped.Prepend("test", clusterNs)
 				}
@@ -171,7 +172,7 @@ spec:
 			name: "instance deleted upstream is recreated",
 			step: func(t *testing.T) {
 				var err error
-				if resourceScope == kubebindv1alpha1.NamespacedScope {
+				if resourceScope == apiextensionsv1.NamespaceScoped {
 					err = providerClient.Namespace(upstreamNS).Delete(ctx, "test", metav1.DeleteOptions{})
 				} else {
 					err = providerClient.Delete(ctx, clusterScopedUpInsName, metav1.DeleteOptions{})
@@ -180,7 +181,7 @@ spec:
 
 				require.Eventually(t, func() bool {
 					var err error
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						_, err = providerClient.Namespace(upstreamNS).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						_, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
@@ -195,13 +196,13 @@ spec:
 				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = consumerClient.Namespace(downstreamNs).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = consumerClient.Get(ctx, "test", metav1.GetOptions{})
 					}
 					require.NoError(t, err)
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						unstructured.SetNestedField(obj.Object, "Dedicated", "spec", "tier") // nolint: errcheck
 						_, err = consumerClient.Namespace(downstreamNs).Update(ctx, obj, metav1.UpdateOptions{})
 					} else {
@@ -215,20 +216,20 @@ spec:
 				require.Eventually(t, func() bool {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = providerClient.Namespace(upstreamNS).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
 					}
 					require.NoError(t, err)
 					var value string
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						value, _, err = unstructured.NestedString(obj.Object, "spec", "tier")
 					} else {
 						value, _, err = unstructured.NestedString(obj.Object, "spec", "deploymentName")
 					}
 					require.NoError(t, err)
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						return value == "Dedicated"
 					} else {
 						return value == "tested"
@@ -242,14 +243,14 @@ spec:
 				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = providerClient.Namespace(upstreamNS).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
 					}
 					require.NoError(t, err)
 					unstructured.SetNestedField(obj.Object, "Running", "status", "phase") // nolint: errcheck
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						_, err = providerClient.Namespace(upstreamNS).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
 					} else {
 						_, err = providerClient.UpdateStatus(ctx, obj, metav1.UpdateOptions{})
@@ -261,7 +262,7 @@ spec:
 				require.Eventually(t, func() bool {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = consumerClient.Namespace(downstreamNs).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = consumerClient.Get(ctx, "test", metav1.GetOptions{})
@@ -279,13 +280,13 @@ spec:
 				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = providerClient.Namespace(upstreamNS).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
 					}
 					require.NoError(t, err)
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						unstructured.SetNestedField(obj.Object, "Shared", "spec", "tier") // nolint: errcheck
 						_, err = providerClient.Namespace(upstreamNS).Update(ctx, obj, metav1.UpdateOptions{})
 					} else {
@@ -299,20 +300,20 @@ spec:
 				require.Eventually(t, func() bool {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = providerClient.Namespace(upstreamNS).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
 					}
 					require.NoError(t, err)
 					var value string
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						value, _, err = unstructured.NestedString(obj.Object, "spec", "tier")
 					} else {
 						value, _, err = unstructured.NestedString(obj.Object, "spec", "deploymentName")
 					}
 					require.NoError(t, err)
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						return value == "Dedicated"
 					} else {
 						return value == "tested"
@@ -324,7 +325,7 @@ spec:
 			name: "instances deleted downstream are deleted upstream",
 			step: func(t *testing.T) {
 				var err error
-				if resourceScope == kubebindv1alpha1.NamespacedScope {
+				if resourceScope == apiextensionsv1.NamespaceScoped {
 					err = consumerClient.Namespace(downstreamNs).Delete(ctx, "test", metav1.DeleteOptions{})
 				} else {
 					err = consumerClient.Delete(ctx, "test", metav1.DeleteOptions{})
@@ -333,7 +334,7 @@ spec:
 
 				require.Eventually(t, func() bool {
 					var err error
-					if resourceScope == kubebindv1alpha1.NamespacedScope {
+					if resourceScope == apiextensionsv1.NamespaceScoped {
 						_, err = providerClient.Namespace(upstreamNS).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						_, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})

@@ -1,4 +1,4 @@
-//go:build kcptools
+//go:build tools
 
 /*
 Copyright 2022 The Kube Bind Authors.

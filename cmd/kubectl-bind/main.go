@@ -31,7 +31,8 @@ import (
 )
 
 func init() {
-	rand.Seed(time.Now().UnixMilli())
+	// TODO(pkbhowmick): replace deprecated method
+	rand.Seed(time.Now().UnixMilli()) //nolint:staticcheck
 }
 
 func main() {

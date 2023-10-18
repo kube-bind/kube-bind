@@ -225,10 +225,6 @@ type OnConflictOptions struct {
 	//
 	// If set to false, deleted provider-owned objects get deleted on the provider cluster as well.
 	//
-	// Even if the consumer mistakenly or intentionally
-	// deletes the object, the provider will recreate it. If the field is set as false,
-	// the provider will not recreate the object in case the object is deleted on the consumer cluster.
-	//
 	// +kubebuilder:default:=true
 	RecreateWhenConsumerSideDeleted bool `json:"recreateWhenConsumerSideDeleted"`
 }

@@ -140,9 +140,9 @@ type PermissionClaim struct {
 	Required bool `json:"required"`
 
 	// read claims read access to matching objects for the provider.
-	// reading of the claimed object(s) is always claimed.
-	// By default no labels and annotations are read. Reading of labels and annotations can be claimed
-	// optionally by adding labels and annotations items.
+	// Reading of the claimed object(s) is always claimed.
+	// By default, no labels and annotations can be read by the provider.
+	// Reading of labels and annotations can be claimed in addition by specifying them explicitly.
 	// If labels on consumer owned objects that are set by the consumer are read, labelsOnProviderOwnedObjects and
 	// annotationsOnProviderOwnedObjects can be set.
 	//

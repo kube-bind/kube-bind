@@ -38,7 +38,7 @@ type Index struct {
 	clusterNs string
 }
 
-func NewCatalogue(r *rest.Config) Index {
+func NewCatalog(r *rest.Config) Index {
 	crdClient := crd.NewForConfigOrDie(r)
 
 	templateClient := templates.NewForConfigOrDie(r)

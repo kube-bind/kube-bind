@@ -102,7 +102,7 @@ func NewController(
 			deleteServiceExportRequest: func(ctx context.Context, ns, name string) error {
 				return bindClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
-			crds: exporttemplate.NewCatalogue(config),
+			crds: exporttemplate.NewCatalog(config),
 		},
 
 		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceExportRequest, *kubebindv1alpha1.APIServiceExportRequestSpec, *kubebindv1alpha1.APIServiceExportRequestStatus](

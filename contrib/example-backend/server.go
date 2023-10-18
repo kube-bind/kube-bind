@@ -107,7 +107,7 @@ func NewServer(config *Config) (*Server, error) {
 		}
 	}
 
-	ind := exporttemplate.NewCatalogue(config.ClientConfig)
+	ind := exporttemplate.NewCatalog(config.ClientConfig)
 	handler, err := examplehttp.NewHandler(
 		s.OIDC,
 		config.Options.OIDC.AuthorizeURL,

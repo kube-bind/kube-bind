@@ -236,7 +236,7 @@ type OnConflictOptions struct {
 type CreateOptions struct {
 	// replaceExisting means that an existing object owned by the consumer will be replaced by the provider object.
 	//
-	// If set to false, and a conflicting consumer object exists, it is not touched.
+	// If not true, and a conflicting consumer object exists, it is not touched.
 	//
 	// +optional
 	ReplaceExisting bool `json:"replaceExisting,omitempty"`

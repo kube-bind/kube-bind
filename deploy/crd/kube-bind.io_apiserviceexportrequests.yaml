@@ -95,7 +95,7 @@ spec:
                               replaceExisting:
                                 description: "replaceExisting means that an existing
                                   object owned by the consumer will be replaced by
-                                  the provider object. \n If set to false, and a conflicting
+                                  the provider object. \n If not true, and a conflicting
                                   consumer object exists, it is not touched."
                                 type: boolean
                             type: object

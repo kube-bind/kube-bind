@@ -29,7 +29,7 @@ var (
 
 const (
 	// GroupName is the group name used in this package
-	GroupName = "example.com"
+	GroupName = "example-backend.kube-bind.io"
 
 	// GroupVersion is the group version used in this package
 	GroupVersion = "v1alpha1"

@@ -32,7 +32,7 @@ type ExampleBackendV1alpha1Interface interface {
 	APIServiceExportTemplatesGetter
 }
 
-// ExampleBackendV1alpha1Client is used to interact with features provided by the example.com group.
+// ExampleBackendV1alpha1Client is used to interact with features provided by the example-backend.kube-bind.io group.
 type ExampleBackendV1alpha1Client struct {
 	restClient rest.Interface
 }

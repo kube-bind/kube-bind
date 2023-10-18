@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
-  name: apiserviceexporttemplates.example.com
+  name: apiserviceexporttemplates.example-backend.kube-bind.io
 spec:
-  group: example.com
+  group: example-backend.kube-bind.io
   names:
     categories:
     - kube-bindings

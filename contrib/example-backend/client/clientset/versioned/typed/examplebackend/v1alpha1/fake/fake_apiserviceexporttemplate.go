@@ -37,9 +37,9 @@ type FakeAPIServiceExportTemplates struct {
 	ns   string
 }
 
-var apiserviceexporttemplatesResource = schema.GroupVersionResource{Group: "example.com", Version: "v1alpha1", Resource: "apiserviceexporttemplates"}
+var apiserviceexporttemplatesResource = schema.GroupVersionResource{Group: "example-backend.kube-bind.io", Version: "v1alpha1", Resource: "apiserviceexporttemplates"}
 
-var apiserviceexporttemplatesKind = schema.GroupVersionKind{Group: "example.com", Version: "v1alpha1", Kind: "APIServiceExportTemplate"}
+var apiserviceexporttemplatesKind = schema.GroupVersionKind{Group: "example-backend.kube-bind.io", Version: "v1alpha1", Kind: "APIServiceExportTemplate"}
 
 // Get takes name of the aPIServiceExportTemplate, and returns the corresponding aPIServiceExportTemplate object, and an error if there is any.
 func (c *FakeAPIServiceExportTemplates) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.APIServiceExportTemplate, err error) {

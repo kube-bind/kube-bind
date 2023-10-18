@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package v1alpha1 defines the v1alpha1 version of the Example Backend API
 //
-// +groupName=example.com
+// +groupName=example-backend.kube-bind.io
 // +groupGoName=ExampleBackend
 // +k8s:deepcopy-gen=package,register
 // +kubebuilder:validation:Optional

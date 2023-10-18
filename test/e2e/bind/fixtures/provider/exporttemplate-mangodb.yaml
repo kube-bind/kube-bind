@@ -1,5 +1,5 @@
 kind: APIServiceExportTemplate
-apiVersion: example.com/v1alpha1
+apiVersion: example-backend.kube-bind.io/v1alpha1
 metadata:
   name: "mangodbs"
   namespace: default

@@ -90,10 +90,6 @@ func CRDToServiceExport(crd *apiextensionsv1.CustomResourceDefinition) (*kubebin
 		if !crdVersion.Served {
 			continue
 		}
-		// TODO
-		if onlyFirstServingVersion && !crdVersion.Storage {
-			continue
-		}
 
 		apiResourceVersion := kubebindv1alpha1.APIServiceExportVersion{
 			Name:                     crdVersion.Name,

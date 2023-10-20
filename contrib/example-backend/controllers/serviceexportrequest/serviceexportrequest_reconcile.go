@@ -111,8 +111,10 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 				Spec: kubebindv1alpha1.APIServiceExportSpec{
 					APIServiceExportCRDSpec: *exportSpec,
 					InformerScope:           r.informerScope,
-					ClusterScopedIsolation:  r.clusterScopedIsolation,
 				},
+			}
+			if r.informerScope == kubebindv1alpha1.ClusterScope {
+				export.Spec.ClusterScopedIsolation = r.clusterScopedIsolation
 			}
 
 			logger.V(1).Info("Creating APIServiceExport", "name", export.Name, "namespace", export.Namespace)

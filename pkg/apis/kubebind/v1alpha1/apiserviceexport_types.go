@@ -75,7 +75,8 @@ func (in *APIServiceExport) SetConditions(conditions conditionsapi.Conditions) {
 
 // APIServiceExportSpec defines the desired state of APIServiceExport.
 //
-// +kubebuilder:validation:XValidation:rule=`self.scope == "Namespaced" || self.informerScope == "Cluster"`,message="informerScope is must be Cluster for cluster-scoped resources"
+// +kubebuilder:validation:XValidation:rule=`self.scope == "Namespaced" || self.informerScope == "Cluster"`,message="informerScope must be Cluster for cluster-scoped resources"
+// +kubebuilder:validation:XValidation:rule=`self.scope == "Namespaced" || has(self.clusterScopedIsolation)`,message="clusterScopedIsolation must be defined for cluster-scoped resources"
 type APIServiceExportSpec struct {
 	APIServiceExportCRDSpec `json:",inline"`
 
@@ -93,9 +94,12 @@ type APIServiceExportSpec struct {
 
 	// ClusterScopedIsolation specifies how cluster scoped service objects are isolated between multiple consumers on the provider side.
 	// It can be "Prefixed", "Namespaced", or "None".
-	ClusterScopedIsolation Isolation `json:"clusterScopedIsolation"`
+	ClusterScopedIsolation Isolation `json:"clusterScopedIsolation,omitempty"`
 }
 
+// Isolation is an enum defining the different ways to isolate cluster scoped objects
+//
+// +kubebuilder:validation:Enum=Prefixed;Namespaced;None
 type Isolation string
 
 const (

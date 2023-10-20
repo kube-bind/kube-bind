@@ -123,13 +123,12 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 	if strings.ToLower(options.ConsumerScope) == "cluster" {
 		options.ConsumerScope = string(kubebindv1alpha1.ClusterScope)
 	}
-	if strings.EqualFold(options.ClusterScopedIsolation, string(kubebindv1alpha1.IsolationPrefixed)) {
+	switch strings.ToLower(options.ClusterScopedIsolation) {
+	case "prefixed":
 		options.ClusterScopedIsolation = string(kubebindv1alpha1.IsolationPrefixed)
-	}
-	if strings.EqualFold(options.ClusterScopedIsolation, string(kubebindv1alpha1.IsolationNamespaced)) {
+	case "namespaced":
 		options.ClusterScopedIsolation = string(kubebindv1alpha1.IsolationNamespaced)
-	}
-	if strings.EqualFold(options.ClusterScopedIsolation, string(kubebindv1alpha1.IsolationNone)) {
+	case "none":
 		options.ClusterScopedIsolation = string(kubebindv1alpha1.IsolationNone)
 	}
 

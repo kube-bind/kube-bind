@@ -161,6 +161,7 @@ func NewServer(config *Config) (*Server, error) {
 	s.ServiceExportRequest, err = serviceexportrequest.NewController(
 		config.ClientConfig,
 		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
+		kubebindv1alpha1.Isolation(config.Options.ClusterScopedIsolation),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExportRequests(),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),

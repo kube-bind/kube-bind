@@ -46,6 +46,11 @@ spec:
           spec:
             description: spec specifies the resource.
             properties:
+              clusterScopedIsolation:
+                description: ClusterScopedIsolation specifies how cluster scoped service
+                  objects are isolated between multiple consumers on the provider
+                  side. It can be "Prefixed", "Namespaced", or "None".
+                type: string
               group:
                 description: "group is the API group of the defined custom resource.
                   Empty string means the core API group. \tThe resources are served

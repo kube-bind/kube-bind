@@ -90,7 +90,24 @@ type APIServiceExportSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="informerScope is immutable"
 	InformerScope Scope `json:"informerScope"`
+
+	// ClusterScopedIsolation specifies how cluster scoped service objects are isolated between multiple consumers on the provider side.
+	// It can be "Prefixed", "Namespaced", or "None".
+	ClusterScopedIsolation Isolation `json:"clusterScopedIsolation"`
 }
+
+type Isolation string
+
+const (
+	// Prepends the name of the cluster namespace to an object's name.
+	IsolationPrefixed Isolation = "Prefixed"
+
+	// Maps a consumer side object into a namespaced object inside the corresponding cluster namespace.
+	IsolationNamespaced Isolation = "Namespaced"
+
+	// Used for the case of a dedicated provider where isolation is not necessary.
+	IsolationNone Isolation = "None"
+)
 
 type APIServiceExportCRDSpec struct {
 	// group is the API group of the defined custom resource. Empty string means the

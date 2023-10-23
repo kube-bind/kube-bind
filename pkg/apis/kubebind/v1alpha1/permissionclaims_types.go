@@ -48,14 +48,14 @@ type PermissionClaim struct {
 	//
 	// +optional
 	// +kubebuilder:default={}
-	Read *ReadOptions `json:"read,omitempty"`
+	Read *PermissionClaimReadOptions `json:"read,omitempty"`
 
 	// create determines whether the kube-bind konnector will sync matching objects from the
 	// provider cluster down to the consumer cluster.
 	// only for owner Provider
 	//
 	// +optional
-	Create *CreateOptions `json:"create,omitempty"`
+	Create *PermissionClaimCreateOptions `json:"create,omitempty"`
 
 	// autoAdopt set to true means that objects created by the consumer are adopted by the provider.
 	// i.e. the provider will become the owner.
@@ -75,16 +75,16 @@ type PermissionClaim struct {
 	//
 	// +optional
 	// +kubebuilder:default:={}
-	OnConflict *OnConflictOptions `json:"onConflict,omitempty"`
+	OnConflict *PermissionClaimOnConflictOptions `json:"onConflict,omitempty"`
 
 	// update lists which updates to objects on the consumer cluster are claimed.
 	// By default, the whole object is synced, but metadata is not.
 	//
 	// +optional
-	Update *UpdateOptions `json:"update,omitempty"`
+	Update *PermissionClaimUpdateOptions `json:"update,omitempty"`
 }
 
-type ReadOptions struct {
+type PermissionClaimReadOptions struct {
 	// labels is a list of claimed label key wildcard patterns
 	// that are synchronized from the consumer cluster to the provider on
 	// objects that are owned by the consumer.
@@ -119,7 +119,7 @@ type Matcher struct {
 	Pattern string `json:"pattern,omitempty"`
 }
 
-type OnConflictOptions struct {
+type PermissionClaimOnConflictOptions struct {
 	// recreateWhenConsumerSideDeleted set to true (the default) means the provider will recreate the object
 	// in case the object is missing on the consumer cluster, but has been synchronized before.
 	//
@@ -129,7 +129,7 @@ type OnConflictOptions struct {
 	RecreateWhenConsumerSideDeleted bool `json:"recreateWhenConsumerSideDeleted"`
 }
 
-type CreateOptions struct {
+type PermissionClaimCreateOptions struct {
 	// replaceExisting means that an existing object owned by the consumer will be replaced by the provider object.
 	//
 	// If not true, and a conflicting consumer object exists, it is not touched.
@@ -138,7 +138,7 @@ type CreateOptions struct {
 	ReplaceExisting bool `json:"replaceExisting,omitempty"`
 }
 
-type UpdateOptions struct {
+type PermissionClaimUpdateOptions struct {
 	// fields are a list of JSON Paths describing which parts of an object the provider wants to control.
 	//
 	// This field is ignored if the owner in the claim selector is set to "Provider".
@@ -229,15 +229,15 @@ type ResourceSelector struct {
 	//
 	// +kubebuilder:validation:Enum=Provider;Consumer
 	// +optional
-	Owner Owner `json:"owner,omitempty"`
+	Owner PermissionCaimResourceOwner `json:"owner,omitempty"`
 }
 
-type Owner string
+type PermissionCaimResourceOwner string
 
 const (
 	// provider means that the owner of the resource is the Provider.
-	Provider Owner = "Provider"
+	Provider PermissionCaimResourceOwner = "Provider"
 
 	// consumer means that the owner of the resource is the Consumer.
-	Consumer Owner = "Consumer"
+	Consumer PermissionCaimResourceOwner = "Consumer"
 )

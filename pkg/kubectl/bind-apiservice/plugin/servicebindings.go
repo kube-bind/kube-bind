@@ -162,7 +162,7 @@ func writeFirstLines(b *bytes.Buffer, groupResource string, claim kubebindv1alph
 	adopt := claim.AutoAdopt
 
 	var names []string
-	var owner kubebindv1alpha1.Owner
+	var owner kubebindv1alpha1.PermissionCaimResourceOwner
 	if claim.Selector != nil {
 		names = claim.Selector.Names
 		owner = claim.Selector.Owner

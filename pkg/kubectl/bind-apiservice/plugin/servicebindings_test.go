@@ -131,7 +131,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Provider,
 				},
 				Required: true,
-				Create:   &kubebindv1alpha1.CreateOptions{},
+				Create:   &kubebindv1alpha1.PermissionClaimCreateOptions{},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
@@ -182,7 +182,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Provider,
 				},
 				Required:   true,
-				OnConflict: &kubebindv1alpha1.OnConflictOptions{},
+				OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
@@ -199,7 +199,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Provider,
 				},
 				Required: true,
-				Create: &kubebindv1alpha1.CreateOptions{
+				Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
 					ReplaceExisting: false,
 				},
 			},
@@ -218,7 +218,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Provider,
 				},
 				Required: true,
-				Create: &kubebindv1alpha1.CreateOptions{
+				Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
 					ReplaceExisting: true,
 				},
 			},
@@ -238,7 +238,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Provider,
 				},
 				Required: true,
-				OnConflict: &kubebindv1alpha1.OnConflictOptions{
+				OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{
 					RecreateWhenConsumerSideDeleted: false,
 				},
 			},
@@ -257,7 +257,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Provider,
 				},
 				Required: true,
-				OnConflict: &kubebindv1alpha1.OnConflictOptions{
+				OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{
 					RecreateWhenConsumerSideDeleted: true,
 				},
 			},
@@ -277,7 +277,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Provider,
 				},
 				Required: true,
-				Update:   &kubebindv1alpha1.UpdateOptions{},
+				Update:   &kubebindv1alpha1.PermissionClaimUpdateOptions{},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
@@ -294,7 +294,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Provider,
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					Fields: []string{"foo", "bar"},
 				},
 			},
@@ -316,7 +316,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Provider,
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					Preserving: []string{"foo", "bar"},
 				},
 			},
@@ -338,7 +338,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Provider,
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					AlwaysRecreate: true,
 				},
 			},
@@ -359,7 +359,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required:   true,
 				AutoDonate: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					Fields: []string{"foo", "bar"},
 				},
 			},
@@ -382,7 +382,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required:   true,
 				AutoDonate: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					Preserving: []string{"foo", "bar"},
 				},
 			},
@@ -511,7 +511,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Consumer,
 				},
 				Required:   true,
-				OnConflict: &kubebindv1alpha1.OnConflictOptions{},
+				OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{},
 			},
 			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
@@ -528,7 +528,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Consumer,
 				},
 				Required: true,
-				Create: &kubebindv1alpha1.CreateOptions{
+				Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
 					ReplaceExisting: false,
 				},
 			},
@@ -547,7 +547,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Consumer,
 				},
 				Required: true,
-				Create: &kubebindv1alpha1.CreateOptions{
+				Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
 					ReplaceExisting: true,
 				},
 			},
@@ -567,7 +567,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Consumer,
 				},
 				Required: true,
-				Update:   &kubebindv1alpha1.UpdateOptions{},
+				Update:   &kubebindv1alpha1.PermissionClaimUpdateOptions{},
 			},
 			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
@@ -584,7 +584,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Consumer,
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					Fields: []string{"foo", "bar"},
 				},
 			},
@@ -606,7 +606,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Consumer,
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					Preserving: []string{"foo", "bar"},
 				},
 			},
@@ -628,7 +628,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					Owner: kubebindv1alpha1.Consumer,
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					AlwaysRecreate: true,
 				},
 			},
@@ -649,7 +649,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required:  true,
 				AutoAdopt: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					Fields: []string{"foo", "bar"},
 				},
 			},
@@ -672,7 +672,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				},
 				Required:  true,
 				AutoAdopt: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					Preserving: []string{"foo", "bar"},
 				},
 			},
@@ -738,7 +738,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				Version:    "v1",
 				Selector:   &kubebindv1alpha1.ResourceSelector{},
 				AutoDonate: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					Fields: []string{"spec"},
 				},
 			},
@@ -772,7 +772,7 @@ func TestHumanReadablePromt(t *testing.T) {
 				Version:   "v1",
 				Selector:  &kubebindv1alpha1.ResourceSelector{},
 				AutoAdopt: true,
-				Update: &kubebindv1alpha1.UpdateOptions{
+				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 					Fields: []string{"spec"},
 				},
 			},

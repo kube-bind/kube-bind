@@ -97,7 +97,7 @@ type APIServiceBindingSpec struct {
 	PermissionClaims []AcceptablePermissionClaim `json:"permissionClaims,omitempty"`
 }
 
-// acceptablePermissionClaim is a permission claim that stores the users acceptance in the field state. Only accepted permission claims are reconciled.
+// AcceptablePermissionClaim is a permission claim that stores the users acceptance in the field state. Only accepted permission claims are reconciled.
 type AcceptablePermissionClaim struct {
 	PermissionClaim `json:",inline"`
 

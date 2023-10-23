@@ -79,8 +79,16 @@ func (in *APIServiceExport) SetConditions(conditions conditionsapi.Conditions) {
 type APIServiceExportSpec struct {
 	APIServiceExportCRDSpec `json:",inline"`
 
+	// permissionClaims is a list of permission claims that the service provider
+	// asks the consumer to accept in the consumer cluster binding to this export.
+	// The consumer can accept or deny each claim. Some claims are required and
+	// with that a successful binding is not possible. Others are optional.
+	//
+	// Note that a claim added at a later point is not guaranteed to be seen and
+	// processed (accepted or rejected) by the consumer.
+	//
 	// +optional
-	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
+	PermissionClaims []ExportPermissionClaim `json:"permissionClaims,omitempty"`
 
 	// informerScope is the scope of the APIServiceExport. It can be either Cluster or Namespace.
 	//
@@ -93,6 +101,14 @@ type APIServiceExportSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="informerScope is immutable"
 	InformerScope Scope `json:"informerScope"`
+}
+
+type ExportPermissionClaim struct {
+	PermissionClaim `json:",inline"`
+
+	// required indicates whether the APIServiceBinding will work if this claim
+	// is not accepted. If a required claim is denied, the binding is aborted.
+	Required bool `json:"required"`
 }
 
 type APIServiceExportCRDSpec struct {

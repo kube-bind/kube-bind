@@ -311,7 +311,7 @@ func ClusterID(ns *corev1.Namespace) string {
 
 func SessionID() string {
 	var b [28]byte
-	if _, err := rand.Read(b[:]); err != nil {
+	if _, err := rand.Read(b[:]); err != nil { //nolint:staticcheck
 		panic(err)
 	}
 	return toBase62(b)[:6] // 50 billion

@@ -31,18 +31,20 @@ func TestHumanReadablePromt(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		testData       kubebindv1alpha1.PermissionClaim
+		testData       kubebindv1alpha1.ExportPermissionClaim
 		expectedOutput string
 	}{
 		{"Owner=Provider",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
 				},
 				Required: true,
 			},
@@ -51,14 +53,16 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,Required=false",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
 				},
 				Required: false,
 			},
@@ -67,15 +71,17 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,Selector.Names={foo}",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Names: []string{"bar"},
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Names: []string{"bar"},
+						Owner: kubebindv1alpha1.Provider,
+					},
 				},
 				Required: true,
 			},
@@ -86,14 +92,16 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,GroupResource.Group",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "example.com",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "example.com",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
 				},
 				Required: true,
 			},
@@ -102,15 +110,17 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,Selector.Names={bar},GroupResource.Group",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "example.com",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Names: []string{"bar"},
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "example.com",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Names: []string{"bar"},
+						Owner: kubebindv1alpha1.Provider,
+					},
 				},
 				Required: true,
 			},
@@ -121,106 +131,118 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,CreateOptions={}",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					Create: &kubebindv1alpha1.PermissionClaimCreateOptions{},
 				},
 				Required: true,
-				Create:   &kubebindv1alpha1.PermissionClaimCreateOptions{},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,AutoDonate=false",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					AutoDonate: false,
 				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
-				},
-				Required:   true,
-				AutoDonate: false,
+				Required: true,
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,AutoDonate=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					AutoDonate: true,
 				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
-				},
-				Required:   true,
-				AutoDonate: true,
+				Required: true,
 			},
 			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,OnConflict={}",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{},
 				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
-				},
-				Required:   true,
-				OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{},
+				Required: true,
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,Create.ReplaceExisting=false",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
+						ReplaceExisting: false,
+					},
 				},
 				Required: true,
-				Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
-					ReplaceExisting: false,
-				},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,Create.ReplaceExisting=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
+						ReplaceExisting: true,
+					},
 				},
 				Required: true,
-				Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
-					ReplaceExisting: true,
-				},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Conflicting objects will be replaced by the provider. " +
@@ -228,38 +250,42 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,OnConflict.RecreateWhenConsumerSideDeleted=false",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{
+						RecreateWhenConsumerSideDeleted: false,
+					},
 				},
 				Required: true,
-				OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{
-					RecreateWhenConsumerSideDeleted: false,
-				},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,OnConflict.RecreateWhenConsumerSideDeleted=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{
+						RecreateWhenConsumerSideDeleted: true,
+					},
 				},
 				Required: true,
-				OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{
-					RecreateWhenConsumerSideDeleted: true,
-				},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Created objects will be recreated upon deletion. " +
@@ -267,36 +293,40 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,UpdateOptions={}",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{},
 				},
 				Required: true,
-				Update:   &kubebindv1alpha1.PermissionClaimUpdateOptions{},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,UpdateOptions.Fields",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						Fields: []string{"foo", "bar"},
+					},
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					Fields: []string{"foo", "bar"},
-				},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"The following fields of the objects will still be able to be changed by the provider:\n" + // TODO
@@ -306,19 +336,21 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,UpdateOptions.Preserving",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						Preserving: []string{"foo", "bar"},
+					},
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					Preserving: []string{"foo", "bar"},
-				},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"The following fields of the objects will be preserved by the provider:\n" +
@@ -328,19 +360,21 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,UpdateOptions.AlwaysRecreate=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						AlwaysRecreate: true,
+					},
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					AlwaysRecreate: true,
-				},
 			},
 			"The provider wants to write foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Modification of said objects will by handled by deletion and recreation of said objects.\n" +
@@ -348,20 +382,22 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,UpdateOptions.Fields,AutoDonate=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					AutoDonate: true,
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						Fields: []string{"foo", "bar"},
+					},
 				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
-				},
-				Required:   true,
-				AutoDonate: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					Fields: []string{"foo", "bar"},
-				},
+				Required: true,
 			},
 			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"The following fields of the objects will still be able to be changed by the provider:\n" +
@@ -371,20 +407,22 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,UpdateOptions.Preserving,AutoDonate=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Provider,
+					},
+					AutoDonate: true,
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						Preserving: []string{"foo", "bar"},
+					},
 				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Provider,
-				},
-				Required:   true,
-				AutoDonate: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					Preserving: []string{"foo", "bar"},
-				},
+				Required: true,
 			},
 			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"The following fields of the objects will be preserved by the provider:\n" +
@@ -394,14 +432,16 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
 				},
 				Required: true,
 			},
@@ -410,15 +450,17 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,Selector.Names={bar}",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Names: []string{"bar"},
-					Owner: kubebindv1alpha1.Consumer,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Names: []string{"bar"},
+						Owner: kubebindv1alpha1.Consumer,
+					},
 				},
 				Required: true,
 			},
@@ -429,14 +471,16 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,GroupResource.Group",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "example.com",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "example.com",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
 				},
 				Required: true,
 			},
@@ -445,15 +489,17 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,Selector.Names={bar},GroupResource.Group",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "example.com",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Names: []string{"bar"},
-					Owner: kubebindv1alpha1.Consumer,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "example.com",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Names: []string{"bar"},
+						Owner: kubebindv1alpha1.Consumer,
+					},
 				},
 				Required: true,
 			},
@@ -464,35 +510,39 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,Adopt=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					AutoAdopt: true,
 				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
-				},
-				AutoAdopt: true,
-				Required:  true,
+				Required: true,
 			},
 			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,Selector.Names={bar},Adopt=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Names: []string{"bar"},
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					AutoAdopt: true,
 				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Names: []string{"bar"},
-					Owner: kubebindv1alpha1.Consumer,
-				},
-				AutoAdopt: true,
-				Required:  true,
+				Required: true,
 			},
 			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") which are referenced with:\n" +
 				"\t- name: \"bar\"\n" +
@@ -501,55 +551,61 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,OnConflict={}",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{},
 				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
-				},
-				Required:   true,
-				OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{},
+				Required: true,
 			},
 			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,Create.ReplaceExisting=false",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
+						ReplaceExisting: false,
+					},
 				},
 				Required: true,
-				Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
-					ReplaceExisting: false,
-				},
 			},
 			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,Create.ReplaceExisting=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
+						ReplaceExisting: true,
+					},
 				},
 				Required: true,
-				Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
-					ReplaceExisting: true,
-				},
 			},
 			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Conflicting objects will be replaced by the provider. " +
@@ -557,36 +613,40 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,UpdateOptions={}",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{},
 				},
 				Required: true,
-				Update:   &kubebindv1alpha1.PermissionClaimUpdateOptions{},
 			},
 			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,UpdateOptions.Fields",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						Fields: []string{"foo", "bar"},
+					},
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					Fields: []string{"foo", "bar"},
-				},
 			},
 			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"The following fields of the objects will still be able to be changed by the provider:\n" +
@@ -596,19 +656,21 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,UpdateOptions.Preserving",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						Preserving: []string{"foo", "bar"},
+					},
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					Preserving: []string{"foo", "bar"},
-				},
 			},
 			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"The following fields of the objects will be preserved by the provider:\n" +
@@ -618,19 +680,21 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,UpdateOptions.AlwaysRecreate=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						AlwaysRecreate: true,
+					},
 				},
 				Required: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					AlwaysRecreate: true,
-				},
 			},
 			"The provider wants to read foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Modification of said objects will by handled by deletion and recreation of said objects.\n" +
@@ -638,20 +702,22 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,UpdateOptions.Fields,Adopt=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					AutoAdopt: true,
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						Fields: []string{"foo", "bar"},
+					},
 				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
-				},
-				Required:  true,
-				AutoAdopt: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					Fields: []string{"foo", "bar"},
-				},
+				Required: true,
 			},
 			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"The following fields of the objects will still be able to be changed by the provider:\n" +
@@ -661,20 +727,22 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Consumer,UpdateOptions.Preserving,Adopt=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Owner: kubebindv1alpha1.Consumer,
+					},
+					AutoAdopt: true,
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						Preserving: []string{"foo", "bar"},
+					},
 				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Owner: kubebindv1alpha1.Consumer,
-				},
-				Required:  true,
-				AutoAdopt: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					Preserving: []string{"foo", "bar"},
-				},
+				Required: true,
 			},
 			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"The following fields of the objects will be preserved by the provider:\n" + "	\"foo\"\n" +
@@ -683,13 +751,15 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Selector={}",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version:  "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{},
 				},
-				Version:  "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{},
 				Required: true,
 			},
 			"The provider wants to read and write foo objects (apiVersion: \"v1\") on your cluster.\n" +
@@ -697,14 +767,16 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Selector.Owner=\"\",Selector.Names={bar}",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Names: []string{"bar"},
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Names: []string{"bar"},
+					},
 				},
 				Required: true,
 			},
@@ -715,31 +787,35 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Selector={},AutoDonate=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version:    "v1",
+					Selector:   &kubebindv1alpha1.ResourceSelector{},
+					AutoDonate: true,
 				},
-				Version:    "v1",
-				Selector:   &kubebindv1alpha1.ResourceSelector{},
-				Required:   true,
-				AutoDonate: true,
+				Required: true,
 			},
 			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Selector={},AutoDonate=true,update.Fields=[\"spec\"]",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version:    "v1",
-				Selector:   &kubebindv1alpha1.ResourceSelector{},
-				AutoDonate: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					Fields: []string{"spec"},
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version:    "v1",
+					Selector:   &kubebindv1alpha1.ResourceSelector{},
+					AutoDonate: true,
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						Fields: []string{"spec"},
+					},
 				},
 			},
 			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster.\n" +
@@ -749,31 +825,35 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Selector={},adopt=true",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version:   "v1",
+					Selector:  &kubebindv1alpha1.ResourceSelector{},
+					AutoAdopt: true,
 				},
-				Version:   "v1",
-				Selector:  &kubebindv1alpha1.ResourceSelector{},
-				Required:  true,
-				AutoAdopt: true,
+				Required: true,
 			},
 			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster.\n" +
 				"Accepting this Permission is required in order to proceed.\n" +
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Selector={},adopt=true,update.Fields=[\"spec\"]",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version:   "v1",
-				Selector:  &kubebindv1alpha1.ResourceSelector{},
-				AutoAdopt: true,
-				Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
-					Fields: []string{"spec"},
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version:   "v1",
+					Selector:  &kubebindv1alpha1.ResourceSelector{},
+					AutoAdopt: true,
+					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
+						Fields: []string{"spec"},
+					},
 				},
 			},
 			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster.\n" +
@@ -783,15 +863,17 @@ func TestHumanReadablePromt(t *testing.T) {
 				"Do you accept this Permission? [No,Yes]\n",
 		},
 		{"Owner=Provider,Selector.Names={bar,baz}",
-			kubebindv1alpha1.PermissionClaim{
-				GroupResource: kubebindv1alpha1.GroupResource{
-					Group:    "",
-					Resource: "foo",
-				},
-				Version: "v1",
-				Selector: &kubebindv1alpha1.ResourceSelector{
-					Names: []string{"bar", "baz"},
-					Owner: kubebindv1alpha1.Provider,
+			kubebindv1alpha1.ExportPermissionClaim{
+				PermissionClaim: kubebindv1alpha1.PermissionClaim{
+					GroupResource: kubebindv1alpha1.GroupResource{
+						Group:    "",
+						Resource: "foo",
+					},
+					Version: "v1",
+					Selector: &kubebindv1alpha1.ResourceSelector{
+						Names: []string{"bar", "baz"},
+						Owner: kubebindv1alpha1.Provider,
+					},
 				},
 				Required: true,
 			},

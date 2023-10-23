@@ -120,7 +120,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 	return bindings, nil
 }
 
-func printPermissionClaim(w io.Writer, p kubebindv1alpha1.PermissionClaim) error {
+func printPermissionClaim(w io.Writer, p kubebindv1alpha1.ExportPermissionClaim) error {
 	var b bytes.Buffer
 
 	var groupResource string
@@ -130,19 +130,19 @@ func printPermissionClaim(w io.Writer, p kubebindv1alpha1.PermissionClaim) error
 		groupResource = fmt.Sprintf("%s objects (apiVersion: \"%s\")", p.GroupResource.Resource, p.Version)
 	}
 
-	if err := writeFirstLines(&b, groupResource, p); err != nil {
+	if err := writeFirstLines(&b, groupResource, p.PermissionClaim); err != nil {
 		return err
 	}
 
-	if err := writeCreate(&b, p); err != nil {
+	if err := writeCreate(&b, p.PermissionClaim); err != nil {
 		return err
 	}
 
-	if err := writeOnConflict(&b, p); err != nil {
+	if err := writeOnConflict(&b, p.PermissionClaim); err != nil {
 		return err
 	}
 
-	if err := writeUpdateClause(&b, p); err != nil {
+	if err := writeUpdateClause(&b, p.PermissionClaim); err != nil {
 		return err
 	}
 
@@ -274,7 +274,7 @@ func writeRequiredAndAcceptance(b *bytes.Buffer, required bool) error {
 	return err
 }
 
-func (opt BindAPIServiceOptions) promptYesNo(p kubebindv1alpha1.PermissionClaim) (bool, error) {
+func (opt BindAPIServiceOptions) promptYesNo(p kubebindv1alpha1.ExportPermissionClaim) (bool, error) {
 
 	reader := bufio.NewReader(opt.Options.IOStreams.In)
 

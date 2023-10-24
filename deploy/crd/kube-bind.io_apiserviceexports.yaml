@@ -118,20 +118,6 @@ spec:
                   (accepted or rejected) by the consumer."
                 items:
                   properties:
-                    autoAdopt:
-                      description: "autoAdopt set to true means that objects created
-                        by the consumer on the consumer cluster are immediately adopted
-                        by the provider by syncing them to the provider side and then
-                        marking them as owned by the provider on both sides. \n autoAdopt
-                        is mutually exclusive with autoDonate."
-                      type: boolean
-                    autoDonate:
-                      description: "autoDonate set to true means that a newly created
-                        object synced from the provider to the consumer cluster is
-                        immediately donated to the consumer by marking it as owned
-                        by the consumer on both sides. \n autoDonate is mutually exclusive
-                        with autoAdopt."
-                      type: boolean
                     create:
                       description: "create determines whether the provider can create
                         new objects in the consumer cluster by syncing a provider-owned
@@ -152,6 +138,62 @@ spec:
                         this is the empty string '""'.
                       pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
                       type: string
+                    objectSelector:
+                      description: selector restricts which objects of the given resource
+                        are being claimed. If unset, all objects across all namespaces
+                        are being claimed, both consumer- and provider owned.
+                      properties:
+                        fieldSelectors:
+                          description: fieldSelectors is a disjunctive list of field
+                            selectors, following the same rules as kubernetes field
+                            selectors, see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/,
+                            i.e. each field selector can be a conjunction of requirements.
+                          items:
+                            type: string
+                          type: array
+                        labelSelectors:
+                          description: labelSelectors is a disjunctive list of label
+                            selectors, following the same rules as kubernetes label
+                            selectors, see https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/.
+                          items:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          type: array
+                        names:
+                          default:
+                          - '*'
+                          description: names is a list of values selecting by metadata.name,
+                            or "*" which matches all names.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-validations:
+                          - message: only names or * are allowed
+                            rule: self.all(n, n.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?|[*]$'))
+                        namespaces:
+                          default:
+                          - '*'
+                          description: namespaces is a list of values selecting by
+                            metadata.namespace, or "*" which matches all namespaces,
+                            or empty string that matches cluster-scoped resources.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-validations:
+                          - message: only namespace names,* or empty string are allowed
+                            rule: self.all(n, n.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?|[*]?$'))
+                        owner:
+                          description: owner set means that resources of a specific
+                            owner are selected and those owned by the other side are
+                            ignored. A resource on the consumer cluster is owned by
+                            the consumer by default, if not marked as owned by the
+                            provider through the `kube-bind.io/owner=provider` annotation.
+                          enum:
+                          - Provider
+                          - Consumer
+                          type: string
+                      type: object
                     onConflict:
                       description: onConflict determines how conflicts between objects
                         on the consumer and provider clusters will be resolved.
@@ -166,6 +208,20 @@ spec:
                             cluster as well."
                           type: boolean
                       type: object
+                    ownerTransfer:
+                      description: ownerTransfer determines how ownership of objects
+                        is transferred between the consumer and the provider. By default,
+                        no transfer happens. If set to Donate, objects created by
+                        the provider on the consumer cluster are immediately donated
+                        to the consumer. If set to Adopt, objects created by the consumer
+                        on the consumer cluster are immediately owned by the provider
+                        and synced to the provider cluster. Ownership determines the
+                        direction of synchronization.
+                      enum:
+                      - Donate
+                      - Adopt
+                      - ""
+                      type: string
                     read:
                       description: read claims read access for the provider to matching
                         objects, excluding labels and annotations by default. Read
@@ -254,62 +310,6 @@ spec:
                         provided by a CRD not provided by an service binding export.'
                       pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
                       type: string
-                    selector:
-                      description: selector restricts which objects of the given resource
-                        are being claimed. If unset, all objects across all namespaces
-                        are being claimed, both consumer- and provider owned.
-                      properties:
-                        fieldSelectors:
-                          description: fieldSelectors is a disjunctive list of field
-                            selectors, following the same rules as kubernetes field
-                            selectors, see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/,
-                            i.e. each field selector can be a conjunction of requirements.
-                          items:
-                            type: string
-                          type: array
-                        labelSelectors:
-                          description: labelSelectors is a disjunctive list of label
-                            selectors, following the same rules as kubernetes label
-                            selectors, see https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/.
-                          items:
-                            additionalProperties:
-                              type: string
-                            type: object
-                          type: array
-                        names:
-                          default:
-                          - '*'
-                          description: names is a list of values selecting by metadata.name,
-                            or "*" which matches all names.
-                          items:
-                            type: string
-                          type: array
-                          x-kubernetes-validations:
-                          - message: only names or * are allowed
-                            rule: self.all(n, n.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?|[*]$'))
-                        namespaces:
-                          default:
-                          - '*'
-                          description: namespaces is a list of values selecting by
-                            metadata.namespace, or "*" which matches all namespaces,
-                            or empty string that matches cluster-scoped resources.
-                          items:
-                            type: string
-                          type: array
-                          x-kubernetes-validations:
-                          - message: only namespace names,* or empty string are allowed
-                            rule: self.all(n, n.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?|[*]?$'))
-                        owner:
-                          description: owner set means that resources of a specific
-                            owner are selected and those owned by the other side are
-                            ignored. A resource on the consumer cluster is owned by
-                            the consumer by default, if not marked as owned by the
-                            provider through the `kube-bind.io/owner=provider` annotation.
-                          enum:
-                          - Provider
-                          - Consumer
-                          type: string
-                      type: object
                     update:
                       description: "update lists which updates to objects on the consumer
                         cluster are claimed. By default, the whole object is synced,
@@ -405,7 +405,7 @@ spec:
                             objects on the consumer cluster that the consumer keeps
                             controlling, i.e. that are not overwritten by the provider,
                             but synced back to the provider side. \n This is ignored
-                            for consumer-owned objects.."
+                            for consumer-owned objects."
                           items:
                             type: string
                           type: array
@@ -418,10 +418,6 @@ spec:
                   - resource
                   - version
                   type: object
-                  x-kubernetes-validations:
-                  - message: donate and adopt are mutually exclusive
-                    rule: '!(has(self.autoDonate) && self.autoDonate && has(self.autoAdopt)
-                      && self.autoAdopt)'
                 type: array
               scope:
                 description: scope indicates whether the defined custom resource is

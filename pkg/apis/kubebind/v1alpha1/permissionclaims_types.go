@@ -33,8 +33,6 @@ package v1alpha1
 // Objects on the consumer cluster are owned by the consumer by default. Objects
 // on the provider cluster are owned by the provider by default. The annotation
 // is only set if the object is owned by the respective other side.
-//
-// +kubebuilder:validation:XValidation:rule="!(has(self.autoDonate) && self.autoDonate && has(self.autoAdopt) && self.autoAdopt)",message="donate and adopt are mutually exclusive"
 type PermissionClaim struct {
 	GroupResource `json:","`
 
@@ -50,7 +48,7 @@ type PermissionClaim struct {
 	//
 	// +optional
 	// +kubebuilder:default:={}
-	Selector *ResourceSelector `json:"selector,omitempty"`
+	ObjectSelector *ObjectSelector `json:"objectSelector,omitempty"`
 
 	// read claims read access for the provider to matching objects, excluding
 	// labels and annotations by default. Read access is realized by syncing
@@ -70,25 +68,6 @@ type PermissionClaim struct {
 	// +optional
 	Create *PermissionClaimCreateOptions `json:"create,omitempty"`
 
-	// autoAdopt set to true means that objects created by the consumer on the
-	// consumer cluster are immediately adopted by the provider by syncing them
-	// to the provider side and then marking them as owned by the provider on
-	// both sides.
-	//
-	// autoAdopt is mutually exclusive with autoDonate.
-	//
-	// +optional
-	AutoAdopt bool `json:"autoAdopt,omitempty"`
-
-	// autoDonate set to true means that a newly created object synced from the
-	// provider to the consumer cluster is immediately donated to the consumer
-	// by marking it as owned by the consumer on both sides.
-	//
-	// autoDonate is mutually exclusive with autoAdopt.
-	//
-	// +optional
-	AutoDonate bool `json:"autoDonate,omitempty"`
-
 	// onConflict determines how conflicts between objects on the consumer
 	// and provider clusters will be resolved.
 	//
@@ -103,7 +82,27 @@ type PermissionClaim struct {
 	//
 	// +optional
 	Update *PermissionClaimUpdateOptions `json:"update,omitempty"`
+
+	// ownerTransfer determines how ownership of objects is transferred between
+	// the consumer and the provider. By default, no transfer happens. If set to
+	// Donate, objects created by the provider on the consumer cluster are
+	// immediately donated to the consumer. If set to Adopt, objects created by
+	// the consumer on the consumer cluster are immediately owned by the
+	// provider and synced to the provider cluster. Ownership determines the
+	// direction of synchronization.
+	//
+	// +kubebuilder:validation:Enum=Donate;Adopt;""
+	// +optional
+	OwnerTransfer OwnerTransfer `json:"ownerTransfer,omitempty"`
 }
+
+type OwnerTransfer string
+
+const (
+	OwnerTransferNone   OwnerTransfer = ""
+	OwnerTransferDonate OwnerTransfer = "Donate"
+	OwnerTransferAdopt  OwnerTransfer = "Adopt"
+)
 
 type PermissionClaimReadOptions struct {
 	// labels is a list of label key wildcard patterns that are synchronized
@@ -177,7 +176,7 @@ type PermissionClaimUpdateOptions struct {
 	// consumer cluster that the consumer keeps controlling, i.e. that are not
 	// overwritten by the provider, but synced back to the provider side.
 	//
-	// This is ignored for consumer-owned objects..
+	// This is ignored for consumer-owned objects.
 	//
 	// +optional
 	Preserving []string `json:"preserving,omitempty"`
@@ -225,7 +224,7 @@ type PermissionClaimUpdateOptions struct {
 	AnnotationsOnConsumerOwnedObjects []Matcher `json:"annotationsOnConsumerOwnedObjects,omitempty"`
 }
 
-type ResourceSelector struct {
+type ObjectSelector struct {
 	// names is a list of values selecting by metadata.name, or "*" which
 	// matches all names.
 	//
@@ -259,15 +258,15 @@ type ResourceSelector struct {
 	//
 	// +kubebuilder:validation:Enum=Provider;Consumer
 	// +optional
-	Owner PermissionCaimResourceOwner `json:"owner,omitempty"`
+	Owner PermissionClaimResourceOwner `json:"owner,omitempty"`
 }
 
-type PermissionCaimResourceOwner string
+type PermissionClaimResourceOwner string
 
 const (
 	// Provider means that the owner of the resource is the Provider.
-	Provider PermissionCaimResourceOwner = "Provider"
+	Provider PermissionClaimResourceOwner = "Provider"
 
 	// Consumer means that the owner of the resource is the Consumer.
-	Consumer PermissionCaimResourceOwner = "Consumer"
+	Consumer PermissionClaimResourceOwner = "Consumer"
 )

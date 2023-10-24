@@ -42,7 +42,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 				},
@@ -60,7 +60,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 				},
@@ -78,7 +78,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Names: []string{"bar"},
 						Owner: kubebindv1alpha1.Provider,
 					},
@@ -99,7 +99,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 				},
@@ -117,7 +117,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Names: []string{"bar"},
 						Owner: kubebindv1alpha1.Provider,
 					},
@@ -138,7 +138,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 					Create: &kubebindv1alpha1.PermissionClaimCreateOptions{},
@@ -157,10 +157,10 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
-					AutoDonate: false,
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferDonate,
 				},
 				Required: true,
 			},
@@ -176,10 +176,10 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
-					AutoDonate: true,
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferDonate,
 				},
 				Required: true,
 			},
@@ -195,7 +195,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 					OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{},
@@ -214,7 +214,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 					Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
@@ -235,7 +235,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 					Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
@@ -257,7 +257,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 					OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{
@@ -278,7 +278,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 					OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{
@@ -300,7 +300,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{},
@@ -319,7 +319,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
@@ -343,7 +343,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
@@ -367,7 +367,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
@@ -389,13 +389,13 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
-					AutoDonate: true,
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 						Fields: []string{"foo", "bar"},
 					},
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferDonate,
 				},
 				Required: true,
 			},
@@ -414,13 +414,13 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
-					AutoDonate: true,
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 						Preserving: []string{"foo", "bar"},
 					},
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferDonate,
 				},
 				Required: true,
 			},
@@ -439,7 +439,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
 				},
@@ -457,7 +457,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Names: []string{"bar"},
 						Owner: kubebindv1alpha1.Consumer,
 					},
@@ -478,7 +478,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
 				},
@@ -496,7 +496,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Names: []string{"bar"},
 						Owner: kubebindv1alpha1.Consumer,
 					},
@@ -517,10 +517,10 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
-					AutoAdopt: true,
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferAdopt,
 				},
 				Required: true,
 			},
@@ -536,11 +536,11 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Names: []string{"bar"},
 						Owner: kubebindv1alpha1.Consumer,
 					},
-					AutoAdopt: true,
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferAdopt,
 				},
 				Required: true,
 			},
@@ -558,7 +558,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
 					OnConflict: &kubebindv1alpha1.PermissionClaimOnConflictOptions{},
@@ -577,7 +577,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
 					Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
@@ -598,7 +598,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
 					Create: &kubebindv1alpha1.PermissionClaimCreateOptions{
@@ -620,7 +620,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{},
@@ -639,7 +639,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
@@ -663,7 +663,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
@@ -687,7 +687,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
@@ -709,13 +709,13 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
-					AutoAdopt: true,
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 						Fields: []string{"foo", "bar"},
 					},
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferAdopt,
 				},
 				Required: true,
 			},
@@ -734,13 +734,13 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Consumer,
 					},
-					AutoAdopt: true,
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 						Preserving: []string{"foo", "bar"},
 					},
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferAdopt,
 				},
 				Required: true,
 			},
@@ -757,8 +757,8 @@ func TestHumanReadablePromt(t *testing.T) {
 						Group:    "",
 						Resource: "foo",
 					},
-					Version:  "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{},
+					Version:        "v1",
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{},
 				},
 				Required: true,
 			},
@@ -774,7 +774,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Names: []string{"bar"},
 					},
 				},
@@ -793,9 +793,9 @@ func TestHumanReadablePromt(t *testing.T) {
 						Group:    "",
 						Resource: "foo",
 					},
-					Version:    "v1",
-					Selector:   &kubebindv1alpha1.ResourceSelector{},
-					AutoDonate: true,
+					Version:        "v1",
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{},
+					OwnerTransfer:  kubebindv1alpha1.OwnerTransferDonate,
 				},
 				Required: true,
 			},
@@ -810,12 +810,12 @@ func TestHumanReadablePromt(t *testing.T) {
 						Group:    "",
 						Resource: "foo",
 					},
-					Version:    "v1",
-					Selector:   &kubebindv1alpha1.ResourceSelector{},
-					AutoDonate: true,
+					Version:        "v1",
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{},
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 						Fields: []string{"spec"},
 					},
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferDonate,
 				},
 			},
 			"The provider wants to create user owned foo objects (apiVersion: \"v1\") on your cluster.\n" +
@@ -831,9 +831,9 @@ func TestHumanReadablePromt(t *testing.T) {
 						Group:    "",
 						Resource: "foo",
 					},
-					Version:   "v1",
-					Selector:  &kubebindv1alpha1.ResourceSelector{},
-					AutoAdopt: true,
+					Version:        "v1",
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{},
+					OwnerTransfer:  kubebindv1alpha1.OwnerTransferAdopt,
 				},
 				Required: true,
 			},
@@ -848,12 +848,12 @@ func TestHumanReadablePromt(t *testing.T) {
 						Group:    "",
 						Resource: "foo",
 					},
-					Version:   "v1",
-					Selector:  &kubebindv1alpha1.ResourceSelector{},
-					AutoAdopt: true,
+					Version:        "v1",
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{},
 					Update: &kubebindv1alpha1.PermissionClaimUpdateOptions{
 						Fields: []string{"spec"},
 					},
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferAdopt,
 				},
 			},
 			"The provider wants to have ownership of foo objects (apiVersion: \"v1\") on your cluster.\n" +
@@ -870,7 +870,7 @@ func TestHumanReadablePromt(t *testing.T) {
 						Resource: "foo",
 					},
 					Version: "v1",
-					Selector: &kubebindv1alpha1.ResourceSelector{
+					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Names: []string{"bar", "baz"},
 						Owner: kubebindv1alpha1.Provider,
 					},

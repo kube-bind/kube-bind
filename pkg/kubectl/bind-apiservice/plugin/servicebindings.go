@@ -157,15 +157,14 @@ func printPermissionClaim(w io.Writer, p kubebindv1alpha1.ExportPermissionClaim)
 func writeFirstLines(b *bytes.Buffer, groupResource string, claim kubebindv1alpha1.PermissionClaim) error {
 	var err error
 
-	donate := claim.AutoDonate
-
-	adopt := claim.AutoAdopt
+	donate := claim.OwnerTransfer == kubebindv1alpha1.OwnerTransferDonate
+	adopt := claim.OwnerTransfer == kubebindv1alpha1.OwnerTransferAdopt
 
 	var names []string
-	var owner kubebindv1alpha1.PermissionCaimResourceOwner
-	if claim.Selector != nil {
-		names = claim.Selector.Names
-		owner = claim.Selector.Owner
+	var owner kubebindv1alpha1.PermissionClaimResourceOwner
+	if claim.ObjectSelector != nil {
+		names = claim.ObjectSelector.Names
+		owner = claim.ObjectSelector.Owner
 	}
 
 	var verb string

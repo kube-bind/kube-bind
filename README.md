@@ -110,4 +110,5 @@ WQh88mNOY0Z3tLy1/WOud7qIEEBxz+POc4j8BsYenYo=
 The `--cookie-signing-key` option is required and supports 32 and 64 byte lengths.
 The `--cookie-encryption-key` option is optional and supports byte lengths of 16, 24, 32 for AES-128, AES-192, or AES-256.
 
+* start the connector: `bin/konnector`
 * with a KUBECONFIG against another cluster (a consumer cluster) bind a service: `kubectl bind http://127.0.0.1:8080/export`.

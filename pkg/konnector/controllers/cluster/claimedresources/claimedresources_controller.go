@@ -201,7 +201,7 @@ func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
 	}
 
 	nameMatch := false
-	if len(c.claim.Selector.Names) == 0 {
+	if c.claim.Selector == nil || len(c.claim.Selector.Names) == 0 {
 		nameMatch = true
 	} else {
 		for _, name := range c.claim.Selector.Names {

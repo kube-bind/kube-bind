@@ -299,6 +299,8 @@ spec:
               rule: self.scope == "Namespaced" || self.informerScope == "Cluster"
             - message: clusterScopedIsolation must be defined for cluster-scoped resources
               rule: self.scope == "Namespaced" || has(self.clusterScopedIsolation)
+            - message: clusterScopedIsolation is not relevant for namespaced resources
+              rule: self.scope == "Cluster" || !has(self.clusterScopedIsolation)
           status:
             description: status contains reconciliation information for the resource.
             properties:

@@ -77,6 +77,7 @@ func (in *APIServiceExport) SetConditions(conditions conditionsapi.Conditions) {
 //
 // +kubebuilder:validation:XValidation:rule=`self.scope == "Namespaced" || self.informerScope == "Cluster"`,message="informerScope must be Cluster for cluster-scoped resources"
 // +kubebuilder:validation:XValidation:rule=`self.scope == "Namespaced" || has(self.clusterScopedIsolation)`,message="clusterScopedIsolation must be defined for cluster-scoped resources"
+// +kubebuilder:validation:XValidation:rule=`self.scope == "Cluster" || !has(self.clusterScopedIsolation)`,message="clusterScopedIsolation is not relevant for namespaced resources"
 type APIServiceExportSpec struct {
 	APIServiceExportCRDSpec `json:",inline"`
 

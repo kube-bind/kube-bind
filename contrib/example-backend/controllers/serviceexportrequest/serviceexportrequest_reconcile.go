@@ -113,7 +113,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 					InformerScope:           r.informerScope,
 				},
 			}
-			if r.informerScope == kubebindv1alpha1.ClusterScope {
+			if exportSpec.Scope == apiextensionsv1.ClusterScoped {
 				export.Spec.ClusterScopedIsolation = r.clusterScopedIsolation
 			}
 

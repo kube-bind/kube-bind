@@ -87,7 +87,34 @@ type APIServiceBindingSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="kubeconfigSecretRef is immutable"
 	KubeconfigSecretRef ClusterSecretKeyRef `json:"kubeconfigSecretRef"`
+
+	// permissionClaims records decisions about permission claims requested by the API service provider.
+	// Individual claims can be accepted or rejected. If accepted, the API service provider gets the
+	// requested access to the specified resources in this workspace. Access is granted per
+	// GroupResource and other properties like selectors.
+	//
+	// +optional
+	PermissionClaims []AcceptablePermissionClaim `json:"permissionClaims,omitempty"`
 }
+
+// AcceptablePermissionClaim is a permission claim that stores the users acceptance in the field state. Only accepted permission claims are reconciled.
+type AcceptablePermissionClaim struct {
+	PermissionClaim `json:",inline"`
+
+	// state indicates if the claim is accepted or rejected.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=Accepted;Rejected
+	State AcceptablePermissionClaimState `json:"state"`
+}
+
+type AcceptablePermissionClaimState string
+
+const (
+	ClaimAccepted AcceptablePermissionClaimState = "Accepted"
+	ClaimRejected AcceptablePermissionClaimState = "Rejected"
+)
 
 type APIServiceBindingStatus struct {
 	// providerPrettyName is the pretty name of the service provider cluster. This

@@ -84,6 +84,320 @@ spec:
                 x-kubernetes-validations:
                 - message: kubeconfigSecretRef is immutable
                   rule: self == oldSelf
+              permissionClaims:
+                description: permissionClaims records decisions about permission claims
+                  requested by the API service provider. Individual claims can be
+                  accepted or rejected. If accepted, the API service provider gets
+                  the requested access to the specified resources in this workspace.
+                  Access is granted per GroupResource and other properties like selectors.
+                items:
+                  description: AcceptablePermissionClaim is a permission claim that
+                    stores the users acceptance in the field state. Only accepted
+                    permission claims are reconciled.
+                  properties:
+                    create:
+                      description: "create determines whether the provider can create
+                        new objects in the consumer cluster by syncing a provider-owned
+                        source to the consumer cluster. Created objects on the consumer
+                        cluster are marked as owned by the provider by default. \n
+                        Note that create permissions do not imply update permissions."
+                      properties:
+                        replaceExisting:
+                          description: "replaceExisting means that an existing object
+                            owned by the consumer will be replaced by the provider
+                            object. \n If not true, and a conflicting consumer object
+                            exists, it is not touched."
+                          type: boolean
+                      type: object
+                    group:
+                      default: ""
+                      description: group is the name of an API group. For core groups
+                        this is the empty string '""'.
+                      pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
+                      type: string
+                    objectSelector:
+                      description: selector restricts which objects of the given resource
+                        are being claimed. If unset, all objects across all namespaces
+                        are being claimed, both consumer- and provider owned.
+                      properties:
+                        fieldSelectors:
+                          description: fieldSelectors is a disjunctive list of field
+                            selectors, following the same rules as kubernetes field
+                            selectors, see https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/,
+                            i.e. each field selector can be a conjunction of requirements.
+                          items:
+                            type: string
+                          type: array
+                        labelSelectors:
+                          description: labelSelectors is a disjunctive list of label
+                            selectors, following the same rules as kubernetes label
+                            selectors, see https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/.
+                          items:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          type: array
+                        names:
+                          default:
+                          - '*'
+                          description: names is a list of values selecting by metadata.name,
+                            or "*" which matches all names.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-validations:
+                          - message: only names or * are allowed
+                            rule: self.all(n, n.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?|[*]$'))
+                        namespaces:
+                          default:
+                          - '*'
+                          description: namespaces is a list of values selecting by
+                            metadata.namespace, or "*" which matches all namespaces,
+                            or empty string that matches cluster-scoped resources.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-validations:
+                          - message: only namespace names,* or empty string are allowed
+                            rule: self.all(n, n.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?|[*]?$'))
+                        owner:
+                          description: owner set means that resources of a specific
+                            owner are selected and those owned by the other side are
+                            ignored. A resource on the consumer cluster is owned by
+                            the consumer by default, if not marked as owned by the
+                            provider through the `kube-bind.io/owner=provider` annotation.
+                          enum:
+                          - Provider
+                          - Consumer
+                          type: string
+                      type: object
+                    onConflict:
+                      description: onConflict determines how conflicts between objects
+                        on the consumer and provider clusters will be resolved.
+                      properties:
+                        recreateWhenConsumerSideDeleted:
+                          default: true
+                          description: "recreateWhenConsumerSideDeleted set to true
+                            (the default) means the provider will recreate the object
+                            in case the object is missing on the consumer cluster,
+                            but has been synchronized before. \n If set to false,
+                            deleted provider-owned objects get deleted on the provider
+                            cluster as well."
+                          type: boolean
+                      type: object
+                    ownerTransfer:
+                      description: ownerTransfer determines how ownership of objects
+                        is transferred between the consumer and the provider. By default,
+                        no transfer happens. If set to Donate, objects created by
+                        the provider on the consumer cluster are immediately donated
+                        to the consumer. If set to Adopt, objects created by the consumer
+                        on the consumer cluster are immediately owned by the provider
+                        and synced to the provider cluster. Ownership determines the
+                        direction of synchronization.
+                      enum:
+                      - Donate
+                      - Adopt
+                      - ""
+                      type: string
+                    read:
+                      description: read claims read access for the provider to matching
+                        objects, excluding labels and annotations by default. Read
+                        access is realized by syncing the objects or fields from the
+                        consumer cluster to the provider cluster.
+                      properties:
+                        annotations:
+                          description: annotations is a list of claimed annotation
+                            key wildcard patterns that are synchronized from the consumer
+                            cluster to the provider on objects that are owned by the
+                            consumer.
+                          items:
+                            properties:
+                              pattern:
+                                description: pattern is a wildcard pattern that is
+                                  matched against the key. This means it is either
+                                  a literal string or starts or ends in `*` but is
+                                  not '*' itself.
+                                minLength: 1
+                                type: string
+                            required:
+                            - pattern
+                            type: object
+                          type: array
+                        annotationsOnProviderOwnedObjects:
+                          description: overrideAnnotations is a list of claimed annotation
+                            key wildcard patterns that are synchronized from the consumer
+                            cluster to the provider on provider-owned objects.
+                          items:
+                            properties:
+                              pattern:
+                                description: pattern is a wildcard pattern that is
+                                  matched against the key. This means it is either
+                                  a literal string or starts or ends in `*` but is
+                                  not '*' itself.
+                                minLength: 1
+                                type: string
+                            required:
+                            - pattern
+                            type: object
+                          type: array
+                        labels:
+                          description: labels is a list of label key wildcard patterns
+                            that are synchronized from the consumer to the provider
+                            on consumer-owned objects.
+                          items:
+                            properties:
+                              pattern:
+                                description: pattern is a wildcard pattern that is
+                                  matched against the key. This means it is either
+                                  a literal string or starts or ends in `*` but is
+                                  not '*' itself.
+                                minLength: 1
+                                type: string
+                            required:
+                            - pattern
+                            type: object
+                          type: array
+                        labelsOnProviderOwnedObjects:
+                          description: LabelsOnProviderOwnedObjects is a list of claimed
+                            label key wildcard patterns that are synchronized from
+                            the consumer cluster to the provider on objects owned
+                            by the provider.
+                          items:
+                            properties:
+                              pattern:
+                                description: pattern is a wildcard pattern that is
+                                  matched against the key. This means it is either
+                                  a literal string or starts or ends in `*` but is
+                                  not '*' itself.
+                                minLength: 1
+                                type: string
+                            required:
+                            - pattern
+                            type: object
+                          type: array
+                      type: object
+                    resource:
+                      description: 'resource is the name of the resource. Note: it
+                        is worth noting that you can not ask for permissions for resource
+                        provided by a CRD not provided by an service binding export.'
+                      pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                      type: string
+                    state:
+                      description: state indicates if the claim is accepted or rejected.
+                      enum:
+                      - Accepted
+                      - Rejected
+                      type: string
+                    update:
+                      description: "update lists which updates to objects on the consumer
+                        cluster are claimed. By default, the whole object is synced,
+                        but metadata is not. \n Note that update permissions do not
+                        imply create permissions."
+                      properties:
+                        alwaysRecreate:
+                          description: "alwaysRecreate set to true means that matching
+                            objects will be deleted and recreated on update. This
+                            is useful for immutable objects. \n This does not apply
+                            to metadata field updates."
+                          type: boolean
+                        annotations:
+                          description: "annotations is a list of annotation key wildcard
+                            patterns that are synced from the provider to the consumer
+                            for provider-owned objects. \n By default, no annotations
+                            are synced."
+                          items:
+                            properties:
+                              pattern:
+                                description: pattern is a wildcard pattern that is
+                                  matched against the key. This means it is either
+                                  a literal string or starts or ends in `*` but is
+                                  not '*' itself.
+                                minLength: 1
+                                type: string
+                            required:
+                            - pattern
+                            type: object
+                          type: array
+                        annotationsOnConsumerOwnedObjects:
+                          description: "annotationsOnConsumerOwnedObjects is a list
+                            of annotation key wildcard patterns that are synchronized
+                            from the provider to the consumer for consumer-owned objects.
+                            \n By default, no annotations are synced."
+                          items:
+                            properties:
+                              pattern:
+                                description: pattern is a wildcard pattern that is
+                                  matched against the key. This means it is either
+                                  a literal string or starts or ends in `*` but is
+                                  not '*' itself.
+                                minLength: 1
+                                type: string
+                            required:
+                            - pattern
+                            type: object
+                          type: array
+                        fields:
+                          description: "fields are a list of JSON Paths in consumer-owned
+                            objects on the consumer cluster that the provider wants
+                            to control. \n This is ignored for provider-owned objects."
+                          items:
+                            type: string
+                          type: array
+                        labels:
+                          description: "labels is a list of label key wildcard patterns
+                            that are synced from the provider to the consumer for
+                            provider-owned objects. \n By default, no labels are synced."
+                          items:
+                            properties:
+                              pattern:
+                                description: pattern is a wildcard pattern that is
+                                  matched against the key. This means it is either
+                                  a literal string or starts or ends in `*` but is
+                                  not '*' itself.
+                                minLength: 1
+                                type: string
+                            required:
+                            - pattern
+                            type: object
+                          type: array
+                        labelsOnConsumerOwnedObjects:
+                          description: "labelsOnConsumerOwnedObjects is a list of
+                            label key wildcard patterns that are synced from the provider
+                            to the consumer for consumer-owner objects. \n By default,
+                            no labels are synced."
+                          items:
+                            properties:
+                              pattern:
+                                description: pattern is a wildcard pattern that is
+                                  matched against the key. This means it is either
+                                  a literal string or starts or ends in `*` but is
+                                  not '*' itself.
+                                minLength: 1
+                                type: string
+                            required:
+                            - pattern
+                            type: object
+                          type: array
+                        preserving:
+                          description: "preserving is a list of JSON Paths in provider-owned
+                            objects on the consumer cluster that the consumer keeps
+                            controlling, i.e. that are not overwritten by the provider,
+                            but synced back to the provider side. \n This is ignored
+                            for consumer-owned objects."
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    version:
+                      description: version is the version of the claimed resource.
+                      minLength: 1
+                      type: string
+                  required:
+                  - resource
+                  - state
+                  - version
+                  type: object
+                type: array
             required:
             - kubeconfigSecretRef
             type: object

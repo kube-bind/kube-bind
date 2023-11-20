@@ -26,7 +26,7 @@ import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 )
 
-func TestHumanReadablePromt(t *testing.T) {
+func TestHumanReadablePrompt(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -160,7 +160,7 @@ func TestHumanReadablePromt(t *testing.T) {
 					ObjectSelector: &kubebindv1alpha1.ObjectSelector{
 						Owner: kubebindv1alpha1.Provider,
 					},
-					OwnerTransfer: kubebindv1alpha1.OwnerTransferDonate,
+					OwnerTransfer: kubebindv1alpha1.OwnerTransferNone,
 				},
 				Required: true,
 			},

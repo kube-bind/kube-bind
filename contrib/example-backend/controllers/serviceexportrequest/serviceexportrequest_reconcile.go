@@ -33,7 +33,8 @@ import (
 )
 
 type reconciler struct {
-	informerScope kubebindv1alpha1.Scope
+	informerScope          kubebindv1alpha1.Scope
+	clusterScopedIsolation kubebindv1alpha1.Isolation
 
 	getCRD              func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getServiceExport    func(ns, name string) (*kubebindv1alpha1.APIServiceExport, error)
@@ -111,6 +112,9 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 					APIServiceExportCRDSpec: *exportSpec,
 					InformerScope:           r.informerScope,
 				},
+			}
+			if exportSpec.Scope == apiextensionsv1.ClusterScoped {
+				export.Spec.ClusterScopedIsolation = r.clusterScopedIsolation
 			}
 
 			logger.V(1).Info("Creating APIServiceExport", "name", export.Name, "namespace", export.Namespace)

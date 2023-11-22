@@ -46,6 +46,15 @@ spec:
           spec:
             description: spec specifies the resource.
             properties:
+              clusterScopedIsolation:
+                description: ClusterScopedIsolation specifies how cluster scoped service
+                  objects are isolated between multiple consumers on the provider
+                  side. It can be "Prefixed", "Namespaced", or "None".
+                enum:
+                - Prefixed
+                - Namespaced
+                - None
+                type: string
               group:
                 description: "group is the API group of the defined custom resource.
                   Empty string means the core API group. \tThe resources are served
@@ -286,8 +295,12 @@ spec:
             - informerScope
             type: object
             x-kubernetes-validations:
-            - message: informerScope is must be Cluster for cluster-scoped resources
+            - message: informerScope must be Cluster for cluster-scoped resources
               rule: self.scope == "Namespaced" || self.informerScope == "Cluster"
+            - message: clusterScopedIsolation must be defined for cluster-scoped resources
+              rule: self.scope == "Namespaced" || has(self.clusterScopedIsolation)
+            - message: clusterScopedIsolation is not relevant for namespaced resources
+              rule: self.scope == "Cluster" || !has(self.clusterScopedIsolation)
           status:
             description: status contains reconciliation information for the resource.
             properties:

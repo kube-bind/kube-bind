@@ -1,5 +1,0 @@
-- op: add
-  path: /spec/versions/name=v1alpha1/schema/openAPIV3Schema/x-kubernetes-validations
-  value:
-  - message: informerScope is immutable
-    rule: self.metadata.name == self.spec.names.plural+"."+self.spec.group

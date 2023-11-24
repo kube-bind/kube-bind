@@ -1,3 +1,4 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -46,11 +47,6 @@ spec:
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           metadata:
-            properties:
-              name:
-                enum:
-                - cluster
-                type: string
             type: object
           spec:
             description: spec represents the data in the newly created ClusterBinding.
@@ -161,6 +157,9 @@ spec:
         required:
         - spec
         type: object
+        x-kubernetes-validations:
+        - message: cluster binding name should be cluster
+          rule: self.metadata.name == "cluster"
     served: true
     storage: true
     subresources:

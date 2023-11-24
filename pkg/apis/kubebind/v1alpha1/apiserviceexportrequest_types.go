@@ -52,7 +52,8 @@ type APIServiceExportRequest struct {
 	Spec APIServiceExportRequestSpec `json:"spec"`
 
 	// status contains reconciliation information for a service binding.
-	Status APIServiceExportRequestStatus `json:"status,omitempty"`
+	// +kubebuilder:default={}
+	Status APIServiceExportRequestStatus `json:"status"`
 }
 
 // APIServiceExportRequestResponse is like APIServiceExportRequest but without

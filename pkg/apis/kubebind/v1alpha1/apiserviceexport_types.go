@@ -52,6 +52,7 @@ const (
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Established",type="string",JSONPath=`.status.conditions[?(@.type=="Established")].status`,priority=5
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
+// +kubebuilder:validation:XValidation:rule="self.metadata.name == self.spec.names.plural+\".\"+self.spec.group",message="informerScope is immutable"
 type APIServiceExport struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

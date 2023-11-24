@@ -1,7 +1,0 @@
-- op: add
-  path: /spec/versions/name=v1alpha1/schema/openAPIV3Schema/properties/metadata/properties
-  value:
-    name:
-      type: string
-      enum:
-      - cluster

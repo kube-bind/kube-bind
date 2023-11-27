@@ -40,10 +40,10 @@ func NewLock(client kubeclient.Interface, namespace, lockName, podName string) *
 	}
 }
 
-func runLeaderElection(ctx context.Context, lock *resourcelock.LeaseLock, id string, run func(ctx context.Context)) {
+func makeLeaderElectorOrDie(ctx context.Context, lock *resourcelock.LeaseLock, id string, run func(ctx context.Context)) *leaderelection.LeaderElector {
 	logger := klog.FromContext(ctx)
 
-	leaderelection.RunOrDie(ctx, leaderelection.LeaderElectionConfig{
+	le, err := leaderelection.NewLeaderElector(leaderelection.LeaderElectionConfig{
 		Lock:            lock,
 		ReleaseOnCancel: true,
 		LeaseDuration:   15 * time.Second,
@@ -66,4 +66,8 @@ func runLeaderElection(ctx context.Context, lock *resourcelock.LeaseLock, id str
 			},
 		},
 	})
+	if err != nil {
+		panic(err)
+	}
+	return le
 }

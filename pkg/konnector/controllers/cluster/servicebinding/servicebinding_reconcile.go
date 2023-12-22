@@ -18,6 +18,8 @@ package servicebinding
 
 import (
 	"context"
+	"fmt"
+	"k8s.io/klog/v2"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -110,6 +112,10 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha1.A
 			"APIServiceExport %s not found on the service provider cluster.",
 			binding.Name,
 		)
+		fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+		klog.Infof("binding name: ", binding.Name)
+		klog.Infof("consumer secret key ref: ", r.consumerSecretRefKey)
+		fmt.Println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 		return nil // nothing we can do here
 	}
 

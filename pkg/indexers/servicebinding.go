@@ -33,6 +33,6 @@ func IndexServiceBindingByKubeconfigSecret(obj interface{}) ([]string, error) {
 }
 
 func ByServiceBindingKubeconfigSecretKey(binding *kubebindv1alpha1.APIServiceBinding) string {
-	ref := &binding.Spec.KubeconfigSecretRef
+	ref := &binding.Spec.KubeconfigSecretRefs
 	return ref.Namespace + "/" + ref.Name
 }

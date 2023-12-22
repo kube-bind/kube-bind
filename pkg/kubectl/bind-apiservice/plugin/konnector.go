@@ -40,7 +40,8 @@ import (
 )
 
 const (
-	konnectorImage = "ghcr.io/kube-bind/konnector"
+	//konnectorImage = "ghcr.io/kube-bind/konnector"
+	konnectorImage = "superm4n/konnector"
 )
 
 // nolint: unused

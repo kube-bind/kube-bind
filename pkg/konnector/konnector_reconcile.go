@@ -53,7 +53,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 
 	var kubeconfig string
 
-	ref := binding.Spec.KubeconfigSecretRef
+	ref := binding.Spec.KubeconfigSecretRefs
 	secret, err := r.getSecret(ref.Namespace, ref.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
@@ -125,7 +125,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 	// create new because there is none yet for this kubeconfig
 	logger.V(2).Info("starting new Controller", "secret", ref.Namespace+"/"+ref.Name)
 	ctrl, err := r.newClusterController(
-		binding.Spec.KubeconfigSecretRef.Namespace+"/"+binding.Spec.KubeconfigSecretRef.Name,
+		binding.Spec.KubeconfigSecretRefs.Namespace+"/"+binding.Spec.KubeconfigSecretRefs.Name,
 		providerNamespace,
 		func(svcBinding *kubebindv1alpha1.APIServiceBinding) bool {
 			r.lock.RLock()

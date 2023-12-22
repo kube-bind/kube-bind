@@ -1,0 +1,9 @@
+apiVersion: kube-bind.io/v1alpha1
+kind: APIServiceBinding
+metadata:
+  name: mangodbs.mangodb.com
+spec:
+  kubeconfigSecretRef:
+    key: kubeconfig
+    name: kubeconfig-5tmtf
+    namespace: kube-bind

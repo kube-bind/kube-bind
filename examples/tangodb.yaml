@@ -1,0 +1,6 @@
+apiVersion: mangodb.com/v1alpha1
+kind: TangoDB
+metadata:
+  name: test
+spec:
+  tier: Shared

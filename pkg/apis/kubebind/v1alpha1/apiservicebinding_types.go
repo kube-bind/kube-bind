@@ -86,13 +86,15 @@ type APIServiceBindingSpec struct {
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="kubeconfigSecretRef is immutable"
-	KubeconfigSecretRef ClusterSecretKeyRef `json:"kubeconfigSecretRef"`
+	KubeconfigSecretRefs []ClusterSecretKeyRef `json:"kubeconfigSecretRef"`
 }
 
 type APIServiceBindingStatus struct {
 	// providerPrettyName is the pretty name of the service provider cluster. This
 	// can be shared among different APIServiceBindings.
 	ProviderPrettyName string `json:"providerPrettyName,omitempty"`
+
+	Kubeconfigs []ClusterSecretKeyRef `json:"kubeconfigs,omitempty"`
 
 	// conditions is a list of conditions that apply to the APIServiceBinding.
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`

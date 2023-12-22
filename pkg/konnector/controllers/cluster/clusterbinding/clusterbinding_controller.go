@@ -19,6 +19,7 @@ package clusterbinding
 import (
 	"context"
 	"fmt"
+	konnectormodels "github.com/kube-bind/kube-bind/pkg/konnector/models"
 	"reflect"
 	"time"
 
@@ -40,7 +41,6 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions/kubebind/v1alpha1"
 	bindlisters "github.com/kube-bind/kube-bind/pkg/client/listers/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
@@ -53,14 +53,16 @@ const (
 
 // NewController returns a new controller for ClusterBindings.
 func NewController(
-	consumerSecretRefKey string,
-	providerNamespace string,
+	//consumerSecretRefKey string,
+	//providerNamespace string,
 	heartbeatInterval time.Duration,
 	consumerConfig, providerConfig *rest.Config,
-	clusterBindingInformer bindinformers.ClusterBindingInformer,
+	//clusterBindingInformer bindinformers.ClusterBindingInformer,
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
-	serviceExportInformer bindinformers.APIServiceExportInformer,
-	consumerSecretInformer, providerSecretInformer coreinformers.SecretInformer,
+	//serviceExportInformer bindinformers.APIServiceExportInformer,
+	consumerSecretInformer coreinformers.SecretInformer,
+	//providerSecretInformer coreinformers.SecretInformer,
+	providerInfos []*konnectormodels.ProviderInfo,
 ) (*controller, error) {
 	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
 
@@ -96,6 +98,7 @@ func NewController(
 		providerKubeClient: providerKubeClient,
 		consumerBindClient: consumerBindClient,
 		consumerKubeClient: consumerKubeClient,
+		providerInfos:      providerInfos,
 
 		clusterBindingLister:  clusterBindingInformer.Lister(),
 		clusterBindingIndexer: clusterBindingInformer.Informer().GetIndexer(),
@@ -113,16 +116,25 @@ func NewController(
 			providerNamespace:    providerNamespace,
 			heartbeatInterval:    heartbeatInterval,
 
-			getProviderSecret: func() (*corev1.Secret, error) {
-				cb, err := clusterBindingInformer.Lister().ClusterBindings(providerNamespace).Get("cluster")
+			getProviderSecret: func(clusterID string) (*corev1.Secret, error) {
+				provider, err := konnectormodels.GetProviderInfoWithClusterID(providerInfos, clusterID)
+				if err != nil {
+					return nil, err
+				}
+
+				cb, err := provider.BindInformer.KubeBind().V1alpha1().ClusterBindings().Lister().ClusterBindings(providerNamespace).Get("cluster")
 				if err != nil {
 					return nil, err
 				}
 				ref := &cb.Spec.KubeconfigSecretRef
-				return providerSecretInformer.Lister().Secrets(providerNamespace).Get(ref.Name)
+				return provider.KubeInformer.Core().V1().Secrets().Lister().Secrets(provider.Namespace).Get(ref.Name)
 			},
-			getConsumerSecret: func() (*corev1.Secret, error) {
-				ns, name, err := cache.SplitMetaNamespaceKey(consumerSecretRefKey)
+			getConsumerSecret: func(clusterID string) (*corev1.Secret, error) {
+				provider, err := konnectormodels.GetProviderInfoWithClusterID(providerInfos, clusterID)
+				if err != nil {
+					return nil, err
+				}
+				ns, name, err := cache.SplitMetaNamespaceKey(provider.ConsumerSecretRefKey)
 				if err != nil {
 					return nil, err
 				}
@@ -143,29 +155,54 @@ func NewController(
 		),
 	}
 
-	clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueClusterBinding(logger, obj)
-		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueClusterBinding(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueClusterBinding(logger, obj)
-		},
-	})
+	for i, _ := range providerInfos {
+		providerInfos[i].BindInformer.KubeBind().V1alpha1().ClusterBindings().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				c.enqueueClusterBinding(logger, obj)
+			},
+			UpdateFunc: func(_, newObj interface{}) {
+				c.enqueueClusterBinding(logger, newObj)
+			},
+			DeleteFunc: func(obj interface{}) {
+				c.enqueueClusterBinding(logger, obj)
+			},
+		})
 
-	providerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueProviderSecret(logger, obj)
-		},
-		UpdateFunc: func(_, newObj interface{}) {
-			c.enqueueProviderSecret(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueProviderSecret(logger, obj)
-		},
-	})
+		providerInfos[i].KubeInformer.Core().V1().Secrets().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				c.enqueueProviderSecret(logger, obj)
+			},
+			UpdateFunc: func(_, newObj interface{}) {
+				c.enqueueProviderSecret(logger, newObj)
+			},
+			DeleteFunc: func(obj interface{}) {
+				c.enqueueProviderSecret(logger, obj)
+			},
+		})
+
+		providerInfos[i].BindInformer.KubeBind().V1alpha1().APIServiceExports().Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+				c.enqueueServiceExport(logger, obj)
+			},
+			UpdateFunc: func(old, newObj interface{}) {
+				oldExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
+				if !ok {
+					return
+				}
+				newExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
+				if !ok {
+					return
+				}
+				if reflect.DeepEqual(oldExport.Status.Conditions, newExport.Status.Conditions) {
+					return
+				}
+				c.enqueueServiceExport(logger, newObj)
+			},
+			DeleteFunc: func(obj interface{}) {
+				c.enqueueServiceExport(logger, obj)
+			},
+		})
+	}
 
 	consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
@@ -176,29 +213,6 @@ func NewController(
 		},
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueConsumerSecret(logger, obj)
-		},
-	})
-
-	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			c.enqueueServiceExport(logger, obj)
-		},
-		UpdateFunc: func(old, newObj interface{}) {
-			oldExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
-			if !ok {
-				return
-			}
-			newExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
-			if !ok {
-				return
-			}
-			if reflect.DeepEqual(oldExport.Status.Conditions, newExport.Status.Conditions) {
-				return
-			}
-			c.enqueueServiceExport(logger, newObj)
-		},
-		DeleteFunc: func(obj interface{}) {
-			c.enqueueServiceExport(logger, obj)
 		},
 	})
 
@@ -227,6 +241,7 @@ type controller struct {
 
 	consumerSecretLister corelisters.SecretLister
 	providerSecretLister corelisters.SecretLister
+	providerInfos        []*konnectormodels.ProviderInfo
 
 	reconciler
 

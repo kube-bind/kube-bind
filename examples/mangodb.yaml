@@ -1,0 +1,8 @@
+apiVersion: mangodb.com/v1alpha1
+kind: MangoDB
+metadata:
+  name: test
+  annotations:
+    clusterid: d13943
+spec:
+  tier: Shared

@@ -46,7 +46,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 }
 
 func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
-	secret, err := r.getConsumerSecret(binding.Spec.KubeconfigSecretRef.Namespace, binding.Spec.KubeconfigSecretRef.Name)
+	secret, err := r.getConsumerSecret(binding.Spec.KubeconfigSecretRefs.Namespace, binding.Spec.KubeconfigSecretRefs.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
@@ -56,12 +56,12 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			"KubeconfigSecretNotFound",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s not found. Rerun kubectl bind for repair.",
-			binding.Spec.KubeconfigSecretRef.Namespace, binding.Spec.KubeconfigSecretRef.Name,
+			binding.Spec.KubeconfigSecretRefs.Namespace, binding.Spec.KubeconfigSecretRefs.Name,
 		)
 		return nil
 	}
 
-	kubeconfig, found := secret.Data[binding.Spec.KubeconfigSecretRef.Key]
+	kubeconfig, found := secret.Data[binding.Spec.KubeconfigSecretRefs.Key]
 	if !found {
 		conditions.MarkFalse(
 			binding,
@@ -69,9 +69,9 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s is missing %q string key.",
-			binding.Spec.KubeconfigSecretRef.Namespace,
-			binding.Spec.KubeconfigSecretRef.Name,
-			binding.Spec.KubeconfigSecretRef.Key,
+			binding.Spec.KubeconfigSecretRefs.Namespace,
+			binding.Spec.KubeconfigSecretRefs.Name,
+			binding.Spec.KubeconfigSecretRefs.Key,
 		)
 		return nil
 	}
@@ -84,8 +84,8 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: %v",
-			binding.Spec.KubeconfigSecretRef.Namespace,
-			binding.Spec.KubeconfigSecretRef.Name,
+			binding.Spec.KubeconfigSecretRefs.Namespace,
+			binding.Spec.KubeconfigSecretRefs.Name,
 			err,
 		)
 		return nil
@@ -98,8 +98,8 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: current context %q not found",
-			binding.Spec.KubeconfigSecretRef.Namespace,
-			binding.Spec.KubeconfigSecretRef.Name,
+			binding.Spec.KubeconfigSecretRefs.Namespace,
+			binding.Spec.KubeconfigSecretRefs.Name,
 			cfg.CurrentContext,
 		)
 		return nil
@@ -111,8 +111,8 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: current context %q has no namespace set",
-			binding.Spec.KubeconfigSecretRef.Namespace,
-			binding.Spec.KubeconfigSecretRef.Name,
+			binding.Spec.KubeconfigSecretRefs.Namespace,
+			binding.Spec.KubeconfigSecretRefs.Name,
 			cfg.CurrentContext,
 		)
 		return nil
@@ -124,8 +124,8 @@ func (r *reconciler) ensureValidKubeconfigSecret(ctx context.Context, binding *k
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: %v",
-			binding.Spec.KubeconfigSecretRef.Namespace,
-			binding.Spec.KubeconfigSecretRef.Name,
+			binding.Spec.KubeconfigSecretRefs.Namespace,
+			binding.Spec.KubeconfigSecretRefs.Name,
 			err,
 		)
 		return nil

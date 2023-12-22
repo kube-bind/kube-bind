@@ -18,6 +18,7 @@ package clusterbinding
 
 import (
 	"context"
+	konnectormodels "github.com/kube-bind/kube-bind/pkg/konnector/models"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -36,14 +37,14 @@ import (
 
 type reconciler struct {
 	// consumerSecretRefKey is the namespace/name value of the APIServiceBinding kubeconfig secret reference.
-	consumerSecretRefKey string
-	providerNamespace    string
-	heartbeatInterval    time.Duration
+	providerNamespace string
+	heartbeatInterval time.Duration
 
-	getProviderSecret    func() (*corev1.Secret, error)
-	getConsumerSecret    func() (*corev1.Secret, error)
+	getProviderSecret    func(clusterID string) (*corev1.Secret, error)
+	getConsumerSecret    func(ClusterID string) (*corev1.Secret, error)
 	updateConsumerSecret func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 	createConsumerSecret func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
+	providerInfos        []*konnectormodels.ProviderInfo
 }
 
 func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
@@ -78,7 +79,7 @@ func (r *reconciler) ensureHeartbeat(ctx context.Context, binding *kubebindv1alp
 func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
 	logger := klog.FromContext(ctx)
 
-	providerSecret, err := r.getProviderSecret()
+	providerSecret, err := r.getProviderSecret(binding.Annotations[konnectormodels.AnnotationProviderClusterID])
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
@@ -107,7 +108,7 @@ func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebind
 		return nil
 	}
 
-	consumerSecret, err := r.getConsumerSecret()
+	consumerSecret, err := r.getConsumerSecret(konnectormodels.AnnotationProviderClusterID)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	}

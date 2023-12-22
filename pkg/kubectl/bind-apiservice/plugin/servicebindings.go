@@ -51,7 +51,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 		if err != nil && !apierrors.IsNotFound(err) {
 			return nil, err
 		} else if err == nil {
-			if existing.Spec.KubeconfigSecretRef.Namespace != "kube-bind" || existing.Spec.KubeconfigSecretRef.Name != secretName {
+			if existing.Spec.KubeconfigSecretRefs.Namespace != "kube-bind" || existing.Spec.KubeconfigSecretRefs.Name != secretName {
 				return nil, fmt.Errorf("found existing APIServiceBinding %s not from this service provider", name)
 			}
 			fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Updating existing APIServiceBinding %s.\n", existing.Name) // nolint: errcheck
@@ -82,7 +82,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 					Namespace: "kube-bind",
 				},
 				Spec: kubebindv1alpha1.APIServiceBindingSpec{
-					KubeconfigSecretRef: kubebindv1alpha1.ClusterSecretKeyRef{
+					KubeconfigSecretRefs: kubebindv1alpha1.ClusterSecretKeyRef{
 						LocalSecretKeyRef: kubebindv1alpha1.LocalSecretKeyRef{
 							Name: secretName,
 							Key:  "kubeconfig",

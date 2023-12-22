@@ -12,4 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.19 AS builder
+#FROM golang:1.19 AS builder
+FROM debian:latest
+
+COPY bin/konnector /konnector
+
+ENTRYPOINT ["/konnector"]

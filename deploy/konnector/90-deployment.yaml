@@ -29,3 +29,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        readinessProbe:
+          httpGet:
+            path: "/healthz"
+            port: 8080

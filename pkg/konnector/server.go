@@ -25,11 +25,14 @@ import (
 
 	"github.com/kube-bind/kube-bind/deploy/crd"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	healthz "github.com/kube-bind/kube-bind/pkg/konnector/healthz"
 )
 
 type Server struct {
 	Config     *Config
 	Controller *Controller
+
+	webServer *healthz.Server
 }
 
 func NewServer(config *Config) (*Server, error) {
@@ -50,7 +53,20 @@ func NewServer(config *Config) (*Server, error) {
 		Controller: k,
 	}
 
+	s.webServer, err = healthz.NewServer()
+	if err != nil {
+		return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
+	}
+
 	return s, nil
+}
+
+func (s *Server) StartHealthCheck(ctx context.Context) {
+	s.webServer.Start(ctx)
+}
+
+func (s *Server) AddCheck(check healthz.HealthChecker) {
+	s.webServer.Checker.AddCheck(check)
 }
 
 type prepared struct {

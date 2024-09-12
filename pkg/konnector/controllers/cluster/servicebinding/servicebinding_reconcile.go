@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	kubebindhelpers "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1/helpers"
@@ -72,7 +72,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureValidServiceExport(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
+func (r *reconciler) ensureValidServiceExport(_ context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
 	if _, err := r.getServiceExport(binding.Name); err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
@@ -132,7 +132,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha1.A
 		Kind:       "APIServiceBinding",
 		Name:       binding.Name,
 		UID:        binding.UID,
-		Controller: pointer.Bool(true),
+		Controller: ptr.To(true),
 	}
 	crd.OwnerReferences = append(crd.OwnerReferences, newReference)
 

@@ -62,7 +62,7 @@ type dynamicSharedIndexInformer struct {
 
 // NewDynamicInformer returns a shared informer that allows adding and removing event
 // handlers dynamically.
-func NewDynamicInformer[L any](informer StaticInformer[L]) Informer[L] {
+func NewDynamicInformer[L any](informer StaticInformer[L]) (Informer[L], error) {
 	di := &dynamicInformer[L]{
 		StaticInformer: informer,
 		sharedIndexInformer: dynamicSharedIndexInformer{
@@ -71,7 +71,7 @@ func NewDynamicInformer[L any](informer StaticInformer[L]) Informer[L] {
 		},
 	}
 
-	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+    if _, err := informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			di.sharedIndexInformer.lock.RLock()
 			defer di.sharedIndexInformer.lock.RUnlock()
@@ -93,9 +93,11 @@ func NewDynamicInformer[L any](informer StaticInformer[L]) Informer[L] {
 				h.OnDelete(obj)
 			}
 		},
-	})
+	}); err != nil {
+        return nil, err
+    }
 
-	return di
+	return di, nil
 }
 
 func (i *dynamicInformer[L]) Informer() SharedIndexInformer {

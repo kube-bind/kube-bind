@@ -62,7 +62,7 @@ func NewController(
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 	consumerSecretInformer, providerSecretInformer coreinformers.SecretInformer,
 ) (*controller, error) {
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
@@ -143,7 +143,7 @@ func NewController(
 		),
 	}
 
-	clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueClusterBinding(logger, obj)
 		},
@@ -153,9 +153,11 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueClusterBinding(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
-	providerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := providerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueProviderSecret(logger, obj)
 		},
@@ -165,9 +167,11 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueProviderSecret(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
-	consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueConsumerSecret(logger, obj)
 		},
@@ -177,9 +181,11 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueConsumerSecret(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
-	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
 		},
@@ -200,7 +206,9 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }
@@ -210,7 +218,7 @@ type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // controller reconciles ClusterBindings on the service provider cluster, including heartbeating.
 type controller struct {
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[string]
 
 	providerBindClient bindclient.Interface
 	providerKubeClient kubernetesclient.Interface
@@ -323,7 +331,7 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 
 	// start the heartbeat
 	// nolint:errcheck
-	wait.PollInfiniteWithContext(ctx, c.heartbeatInterval/2, func(ctx context.Context) (bool, error) {
+	wait.PollUntilContextCancel(ctx, c.heartbeatInterval/2, false, func(ctx context.Context) (bool, error) {
 		c.queue.Add(c.providerNamespace + "/cluster")
 		return false, nil
 	})
@@ -340,11 +348,10 @@ func (c *controller) startWorker(ctx context.Context) {
 
 func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
-	k, quit := c.queue.Get()
+	key, quit := c.queue.Get()
 	if quit {
 		return false
 	}
-	key := k.(string)
 
 	logger := klog.FromContext(ctx).WithValues("key", key)
 	ctx = klog.NewContext(ctx, logger)

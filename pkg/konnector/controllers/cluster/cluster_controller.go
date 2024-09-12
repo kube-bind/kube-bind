@@ -208,7 +208,7 @@ func (c *controller) Start(ctx context.Context) {
 		factory.Start(ctx.Done())
 	}
 
-	if err := wait.PollImmediateInfiniteWithContext(ctx, heartbeatInterval, func(ctx context.Context) (bool, error) {
+	if err := wait.PollUntilContextCancel(ctx, heartbeatInterval, true, func(ctx context.Context) (bool, error) {
 		waitCtx, cancel := context.WithDeadline(ctx, time.Now().Add(heartbeatInterval/2))
 		defer cancel()
 

@@ -32,7 +32,7 @@ type SharedIndexInformer interface {
 
 	// AddEventHandler shadows the method in the embedded SharedIndexInformer. But it
 	// will panic and should not be called.
-	AddEventHandler(handler cache.ResourceEventHandler)
+	AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error)
 
 	cache.SharedIndexInformer
 }
@@ -76,7 +76,7 @@ func NewDynamicInformer[L any](informer StaticInformer[L]) Informer[L] {
 			di.sharedIndexInformer.lock.RLock()
 			defer di.sharedIndexInformer.lock.RUnlock()
 			for _, h := range di.sharedIndexInformer.handlers {
-				h.OnAdd(obj)
+				h.OnAdd(obj, false)
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
@@ -123,10 +123,10 @@ func (i *dynamicSharedIndexInformer) AddDynamicEventHandler(ctx context.Context,
 	// simulate initial add events for an informer that is already started.
 	objs := i.GetStore().List()
 	for _, obj := range objs {
-		handler.OnAdd(obj)
+		handler.OnAdd(obj, true)
 	}
 }
 
-func (i *dynamicSharedIndexInformer) AddEventHandler(handler cache.ResourceEventHandler) {
+func (i *dynamicSharedIndexInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	panic("call AddDynamicEventHandler instead")
 }

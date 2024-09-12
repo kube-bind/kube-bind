@@ -26,6 +26,8 @@ var (
 		"allow-missing-template-keys",
 		"kubeconfig",
 		"log-flush-frequency",
+		"log-text-info-buffer-size",
+		"log-text-split-stream",
 		"logging-format",
 		"o",
 		"output",

@@ -52,7 +52,7 @@ func GenerateKubeconfig(ctx context.Context,
 
 	var saSecret *corev1.Secret
 	logger.V(2).Info("Waiting for service account secret to be updated with a token", "name", saSecretName)
-	if err := wait.PollImmediateWithContext(ctx, 500*time.Millisecond, 10*time.Second, func(ctx context.Context) (done bool, err error) {
+	if err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 10*time.Second, true, func(ctx context.Context) (done bool, err error) {
 		saSecret, err = client.CoreV1().Secrets(ns).Get(ctx, saSecretName, v1.GetOptions{})
 		if err != nil && !errors.IsNotFound(err) {
 			return false, err

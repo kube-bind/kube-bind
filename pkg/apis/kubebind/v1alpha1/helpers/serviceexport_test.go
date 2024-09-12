@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 func TestWebhookCRDStorageVersion(t *testing.T) {
@@ -44,7 +44,7 @@ func TestWebhookCRDStorageVersion(t *testing.T) {
 				Strategy: v1.WebhookConverter,
 				Webhook: &v1.WebhookConversion{
 					ClientConfig: &v1.WebhookClientConfig{
-						URL:      pointer.String("https://example.com/webhook"),
+						URL:      ptr.To("https://example.com/webhook"),
 						CABundle: []byte("1234")},
 				},
 			},

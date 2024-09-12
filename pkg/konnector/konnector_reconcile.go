@@ -45,7 +45,7 @@ type reconciler struct {
 type controllerContext struct {
 	kubeconfig      string
 	cancel          func()
-	serviceBindings sets.String // when this is empty, the Controller should be stopped by closing the context
+	serviceBindings sets.Set[string] // when this is empty, the Controller should be stopped by closing the context
 }
 
 func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
@@ -119,7 +119,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 	r.controllers[binding.Name] = &controllerContext{
 		kubeconfig:      kubeconfig,
 		cancel:          cancel,
-		serviceBindings: sets.NewString(binding.Name),
+		serviceBindings: sets.New(binding.Name),
 	}
 
 	// create new because there is none yet for this kubeconfig

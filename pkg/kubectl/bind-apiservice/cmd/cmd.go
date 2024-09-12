@@ -68,7 +68,7 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 
 			if !opts.NoBanner {
 				yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
-				fmt.Fprintf(streams.ErrOut, yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")+"\n\n") // nolint: errcheck
+				fmt.Fprintf(streams.ErrOut, "%s\n\n", yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")) // nolint: errcheck
 			}
 
 			return opts.Run(cmd.Context())

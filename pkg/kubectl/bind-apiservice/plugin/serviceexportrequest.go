@@ -64,7 +64,7 @@ func (b *BindAPIServiceOptions) createServiceExportRequest(
 
 	// wait for the request to be Successful, Failed or deleted
 	var result *kubebindv1alpha1.APIServiceExportRequest
-	if err := wait.PollImmediate(1*time.Second, 10*time.Minute, func() (bool, error) {
+	if err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 10*time.Minute, true, func(ctx context.Context) (bool, error) {
 		request, err := bindRemoteClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Get(ctx, created.Name, metav1.GetOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return false, err

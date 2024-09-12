@@ -52,7 +52,7 @@ func NewController(
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
 ) (*Controller, error) {
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
@@ -103,7 +103,7 @@ func NewController(
 		indexers.ServiceExportByCustomResourceDefinition: indexers.IndexServiceExportByCustomResourceDefinition,
 	})
 
-	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+    if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
 		},
@@ -113,9 +113,11 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
 		},
-	})
+	}); err != nil {
+        return nil, err
+    }
 
-	crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+    if _, err := crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueCRD(logger, obj)
 		},
@@ -125,7 +127,9 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueCRD(logger, obj)
 		},
-	})
+	}); err != nil {
+        return nil, err
+    }
 
 	return c, nil
 }
@@ -136,7 +140,7 @@ type CommitFunc = func(context.Context, *Resource, *Resource) error
 // Controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
 // the APIServiceNamespace is deleted.
 type Controller struct {
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[string]
 
 	bindClient bindclient.Interface
 
@@ -217,11 +221,10 @@ func (c *Controller) startWorker(ctx context.Context) {
 
 func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
-	k, quit := c.queue.Get()
+	key, quit := c.queue.Get()
 	if quit {
 		return false
 	}
-	key := k.(string)
 
 	logger := klog.FromContext(ctx).WithValues("key", key)
 	ctx = klog.NewContext(ctx, logger)

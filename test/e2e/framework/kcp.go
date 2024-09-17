@@ -86,8 +86,8 @@ func NewWorkspace(t *testing.T, config *rest.Config, options ...ClusterWorkspace
 	ctx, cancelFunc := context.WithCancel(context.Background())
 	t.Cleanup(cancelFunc)
 
-    httpClient, err := rest.HTTPClientFor(config)
-    require.NoError(t, err)
+	httpClient, err := rest.HTTPClientFor(config)
+	require.NoError(t, err)
 	mapper, err := apiutil.NewDynamicRESTMapper(config, httpClient)
 	require.NoError(t, err)
 	tenancyClient, err := client.New(config, client.Options{Scheme: kcpScheme, Mapper: mapper})

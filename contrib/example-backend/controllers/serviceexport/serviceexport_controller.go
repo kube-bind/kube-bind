@@ -103,7 +103,7 @@ func NewController(
 		indexers.ServiceExportByCustomResourceDefinition: indexers.IndexServiceExportByCustomResourceDefinition,
 	})
 
-    if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
 		},
@@ -114,10 +114,10 @@ func NewController(
 			c.enqueueServiceExport(logger, obj)
 		},
 	}); err != nil {
-        return nil, err
-    }
+		return nil, err
+	}
 
-    if _, err := crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueCRD(logger, obj)
 		},
@@ -128,8 +128,8 @@ func NewController(
 			c.enqueueCRD(logger, obj)
 		},
 	}); err != nil {
-        return nil, err
-    }
+		return nil, err
+	}
 
 	return c, nil
 }

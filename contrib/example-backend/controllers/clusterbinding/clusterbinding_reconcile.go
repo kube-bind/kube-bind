@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
@@ -77,7 +77,7 @@ func (r *reconciler) reconcile(ctx context.Context, clusterBinding *kubebindv1al
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureClusterBindingConditions(ctx context.Context, clusterBinding *kubebindv1alpha1.ClusterBinding) error {
+func (r *reconciler) ensureClusterBindingConditions(_ context.Context, clusterBinding *kubebindv1alpha1.ClusterBinding) error {
 	if clusterBinding.Status.LastHeartbeatTime.IsZero() {
 		conditions.MarkFalse(clusterBinding,
 			kubebindv1alpha1.ClusterBindingConditionHealthy,
@@ -141,7 +141,7 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *
 					APIVersion: "v1",
 					Kind:       "Namespace",
 					Name:       clusterBinding.Namespace,
-					Controller: pointer.Bool(true),
+					Controller: ptr.To(true),
 					UID:        ns.UID,
 				},
 			},
@@ -196,7 +196,7 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBi
 					APIVersion: "v1",
 					Kind:       "Namespace",
 					Name:       clusterBinding.Namespace,
-					Controller: pointer.Bool(true),
+					Controller: ptr.To(true),
 					UID:        ns.UID,
 				},
 			},

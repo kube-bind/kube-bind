@@ -109,7 +109,7 @@ func createDexClient(t *testing.T, addr net.Addr) {
 
 	_, port, err := net.SplitHostPort(addr.String())
 	require.NoError(t, err)
-	conn, err := grpc.Dial("127.0.0.1:5557", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
+	conn, err := grpc.NewClient("127.0.0.1:5557", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
 	client := dexapi.NewDexClient(conn)
@@ -128,7 +128,7 @@ func createDexClient(t *testing.T, addr net.Addr) {
 	t.Cleanup(func() {
 		ctx, cancel := context.WithDeadline(context.Background(), metav1.Now().Add(10*time.Second))
 		defer cancel()
-		conn, err := grpc.Dial("127.0.0.1:5557", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
+		conn, err := grpc.NewClient("127.0.0.1:5557", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
 		require.NoError(t, err)
 		_, err = dexapi.NewDexClient(conn).DeleteClient(ctx, &dexapi.DeleteClientReq{Id: "kube-bind-" + port})
 		require.NoError(t, err)

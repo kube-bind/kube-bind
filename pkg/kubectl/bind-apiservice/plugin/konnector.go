@@ -110,7 +110,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 		}
 	}
 	first := true
-	return wait.PollImmediateInfiniteWithContext(ctx, 1*time.Second, func(ctx context.Context) (bool, error) {
+	return wait.PollUntilContextCancel(ctx, 1*time.Second, true, func(ctx context.Context) (bool, error) {
 		_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().List(ctx, metav1.ListOptions{})
 		if err == nil {
 			if !first {

@@ -36,7 +36,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
@@ -63,7 +63,7 @@ func NewController(
 	providerDynamicInformer multinsinformer.GetterInformer,
 	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister],
 ) (*controller, error) {
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
@@ -154,7 +154,7 @@ func NewController(
 					return nil, err
 				}
 				patched, err := providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Patch(ctx,
-					obj.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: applyManager, Force: pointer.Bool(true)},
+					obj.GetName(), types.ApplyPatchType, data, metav1.PatchOptions{FieldManager: applyManager, Force: ptr.To(true)},
 				)
 				if err != nil {
 					return nil, err
@@ -188,7 +188,7 @@ func NewController(
 		},
 	}
 
-	consumerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := consumerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueConsumer(logger, obj)
 		},
@@ -198,9 +198,11 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueConsumer(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
-	providerDynamicInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if err := providerDynamicInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueProvider(logger, obj)
 		},
@@ -210,14 +212,16 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueProvider(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }
 
 // controller reconciles downstream objects to upstream.
 type controller struct {
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[string]
 
 	consumerClient dynamicclient.Interface
 	providerClient dynamicclient.Interface
@@ -353,11 +357,10 @@ func (c *controller) startWorker(ctx context.Context) {
 
 func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
-	k, quit := c.queue.Get()
+	key, quit := c.queue.Get()
 	if quit {
 		return false
 	}
-	key := k.(string)
 
 	logger := klog.FromContext(ctx).WithValues("key", key)
 	ctx = klog.NewContext(ctx, logger)

@@ -66,7 +66,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Cl
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureHeartbeat(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
+func (r *reconciler) ensureHeartbeat(_ context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
 	binding.Status.HeartbeatInterval.Duration = r.heartbeatInterval
 	if now := time.Now(); binding.Status.LastHeartbeatTime.IsZero() || now.After(binding.Status.LastHeartbeatTime.Add(r.heartbeatInterval/2)) {
 		binding.Status.LastHeartbeatTime.Time = now
@@ -149,7 +149,7 @@ func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebind
 	return nil
 }
 
-func (r *reconciler) ensureKonnectorVersion(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
+func (r *reconciler) ensureKonnectorVersion(_ context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
 	gitVersion := componentbaseversion.Get().GitVersion
 	ver, err := version.BinaryVersion(gitVersion)
 	if err != nil {

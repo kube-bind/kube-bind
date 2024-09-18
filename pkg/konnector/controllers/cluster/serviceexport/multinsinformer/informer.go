@@ -48,7 +48,7 @@ const (
 type GetterInformer interface {
 	Get(ns, name string) (runtime.Object, error)
 	List(ns string) ([]runtime.Object, error)
-	AddEventHandler(handler cache.ResourceEventHandler)
+	AddEventHandler(handler cache.ResourceEventHandler) error
 
 	Start(ctx context.Context)
 	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
@@ -191,20 +191,24 @@ func (inf *DynamicMultiNamespaceInformer) enqueueServiceNamespace(obj interface{
 	inf.namespaceInformers[name] = gvrInf
 
 	for _, h := range inf.handlers {
-		gvrInf.Informer().AddEventHandler(h)
+		gvrInf.Informer().AddEventHandler(h) //nolint:errcheck
 	}
 
 	factory.Start(ctx.Done())
 }
 
-func (inf *DynamicMultiNamespaceInformer) AddEventHandler(handler cache.ResourceEventHandler) {
+func (inf *DynamicMultiNamespaceInformer) AddEventHandler(handler cache.ResourceEventHandler) error {
 	inf.lock.Lock()
 	defer inf.lock.Unlock()
 
 	for _, i := range inf.namespaceInformers {
-		i.Informer().AddEventHandler(handler)
+		if _, err := i.Informer().AddEventHandler(handler); err != nil {
+			return err
+		}
 	}
 	inf.handlers = append(inf.handlers, handler)
+
+	return nil
 }
 
 func (inf *DynamicMultiNamespaceInformer) Get(ns, name string) (runtime.Object, error) {
@@ -256,7 +260,7 @@ func (inf *DynamicMultiNamespaceInformer) WaitForCacheSync(stopCh <-chan struct{
 		return nil
 	}
 
-	if err := wait.PollImmediateUntil(time.Millisecond*100, func() (done bool, err error) {
+	if err := wait.PollUntilContextCancel(goContext(stopCh), time.Millisecond*100, true, func(ctx context.Context) (done bool, err error) {
 		inf.lock.RLock()
 		defer inf.lock.RUnlock()
 		for _, sns := range snss {
@@ -273,7 +277,7 @@ func (inf *DynamicMultiNamespaceInformer) WaitForCacheSync(stopCh <-chan struct{
 			}
 		}
 		return true, nil
-	}, stopCh); err != nil {
+	}); err != nil {
 		return map[schema.GroupVersionResource]bool{inf.gvr: false}
 	}
 	return map[schema.GroupVersionResource]bool{inf.gvr: true}
@@ -297,8 +301,9 @@ func (w GetterInformerWrapper) List(ns string) ([]runtime.Object, error) {
 	return w.Delegate.ForResource(w.GVR).Lister().ByNamespace(ns).List(labels.Everything())
 }
 
-func (w GetterInformerWrapper) AddEventHandler(handler cache.ResourceEventHandler) {
-	w.Delegate.ForResource(w.GVR).Informer().AddEventHandler(handler)
+func (w GetterInformerWrapper) AddEventHandler(handler cache.ResourceEventHandler) error {
+	_, err := w.Delegate.ForResource(w.GVR).Informer().AddEventHandler(handler)
+	return err
 }
 
 func (w GetterInformerWrapper) Start(ctx context.Context) {
@@ -307,4 +312,13 @@ func (w GetterInformerWrapper) Start(ctx context.Context) {
 
 func (w GetterInformerWrapper) WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool {
 	return w.Delegate.WaitForCacheSync(stopCh)
+}
+
+func goContext(stopCh <-chan struct{}) context.Context {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func(done <-chan struct{}) {
+		<-done
+		cancel()
+	}(stopCh)
+	return ctx
 }

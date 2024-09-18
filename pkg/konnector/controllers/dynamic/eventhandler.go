@@ -32,7 +32,7 @@ type SharedIndexInformer interface {
 
 	// AddEventHandler shadows the method in the embedded SharedIndexInformer. But it
 	// will panic and should not be called.
-	AddEventHandler(handler cache.ResourceEventHandler)
+	AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error)
 
 	cache.SharedIndexInformer
 }
@@ -62,7 +62,7 @@ type dynamicSharedIndexInformer struct {
 
 // NewDynamicInformer returns a shared informer that allows adding and removing event
 // handlers dynamically.
-func NewDynamicInformer[L any](informer StaticInformer[L]) Informer[L] {
+func NewDynamicInformer[L any](informer StaticInformer[L]) (Informer[L], error) {
 	di := &dynamicInformer[L]{
 		StaticInformer: informer,
 		sharedIndexInformer: dynamicSharedIndexInformer{
@@ -71,12 +71,12 @@ func NewDynamicInformer[L any](informer StaticInformer[L]) Informer[L] {
 		},
 	}
 
-	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			di.sharedIndexInformer.lock.RLock()
 			defer di.sharedIndexInformer.lock.RUnlock()
 			for _, h := range di.sharedIndexInformer.handlers {
-				h.OnAdd(obj)
+				h.OnAdd(obj, false)
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
@@ -93,9 +93,11 @@ func NewDynamicInformer[L any](informer StaticInformer[L]) Informer[L] {
 				h.OnDelete(obj)
 			}
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
-	return di
+	return di, nil
 }
 
 func (i *dynamicInformer[L]) Informer() SharedIndexInformer {
@@ -123,10 +125,10 @@ func (i *dynamicSharedIndexInformer) AddDynamicEventHandler(ctx context.Context,
 	// simulate initial add events for an informer that is already started.
 	objs := i.GetStore().List()
 	for _, obj := range objs {
-		handler.OnAdd(obj)
+		handler.OnAdd(obj, true)
 	}
 }
 
-func (i *dynamicSharedIndexInformer) AddEventHandler(handler cache.ResourceEventHandler) {
+func (i *dynamicSharedIndexInformer) AddEventHandler(handler cache.ResourceEventHandler) (cache.ResourceEventHandlerRegistration, error) {
 	panic("call AddDynamicEventHandler instead")
 }

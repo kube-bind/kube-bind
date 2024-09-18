@@ -23,7 +23,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	crdinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
-	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
@@ -58,7 +57,7 @@ func New(
 	namespaceInformer coreinformers.NamespaceInformer,
 	crdInformer crdinformers.CustomResourceDefinitionInformer,
 ) (*Controller, error) {
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
 	logger := klog.Background().WithValues("Controller", controllerName)
 
@@ -75,9 +74,19 @@ func New(
 		return nil, err
 	}
 
-	namespaceDynamicInformer := dynamic.NewDynamicInformer[corelisters.NamespaceLister](namespaceInformer)
-	serviceBindingDynamicInformer := dynamic.NewDynamicInformer[bindlisters.APIServiceBindingLister](serviceBindingInformer)
-	crdDynamicInformer := dynamic.NewDynamicInformer[apiextensionslisters.CustomResourceDefinitionLister](crdInformer)
+	namespaceDynamicInformer, err := dynamic.NewDynamicInformer(namespaceInformer)
+	if err != nil {
+		return nil, err
+	}
+	serviceBindingDynamicInformer, err := dynamic.NewDynamicInformer(serviceBindingInformer)
+	if err != nil {
+		return nil, err
+	}
+	crdDynamicInformer, err := dynamic.NewDynamicInformer(crdInformer)
+	if err != nil {
+		return nil, err
+	}
+
 	c := &Controller{
 		queue: queue,
 
@@ -130,7 +139,7 @@ func New(
 		indexers.CRDByServiceBinding: indexers.IndexCRDByServiceBinding,
 	})
 
-	serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceBinding(logger, obj)
 		},
@@ -140,9 +149,11 @@ func New(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueServiceBinding(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
-	secretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := secretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueSecret(logger, obj)
 		},
@@ -152,7 +163,10 @@ func New(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueSecret(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
+
 	return c, nil
 }
 
@@ -167,7 +181,7 @@ type GenericController interface {
 // service provider credentials, and then starts APIServiceBinding controllers
 // dynamically.
 type Controller struct {
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[string]
 
 	consumerConfig *rest.Config
 	bindClient     bindclient.Interface
@@ -256,11 +270,10 @@ func (c *Controller) startWorker(ctx context.Context) {
 
 func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
-	k, quit := c.queue.Get()
+	key, quit := c.queue.Get()
 	if quit {
 		return false
 	}
-	key := k.(string)
 
 	logger := klog.FromContext(ctx).WithValues("key", key)
 	ctx = klog.NewContext(ctx, logger)

@@ -18,9 +18,7 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
-	"time"
 
 	"github.com/spf13/pflag"
 
@@ -29,10 +27,6 @@ import (
 	apiservicecmd "github.com/kube-bind/kube-bind/pkg/kubectl/bind-apiservice/cmd"
 	bindcmd "github.com/kube-bind/kube-bind/pkg/kubectl/bind/cmd"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixMilli())
-}
 
 func main() {
 	flags := pflag.NewFlagSet("kubectl-bind", pflag.ExitOnError)

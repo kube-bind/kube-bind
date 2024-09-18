@@ -71,7 +71,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 
 		// create new APIServiceBinding.
 		first := true
-		if err := wait.PollInfinite(1*time.Second, func() (bool, error) {
+		if err := wait.PollUntilContextCancel(ctx, 1*time.Second, false, func(ctx context.Context) (bool, error) {
 			if !first {
 				first = false
 				fmt.Fprint(b.Options.IOStreams.ErrOut, ".") // nolint: errcheck

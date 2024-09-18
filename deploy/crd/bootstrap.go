@@ -161,7 +161,7 @@ func CreateSingle(ctx context.Context, client apiextensionsv1client.CustomResour
 		klog.Infof("Updated CRD %v after %s", rawCRD.Name, time.Since(start).String())
 	}
 
-	return wait.PollImmediateInfiniteWithContext(ctx, 100*time.Millisecond, func(ctx context.Context) (bool, error) {
+	return wait.PollUntilContextCancel(ctx, 100*time.Millisecond, true, func(ctx context.Context) (bool, error) {
 		crd, err := client.Get(ctx, rawCRD.Name, metav1.GetOptions{})
 		if err != nil {
 			if apierrors.IsNotFound(err) {

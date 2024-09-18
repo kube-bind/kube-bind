@@ -254,7 +254,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureServiceBindingConditionCopied(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) ensureServiceBindingConditionCopied(_ context.Context, export *kubebindv1alpha1.APIServiceExport) error {
 	binding, err := r.getServiceBinding(export.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
@@ -298,7 +298,7 @@ func (r *reconciler) ensureServiceBindingConditionCopied(ctx context.Context, ex
 	return nil
 }
 
-func (r *reconciler) ensureCRDConditionsCopied(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) ensureCRDConditionsCopied(_ context.Context, export *kubebindv1alpha1.APIServiceExport) error {
 	crd, err := r.getCRD(export.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err

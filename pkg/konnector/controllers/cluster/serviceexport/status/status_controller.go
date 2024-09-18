@@ -57,7 +57,7 @@ func NewController(
 	providerDynamicInformer multinsinformer.GetterInformer,
 	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister],
 ) (*controller, error) {
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
@@ -145,7 +145,7 @@ func NewController(
 		},
 	}
 
-	consumerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := consumerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueConsumer(logger, obj)
 		},
@@ -155,9 +155,11 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueConsumer(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
-	providerDynamicInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if err := providerDynamicInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueProvider(logger, obj)
 		},
@@ -167,14 +169,16 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueProvider(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }
 
 // controller reconciles status of upstream to downstream.
 type controller struct {
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[string]
 
 	gvr               schema.GroupVersionResource
 	providerNamespace string
@@ -339,11 +343,10 @@ func (c *controller) startWorker(ctx context.Context) {
 
 func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
-	k, quit := c.queue.Get()
+	key, quit := c.queue.Get()
 	if quit {
 		return false
 	}
-	key := k.(string)
 
 	logger := klog.FromContext(ctx).WithValues("key", key)
 	ctx = klog.NewContext(ctx, logger)

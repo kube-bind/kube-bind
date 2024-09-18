@@ -51,7 +51,7 @@ func NewController(
 	serviceBindingInformer bindinformers.APIServiceBindingInformer,
 	consumerSecretInformer coreinformers.SecretInformer,
 ) (*controller, error) {
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
@@ -89,7 +89,7 @@ func NewController(
 		indexers.ByServiceBindingKubeconfigSecret: indexers.IndexServiceBindingByKubeconfigSecret,
 	})
 
-	serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceBinding(logger, obj)
 		},
@@ -99,9 +99,11 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueServiceBinding(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
-	consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueConsumerSecret(logger, obj)
 		},
@@ -111,7 +113,9 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueConsumerSecret(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }
@@ -123,7 +127,7 @@ type CommitFunc = func(context.Context, *Resource, *Resource) error
 // here as an individual controller because the cluster controller is not running
 // if the secret is invalid.
 type controller struct {
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[string]
 
 	serviceBindingLister  bindlisters.APIServiceBindingLister
 	serviceBindingIndexer cache.Indexer
@@ -199,11 +203,10 @@ func (c *controller) startWorker(ctx context.Context) {
 
 func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
-	k, quit := c.queue.Get()
+	key, quit := c.queue.Get()
 	if quit {
 		return false
 	}
-	key := k.(string)
 
 	logger := klog.FromContext(ctx).WithValues("key", key)
 	ctx = klog.NewContext(ctx, logger)

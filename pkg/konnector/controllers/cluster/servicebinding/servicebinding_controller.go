@@ -56,7 +56,7 @@ func NewController(
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 	crdInformer dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister],
 ) (*controller, error) {
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
@@ -128,7 +128,7 @@ func NewController(
 		indexers.ServiceExportByCustomResourceDefinition: indexers.IndexServiceExportByCustomResourceDefinition,
 	})
 
-	serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
 		},
@@ -138,7 +138,9 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueServiceExport(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }
@@ -148,7 +150,7 @@ type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // controller reconciles ServiceBindings with there ServiceExports counterparts.
 type controller struct {
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[string]
 
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister]
 
@@ -173,7 +175,7 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueServiceExport(logger klog.Logger, _ interface{}) {
 	bindings, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.reconciler.consumerSecretRefKey)
 	if err != nil {
 		runtime.HandleError(err)
@@ -262,11 +264,10 @@ func (c *controller) startWorker(ctx context.Context) {
 
 func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
-	k, quit := c.queue.Get()
+	key, quit := c.queue.Get()
 	if quit {
 		return false
 	}
-	key := k.(string)
 
 	logger := klog.FromContext(ctx).WithValues("key", key)
 	ctx = klog.NewContext(ctx, logger)

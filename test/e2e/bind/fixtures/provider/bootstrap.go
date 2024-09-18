@@ -33,7 +33,7 @@ import (
 //go:embed *.yaml
 var raw embed.FS
 
-func Bootstrap(t *testing.T, discoveryClient discovery.DiscoveryInterface, dynamicClient dynamic.Interface, batteriesIncluded sets.String) {
+func Bootstrap(t *testing.T, discoveryClient discovery.DiscoveryInterface, dynamicClient dynamic.Interface, batteriesIncluded sets.Set[string]) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 

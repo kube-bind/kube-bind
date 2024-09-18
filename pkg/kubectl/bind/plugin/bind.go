@@ -19,12 +19,12 @@ package plugin
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"net/url"
 	"os"
 	"os/exec"

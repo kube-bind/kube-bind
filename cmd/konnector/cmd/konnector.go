@@ -20,9 +20,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
+	"k8s.io/client-go/tools/leaderelection"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 	_ "k8s.io/component-base/logs/json/register"
 	componentbaseversion "k8s.io/component-base/version"
@@ -32,6 +34,8 @@ import (
 	konnectoroptions "github.com/kube-bind/kube-bind/pkg/konnector/options"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
 )
+
+const LeaderElectionTimeout = 20 * time.Second
 
 func New(ctx context.Context) *cobra.Command {
 	ver, err := bindversion.BinaryVersion(componentbaseversion.Get().GitVersion)
@@ -78,10 +82,20 @@ func New(ctx context.Context) *cobra.Command {
 
 			logger.Info("trying to acquire the lock")
 			lock := NewLock(config.KubeClient, options.LeaseLockNamespace, options.LeaseLockName, options.LeaseLockIdentity)
-			runLeaderElection(ctx, lock, options.LeaseLockIdentity, func(ctx context.Context) {
+
+			le := makeLeaderElectorOrDie(ctx, lock, options.LeaseLockIdentity, func(ctx context.Context) {
 				logger.Info("starting konnector controller")
 				err = prepared.Run(ctx)
 			})
+
+			hz := leaderelection.NewLeaderHealthzAdaptor(LeaderElectionTimeout)
+			hz.SetLeaderElection(le)
+
+			server.AddCheck(hz)
+			server.StartHealthCheck(ctx)
+
+			le.Run(ctx)
+			<-ctx.Done()
 
 			return err
 		},

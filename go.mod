@@ -1,6 +1,6 @@
 module github.com/kube-bind/kube-bind
 
-go 1.22.0
+go 1.23
 
 require (
 	github.com/blang/semver/v4 v4.0.0

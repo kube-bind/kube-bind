@@ -19,6 +19,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -47,7 +48,15 @@ func GenerateKubeconfig(ctx context.Context,
 		externalAddress = clusterConfig.Host
 	}
 	if externalCA == nil {
-		externalCA = clusterConfig.CAData
+		if len(clusterConfig.CAData) != 0 {
+			externalCA = clusterConfig.CAData
+		} else if len(clusterConfig.CAFile) != 0 {
+			ca, err := os.ReadFile(clusterConfig.CAFile)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read CA file at %s: %w", clusterConfig.CAFile, err)
+			}
+			externalCA = ca
+		}
 	}
 
 	var saSecret *corev1.Secret

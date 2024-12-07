@@ -35,8 +35,8 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/deploy/konnector"
-	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
 	"github.com/kube-bind/kube-bind/pkg/version"
+	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 )
 
 const (

@@ -39,8 +39,8 @@ import (
 	logsv1 "k8s.io/component-base/logs/api/v1"
 	"sigs.k8s.io/yaml"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
 // BindAPIServiceOptions are the options for the kubectl-bind-apiservice command.

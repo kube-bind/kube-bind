@@ -29,8 +29,8 @@ import (
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/rest"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 )
 
 func (b *BindAPIServiceOptions) createServiceExportRequest(

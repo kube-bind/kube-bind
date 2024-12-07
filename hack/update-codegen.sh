@@ -27,7 +27,7 @@ fi
 "$(dirname "${BASH_SOURCE[0]}")/update-codegen-clients.sh"
 
 # Update generated CRD YAML
-cd pkg/apis
+cd sdk/apis
 ../../${CONTROLLER_GEN} \
     crd \
     rbac:roleName=manager-role \

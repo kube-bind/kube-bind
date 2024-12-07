@@ -24,8 +24,8 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/deploy/crd"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	healthz "github.com/kube-bind/kube-bind/pkg/konnector/healthz"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
 type Server struct {

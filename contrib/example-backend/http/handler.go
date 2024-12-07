@@ -44,8 +44,8 @@ import (
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/template"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
 var (

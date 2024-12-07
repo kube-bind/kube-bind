@@ -35,7 +35,7 @@ kube::codegen::gen_helpers \
 kube::codegen::gen_client \
     --with-watch \
     --output-dir "client" \
-    --output-pkg "github.com/kube-bind/kube-bind/sdk" \
+    --output-pkg "github.com/kube-bind/kube-bind/sdk/client" \
     --boilerplate "../hack/boilerplate/boilerplate.go.txt" \
     "./apis"
 popd

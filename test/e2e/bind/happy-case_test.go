@@ -36,8 +36,8 @@ import (
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/yaml"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	clusterscoped "github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/cluster-scoped"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	providerfixtures "github.com/kube-bind/kube-bind/test/e2e/bind/fixtures/provider"
 	"github.com/kube-bind/kube-bind/test/e2e/framework"
 )

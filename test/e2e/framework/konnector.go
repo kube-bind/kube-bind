@@ -28,9 +28,9 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kube-bind/kube-bind/deploy/crd"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
 	"github.com/kube-bind/kube-bind/pkg/konnector"
 	"github.com/kube-bind/kube-bind/pkg/konnector/options"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
 func StartKonnector(t *testing.T, clientConfig *rest.Config, args ...string) *konnector.Server {

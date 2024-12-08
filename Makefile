@@ -240,7 +240,7 @@ test: WHAT ?= ./...
 # We will need to move into the sub package, of pkg/apis to run those tests.
 test:  ## run unit tests
 	$(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $$(go list "$(WHAT)" | grep -v ./test/e2e/)
-	cd pkg/apis && $(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $(WHAT)
+	cd sdk/apis && $(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $(WHAT)
 
 .PHONY: verify-imports
 verify-imports:
@@ -253,7 +253,7 @@ verify-go-versions:
 .PHONY: modules
 modules: ## Run go mod tidy to ensure modules are up to date
 	go mod tidy
-	cd pkg/apis; go mod tidy
+	cd sdk/apis; go mod tidy
 
 .PHONY: verify-modules
 verify-modules: modules  # Verify go modules are up to date

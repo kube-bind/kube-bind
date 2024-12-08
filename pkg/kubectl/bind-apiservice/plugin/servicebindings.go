@@ -27,11 +27,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
-	"github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1/helpers"
-	conditionsapi "github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/apis/conditions/v1alpha1"
-	"github.com/kube-bind/kube-bind/pkg/apis/third_party/conditions/util/conditions"
-	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1/helpers"
+	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
+	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
+	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 )
 
 func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, config *rest.Config, request *kubebindv1alpha1.APIServiceExportRequest, secretName string) ([]*kubebindv1alpha1.APIServiceBinding, error) {

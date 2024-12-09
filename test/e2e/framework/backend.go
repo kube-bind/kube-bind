@@ -38,7 +38,7 @@ import (
 	backend "github.com/kube-bind/kube-bind/contrib/example-backend"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
 	"github.com/kube-bind/kube-bind/deploy/crd"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/pkg/apis/kubebind/v1alpha1"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
 func StartBackend(t *testing.T, clientConfig *rest.Config, args ...string) (net.Addr, *backend.Server) {

@@ -26,9 +26,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	bindclient "github.com/kube-bind/kube-bind/pkg/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/pkg/client/informers/externalversions"
 	"github.com/kube-bind/kube-bind/pkg/konnector/options"
+	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
+	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions"
 )
 
 type Config struct {

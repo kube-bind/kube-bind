@@ -36,7 +36,7 @@ type KubeBindV1alpha1Interface interface {
 	ClusterBindingsGetter
 }
 
-// KubeBindV1alpha1Client is used to interact with features provided by the kube-bind.io group.
+// KubeBindV1alpha1Client is used to interact with features provided by the kubebind.io group.
 type KubeBindV1alpha1Client struct {
 	restClient rest.Interface
 }

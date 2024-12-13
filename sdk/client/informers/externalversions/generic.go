@@ -53,7 +53,7 @@ func (f *genericInformer) Lister() cache.GenericLister {
 // TODO extend this to unknown resources with a client pool
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
-	// Group=kube-bind.io, Version=v1alpha1
+	// Group=kubebind.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("apiservicebindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceBindings().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("apiserviceexports"):

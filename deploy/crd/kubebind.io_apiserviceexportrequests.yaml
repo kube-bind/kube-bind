@@ -4,33 +4,21 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.2
-  name: apiservicebindings.kube-bind.io
+  name: apiserviceexportrequests.kubebind.io
 spec:
-  group: kube-bind.io
+  group: kubebind.io
   names:
     categories:
     - kube-bindings
-    kind: APIServiceBinding
-    listKind: APIServiceBindingList
-    plural: apiservicebindings
-    shortNames:
-    - sb
-    singular: apiservicebinding
-  scope: Cluster
+    kind: APIServiceExportRequest
+    listKind: APIServiceExportRequestList
+    plural: apiserviceexportrequests
+    singular: apiserviceexportrequest
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.providerPrettyName
-      name: Provider
-      type: string
-    - jsonPath: .metadata.annotations.kube-bind\.io/resources
-      name: Resources
-      priority: 1
-      type: string
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: Ready
-      type: string
-    - jsonPath: .status.conditions[?(@.type=="Ready")].message
-      name: Message
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
@@ -39,9 +27,9 @@ spec:
     schema:
       openAPIV3Schema:
         description: |-
-          APIServiceBinding binds an API service represented by a APIServiceExport
-          in a service provider cluster into a consumer cluster. This object lives in
-          the consumer cluster.
+          APIServiceExportRequest is represents a request session of kubectl-bind-apiservice.
+
+          The service provider can prune these objects after some time.
         properties:
           apiVersion:
             description: |-
@@ -65,41 +53,60 @@ spec:
               spec specifies how an API service from a service provider should be bound in the
               local consumer cluster.
             properties:
-              kubeconfigSecretRef:
-                description: kubeconfigSecretName is the secret ref that contains
-                  the kubeconfig of the service cluster.
-                properties:
-                  key:
-                    description: The key of the secret to select from.  Must be "kubeconfig".
-                    enum:
-                    - kubeconfig
-                    type: string
-                  name:
-                    description: Name of the referent.
-                    minLength: 1
-                    type: string
-                  namespace:
-                    description: Namespace of the referent.
-                    minLength: 1
-                    type: string
-                required:
-                - key
-                - name
-                - namespace
+              parameters:
+                description: |-
+                  parameters holds service provider specific parameters for this binding
+                  request.
                 type: object
+                x-kubernetes-preserve-unknown-fields: true
                 x-kubernetes-validations:
-                - message: kubeconfigSecretRef is immutable
+                - message: parameters are immutable
+                  rule: self == oldSelf
+              resources:
+                description: resources is a list of resources that should be exported.
+                items:
+                  properties:
+                    group:
+                      default: ""
+                      description: |-
+                        group is the name of an API group.
+                        For core groups this is the empty string '""'.
+                      pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
+                      type: string
+                    resource:
+                      description: |-
+                        resource is the name of the resource.
+                        Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+                        not provided by an service binding export.
+                      pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                      type: string
+                    versions:
+                      description: |-
+                        versions is a list of versions that should be exported. If this is empty
+                        a sensible default is chosen by the service provider.
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - resource
+                  type: object
+                minItems: 1
+                type: array
+                x-kubernetes-validations:
+                - message: resources are immutable
                   rule: self == oldSelf
             required:
-            - kubeconfigSecretRef
+            - resources
             type: object
           status:
+            default: {}
             description: status contains reconciliation information for a service
               binding.
             properties:
               conditions:
-                description: conditions is a list of conditions that apply to the
-                  APIServiceBinding.
+                description: |-
+                  conditions is a list of conditions that apply to the ClusterBinding. It is
+                  updated by the konnector and the service provider.
                 items:
                   description: Condition defines an observation of a object operational
                     state.
@@ -143,12 +150,25 @@ spec:
                   - type
                   type: object
                 type: array
-              providerPrettyName:
+              phase:
+                default: Pending
                 description: |-
-                  providerPrettyName is the pretty name of the service provider cluster. This
-                  can be shared among different APIServiceBindings.
+                  phase is the current phase of the binding request. It starts in Pending
+                  and transitions to Succeeded or Failed. See the condition for detailed
+                  information.
+                enum:
+                - Pending
+                - Failed
+                - Succeeded
+                type: string
+              terminalMessage:
+                description: |-
+                  terminalMessage is a human readable message that describes the reason
+                  for the current phase.
                 type: string
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

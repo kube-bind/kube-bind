@@ -1,21 +1,28 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.2
-  name: apiserviceexportrequests.kube-bind.io
+  name: clusterbindings.kubebind.io
 spec:
-  group: kube-bind.io
+  group: kubebind.io
   names:
     categories:
     - kube-bindings
-    kind: APIServiceExportRequest
-    listKind: APIServiceExportRequestList
-    plural: apiserviceexportrequests
-    singular: apiserviceexportrequest
+    kind: ClusterBinding
+    listKind: ClusterBindingList
+    plural: clusterbindings
+    singular: clusterbinding
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
+    - jsonPath: .status.konnectorVersion
+      name: Konnector Version
+      type: string
+    - jsonPath: .status.lastHeartbeatTime
+      name: Last Heartbeat
+      type: date
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: Ready
       type: string
@@ -26,9 +33,8 @@ spec:
     schema:
       openAPIV3Schema:
         description: |-
-          APIServiceExportRequest is represents a request session of kubectl-bind-apiservice.
-
-          The service provider can prune these objects after some time.
+          ClusterBinding represents a bound consumer class. It lives in a service provider cluster
+          and is a singleton named "cluster".
         properties:
           apiVersion:
             description: |-
@@ -48,58 +54,47 @@ spec:
           metadata:
             type: object
           spec:
-            description: |-
-              spec specifies how an API service from a service provider should be bound in the
-              local consumer cluster.
+            description: spec represents the data in the newly created ClusterBinding.
             properties:
-              parameters:
+              kubeconfigSecretRef:
+                description: kubeconfigSecretName is the secret ref that contains
+                  the kubeconfig of the service cluster.
+                properties:
+                  key:
+                    description: The key of the secret to select from.  Must be "kubeconfig".
+                    enum:
+                    - kubeconfig
+                    type: string
+                  name:
+                    description: Name of the referent.
+                    minLength: 1
+                    type: string
+                required:
+                - key
+                - name
+                type: object
+                x-kubernetes-validations:
+                - message: kubeconfigSecretRef is immutable
+                  rule: self == oldSelf
+              providerPrettyName:
                 description: |-
-                  parameters holds service provider specific parameters for this binding
-                  request.
+                  providerPrettyName is the pretty name of the service provider cluster. This
+                  can be shared among different ServiceBindings.
+                minLength: 1
+                type: string
+              serviceProviderSpec:
+                description: |-
+                  serviceProviderSpec contains all the data and information about the service which has been bound to the service
+                  binding request. The service providers decide what they need and what to configure based on what then include in
+                  this field, such as service region, type, tiers, etc...
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
-                x-kubernetes-validations:
-                - message: parameters are immutable
-                  rule: self == oldSelf
-              resources:
-                description: resources is a list of resources that should be exported.
-                items:
-                  properties:
-                    group:
-                      default: ""
-                      description: |-
-                        group is the name of an API group.
-                        For core groups this is the empty string '""'.
-                      pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
-                      type: string
-                    resource:
-                      description: |-
-                        resource is the name of the resource.
-                        Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
-                        not provided by an service binding export.
-                      pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
-                      type: string
-                    versions:
-                      description: |-
-                        versions is a list of versions that should be exported. If this is empty
-                        a sensible default is chosen by the service provider.
-                      items:
-                        type: string
-                      type: array
-                  required:
-                  - resource
-                  type: object
-                minItems: 1
-                type: array
-                x-kubernetes-validations:
-                - message: resources are immutable
-                  rule: self == oldSelf
             required:
-            - resources
+            - kubeconfigSecretRef
+            - providerPrettyName
             type: object
           status:
-            default: {}
-            description: status contains reconciliation information for a service
+            description: status contains reconciliation information for the service
               binding.
             properties:
               conditions:
@@ -149,26 +144,30 @@ spec:
                   - type
                   type: object
                 type: array
-              phase:
-                default: Pending
+              heartbeatInterval:
                 description: |-
-                  phase is the current phase of the binding request. It starts in Pending
-                  and transitions to Succeeded or Failed. See the condition for detailed
-                  information.
-                enum:
-                - Pending
-                - Failed
-                - Succeeded
+                  heartbeatInterval is the maximal interval between heartbeats that the
+                  konnector promises to send. The service provider can assume that the
+                  konnector is not unhealthy if it does not receive a heartbeat within
+                  this time.
                 type: string
-              terminalMessage:
+              konnectorVersion:
                 description: |-
-                  terminalMessage is a human readable message that describes the reason
-                  for the current phase.
+                  konnectorVersion is the version of the konnector that is running on the
+                  consumer cluster.
+                type: string
+              lastHeartbeatTime:
+                description: lastHeartbeatTime is the last time the konnector updated
+                  the status.
+                format: date-time
                 type: string
             type: object
         required:
         - spec
         type: object
+        x-kubernetes-validations:
+        - message: cluster binding name should be cluster
+          rule: self.metadata.name == "cluster"
     served: true
     storage: true
     subresources:

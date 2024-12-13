@@ -4,27 +4,33 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.2
-  name: clusterbindings.kube-bind.io
+  name: apiservicebindings.kubebind.io
 spec:
-  group: kube-bind.io
+  group: kubebind.io
   names:
     categories:
     - kube-bindings
-    kind: ClusterBinding
-    listKind: ClusterBindingList
-    plural: clusterbindings
-    singular: clusterbinding
-  scope: Namespaced
+    kind: APIServiceBinding
+    listKind: APIServiceBindingList
+    plural: apiservicebindings
+    shortNames:
+    - sb
+    singular: apiservicebinding
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.konnectorVersion
-      name: Konnector Version
+    - jsonPath: .status.providerPrettyName
+      name: Provider
       type: string
-    - jsonPath: .status.lastHeartbeatTime
-      name: Last Heartbeat
-      type: date
+    - jsonPath: .metadata.annotations.kube-bind\.io/resources
+      name: Resources
+      priority: 1
+      type: string
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: Ready
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].message
+      name: Message
       type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
@@ -33,8 +39,9 @@ spec:
     schema:
       openAPIV3Schema:
         description: |-
-          ClusterBinding represents a bound consumer class. It lives in a service provider cluster
-          and is a singleton named "cluster".
+          APIServiceBinding binds an API service represented by a APIServiceExport
+          in a service provider cluster into a consumer cluster. This object lives in
+          the consumer cluster.
         properties:
           apiVersion:
             description: |-
@@ -54,7 +61,9 @@ spec:
           metadata:
             type: object
           spec:
-            description: spec represents the data in the newly created ClusterBinding.
+            description: |-
+              spec specifies how an API service from a service provider should be bound in the
+              local consumer cluster.
             properties:
               kubeconfigSecretRef:
                 description: kubeconfigSecretName is the secret ref that contains
@@ -69,38 +78,28 @@ spec:
                     description: Name of the referent.
                     minLength: 1
                     type: string
+                  namespace:
+                    description: Namespace of the referent.
+                    minLength: 1
+                    type: string
                 required:
                 - key
                 - name
+                - namespace
                 type: object
                 x-kubernetes-validations:
                 - message: kubeconfigSecretRef is immutable
                   rule: self == oldSelf
-              providerPrettyName:
-                description: |-
-                  providerPrettyName is the pretty name of the service provider cluster. This
-                  can be shared among different ServiceBindings.
-                minLength: 1
-                type: string
-              serviceProviderSpec:
-                description: |-
-                  serviceProviderSpec contains all the data and information about the service which has been bound to the service
-                  binding request. The service providers decide what they need and what to configure based on what then include in
-                  this field, such as service region, type, tiers, etc...
-                type: object
-                x-kubernetes-preserve-unknown-fields: true
             required:
             - kubeconfigSecretRef
-            - providerPrettyName
             type: object
           status:
-            description: status contains reconciliation information for the service
+            description: status contains reconciliation information for a service
               binding.
             properties:
               conditions:
-                description: |-
-                  conditions is a list of conditions that apply to the ClusterBinding. It is
-                  updated by the konnector and the service provider.
+                description: conditions is a list of conditions that apply to the
+                  APIServiceBinding.
                 items:
                   description: Condition defines an observation of a object operational
                     state.
@@ -144,30 +143,13 @@ spec:
                   - type
                   type: object
                 type: array
-              heartbeatInterval:
+              providerPrettyName:
                 description: |-
-                  heartbeatInterval is the maximal interval between heartbeats that the
-                  konnector promises to send. The service provider can assume that the
-                  konnector is not unhealthy if it does not receive a heartbeat within
-                  this time.
-                type: string
-              konnectorVersion:
-                description: |-
-                  konnectorVersion is the version of the konnector that is running on the
-                  consumer cluster.
-                type: string
-              lastHeartbeatTime:
-                description: lastHeartbeatTime is the last time the konnector updated
-                  the status.
-                format: date-time
+                  providerPrettyName is the pretty name of the service provider cluster. This
+                  can be shared among different APIServiceBindings.
                 type: string
             type: object
-        required:
-        - spec
         type: object
-        x-kubernetes-validations:
-        - message: cluster binding name should be cluster
-          rule: self.metadata.name == "cluster"
     served: true
     storage: true
     subresources:

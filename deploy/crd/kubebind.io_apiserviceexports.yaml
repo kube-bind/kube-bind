@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.2
-  name: apiserviceexports.kube-bind.io
+  name: apiserviceexports.kubebind.io
 spec:
-  group: kube-bind.io
+  group: kubebind.io
   names:
     categories:
     - kube-bindings

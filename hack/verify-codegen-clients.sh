@@ -22,7 +22,8 @@ set -o nounset
 set -o pipefail
 
 "$( dirname "${BASH_SOURCE[0]}")/update-codegen-clients.sh"
-if ! git diff --quiet --exit-code -- pkg/client; then
+"$( dirname "${BASH_SOURCE[0]}")/update-codegen-clients-kcp.sh"
+if ! git diff --quiet --exit-code -- sdk/; then
 	cat << EOF
 ERROR: This check enforces that the client code is generated correctly.
 ERROR: The client code is out of date. Run the following command to re-

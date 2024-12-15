@@ -1,6 +1,6 @@
 module github.com/kube-bind/kube-bind/sdk
 
-go 1.23
+go 1.23.4
 
 require (
 	github.com/google/go-cmp v0.6.0

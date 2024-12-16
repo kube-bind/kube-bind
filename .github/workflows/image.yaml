@@ -21,7 +21,7 @@ jobs:
         check-latest: true
     - name: Delete non-semver tags
       run: 'git tag -d $(git tag -l | grep -v "^v")'
-    - uses: sigstore/cosign-installer@v2.7.0
+    - uses: sigstore/cosign-installer@latest
     - name: Install ko
       run: go install github.com/google/ko@latest
 

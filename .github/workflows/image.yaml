@@ -23,7 +23,7 @@ jobs:
     - name: Delete non-semver tags
       run: 'git tag -d $(git tag -l | grep -v "^v")'
     # If you notice signing errors, you may need to update the cosign version.
-    - uses: sigstore/cosign-installer@@v3.7.0
+    - uses: sigstore/cosign-installer@v3.7.0
     - name: Install ko
       run: go install github.com/google/ko@latest
 

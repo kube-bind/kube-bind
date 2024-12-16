@@ -21,4 +21,4 @@ import (
 )
 
 // SchemeGroupVersion is group version used to register these objects
-var SchemeGroupVersion = schema.GroupVersion{Group: "conditions.kcp.io", Version: "v1alpha1"}
+var SchemeGroupVersion = schema.GroupVersion{Group: "conditions.kube-bind.io", Version: "v1alpha1"}

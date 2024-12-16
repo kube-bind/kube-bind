@@ -19,9 +19,11 @@ jobs:
       with:
         go-version: v1.23.4
         check-latest: true
+    # We need this to remove local tags that are not semver so goreleaser doesn't get confused.
     - name: Delete non-semver tags
       run: 'git tag -d $(git tag -l | grep -v "^v")'
-    - uses: sigstore/cosign-installer@latest
+    # If you notice signing errors, you may need to update the cosign version.
+    - uses: sigstore/cosign-installer@@v3.7.0
     - name: Install ko
       run: go install github.com/google/ko@latest
 

@@ -2,10 +2,16 @@ module github.com/kube-bind/kube-bind/sdk/client
 
 go 1.23.4
 
-replace github.com/kube-bind/kube-bind/sdk => ../
+// TODO(mjudeikis): clean these once new module is created and published.
+replace github.com/kube-bind/kube-bind/sdk/apis => ../apis
+
+exclude (
+	github.com/kube-bind/kube-bind/sdk v0.4.1
+	github.com/kube-bind/kube-bind/sdk v0.4.4
+)
 
 require (
-	github.com/kube-bind/kube-bind/sdk v0.0.0-00010101000000-000000000000
+	github.com/kube-bind/kube-bind/sdk/apis v0.0.0-00010101000000-000000000000
 	k8s.io/apimachinery v0.32.0
 	k8s.io/client-go v0.32.0
 )

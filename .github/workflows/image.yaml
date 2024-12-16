@@ -4,8 +4,6 @@ on:
   push:
     tags:
     - 'v*'
-    - 'sdk/v*'
-    - 'sdk/kcp/v*'
 
 permissions:
   contents: read

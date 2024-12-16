@@ -30,23 +30,23 @@ type FakeKubeBindV1alpha1 struct {
 }
 
 func (c *FakeKubeBindV1alpha1) APIServiceBindings() v1alpha1.APIServiceBindingInterface {
-	return newFakeAPIServiceBindings(c)
+	return &FakeAPIServiceBindings{c}
 }
 
 func (c *FakeKubeBindV1alpha1) APIServiceExports(namespace string) v1alpha1.APIServiceExportInterface {
-	return newFakeAPIServiceExports(c, namespace)
+	return &FakeAPIServiceExports{c, namespace}
 }
 
 func (c *FakeKubeBindV1alpha1) APIServiceExportRequests(namespace string) v1alpha1.APIServiceExportRequestInterface {
-	return newFakeAPIServiceExportRequests(c, namespace)
+	return &FakeAPIServiceExportRequests{c, namespace}
 }
 
 func (c *FakeKubeBindV1alpha1) APIServiceNamespaces(namespace string) v1alpha1.APIServiceNamespaceInterface {
-	return newFakeAPIServiceNamespaces(c, namespace)
+	return &FakeAPIServiceNamespaces{c, namespace}
 }
 
 func (c *FakeKubeBindV1alpha1) ClusterBindings(namespace string) v1alpha1.ClusterBindingInterface {
-	return newFakeClusterBindings(c, namespace)
+	return &FakeClusterBindings{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -152,3 +152,6 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.17.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 )
+
+// This is needed for update-codegen-clients.sh to pin the version of code-generator.
+replace k8s.io/code-generator => k8s.io/code-generator v0.31.0

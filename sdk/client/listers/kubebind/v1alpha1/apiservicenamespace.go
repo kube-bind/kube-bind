@@ -19,11 +19,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	labels "k8s.io/apimachinery/pkg/labels"
-	listers "k8s.io/client-go/listers"
-	cache "k8s.io/client-go/tools/cache"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
+	"k8s.io/client-go/tools/cache"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
 // APIServiceNamespaceLister helps list APIServiceNamespaces.
@@ -31,7 +31,7 @@ import (
 type APIServiceNamespaceLister interface {
 	// List lists all APIServiceNamespaces in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*kubebindv1alpha1.APIServiceNamespace, err error)
+	List(selector labels.Selector) (ret []*v1alpha1.APIServiceNamespace, err error)
 	// APIServiceNamespaces returns an object that can list and get APIServiceNamespaces.
 	APIServiceNamespaces(namespace string) APIServiceNamespaceNamespaceLister
 	APIServiceNamespaceListerExpansion
@@ -39,17 +39,17 @@ type APIServiceNamespaceLister interface {
 
 // aPIServiceNamespaceLister implements the APIServiceNamespaceLister interface.
 type aPIServiceNamespaceLister struct {
-	listers.ResourceIndexer[*kubebindv1alpha1.APIServiceNamespace]
+	listers.ResourceIndexer[*v1alpha1.APIServiceNamespace]
 }
 
 // NewAPIServiceNamespaceLister returns a new APIServiceNamespaceLister.
 func NewAPIServiceNamespaceLister(indexer cache.Indexer) APIServiceNamespaceLister {
-	return &aPIServiceNamespaceLister{listers.New[*kubebindv1alpha1.APIServiceNamespace](indexer, kubebindv1alpha1.Resource("apiservicenamespace"))}
+	return &aPIServiceNamespaceLister{listers.New[*v1alpha1.APIServiceNamespace](indexer, v1alpha1.Resource("apiservicenamespace"))}
 }
 
 // APIServiceNamespaces returns an object that can list and get APIServiceNamespaces.
 func (s *aPIServiceNamespaceLister) APIServiceNamespaces(namespace string) APIServiceNamespaceNamespaceLister {
-	return aPIServiceNamespaceNamespaceLister{listers.NewNamespaced[*kubebindv1alpha1.APIServiceNamespace](s.ResourceIndexer, namespace)}
+	return aPIServiceNamespaceNamespaceLister{listers.NewNamespaced[*v1alpha1.APIServiceNamespace](s.ResourceIndexer, namespace)}
 }
 
 // APIServiceNamespaceNamespaceLister helps list and get APIServiceNamespaces.
@@ -57,15 +57,15 @@ func (s *aPIServiceNamespaceLister) APIServiceNamespaces(namespace string) APISe
 type APIServiceNamespaceNamespaceLister interface {
 	// List lists all APIServiceNamespaces in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*kubebindv1alpha1.APIServiceNamespace, err error)
+	List(selector labels.Selector) (ret []*v1alpha1.APIServiceNamespace, err error)
 	// Get retrieves the APIServiceNamespace from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*kubebindv1alpha1.APIServiceNamespace, error)
+	Get(name string) (*v1alpha1.APIServiceNamespace, error)
 	APIServiceNamespaceNamespaceListerExpansion
 }
 
 // aPIServiceNamespaceNamespaceLister implements the APIServiceNamespaceNamespaceLister
 // interface.
 type aPIServiceNamespaceNamespaceLister struct {
-	listers.ResourceIndexer[*kubebindv1alpha1.APIServiceNamespace]
+	listers.ResourceIndexer[*v1alpha1.APIServiceNamespace]
 }

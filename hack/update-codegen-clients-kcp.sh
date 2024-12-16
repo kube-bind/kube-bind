@@ -28,14 +28,10 @@ popd
 CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; go list -f '{{.Dir}}' -m k8s.io/code-generator)}
 OPENAPI_PKG=${OPENAPI_PKG:-$(cd "${SCRIPT_ROOT}"; go list -f '{{.Dir}}' -m k8s.io/kube-openapi)}
 
-# TODO: use generate-groups.sh directly instead once https://github.com/kubernetes/kubernetes/pull/114987 is available
-go install "${CODEGEN_PKG}"/cmd/applyconfiguration-gen
-go install "${CODEGEN_PKG}"/cmd/client-gen
-
 # TODO: This is hack to allow CI to pass
 chmod +x "${CODEGEN_PKG}"/generate-internal-groups.sh
 
-"$GOPATH"/bin/applyconfiguration-gen \
+${KUBE_APPLYCONFIGURATION_GEN} \
   --go-header-file ./hack/boilerplate/boilerplate.generatego.txt \
   --output-pkg github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration \
   --output-dir "sdk/kcp/applyconfiguration" \
@@ -45,7 +41,7 @@ chmod +x "${CODEGEN_PKG}"/generate-internal-groups.sh
   k8s.io/apimachinery/pkg/runtime \
   k8s.io/apimachinery/pkg/version
 
-"$GOPATH"/bin/client-gen \
+"${KUBE_CLIENT_GEN}" \
   --input github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1 \
   --input-base="" \
   --apply-configuration-package=github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration \

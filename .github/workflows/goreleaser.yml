@@ -16,7 +16,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-    - uses: actions/setup-go@v3
+    - uses: actions/setup-go@v5
       with:
         go-version: v1.23.4
     - name: Delete non-semver tags
@@ -24,7 +24,7 @@ jobs:
     - name: Set LDFLAGS
       run: echo LDFLAGS="$(make ldflags)" | tee -a >> $GITHUB_ENV
     - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v3
+      uses: goreleaser/goreleaser-action@v4:  qw
       with:
         distribution: goreleaser
         version: latest

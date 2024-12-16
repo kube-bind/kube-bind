@@ -24,7 +24,7 @@ jobs:
     - name: Set LDFLAGS
       run: echo LDFLAGS="$(make ldflags)" | tee -a >> $GITHUB_ENV
     - name: Run GoReleaser
-      uses: goreleaser/goreleaser-action@v4:  qw
+      uses: goreleaser/goreleaser-action@v4
       with:
         distribution: goreleaser
         version: latest

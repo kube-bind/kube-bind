@@ -19,11 +19,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	labels "k8s.io/apimachinery/pkg/labels"
-	listers "k8s.io/client-go/listers"
-	cache "k8s.io/client-go/tools/cache"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/listers"
+	"k8s.io/client-go/tools/cache"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
 // APIServiceBindingLister helps list APIServiceBindings.
@@ -31,19 +31,19 @@ import (
 type APIServiceBindingLister interface {
 	// List lists all APIServiceBindings in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*kubebindv1alpha1.APIServiceBinding, err error)
+	List(selector labels.Selector) (ret []*v1alpha1.APIServiceBinding, err error)
 	// Get retrieves the APIServiceBinding from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*kubebindv1alpha1.APIServiceBinding, error)
+	Get(name string) (*v1alpha1.APIServiceBinding, error)
 	APIServiceBindingListerExpansion
 }
 
 // aPIServiceBindingLister implements the APIServiceBindingLister interface.
 type aPIServiceBindingLister struct {
-	listers.ResourceIndexer[*kubebindv1alpha1.APIServiceBinding]
+	listers.ResourceIndexer[*v1alpha1.APIServiceBinding]
 }
 
 // NewAPIServiceBindingLister returns a new APIServiceBindingLister.
 func NewAPIServiceBindingLister(indexer cache.Indexer) APIServiceBindingLister {
-	return &aPIServiceBindingLister{listers.New[*kubebindv1alpha1.APIServiceBinding](indexer, kubebindv1alpha1.Resource("apiservicebinding"))}
+	return &aPIServiceBindingLister{listers.New[*v1alpha1.APIServiceBinding](indexer, v1alpha1.Resource("apiservicebinding"))}
 }

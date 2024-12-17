@@ -2,15 +2,7 @@ module github.com/kube-bind/kube-bind
 
 go 1.23.4
 
-replace (
-	github.com/kube-bind/kube-bind/sdk/apis => ./sdk/apis
-	github.com/kube-bind/kube-bind/sdk/client => ./sdk/client
-)
-
-exclude (
-	github.com/kube-bind/kube-bind/sdk v0.4.1
-	github.com/kube-bind/kube-bind/sdk v0.4.4
-)
+replace github.com/kube-bind/kube-bind/sdk => ./sdk
 
 require (
 	github.com/blang/semver/v4 v4.0.0
@@ -23,8 +15,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/headzoo/surf v1.0.1
 	github.com/kcp-dev/kcp/pkg/apis v0.11.0
-	github.com/kube-bind/kube-bind/sdk/apis v0.0.0-00010101000000-000000000000
-	github.com/kube-bind/kube-bind/sdk/client v0.0.0-00010101000000-000000000000
+	github.com/kube-bind/kube-bind/sdk v0.0.0-20241209105018-45d787038b5b
 	github.com/martinlindhe/base36 v1.1.1
 	github.com/mdp/qrterminal/v3 v3.0.0
 	github.com/pierrec/lz4 v2.6.1+incompatible

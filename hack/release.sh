@@ -44,7 +44,8 @@ fi
 
 # Create the tag
 git tag -a $VERSION_TAG -s -m "$RELEASE_COMMENT" 
-git tag -a sdk/$VERSION_TAG -s -m "$RELEASE_COMMENT"
+git tag -a sdk/apis/$VERSION_TAG -s -m "$RELEASE_COMMENT"
+git tag -a sdk/client/$VERSION_TAG -s -m "$RELEASE_COMMENT"
 git tag -a sdk/kcp/$VERSION_TAG -s -m "$RELEASE_COMMENT"
 
 # Check if the tag was created successfully
@@ -55,7 +56,8 @@ fi
 
 # Push the tag to remote repository
 git push $REMOTE_NAME $VERSION_TAG
-git push $REMOTE_NAME sdk/$VERSION_TAG
+git push $REMOTE_NAME sdk/apis/$VERSION_TAG
+git push $REMOTE_NAME sdk/client/$VERSION_TAG
 git push $REMOTE_NAME sdk/kcp/$VERSION_TAG
 
 # Check if the push was successful

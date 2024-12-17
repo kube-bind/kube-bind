@@ -7,11 +7,6 @@ replace (
 	github.com/kube-bind/kube-bind/sdk/client => ./sdk/client
 )
 
-exclude (
-	github.com/kube-bind/kube-bind/sdk v0.4.1
-	github.com/kube-bind/kube-bind/sdk v0.4.4
-)
-
 require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
@@ -23,7 +18,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/headzoo/surf v1.0.1
 	github.com/kcp-dev/kcp/pkg/apis v0.11.0
-	github.com/kube-bind/kube-bind/sdk/apis v0.0.0-00010101000000-000000000000
+	github.com/kube-bind/kube-bind/sdk/apis v0.4.5
 	github.com/kube-bind/kube-bind/sdk/client v0.0.0-00010101000000-000000000000
 	github.com/martinlindhe/base36 v1.1.1
 	github.com/mdp/qrterminal/v3 v3.0.0

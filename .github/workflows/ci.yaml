@@ -61,5 +61,4 @@ jobs:
     - uses: actions/setup-go@v3
       with:
         go-version: v1.23.4
-    - run: echo "No build required"
-#    - run: make verify
+    - run: make verify

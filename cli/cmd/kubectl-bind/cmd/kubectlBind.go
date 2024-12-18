@@ -35,7 +35,7 @@ import (
 func KubectlBindCommand() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "bind",
-		Short: "kubectl plugin for kube-bind.io",
+		Short: "kubectl plugin for Kube-Bind.io",
 		Long: help.Doc(`
 			kube-bind is a project that aims to provide better support for 
 			service providers and consumers that reside in distinct Kubernetes clusters.

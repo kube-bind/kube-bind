@@ -1,6 +1,7 @@
 version: 2
 builds:
 - id: "kubectl-bind"
+  dir: cli
   main: ./cmd/kubectl-bind
   binary: bin/kubectl-bind
   goos:

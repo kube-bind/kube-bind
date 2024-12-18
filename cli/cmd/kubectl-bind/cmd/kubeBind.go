@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kube Bind Authors.
+Copyright 2024 The Kube Bind Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,23 +14,48 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package cmd
 
 import (
+	goflags "flag"
 	"fmt"
 	"os"
 
-	"github.com/spf13/pflag"
+	"github.com/spf13/cobra"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/component-base/version"
+	"k8s.io/klog/v2"
 
-	apiservicecmd "github.com/kube-bind/kube-bind/pkg/kubectl/bind-apiservice/cmd"
-	bindcmd "github.com/kube-bind/kube-bind/pkg/kubectl/bind/cmd"
+	"github.com/kube-bind/kube-bind/cli/pkg/help"
+	apiservicecmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-apiservice/cmd"
+	bindcmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/cmd"
 )
 
-func main() {
-	flags := pflag.NewFlagSet("kubectl-bind", pflag.ExitOnError)
-	pflag.CommandLine = flags
+func KubectlBindCommand() *cobra.Command {
+	root := &cobra.Command{
+		Use:   "bind",
+		Short: "kubectl plugin for kube-bind.io",
+		Long: help.Doc(`
+			kube-bind is a project that aims to provide better support for 
+			service providers and consumers that reside in distinct Kubernetes clusters.
+
+			For more information, see: https://kube-bind.io
+		`),
+		SilenceUsage:  true,
+		SilenceErrors: true,
+	}
+
+	// setup klog
+	fs := goflags.NewFlagSet("klog", goflags.PanicOnError)
+	klog.InitFlags(fs)
+	root.PersistentFlags().AddGoFlagSet(fs)
+
+	if v := version.Get().String(); len(v) == 0 {
+		root.Version = "<unknown>"
+	} else {
+		root.Version = v
+	}
 
 	bindCmd, err := bindcmd.New(genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr})
 	if err != nil {
@@ -45,7 +70,5 @@ func main() {
 	}
 	bindCmd.AddCommand(apiserviceCmd)
 
-	if err := bindCmd.Execute(); err != nil {
-		os.Exit(1)
-	}
+	return root
 }

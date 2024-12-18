@@ -43,8 +43,8 @@ import (
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 
-	"github.com/kube-bind/kube-bind/pkg/kubectl/base"
-	"github.com/kube-bind/kube-bind/pkg/kubectl/bind/authenticator"
+	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/base"
+	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/authenticator"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 

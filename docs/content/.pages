@@ -1,0 +1,6 @@
+nav:
+  - Home:
+    - index.md
+  - Setup: setup
+  - Contributing: contributing
+  - Reference: reference

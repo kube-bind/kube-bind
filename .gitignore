@@ -13,3 +13,4 @@ coverage.*
 /build
 /dex
 /bin
+docs/generators/cli-doc/cli-doc

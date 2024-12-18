@@ -37,6 +37,7 @@ var (
 		"v",
 		"vmodule",
 		"konnector-image",
+		"insecure-skip-tls-verify",
 	)
 
 	// passOnEnvVars are the flags we DO NOT pass to downstream commands like kubectl-bind-apiservice.

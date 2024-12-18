@@ -57,6 +57,9 @@ type BindOptions struct {
 	printer printers.ResourcePrinter
 	DryRun  bool
 
+	// skipInsecure skips the verification of the server's certificate chain and host name.
+	SkipInsecure bool
+
 	// url is the argument accepted by the command. It contains the
 	// reference to where an APIService exists.
 	URL string
@@ -98,6 +101,7 @@ func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
+	cmd.Flags().BoolVar(&b.SkipInsecure, "insecure-skip-tls-verify", b.SkipInsecure, "Skip the verification of the server's certificate chain and host name.")
 	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
 }
 
@@ -150,7 +154,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		return err // should never happen because we test this in Validate()
 	}
 
-	provider, err := getProvider(exportURL.String())
+	provider, err := getProvider(exportURL.String(), b.SkipInsecure)
 	if err != nil {
 		return fmt.Errorf("failed to fetch authentication url %q: %v", exportURL, err)
 	}

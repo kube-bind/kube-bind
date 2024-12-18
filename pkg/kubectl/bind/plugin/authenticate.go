@@ -17,6 +17,7 @@ limitations under the License.
 package plugin
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -35,8 +36,17 @@ import (
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
-func getProvider(url string) (*kubebindv1alpha1.BindingProvider, error) {
-	resp, err := http.Get(url)
+func getProvider(url string, insecure bool) (*kubebindv1alpha1.BindingProvider, error) {
+	client := &http.Client{}
+	if insecure {
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: insecure,
+			},
+		}
+	}
+
+	resp, err := client.Get(url)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,6 @@
 # Local kube-bind with kind
 
-This demo will guide you through setting up kube-bind between two Kubernetes clusters, where
+This guide will walk you through setting up kube-bind between two Kubernetes clusters, where
 * **Backend cluster**:
   * Deploys: dex, cert-manager, kube-bind/example-backend
   * Provides: kube-bind compatible backend for MangoDB resources
@@ -28,6 +28,8 @@ To start, you'll need following tools available in your system or a VM:
 ## Backend cluster
 
 The backend cluster we'll prepare in this section will provide a kube-bind compatible backend that will provide a controller for a demo resource "MangoDB" we'll consume in another cluster later.
+
+> What is MangoDB? It is just an example CRD to demonstrate kube-bind's capabilities and testing, without any workloads. See its definition in [/test/e2e/bind/fixtures/provider/crd-mangodb.yaml](/test/e2e/bind/fixtures/provider/crd-mangodb.yaml).
 
 ### Step one: create the Backend cluster
 
@@ -64,7 +66,7 @@ EOF_BackendClusterDefinition
 
 ### Step two: deploy an identity provider
 
-kube-bind relies on OAuth2 for securely authenticating consumer and producer clusters. There are many ways to handle that in Kubernetes, for example [DEX IDP](https://github.com/dexidp/dex). It depends on cert-manager, which we'll deploy first:
+kube-bind relies on OAuth2 for securely authenticating consumer and producer clusters. There are many ways to handle that in Kubernetes, for example with [DEX IDP](https://github.com/dexidp/dex). It depends on cert-manager, which we'll deploy first:
 
 ```sh
 helm repo add jetstack https://charts.jetstack.io
@@ -80,9 +82,8 @@ And now let's deploy DEX:
 
 ```sh
 helm repo add dex https://charts.dexidp.io
-cat << EOF |
+cat << EOF_DEXDeploymentConfig |
 config:
-
     staticClients:
       - id: kube-bind
         redirectURIs:
@@ -117,7 +118,7 @@ config:
         hash: "\$2a\$10\$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
         username: "admin"
         userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
-EOF
+EOF_DEXDeploymentConfig
 helm install \
     --create-namespace \
     --namespace idp \

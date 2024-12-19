@@ -304,3 +304,29 @@ verify: verify-modules verify-go-versions verify-imports verify-codegen verify-b
 .PHONY: help
 help: ## Show this help.
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+.PHONY: generate-cli-docs
+generate-cli-docs: ## Generate cli docs
+	git clean -fdX docs/content/reference/cli
+	pushd . && cd docs/generators/cli-doc && go build . && popd
+	./docs/generators/cli-doc/cli-doc -output docs/content/reference/cli
+
+.PHONY: generate-api-docs
+generate-api-docs: ## Generate api docs
+	git clean -fdX docs/content/reference/api
+	docs/generators/crd-ref/run-crd-ref-gen.sh
+
+VENVDIR=$(abspath docs/venv)
+REQUIREMENTS_TXT=docs/requirements.txt
+
+.PHONY: serve-docs
+serve-docs: venv ## Serve docs
+	. $(VENV)/activate; \
+	VENV=$(VENV) REMOTE=$(REMOTE) BRANCH=$(BRANCH) docs/scripts/serve-docs.sh
+
+.PHONY: deploy-docs
+deploy-docs: venv ## Deploy docs
+	. $(VENV)/activate; \
+	REMOTE=$(REMOTE) BRANCH=$(BRANCH) docs/scripts/deploy-docs.sh
+
+include Makefile.venv

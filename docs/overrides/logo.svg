@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--part of the rodentia icon theme by sixsixfive released under CC0 (https://creativecommons.org/publicdomain/zero/1.0/) on openclipart-->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 48 48">
+ <defs id="0">
+  <linearGradient id="2">
+   <stop id="J" stop-color="#2e3436"/>
+   <stop id="K" offset="1" stop-color="#2e3436" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="3">
+   <stop id="L" stop-color="#555753"/>
+   <stop id="M" offset="1" stop-color="#eeeeec"/>
+  </linearGradient>
+  <linearGradient id="4">
+   <stop id="N" stop-color="#fff" stop-opacity="0.8"/>
+   <stop id="O" offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="5">
+   <stop id="P" stop-color="#fff"/>
+   <stop id="Q" offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="6">
+   <stop id="R" stop-color="#888a85"/>
+   <stop id="S" offset="1" stop-color="#eeeeec"/>
+  </linearGradient>
+  <linearGradient id="7">
+   <stop id="T" stop-color="#eeeeec"/>
+   <stop id="U" offset="1" stop-color="#babdb6"/>
+  </linearGradient>
+  <linearGradient id="8">
+   <stop id="V" stop-color="#eeeeec"/>
+   <stop id="W" offset="1" stop-color="#d3d7cf"/>
+  </linearGradient>
+  <radialGradient cx="23.533" cy="47.03" r="20.702" id="9" xlink:href="#2" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1,0,0,0.12393161,0,41.198715)"/>
+  <linearGradient x1="2.803" y1="1006.69" x2="44.803" y2="1048.69" id="A" xlink:href="#7" gradientUnits="userSpaceOnUse" gradientTransform="translate(-3.2562639e-8,-0.17738592)"/>
+  <linearGradient x1="-7.669" y1="-31.828" x2="30.3" y2="35.36" id="B" xlink:href="#5" gradientUnits="userSpaceOnUse" gradientTransform="translate(-3.2562639e-8,1004.1848)"/>
+  <radialGradient cx="13.41" cy="1018.65" r="16.469" id="C" xlink:href="#8" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.11333694,-2.6235279,1.9433962,0.08395509,-1966.9313,967.11321)"/>
+  <linearGradient y1="1011.25" x2="0" y2="1044.13" id="D" xlink:href="#4" gradientUnits="userSpaceOnUse"/>
+  <linearGradient x1="92.25" y1="34.406" x2="96.57" y2="53.03" id="E" xlink:href="#3" gradientUnits="userSpaceOnUse"/>
+  <linearGradient y1="35.3" x2="0" y2="52.12" id="F" xlink:href="#6" gradientUnits="userSpaceOnUse"/>
+  <linearGradient x1="7.344" y1="-17.881" x2="16.752" y2="33.971" id="G" xlink:href="#5" gradientUnits="userSpaceOnUse" gradientTransform="translate(-3.2562639e-8,1004.1848)"/>
+  <linearGradient y1="1006.66" x2="0" y2="1048.72" id="H" xlink:href="#4" gradientUnits="userSpaceOnUse"/>
+ </defs>
+ <g transform="translate(0,-1004.3622)" id="1">
+  <g transform="translate(-3.2562639e-8,-0.08868592)" id="I">
+   <path d="m 44.235294,47.026825 a 20.702118,2.5656469 0 1 1 -41.4042355,0 20.702118,2.5656469 0 1 1 41.4042355,0 z" transform="matrix(1.1593017,0,0,1,-3.2820514,1001.6843)" id="X" opacity="0.547" fill="url(#9)"/>
+   <g transform="translate(0.1875,0)" id="Y">
+    <path d="m 8.59375,1005.625 c -3.7845389,0 -6.84375,3.0973 -6.84375,6.875 l 0,30.4062 c 0,3.7778 3.066091,6.8438 6.84375,6.8438 l 30.40625,0 c 3.777659,0 6.875,-3.0591 6.875,-6.8438 l 0,-30.4062 c 0,-3.7845 -3.090461,-6.875 -6.875,-6.875 l -30.40625,0 z" id="Z" fill="#888a85"/>
+    <rect width="42" height="42" x="2.803" y="1006.51" id="a" fill="url(#A)" rx="5.8"/>
+    <path d="m 8,1006.5285 c -2.9317896,0.296 -5.1875,2.7689 -5.1875,5.7813 l 0,16.7188 c 12.392166,-4.6867 26.721909,-7.1912 42,-8.5938 l 0,-8.125 c 0,-3.2132 -2.5993,-5.7813 -5.8125,-5.7813 l -30.40625,0 c -0.200825,0 -0.3982974,-0.02 -0.59375,0 z" id="b" fill="url(#B)"/>
+    <path d="m 8.59375,1010.1562 c -1.3459316,0 -2.3125,0.9754 -2.3125,2.3438 l 0,30.4062 c 0,1.3686 0.9440833,2.3126 2.3125,2.3126 l 30.40625,0 c 1.368417,0 2.34375,-0.9665 2.34375,-2.3126 l 0,-30.4062 c 0,-1.3459 -0.997819,-2.3438 -2.34375,-2.3438 l -30.40625,0 z" id="c" fill="#888a85"/>
+    <path d="m 8.59375,1011.2188 c -0.8344725,0 -1.25,0.4113 -1.25,1.2812 l 0,30.4062 c 0,0.8819 0.3683925,1.25 1.25,1.25 l 30.40625,0 c 0.870004,0 1.28125,-0.4151 1.28125,-1.25 l 0,-30.4062 c 0,-0.8227 -0.458576,-1.2813 -1.28125,-1.2812 l -30.40625,0 z" id="d" fill="url(#C)"/>
+    <path d="m 8.59375,1011.75 c -0.5793863,0 -0.71875,0.1287 -0.71875,0.75 l 0,30.4062 c 0,0.6392 0.079935,0.7188 0.71875,0.7188 l 30.40625,0 c 0.621424,0 0.75,-0.1389 0.75,-0.7188 l 0,-30.4062 c 0,-0.5617 -0.188297,-0.75 -0.75,-0.75 l -30.40625,0 z" id="e" opacity="0.8" fill="none" stroke="url(#D)"/>
+    <path d="m 101.90625,34.40625 c -5.302279,0 -9.65625,4.152408 -9.65625,9.3125 0,5.160092 4.353971,9.3125 9.65625,9.3125 5.30228,0 9.625,-4.156519 9.625,-9.3125 0,-5.155981 -4.32272,-9.3125 -9.625,-9.3125 z" transform="matrix(1.1443637,0,0,1.1892407,-92.791283,975.70198)" id="f" fill="url(#E)"/>
+    <path d="m 110.63247,43.7132 a 8.7384806,8.4087267 0 1 1 -17.476961,0 8.7384806,8.4087267 0 1 1 17.476961,0 z" transform="matrix(1.1443637,0,0,1.1892407,-92.791283,975.52459)" id="g" fill="url(#F)"/>
+    <g transform="translate(0.50024999,0.32260697)" id="h">
+     <path d="m 110.63247,43.7132 a 8.7384806,8.4087267 0 1 1 -17.476961,0 8.7384806,8.4087267 0 1 1 17.476961,0 z" transform="matrix(0.22887274,0,0,0.23784814,-5.0087566,1016.7904)" id="k" fill="#2e3436"/>
+     <path d="m 110.63247,43.7132 a 8.7384806,8.4087267 0 1 1 -17.476961,0 8.7384806,8.4087267 0 1 1 17.476961,0 z" transform="matrix(0.22887274,0,0,0.23784814,4.9917432,1016.7904)" id="l" fill="#2e3436"/>
+    </g>
+    <path d="m 8.59375,1011.0285 c -0.8344725,0 -1.25,0.4114 -1.25,1.2813 l 0,15.5 c 1.8164014,-0.5498 3.676342,-1.0889 5.53125,-1.5937 0.652357,-5.5108 5.312442,-9.7813 10.9375,-9.7813 3.930123,0 7.388814,2.0858 9.34375,5.2187 2.404037,-0.445 4.771682,-0.8755 7.125,-1.25 l 0,-8.0937 c 0,-0.8227 -0.458576,-1.2813 -1.28125,-1.2813 l -30.40625,0 z" id="i" opacity="0.6" fill="url(#G)"/>
+    <path d="m 8.59375,1007.1562 c -2.9575186,0 -5.3125,2.3832 -5.3125,5.3438 l 0,30.4062 c 0,2.9608 2.3519026,5.3126 5.3125,5.3126 l 30.40625,0 c 2.960597,0 5.34375,-2.3549 5.34375,-5.3126 l 0,-30.4062 c 0,-2.9575 -2.386231,-5.3437 -5.34375,-5.3438 l -30.40625,0 z" id="j" opacity="0.8" fill="none" stroke="url(#H)"/>
+   </g>
+  </g>
+ </g>
+</svg>

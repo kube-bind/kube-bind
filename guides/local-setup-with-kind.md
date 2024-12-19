@@ -15,6 +15,7 @@ To start, you'll need following tools available in your system or a VM:
 * [`kubectl`](https://kubernetes.io/docs/tasks/tools/)
 * [`kubectl-bind`](https://github.com/kube-bind/kube-bind/releases/latest) (a kubectl plugin)
 * [`helm`](https://helm.sh/docs/intro/quickstart/)
+* [`jq`](https://jqlang.github.io/jq/download/)
 
 > Tip: In case of encountering `Too many open files` error when deploying the Kind clusters, run following commands:
 >
@@ -23,7 +24,7 @@ To start, you'll need following tools available in your system or a VM:
 > sudo sysctl fs.inotify.max_user_instances=512
 > ```
 >
-> See [https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files] for more details.
+> See https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files for more details.
 
 ## Backend cluster
 

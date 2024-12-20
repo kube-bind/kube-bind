@@ -13,6 +13,10 @@ on:
       - ".github/ISSUE_TEMPLATE/*"
       - ".goreleaser.yaml"
       - "contrib/manifests/**"
+  push:
+    tags:
+    - 'v*'
+
 
 jobs:
   go-test-e2e:

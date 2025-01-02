@@ -1,6 +1,8 @@
 module github.com/kube-bind/kube-bind/sdk/kcp
 
-go 1.23.4
+go 1.23.0
+
+toolchain go1.23.4
 
 require (
 	github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20240817110845-a9eb9752bfeb

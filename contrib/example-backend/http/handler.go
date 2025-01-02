@@ -146,7 +146,7 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(bs) // nolint:errcheck
+	w.Write(bs) //nolint:errcheck
 }
 
 // prepareNoCache prepares headers for preventing browser caching.
@@ -325,7 +325,7 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-	w.Write(bs.Bytes()) // nolint:errcheck
+	w.Write(bs.Bytes()) //nolint:errcheck
 }
 
 func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {

@@ -84,7 +84,6 @@ func NewController(
 		),
 	}
 
-	// nolint:errcheck
 	indexers.AddIfNotPresentOrDie(serviceBindingInformer.Informer().GetIndexer(), cache.Indexers{
 		indexers.ByServiceBindingKubeconfigSecret: indexers.IndexServiceBindingByKubeconfigSecret,
 	})

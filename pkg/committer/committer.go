@@ -30,14 +30,14 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// Resource is a generic wrapper around resources so we can generate patches
+// Resource is a generic wrapper around resources so we can generate patches.
 type Resource[Sp any, St any] struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              Sp `json:"spec"`
 	Status            St `json:"status,omitempty"`
 }
 
-// Patcher is just the Patch API with a generic to keep use sites type safe
+// Patcher is just the Patch API with a generic to keep use sites type safe.
 type Patcher[R any] interface {
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (R, error)
 }

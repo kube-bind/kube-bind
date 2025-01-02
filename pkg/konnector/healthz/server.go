@@ -20,6 +20,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -45,9 +46,11 @@ func NewServer() (*Server, error) {
 func (s *Server) Start(ctx context.Context) {
 	s.Router.Handle("/healthz", s.Checker)
 	server := &http.Server{
-		Handler: s.Router,
+		Handler:           s.Router,
+		ReadHeaderTimeout: 1 * time.Minute,
 	}
 	go func() {
+		//nolint:gosec
 		listener, err := net.Listen("tcp", listenAddr)
 		if err != nil {
 			panic(err)
@@ -56,7 +59,7 @@ func (s *Server) Start(ctx context.Context) {
 		log := klog.FromContext(ctx)
 		log.Info("healthz endpoint listening", "address", listener.Addr())
 
-		server.Serve(listener) //nolint: errcheck
+		server.Serve(listener) //nolint:errcheck
 	}()
 	go func() {
 		<-ctx.Done()

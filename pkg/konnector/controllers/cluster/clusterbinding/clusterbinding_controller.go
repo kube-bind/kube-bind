@@ -330,7 +330,7 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 	}
 
 	// start the heartbeat
-	// nolint:errcheck
+	//nolint:errcheck
 	wait.PollUntilContextCancel(ctx, c.heartbeatInterval/2, false, func(ctx context.Context) (bool, error) {
 		c.queue.Add(c.providerNamespace + "/cluster")
 		return false, nil

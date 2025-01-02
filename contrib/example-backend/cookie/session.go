@@ -64,7 +64,8 @@ func Decode(data string) (*SessionState, error) {
 // The Compress:Decompress ratio is 1:Many. LZ4 gives fastest decompress speeds
 // at the expense of greater compression compared to other compression
 // algorithms.
-// nolint: unused
+//
+//nolint:unused
 func lz4Compress(payload []byte) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	zw := lz4.NewWriter(nil)
@@ -93,7 +94,8 @@ func lz4Compress(payload []byte) ([]byte, error) {
 }
 
 // lz4Decompress decompresses with LZ4
-// nolint: unused
+//
+//nolint:unused
 func lz4Decompress(compressed []byte) ([]byte, error) {
 	reader := bytes.NewReader(compressed)
 	buf := new(bytes.Buffer)

@@ -122,7 +122,7 @@ func ClearClusterNs(obj *unstructured.Unstructured, clusterNs string) error {
 }
 
 // TranslateFromDownstream mutates a cluster-scoped object in place by injecting the cluster namespace
-// and switching to its corresponding upstream name
+// and switching to its corresponding upstream name.
 func TranslateFromDownstream(obj *unstructured.Unstructured, clusterNs, clusterNsUID string) error {
 	copy := obj.DeepCopy()
 	err := InjectClusterNs(copy, clusterNs, clusterNsUID)
@@ -135,7 +135,7 @@ func TranslateFromDownstream(obj *unstructured.Unstructured, clusterNs, clusterN
 }
 
 // TranslateFromUpstream mutates a cluster-scoped object in place by clearing the injected cluster namespace
-// and switching to its corresponding downstream name
+// and switching to its corresponding downstream name.
 func TranslateFromUpstream(obj *unstructured.Unstructured) error {
 	clusterNs, err := ExtractClusterNs(obj)
 	if err != nil {

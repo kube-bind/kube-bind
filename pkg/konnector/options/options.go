@@ -83,7 +83,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 
 func (options *Options) Complete() (*CompletedOptions, error) {
 	if options.LeaseLockIdentity == "" {
-		options.LeaseLockIdentity = fmt.Sprintf("%d", rand.Int31())
+		options.LeaseLockIdentity = fmt.Sprintf("%d", rand.Int31()) //nolint:gosec
 	}
 
 	return &CompletedOptions{

@@ -90,9 +90,9 @@ func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVar(&b.DowngradeKonnector, "downgrade-konnector", b.DowngradeKonnector, "Downgrade the konnector to the version of the kubectl-bind-apiservice binary")
 	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
-	cmd.Flags().MarkHidden("konnector-image") // nolint:errcheck
+	cmd.Flags().MarkHidden("konnector-image") //nolint:errcheck
 	cmd.Flags().BoolVar(&b.NoBanner, "no-banner", b.NoBanner, "Do not show the red banner")
-	cmd.Flags().MarkHidden("no-banner") // nolint:errcheck
+	cmd.Flags().MarkHidden("no-banner") //nolint:errcheck
 }
 
 // Complete ensures all fields are initialized.
@@ -144,7 +144,7 @@ func (b *BindAPIServiceOptions) Validate() error {
 
 // Run starts the binding process.
 func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
-	// nolint: staticcheck
+	//nolint:staticcheck
 	config, err := b.Options.ClientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -178,7 +178,7 @@ func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
 		return err
 	}
 
-	fmt.Fprintln(b.Options.ErrOut) // nolint: errcheck
+	fmt.Fprintln(b.Options.ErrOut) //nolint:errcheck
 	return b.printTable(ctx, config, bindings)
 }
 
@@ -236,7 +236,7 @@ func (b *BindAPIServiceOptions) getRequestManifest() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get %s: %w", b.url, err)
 		}
-		defer resp.Body.Close() // nolint: errcheck
+		defer resp.Body.Close() //nolint:errcheck
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read response body: %w", err)

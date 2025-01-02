@@ -211,7 +211,7 @@ func (r *reconciler) ensureDownstreamFinalizer(ctx context.Context, obj *unstruc
 func (r *reconciler) removeDownstreamFinalizer(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	logger := klog.FromContext(ctx)
 
-	var finalizers []string
+	finalizers := []string{}
 	found := false
 	for _, f := range obj.GetFinalizers() {
 		if f == kubebindv1alpha1.DownstreamFinalizer {

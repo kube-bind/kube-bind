@@ -117,7 +117,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(_ context.Context, binding *kub
 		)
 		return nil
 	}
-	if _, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig)); err != nil {
+	if _, err := clientcmd.RESTConfigFromKubeConfig(kubeconfig); err != nil {
 		conditions.MarkFalse(
 			binding,
 			kubebindv1alpha1.APIServiceBindingConditionSecretValid,

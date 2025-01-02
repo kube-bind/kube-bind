@@ -74,7 +74,7 @@ func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha1.
 			"CustomResourceDefinition %s cannot be converted into a APIServiceExport: %s",
 			export.Name, err,
 		)
-		return false, nil //nothing we can do
+		return false, nil // nothing we can do
 	}
 
 	if hash := kubebindhelpers.APIServiceExportCRDSpecHash(expected); export.Annotations[kubebindv1alpha1.SourceSpecHashAnnotationKey] != hash {

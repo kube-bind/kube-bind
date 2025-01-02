@@ -21,6 +21,7 @@ import (
 )
 
 const (
+	//nolint:gosec
 	ByServiceBindingKubeconfigSecret = "byKubeconfigSecret"
 )
 

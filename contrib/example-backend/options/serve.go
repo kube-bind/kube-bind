@@ -41,9 +41,9 @@ func NewServe() *Serve {
 
 func (options *Serve) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.ListenIP, "listen-ip", options.ListenIP, "The host IP where the backend is running")
-	fs.MarkDeprecated("listen-ip", "Use listen-address instead") // nolint: errcheck
+	fs.MarkDeprecated("listen-ip", "Use listen-address instead") //nolint:errcheck
 	fs.IntVar(&options.ListenPort, "listen-port", options.ListenPort, "The host port where the backend is running")
-	fs.MarkDeprecated("listen-port", "Use listen-address instead") // nolint: errcheck
+	fs.MarkDeprecated("listen-port", "Use listen-address instead") //nolint:errcheck
 	fs.StringVar(&options.ListenAddress, "listen-address", options.ListenAddress, "The address where the backend should be listening on, defaults to 127.0.0.1:8080.")
 	fs.StringVar(&options.CertFile, "tls-cert-file", options.CertFile, "The TLS certificate file the webserver will use.")
 	fs.StringVar(&options.KeyFile, "tls-key-file", options.KeyFile, "The TLS private key file the webserver will use.")

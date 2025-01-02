@@ -43,7 +43,7 @@ const (
 	konnectorImage = "ghcr.io/kube-bind/konnector"
 )
 
-// nolint: unused
+//nolint:unused
 func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *rest.Config) error {
 	logger := klog.FromContext(ctx)
 
@@ -70,7 +70,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 	}
 
 	if b.KonnectorImageOverride != "" {
-		fmt.Fprintf(b.Options.ErrOut, "🚀 Deploying konnector %s to namespace kube-bind with custom image %q.\n", bindVersion, b.KonnectorImageOverride) // nolint: errcheck
+		fmt.Fprintf(b.Options.ErrOut, "🚀 Deploying konnector %s to namespace kube-bind with custom image %q.\n", bindVersion, b.KonnectorImageOverride) //nolint:errcheck
 		if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, b.KonnectorImageOverride); err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 		konnectorImage := fmt.Sprintf("%s:%s", konnectorImage, bindVersion)
 
 		if installed && (konnectorVersion == "unknown" || konnectorVersion == "latest") {
-			fmt.Fprintf(b.Options.ErrOut, "ℹ️ konnector of %s version already installed, skipping\n", konnectorVersion) // nolint: errcheck
+			fmt.Fprintf(b.Options.ErrOut, "ℹ️ konnector of %s version already installed, skipping\n", konnectorVersion) //nolint:errcheck
 			// fall through to CRD test
 		} else if installed {
 			konnectorSemVer, err := semver.Parse(strings.TrimLeft(konnectorVersion, "v"))
@@ -95,15 +95,15 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 				return fmt.Errorf("failed to parse kubectl-bind SemVer version %q: %w", bindVersion, err)
 			}
 			if bindSemVer.GT(konnectorSemVer) {
-				fmt.Fprintf(b.Options.ErrOut, "🚀 Updating konnector from %s to %s.\n", konnectorVersion, bindVersion) // nolint: errcheck
+				fmt.Fprintf(b.Options.ErrOut, "🚀 Updating konnector from %s to %s.\n", konnectorVersion, bindVersion) //nolint:errcheck
 				if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, konnectorImage); err != nil {
 					return err
 				}
 			} else if bindSemVer.LT(konnectorSemVer) {
-				fmt.Fprintf(b.Options.ErrOut, "⚠️ Newer konnector %s installed. To downgrade to %s use --downgrade-konnector.\n", konnectorVersion, bindVersion) // nolint: errcheck
+				fmt.Fprintf(b.Options.ErrOut, "⚠️ Newer konnector %s installed. To downgrade to %s use --downgrade-konnector.\n", konnectorVersion, bindVersion) //nolint:errcheck
 			}
 		} else {
-			fmt.Fprintf(b.Options.ErrOut, "🚀 Deploying konnector %s to namespace kube-bind.\n", bindVersion) // nolint: errcheck
+			fmt.Fprintf(b.Options.ErrOut, "🚀 Deploying konnector %s to namespace kube-bind.\n", bindVersion) //nolint:errcheck
 			if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, konnectorImage); err != nil {
 				return err
 			}
@@ -114,17 +114,17 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 		_, err := bindClient.KubeBindV1alpha1().APIServiceBindings().List(ctx, metav1.ListOptions{})
 		if err == nil {
 			if !first {
-				fmt.Fprintln(b.Options.IOStreams.ErrOut) // nolint: errcheck
+				fmt.Fprintln(b.Options.IOStreams.ErrOut) //nolint:errcheck
 			}
 			return true, nil
 		}
 
 		logger.V(2).Info("Waiting for APIServiceBindings to be served", "error", err, "host", bindClient.RESTClient())
 		if first {
-			fmt.Fprint(b.Options.IOStreams.ErrOut, "   Waiting for the konnector to be ready") // nolint: errcheck
+			fmt.Fprint(b.Options.IOStreams.ErrOut, "   Waiting for the konnector to be ready") //nolint:errcheck
 			first = false
 		} else {
-			fmt.Fprint(b.Options.IOStreams.ErrOut, ".") // nolint: errcheck
+			fmt.Fprint(b.Options.IOStreams.ErrOut, ".") //nolint:errcheck
 		}
 		return false, nil
 	})

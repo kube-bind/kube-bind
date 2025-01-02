@@ -32,7 +32,7 @@ import (
 
 var (
 	bindAPIServiceExampleUses = `
-	# bind to a remote API service. Use kubectl bind to create the APIServiceExportRequest interactively. 
+	# bind to a remote API service. Use kubectl bind to create the APIServiceExportRequest interactively.
 	%[1]s apiservice --remote-kubeconfig file -f apiservice-export-request.yaml
 
 	# bind to a remote API service via a request manifest from a https URL.
@@ -68,7 +68,7 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 
 			if !opts.NoBanner {
 				yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
-				fmt.Fprintf(streams.ErrOut, "%s\n\n", yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")) // nolint: errcheck
+				fmt.Fprintf(streams.ErrOut, "%s\n\n", yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")) //nolint:errcheck
 			}
 
 			return opts.Run(cmd.Context())

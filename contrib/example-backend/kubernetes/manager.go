@@ -133,13 +133,14 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 	// first look for ClusterBinding to get old secret name
 	kubeconfigSecretName := kuberesources.KubeconfigSecretName
 	cb, err := m.bindClient.KubeBindV1alpha1().ClusterBindings(ns).Get(ctx, kuberesources.ClusterBindingName, metav1.GetOptions{})
-	if err != nil && !errors.IsNotFound(err) {
-		return nil, err
-	} else if errors.IsNotFound(err) {
+	switch {
+	case errors.IsNotFound(err):
 		if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, "kubeconfig", m.providerPrettyName); err != nil {
 			return nil, err
 		}
-	} else {
+	case err != nil:
+		return nil, err
+	default:
 		logger.V(3).Info("Found existing ClusterBinding")
 		kubeconfigSecretName = cb.Spec.KubeconfigSecretRef.Name // reuse old name
 	}

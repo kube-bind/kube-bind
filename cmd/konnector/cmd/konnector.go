@@ -40,7 +40,7 @@ const LeaderElectionTimeout = 20 * time.Second
 func New(ctx context.Context) *cobra.Command {
 	ver, err := bindversion.BinaryVersion(componentbaseversion.Get().GitVersion)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to get version: %v\n", err) // nolint:errcheck
+		fmt.Fprintf(os.Stderr, "failed to get version: %v\n", err)
 		ver = "<unknown>"
 	}
 

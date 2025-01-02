@@ -63,13 +63,9 @@ OPENSHIFT_GOIMPORTS_BIN := openshift-goimports
 OPENSHIFT_GOIMPORTS := $(TOOLS_DIR)/$(OPENSHIFT_GOIMPORTS_BIN)-$(OPENSHIFT_GOIMPORTS_VER)
 export OPENSHIFT_GOIMPORTS # so hack scripts can use it
 
-GOLANGCI_LINT_VER := v1.61.0
+GOLANGCI_LINT_VER := v1.63.1
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_GOBIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
-
-STATICCHECK_VER := 2024.1.1
-STATICCHECK_BIN := staticcheck
-STATICCHECK := $(TOOLS_GOBIN_DIR)/$(STATICCHECK_BIN)-$(STATICCHECK_VER)
 
 GOTESTSUM_VER := v1.8.1
 GOTESTSUM_BIN := gotestsum
@@ -143,18 +139,14 @@ install: ## install binaries to GOBIN
 $(GOLANGCI_LINT):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 
-$(STATICCHECK):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) honnef.co/go/tools/cmd/staticcheck $(STATICCHECK_BIN) $(STATICCHECK_VER)
-
 $(LOGCHECK):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) sigs.k8s.io/logtools/logcheck $(LOGCHECK_BIN) $(LOGCHECK_VER)
 
 $(CODE_GENERATOR):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/kcp-dev/code-generator/v2 $(CODE_GENERATOR_BIN) $(CODE_GENERATOR_VER)
 
-lint: $(GOLANGCI_LINT) $(STATICCHECK) $(LOGCHECK) ## Run linters
-	$(GOLANGCI_LINT) run --timeout=10m --skip-dirs pkg/client ./...
-	$(STATICCHECK) -checks ST1019,ST1005 ./...
+lint: $(GOLANGCI_LINT) $(LOGCHECK) ## Run linters
+	$(GOLANGCI_LINT) run ./...
 .PHONY: lint
 
 vendor: ## Vendor the dependencies

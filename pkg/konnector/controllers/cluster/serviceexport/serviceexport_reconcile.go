@@ -303,7 +303,7 @@ func (r *reconciler) ensureCRDConditionsCopied(_ context.Context, export *kubebi
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		return nil //nothing to copy.
+		return nil // nothing to copy
 	}
 
 	exportIndex := map[conditionsapi.ConditionType]int{}

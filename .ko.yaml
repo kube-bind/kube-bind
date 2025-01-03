@@ -10,3 +10,7 @@ builds:
   dir: ./cmd/example-backend
   ldflags:
   - "{{ .Env.LDFLAGS }}"
+- id: example-backend-kcp
+  dir: ./contrib/example-backend-kcp/cmd/backend
+  ldflags:
+  - "{{ .Env.LDFLAGS }}"

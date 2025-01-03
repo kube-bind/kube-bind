@@ -58,6 +58,8 @@ type ExtraOptions struct {
 	// and will create in-memory kubeconfig from legacy secret token.
 	// TODO(mjudeikis): Move fully to TokenRequest api so this behaviour is default.
 	DevMode bool
+	// DevInit is used to determine if it should bootstrap itself. Required higher level of priviledged access.
+	DevInit bool
 }
 
 type completedOptions struct {
@@ -114,6 +116,9 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 
 	fs.BoolVar(&options.DevMode, "dev-mode", options.DevMode, "Use kubeconfig provided (assumes it is kcp-admin) and will create in-memory kubeconfig from legacy secret token")
 	fs.MarkHidden("dev-mode") // nolint: errcheck
+
+	fs.BoolVar(&options.DevInit, "dev-init", options.DevInit, "If true, will bootstrap itself. Required higher level of priviledged access")
+	fs.MarkHidden("dev-init") // nolint: errcheck
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {

@@ -121,3 +121,10 @@ codegen: crds
 .PHONY: imports
 imports: $(OPENSHIFT_GOIMPORTS)
 	$(OPENSHIFT_GOIMPORTS) -m github.com/kube-bind/kube-bind/contrib/example-backend-kcp
+
+run-docker-compose:
+	docker-compose  -f ./hack/docker-compose/docker-compose.yaml up --build
+
+rm-docker-compose:
+	docker-compose -f ./hack/docker-compose/docker-compose.yaml down -v
+	docker volume rm docker-compose_kcp_config docker-compose_kube_bind_data

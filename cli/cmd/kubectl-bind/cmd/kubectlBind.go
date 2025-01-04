@@ -70,5 +70,5 @@ func KubectlBindCommand() *cobra.Command {
 	}
 	bindCmd.AddCommand(apiserviceCmd)
 
-	return root
+	return bindCmd
 }

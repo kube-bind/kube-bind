@@ -203,10 +203,10 @@ spec:
 					}
 					require.NoError(t, err)
 					if resourceScope == apiextensionsv1.NamespaceScoped {
-						unstructured.SetNestedField(obj.Object, "Dedicated", "spec", "tier") // nolint: errcheck
+						unstructured.SetNestedField(obj.Object, "Dedicated", "spec", "tier") //nolint:errcheck
 						_, err = consumerClient.Namespace(downstreamNs).Update(ctx, obj, metav1.UpdateOptions{})
 					} else {
-						unstructured.SetNestedField(obj.Object, "tested", "spec", "deploymentName") // nolint: errcheck
+						unstructured.SetNestedField(obj.Object, "tested", "spec", "deploymentName") //nolint:errcheck
 						_, err = consumerClient.Update(ctx, obj, metav1.UpdateOptions{})
 					}
 					return err
@@ -249,7 +249,7 @@ spec:
 						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
 					}
 					require.NoError(t, err)
-					unstructured.SetNestedField(obj.Object, "Running", "status", "phase") // nolint: errcheck
+					unstructured.SetNestedField(obj.Object, "Running", "status", "phase") //nolint:errcheck
 					if resourceScope == apiextensionsv1.NamespaceScoped {
 						_, err = providerClient.Namespace(upstreamNS).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
 					} else {
@@ -287,10 +287,10 @@ spec:
 					}
 					require.NoError(t, err)
 					if resourceScope == apiextensionsv1.NamespaceScoped {
-						unstructured.SetNestedField(obj.Object, "Shared", "spec", "tier") // nolint: errcheck
+						unstructured.SetNestedField(obj.Object, "Shared", "spec", "tier") //nolint:errcheck
 						_, err = providerClient.Namespace(upstreamNS).Update(ctx, obj, metav1.UpdateOptions{})
 					} else {
-						unstructured.SetNestedField(obj.Object, "drifting", "spec", "deploymentName") // nolint: errcheck
+						unstructured.SetNestedField(obj.Object, "drifting", "spec", "deploymentName") //nolint:errcheck
 						_, err = providerClient.Update(ctx, obj, metav1.UpdateOptions{})
 					}
 					return err

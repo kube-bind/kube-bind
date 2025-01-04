@@ -398,7 +398,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 func (c *controller) removeDownstreamFinalizer(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	logger := klog.FromContext(ctx)
 
-	var finalizers []string
+	finalizers := []string{}
 	found := false
 	for _, f := range obj.GetFinalizers() {
 		if f == kubebindv1alpha1.DownstreamFinalizer {

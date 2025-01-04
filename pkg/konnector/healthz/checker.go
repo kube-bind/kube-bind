@@ -50,7 +50,7 @@ func (c checker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	json.NewEncoder(w).Encode(status) //nolint:errcheck
+	json.NewEncoder(w).Encode(status) //nolint:errchkjson,errcheck
 }
 
 func (c *checker) AddCheck(check healthz.HealthChecker) {

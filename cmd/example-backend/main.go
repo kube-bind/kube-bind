@@ -17,8 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
-	"os"
+	"context"
+	"log"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -33,17 +33,22 @@ import (
 )
 
 func main() {
-	ctx := genericapiserver.SetupSignalContext()
-	defer klog.Flush()
+	err := run(genericapiserver.SetupSignalContext())
+	klog.Flush()
 
+	if err != nil {
+		log.Fatalf("Error: %v", err)
+	}
+}
+
+func run(ctx context.Context) error {
 	options := options.NewOptions()
 	options.AddFlags(pflag.CommandLine)
 	pflag.Parse()
 
 	// setup logging first
 	if err := logsv1.ValidateAndApply(options.Logs, nil); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
-		os.Exit(1)
+		return err
 	}
 	ver := version.Get().GitVersion
 	if i := strings.Index(ver, "bind-"); i != -1 {
@@ -55,31 +60,28 @@ func main() {
 	// create server
 	completed, err := options.Complete()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
-		os.Exit(1)
+		return err
 	}
 	if err := completed.Validate(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
-		os.Exit(1)
+		return err
 	}
 
 	// start server
 	config, err := backend.NewConfig(completed)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
-		os.Exit(1)
+		return err
 	}
 	server, err := backend.NewServer(config)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
-		os.Exit(1)
+		return err
 	}
 	server.OptionallyStartInformers(ctx)
 	if err := server.Run(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
-		os.Exit(1)
+		return err
 	}
-	fmt.Printf("Listening on port %s\n", server.Addr())
+	log.Printf("Listening on %s\n", server.Addr())
 
 	<-ctx.Done()
+
+	return nil
 }

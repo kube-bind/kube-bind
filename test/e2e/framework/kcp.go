@@ -75,8 +75,8 @@ func WithGenerateName(s string, formatArgs ...interface{}) ClusterWorkspaceOptio
 		}
 
 		token := make([]byte, 4)
-		rand.Read(token) // nolint:errcheck
-		base36hash := strings.ToLower(base36.EncodeBytes(token[:]))
+		rand.Read(token) //nolint:errcheck
+		base36hash := strings.ToLower(base36.EncodeBytes(token))
 		ws.Name = s + base36hash[:5]
 		ws.GenerateName = ""
 	}
@@ -103,8 +103,8 @@ func NewWorkspace(t *testing.T, config *rest.Config, options ...ClusterWorkspace
 	ws.ObjectMeta.Name = ws.ObjectMeta.GenerateName
 	ws.ObjectMeta.GenerateName = ""
 	token := make([]byte, 4)
-	rand.Read(token) // nolint:errcheck
-	base36hash := strings.ToLower(base36.EncodeBytes(token[:]))
+	rand.Read(token) //nolint:errcheck
+	base36hash := strings.ToLower(base36.EncodeBytes(token))
 	ws.Name += base36hash[:5]
 
 	for _, opt := range options {
@@ -129,8 +129,8 @@ func NewWorkspace(t *testing.T, config *rest.Config, options ...ClusterWorkspace
 			return
 		}
 		require.NoError(t, err)
-		tenancyClient.Delete(ctx, ws) // nolint:errcheck
-		os.Remove(wsKubeconfigPath)   // nolint:errcheck
+		tenancyClient.Delete(ctx, ws) //nolint:errcheck
+		os.Remove(wsKubeconfigPath)
 	})
 
 	require.Eventually(t, func() bool {

@@ -17,12 +17,14 @@ limitations under the License.
 package resources
 
 const (
-	ServiceAccountTokenType       = "kubernetes.io/service-account-token"
+	//nolint:gosec
+	ServiceAccountTokenType = "kubernetes.io/service-account-token"
+	//nolint:gosec
 	ServiceAccountTokenAnnotation = "kubernetes.io/service-account.name"
 	ServiceAccountName            = "kube-binder"
 	KubeconfigSecretName          = "kubeconfig"
 	ClusterBindingName            = "cluster"
 
-	//TODO(MQ): maybe think of a better label name.
+	// TODO(MQ): maybe think of a better label name.
 	ExportedCRDsLabel = "kube-bind.io/exported"
 )

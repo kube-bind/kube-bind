@@ -273,10 +273,7 @@ func (c *controller) process(ctx context.Context, key string) error {
 		return err
 	} else if errors.IsNotFound(err) {
 		logger.Error(err, "APIServiceExport disappeared")
-		if err := c.reconcile(ctx, name, nil); err != nil {
-			return err
-		}
-		return nil
+		return c.reconcile(ctx, name, nil)
 	}
 
 	old := obj

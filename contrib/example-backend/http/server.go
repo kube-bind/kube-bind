@@ -21,6 +21,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -62,18 +63,19 @@ func (s *Server) Addr() net.Addr {
 
 func (s *Server) Start(ctx context.Context) error {
 	server := &http.Server{
-		Handler: s.Router,
+		Handler:           s.Router,
+		ReadHeaderTimeout: 1 * time.Minute,
 	}
 	go func() {
 		<-ctx.Done()
-		server.Close() // nolint:errcheck
+		server.Close()
 	}()
 
 	go func() {
 		if s.options.KeyFile == "" {
-			server.Serve(s.listener) // nolint:errcheck
+			server.Serve(s.listener) //nolint:errcheck
 		} else {
-			server.ServeTLS(s.listener, s.options.CertFile, s.options.KeyFile) // nolint:errcheck
+			server.ServeTLS(s.listener, s.options.CertFile, s.options.KeyFile) //nolint:errcheck
 		}
 	}()
 

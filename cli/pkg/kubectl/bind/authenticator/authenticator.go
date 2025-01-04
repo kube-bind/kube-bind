@@ -82,7 +82,7 @@ func (d *LocalhostCallbackAuthenticator) Start() error {
 	d.port = listener.Addr().(*net.TCPAddr).Port
 
 	go func() {
-		d.server.Serve(listener) // nolint: errcheck
+		d.server.Serve(listener) //nolint:errcheck
 	}()
 
 	return nil
@@ -115,7 +115,7 @@ func (d *LocalhostCallbackAuthenticator) callback(w http.ResponseWriter, r *http
 
 	select {
 	case <-d.done:
-		w.Write([]byte("Already authenticated")) // nolint: errcheck
+		w.Write([]byte("Already authenticated")) //nolint:errcheck
 		return
 	default:
 	}
@@ -142,5 +142,5 @@ func (d *LocalhostCallbackAuthenticator) callback(w http.ResponseWriter, r *http
 	d.responseGvk = gvk
 	close(d.done)
 
-	w.Write([]byte("<h1>You have been authenticated successfully! Please head back to the command line</h1>")) // nolint: errcheck
+	w.Write([]byte("<h1>You have been authenticated successfully! Please head back to the command line</h1>")) //nolint:errcheck
 }

@@ -82,7 +82,7 @@ type SubCommandInvocation struct {
 	Stdin      []byte
 }
 
-func BindAPIService(t *testing.T, Stdin []byte, positionalArg string, flags ...string) {
+func BindAPIService(t *testing.T, stdin []byte, positionalArg string, flags ...string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
@@ -92,7 +92,7 @@ func BindAPIService(t *testing.T, Stdin []byte, positionalArg string, flags ...s
 	}
 	t.Logf("kubectl bind apiservice %s", strings.Join(args, " "))
 
-	opts := bindapiserviceplugin.NewBindAPIServiceOptions(genericclioptions.IOStreams{In: bytes.NewReader(Stdin), Out: os.Stdout, ErrOut: os.Stderr})
+	opts := bindapiserviceplugin.NewBindAPIServiceOptions(genericclioptions.IOStreams{In: bytes.NewReader(stdin), Out: os.Stdout, ErrOut: os.Stderr})
 	cmd := &cobra.Command{}
 	opts.AddCmdFlags(cmd)
 	err := cmd.Flags().Parse(flags)

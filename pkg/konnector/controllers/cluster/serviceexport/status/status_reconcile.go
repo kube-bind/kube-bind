@@ -63,17 +63,16 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 	}
 
 	downstream, err := r.getConsumerObject(ns, obj.GetName())
-	if err != nil && !errors.IsNotFound(err) {
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// downstream is gone. Delete upstream too. Note that we cannot rely on the spec controller because
+			// due to konnector restart it might have missed the deletion event.
+			logger.Info("Deleting upstream object because downstream is gone", "downstreamNamespace", ns, "downstreamName", obj.GetName())
+			return r.deleteProviderObject(ctx, obj.GetNamespace(), obj.GetName())
+		}
+
 		logger.Info("failed to get downstream object", "error", err, "downstreamNamespace", ns, "downstreamName", obj.GetName())
 		return err
-	} else if errors.IsNotFound(err) {
-		// downstream is gone. Delete upstream too. Note that we cannot rely on the spec controller because
-		// due to konnector restart it might have missed the deletion event.
-		logger.Info("Deleting upstream object because downstream is gone", "downstreamNamespace", ns, "downstreamName", obj.GetName())
-		if err := r.deleteProviderObject(ctx, obj.GetNamespace(), obj.GetName()); err != nil {
-			return err
-		}
-		return nil
 	}
 
 	orig := downstream

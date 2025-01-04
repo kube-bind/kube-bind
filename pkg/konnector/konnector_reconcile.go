@@ -55,11 +55,12 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 
 	ref := binding.Spec.KubeconfigSecretRef
 	secret, err := r.getSecret(ref.Namespace, ref.Name)
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	} else if errors.IsNotFound(err) {
+	switch {
+	case errors.IsNotFound(err):
 		logger.V(2).Info("secret not found", "secret", ref.Namespace+"/"+ref.Name)
-	} else {
+	case err != nil:
+		return err
+	default:
 		kubeconfig = string(secret.Data[ref.Key])
 	}
 

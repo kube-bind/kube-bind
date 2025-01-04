@@ -102,7 +102,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.TLSExternalServerName, "external-server-name", options.TLSExternalServerName, "The external (TLS) server name used by consumers to talk to the service provider cluster. This can be useful to select the right certificate via SNI.")
 
 	fs.StringVar(&options.TestingAutoSelect, "testing-auto-select", options.TestingAutoSelect, "<resource>.<group> that is automatically selected on th bind screen for testing")
-	fs.MarkHidden("testing-auto-select") // nolint: errcheck
+	fs.MarkHidden("testing-auto-select") //nolint:errcheck
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {

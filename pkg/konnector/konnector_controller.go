@@ -130,7 +130,6 @@ func New(
 		),
 	}
 
-	// nolint:errcheck
 	indexers.AddIfNotPresentOrDie(serviceBindingInformer.Informer().GetIndexer(), cache.Indexers{
 		indexers.ByServiceBindingKubeconfigSecret: indexers.IndexServiceBindingByKubeconfigSecret,
 	})
@@ -243,9 +242,9 @@ func (c *Controller) enqueueSecret(logger klog.Logger, obj interface{}) {
 }
 
 // Start starts the konnector. It does block.
-func (k *Controller) Start(ctx context.Context, numThreads int) {
+func (c *Controller) Start(ctx context.Context, numThreads int) {
 	defer runtime.HandleCrash()
-	defer k.queue.ShutDown()
+	defer c.queue.ShutDown()
 
 	logger := klog.FromContext(ctx).WithValues("Controller", controllerName)
 
@@ -253,10 +252,10 @@ func (k *Controller) Start(ctx context.Context, numThreads int) {
 	defer logger.Info("Shutting down Controller")
 
 	for i := 0; i < numThreads; i++ {
-		go wait.UntilWithContext(ctx, k.startWorker, time.Second)
+		go wait.UntilWithContext(ctx, c.startWorker, time.Second)
 	}
 
-	go k.ServiceBindingCtrl.Start(ctx, numThreads)
+	go c.ServiceBindingCtrl.Start(ctx, numThreads)
 
 	<-ctx.Done()
 }

@@ -28,14 +28,14 @@ source "${CODEGEN_PKG}/kube_codegen.sh"
 
 pushd ./sdk/apis
 kube::codegen::gen_helpers \
-    --boilerplate "../../hack/boilerplate/boilerplate.go.txt" \
+    --boilerplate "../../hack/boilerplate/boilerplate.generatego.txt" \
     "."
 
 kube::codegen::gen_client \
     --with-watch \
     --output-dir "../client" \
     --output-pkg "github.com/kube-bind/kube-bind/sdk/client" \
-    --boilerplate "../../hack/boilerplate/boilerplate.go.txt" \
+    --boilerplate "../../hack/boilerplate/boilerplate.generatego.txt" \
     "."
 
 popd

@@ -19,6 +19,7 @@ GO_INSTALL = ./hack/go-install.sh
 
 ROOT_DIR=$(abspath .)
 TOOLS_DIR=hack/tools
+ROOT_DIR=$(abspath .)
 TOOLS_GOBIN_DIR := $(abspath $(TOOLS_DIR))
 GOBIN_DIR=$(abspath ./bin )
 PATH := $(GOBIN_DIR):$(TOOLS_GOBIN_DIR):$(PATH)

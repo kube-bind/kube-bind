@@ -25,6 +25,7 @@ import (
 	bootstrapconfig "github.com/kube-bind/kube-bind/contrib/example-backend-kcp/bootstrap/config/config"
 	bootstrapcore "github.com/kube-bind/kube-bind/contrib/example-backend-kcp/bootstrap/config/core"
 	bootstrapkubebind "github.com/kube-bind/kube-bind/contrib/example-backend-kcp/bootstrap/config/kube-bind"
+	bootstrapkubebindprovider "github.com/kube-bind/kube-bind/contrib/example-backend-kcp/bootstrap/config/kube-bind-provider"
 )
 
 type Server struct {
@@ -72,7 +73,18 @@ func (s *Server) Start(ctx context.Context) error {
 		s.Config.DynamicClusterClient,
 		fakeBatteries,
 	); err != nil {
-		logger.Error(err, "failed to bootstrap core workspace")
+		logger.Error(err, "failed to bootstrap workspace")
+		return nil // don't klog.Fatal. This only happens when context is cancelled.
+	}
+
+	if err := bootstrapkubebindprovider.Bootstrap(
+		ctx,
+		s.Config.KcpClusterClient,
+		s.Config.ApiextensionsClient,
+		s.Config.DynamicClusterClient,
+		fakeBatteries,
+	); err != nil {
+		logger.Error(err, "failed to bootstrap provider workspace")
 		return nil // don't klog.Fatal. This only happens when context is cancelled.
 	}
 

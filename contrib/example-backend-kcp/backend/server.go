@@ -75,6 +75,7 @@ func NewServer(ctx context.Context, config *Config) (*Server, error) {
 		config.Options.OIDC.IssuerClientSecret,
 		callback,
 		config.Options.OIDC.IssuerURL,
+		config.Options.OIDC.ExternalIssuerURL,
 		config.Options.OIDC.OIDCCAFile,
 	)
 	if err != nil {

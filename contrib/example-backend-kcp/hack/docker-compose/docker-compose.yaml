@@ -87,8 +87,8 @@ services:
       --oidc-issuer-client-secret=Z2Fyc2lha2FsYmlzdmFuZGVuekWplCg==
       --oidc-issuer-client-id=kcp-dev
       --oidc-issuer-url=https://dex:5556/dex
-      --oidc-callback-url=https://127.0.0.1:6444/callback
-      --oidc-authorize-url=https://127.0.0.1:6444/authorize
+      --oidc-callback-url=https://localhost:6444/callback
+      --oidc-authorize-url=https://localhost:6444/authorize
       --oidc-ca-file=/certs/dex.pem
       --pretty-name="CorpAAA.com"
       --namespace-prefix="kube-bind-"

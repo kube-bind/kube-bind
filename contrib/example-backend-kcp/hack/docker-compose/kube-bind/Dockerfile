@@ -29,7 +29,41 @@ WORKDIR /app
 COPY --from=builder /app/contrib/example-backend-kcp/kubebind /usr/local/bin/kubebind
 COPY --from=builder /app/contrib/example-backend-kcp/kubebind-bootstrap /usr/local/bin/kubebind-bootstrap
 
+# Install kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
+    && chmod +x kubectl \
+    && mv kubectl /usr/local/bin/kubectl
+
+# Install krew
+ENV KREW=/root/.krew
+
+RUN set -x \
+    && apk add --no-cache git \
+    && curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/krew-linux_amd64.tar.gz" \
+    && tar zxvf krew-linux_amd64.tar.gz \
+    && ./krew-linux_amd64 install krew \
+    && rm -rf krew-linux_amd64.tar.gz \
+    && mv /root/.krew/bin/kubectl-krew /usr/local/bin/kubectl-krew
+
+# Update PATH for krew plugins
 ENV PATH="${KREW}/bin:${PATH}"
+
+# Verify installations
+RUN kubectl version --client && kubectl krew version
+
+# Add krew plugin index and install desired plugins
+RUN kubectl krew index add kcp-dev https://github.com/kcp-dev/krew-index.git \
+    && kubectl krew install kcp-dev/kcp \
+    && kubectl krew install kcp-dev/ws \
+    && kubectl krew install kcp-dev/create-workspace
+
+RUN kubectl krew index add bind https://github.com/kube-bind/krew-index.git \
+    && kubectl krew install bind/bind
+
+# (Optional) Pre-install common krew plugins
+# RUN kubectl krew install ctx ns
+
+ENV KUBECONFIG=/kcp/config/.kcp/admin.kubeconfig
 
 # Expose Kube-Bind port
 EXPOSE 6444

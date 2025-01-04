@@ -53,6 +53,9 @@ RUN kubectl krew index add kcp-dev https://github.com/kcp-dev/krew-index.git \
     && kubectl krew install kcp-dev/ws \
     && kubectl krew install kcp-dev/create-workspace
 
+RUN kubectl krew index add bind https://github.com/kube-bind/krew-index.git \
+    && kubectl krew install bind/bind
+
 # (Optional) Pre-install common krew plugins
 # RUN kubectl krew install ctx ns
 

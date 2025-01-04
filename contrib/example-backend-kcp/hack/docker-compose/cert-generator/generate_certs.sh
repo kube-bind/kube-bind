@@ -15,6 +15,9 @@ mv ${CERT_NAME}.pem ${CERT_DIR}/${CERT_NAME}.pem
 mv ${CERT_NAME}.key ${CERT_DIR}/${CERT_NAME}.key
 mv ${CERT_NAME}.crt ${CERT_DIR}/${CERT_NAME}.crt
 
+chmod 644 ${CERT_DIR}/${CERT_NAME}.*
+
 echo "Certificates generated successfully at ${CERT_DIR}/"
+
 
 sleep infinity

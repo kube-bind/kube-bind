@@ -82,7 +82,7 @@ services:
       kubebind start
       -v 4
       --tls-cert-file=/certs/dex.pem
-      --tls-key-file=/certs/127.0.0.1.key.pem
+      --tls-key-file=/certs/dex.pem
       --listen-address=0.0.0.0:6444
       --oidc-issuer-client-secret=Z2Fyc2lha2FsYmlzdmFuZGVuekWplCg==
       --oidc-issuer-client-id=kcp-dev

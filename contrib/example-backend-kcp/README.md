@@ -52,7 +52,33 @@ bin/backend start \
 
 3. Try example `mangodb` as consumer.
 
-TODO(mjudeikis)
+Exec init `kube-bind` backend:
+
+```
+docker exec -it docker-compose-kube-bind-1 sh
+
+kubectl ws create mangodb --enter
+kubectl kcp bind apiexport root:kube-bind:kube-bind.io --name kube-bind.io
+```
+
+Create crd for mangodb:
+```
+kubectl create -f https://raw.githubusercontent.com/kube-bind/kube-bind/refs/heads/main/deploy/examples/crd-mangodb.yaml
+```
+
+At this point you will need to restart kube-bind backend to get it running.
+TODO(mjudeikis): Fix this.
+
+From outside create separete kind cluster to be consumer
+
+```
+kubectl bind --insecure-skip-tls-verify  https://0.0.0.0:6444/export
+```
+
+
+
+
+
 
 
 # Raodmap & limitations

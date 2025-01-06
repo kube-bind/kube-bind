@@ -33,8 +33,8 @@ spec:
     schema:
       openAPIV3Schema:
         description: |-
-          ClusterBinding represents a bound consumer class. It lives in a service provider cluster
-          and is a singleton named "cluster".
+          ClusterBinding represents a bound consumer cluster. It lives in a service
+          provider cluster and is a singleton named "cluster" per namespace.
         properties:
           apiVersion:
             description: |-

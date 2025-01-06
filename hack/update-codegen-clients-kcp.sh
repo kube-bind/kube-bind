@@ -23,7 +23,7 @@ export GOPATH=$(go env GOPATH)
 
 SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
 pushd "${SCRIPT_ROOT}"
-BOILERPLATE_HEADER="$( pwd )/hack/boilerplate/boilerplate.go.txt"
+BOILERPLATE_HEADER="$( pwd )/hack/boilerplate/boilerplate.generatego.txt"
 popd
 CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; go list -f '{{.Dir}}' -m k8s.io/code-generator)}
 OPENAPI_PKG=${OPENAPI_PKG:-$(cd "${SCRIPT_ROOT}"; go list -f '{{.Dir}}' -m k8s.io/kube-openapi)}

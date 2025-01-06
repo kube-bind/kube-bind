@@ -18,6 +18,7 @@ SHELL := /usr/bin/env bash -e
 GO_INSTALL = ./hack/go-install.sh
 
 TOOLS_DIR=hack/tools
+ROOT_DIR=$(abspath .)
 TOOLS_GOBIN_DIR := $(abspath $(TOOLS_DIR))
 GOBIN_DIR=$(abspath ./bin )
 PATH := $(GOBIN_DIR):$(TOOLS_GOBIN_DIR):$(PATH)
@@ -124,7 +125,11 @@ require-%:
 
 build: WHAT ?= ./cmd/... ./cli/cmd/...
 build: require-jq require-go require-git verify-go-versions ## Build the project
-	GOOS=$(OS) GOARCH=$(ARCH) go build $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o bin/ $(WHAT)
+	set -x; for W in $(WHAT); do \
+		pushd . && cd $${W%..}; \
+    	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(ROOT_DIR)/bin ./...; \
+		popd; \
+    done
 .PHONY: build
 
 .PHONY: build-all

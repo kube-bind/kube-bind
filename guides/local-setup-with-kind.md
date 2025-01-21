@@ -17,6 +17,8 @@ To start, you'll need following tools available in your system or a VM:
 * [`helm`](https://helm.sh/docs/intro/quickstart/)
 * [`jq`](https://jqlang.github.io/jq/download/)
 
+To install `kubectl-bind` plugin, please download the archive for your platform from the link above, extract it, and place the `kubectl-bind` executable in your system's `$PATH`.
+
 > Tip: In case of encountering `Too many open files` error when deploying the Kind clusters, run following commands:
 >
 > ```sh

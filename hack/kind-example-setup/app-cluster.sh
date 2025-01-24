@@ -17,7 +17,7 @@
 # This script ensures that the generated client code checked into git is up-to-date
 # with the generator. If it is not, re-generate the configuration to update it.
 
-set -o errexit
+
 set -o nounset
 set -o pipefail
 

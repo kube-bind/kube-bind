@@ -34,7 +34,7 @@ import (
 
 var (
 	// TODO: add other examples related to permission claim commands.
-	bindExampleUses = `
+	BindExampleUses = `
 	# select a kube-bind.io compatible service from the given URL, e.g. an API service.
 	%[1]s bind https://mangodb.com/exports
 
@@ -63,7 +63,7 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 		To bind a remote service, use the 'kubectl bind' command.
 		Please check the examples below for more information.
 	`),
-		Example:      fmt.Sprintf(bindExampleUses, "kubectl"),
+		Example:      fmt.Sprintf(BindExampleUses, "kubectl"),
 		SilenceUsage: true,
 		Args: func(cmd *cobra.Command, args []string) error {
 			for _, arg := range args {

@@ -17,6 +17,7 @@ func TestKubectlBindCommand(t *testing.T) {
 	require.Contains(t, rootCmd.Long, "To bind a remote service, use the 'kubectl bind' command.", "Unexpected lond command Long")
 	require.Equal(t, rootCmd.Example, fmt.Sprintf(bindcmd.BindExampleUses, "kubectl"), "Unexpected command Example")
 }
+
 func TestKubectlBindArgs(t *testing.T) {
 	tests := []struct {
 		name    string

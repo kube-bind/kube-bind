@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	bindcmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/cmd"
-
 	"github.com/stretchr/testify/require"
+
+	bindcmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/cmd"
 )
 
 func TestKubectlBindCommand(t *testing.T) {

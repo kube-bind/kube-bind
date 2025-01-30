@@ -23,13 +23,12 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
+	"github.com/kube-bind/kube-bind/cli/pkg/help"
+	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/plugin"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/exec"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	logsv1 "k8s.io/component-base/logs/api/v1"
-
-	"github.com/kube-bind/kube-bind/cli/pkg/help"
-	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/plugin"
 )
 
 var (
@@ -52,7 +51,7 @@ var (
 func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	opts := plugin.NewBindOptions(streams)
 	cmd := &cobra.Command{
-		Use:   "kubectl-bind",
+		Use:   "bind",
 		Short: "kubectl plugin for Kube-Bind.io, bind different remote types into the current cluster.",
 		Long: help.Doc(`
 		kube-bind is a project that aims to provide better support for

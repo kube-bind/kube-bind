@@ -37,7 +37,7 @@ theme:
 
   # Palette toggle for light mode
   - media: "(prefers-color-scheme: light)"
-    scheme: default 
+    scheme: default
     primary: white
     toggle:
       icon: material/brightness-7
@@ -97,7 +97,11 @@ markdown_extensions:
   # Lets you embed content from another file
   - pymdownx.snippets
   # Arbitrary nesting of code/content blocks inside each other
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   # Enable note/warning/etc. callouts
   - admonition
 

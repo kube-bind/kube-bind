@@ -3,4 +3,5 @@ nav:
     - index.md
   - Setup: setup
   - Contributing: contributing
+  - Developers: developers
   - Reference: reference

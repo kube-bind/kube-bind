@@ -6,18 +6,18 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Bind different remote types into the current cluster.
+        <meta name="description" content="Bind to a remote API service
 ">
       
       
       
-        <link rel="canonical" href="https://docs.kube-bind.io/main/reference/cli/bind_bind/">
+        <link rel="canonical" href="https://docs.kube-bind.io/main/reference/cli/bind_apiservice/">
       
       
         <link rel="prev" href="../bind/">
       
       
-        <link rel="next" href="../bind_bind_apiservice/">
+        <link rel="next" href="../../crd/kube-bind.io/apiservicebindings/">
       
       
       <link rel="icon" href="../../../favicons/favicon.ico">
@@ -25,7 +25,7 @@
     
     
       
-        <title>bind bind - docs.kube-bind.io</title>
+        <title>bind apiservice - docs.kube-bind.io</title>
       
     
     
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              bind bind
+              bind apiservice
             
           </span>
         </div>
@@ -701,8 +701,6 @@
       
         
       
-        
-      
     
     
       
@@ -773,7 +771,7 @@
           
   
   <span class="md-ellipsis">
-    bind bind
+    bind apiservice
   </span>
   
 
@@ -784,7 +782,7 @@
         
   
   <span class="md-ellipsis">
-    bind bind
+    bind apiservice
   </span>
   
 
@@ -843,27 +841,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../bind_bind_apiservice/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    bind bind apiservice
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -1179,22 +1156,19 @@
   
 
 
-  <h1>bind bind</h1>
+  <h1>bind apiservice</h1>
 
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>bind bind [flags]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>bind apiservice https://&lt;url-to-a-APIServiceExportRequest&gt;|-f &lt;file-to-a-APIBindingRequest&gt; [flags]
 </code></pre></div>
 <h3 id="examples">Examples</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    # select a kube-bind.io compatible service from the given URL, e.g. an API service.
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    kubectl bind https://mangodb.com/exports
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    # bind to a remote API service. Use kubectl bind to create the APIServiceExportRequest interactively.
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    kubectl bind apiservice --remote-kubeconfig file -f apiservice-export-request.yaml
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    # authenticate and configure the services to bind, but don&#39;t actually bind them.
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    kubectl bind https://mangodb.com/exports --dry-run -o yaml &gt; apiservice-export-requests.yaml
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    # bind to a remote API service via a request manifest from a https URL.
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    kubectl bind apiservice --remote-kubeconfig file https://some-url.com/apiservice-export-requests.yaml
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    # bind to a remote API service as configured above and actually bind to it, e.g. in GitOps automation.
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    kubectl bind apiservice --remote-kubeconfig name -f apiservice-binding-requests.yaml
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    # bind to a remote API service via a request manifest from a https URL.
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    kubectl bind apiservice --remote-kubeconfig name https://some-url.com/apiservice-export-requests.yaml
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    # bind to a API service directly without any remote agent or service provider.
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    kubectl bind apiservice --remote-kubeconfig file -n remote-namespace resources.group/v1
 </code></pre></div>
 <h3 id="options">Options</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>      --allow-missing-template-keys          If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats. (default true)
@@ -1202,29 +1176,33 @@
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>      --certificate-authority string         Path to a cert file for the certificate authority
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>      --context string                       The name of the kubeconfig context to use
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>      --disable-compression                  If true, opt-out of response compression for all requests to the server
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  -d, --dry-run                              If true, only print the requests that would be sent to the service provider after authentication, without actually binding.
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  -h, --help                                 help for bind
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>      --insecure-skip-tls-verify             Skip the verification of the server&#39;s certificate chain and host name.
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>      --konnector-image string               The konnector image to use
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>      --downgrade-konnector                  Downgrade the konnector to the version of the kubectl-bind-apiservice binary
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  -f, --file string                          A file with an APIServiceExportRequest manifest. Use - to read from stdin
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>  -h, --help                                 help for apiservice
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>      --insecure-skip-tls-verify             If true, the server&#39;s certificate will not be checked for validity. This will make your HTTPS connections insecure
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>      --kubeconfig string                    path to the kubeconfig file
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>      --log-flush-frequency duration         Maximum number of seconds between log flushes (default 5s)
 <a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>      --log-text-info-buffer-size quantity   [Alpha] In text format with split output streams, the info messages can be buffered for a while to increase performance. The default value of zero bytes disables buffering. The size can be specified as number of bytes (512), multiples of 1000 (1K), multiples of 1024 (2Ki), or powers of those (3M, 4G, 5Mi, 6Gi). Enable the LoggingAlphaOptions feature gate to use this.
 <a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>      --log-text-split-stream                [Alpha] In text format, write error messages to stderr and info messages to stdout. The default is to write a single stream to stdout. Enable the LoggingAlphaOptions feature gate to use this.
 <a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>      --logging-format string                Sets the log format. Permitted formats: &quot;text&quot;. (default &quot;text&quot;)
 <a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>  -n, --namespace string                     If present, the namespace scope for this CLI request
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>  -o, --output string                        Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file). (default &quot;yaml&quot;)
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>  -o, --output string                        Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file).
 <a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>      --password string                      Password for basic authentication to the API server
 <a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>      --proxy-url string                     If provided, this URL will be used to connect via proxy
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>      --server string                        The address and port of the Kubernetes API server
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>      --show-managed-fields                  If true, keep the managedFields when printing objects in JSON or YAML format.
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      --skip-konnector                       Skip the deployment of the konnector
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>      --template string                      Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>      --tls-server-name string               If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>      --token string                         Bearer token for authentication to the API server
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>      --user string                          The name of the kubeconfig user to use
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>      --username string                      Username for basic authentication to the API server
-<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>  -v, --v Level                              number for the log level verbosity
-<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>      --vmodule pattern=N,...                comma-separated list of pattern=N settings for file-filtered logging (only works for text log format)
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>      --remote-kubeconfig string             A file path for a kubeconfig file to connect to the service provider cluster
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>      --remote-kubeconfig-name string        The name of the remote kubeconfig secret to read from
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      --remote-kubeconfig-namespace string   The namespace of the remote kubeconfig secret to read from
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>      --remote-namespace string              The namespace in the remote cluster where the konnector is deployed
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>      --server string                        The address and port of the Kubernetes API server
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>      --show-managed-fields                  If true, keep the managedFields when printing objects in JSON or YAML format.
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>      --skip-konnector                       Skip the deployment of the konnector
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>      --template string                      Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>      --tls-server-name string               If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>      --token string                         Bearer token for authentication to the API server
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>      --user string                          The name of the kubeconfig user to use
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>      --username string                      Username for basic authentication to the API server
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>  -v, --v Level                              number for the log level verbosity
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>      --vmodule pattern=N,...                comma-separated list of pattern=N settings for file-filtered logging (only works for text log format)
 </code></pre></div>
 <h3 id="options-inherited-from-parent-commands">Options inherited from parent commands</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>      --add_dir_header                   If true, adds the file directory to the header of the log messages
@@ -1241,8 +1219,7 @@
 </code></pre></div>
 <h3 id="see-also">SEE ALSO</h3>
 <ul>
-<li><a href="../bind/">bind</a>  - kubectl plugin for Kube-Bind.io</li>
-<li><a href="../bind_bind_apiservice/">bind bind apiservice</a>  - Bind to a remote API service</li>
+<li><a href="../bind/">bind</a>  - kubectl plugin for Kube-Bind.io, bind different remote types into the current cluster.</li>
 </ul>
 
 

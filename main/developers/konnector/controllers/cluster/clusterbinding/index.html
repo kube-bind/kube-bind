@@ -6,33 +6,30 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Get started with kube bind.
-">
       
       
-      
-        <link rel="canonical" href="https://docs.kube-bind.io/main/setup/quickstart/">
-      
-      
-        <link rel="prev" href="../">
+        <link rel="canonical" href="https://docs.kube-bind.io/main/developers/konnector/controllers/cluster/clusterbinding/">
       
       
-        <link rel="next" href="../local-setup-with-kind/">
+        <link rel="prev" href="../../apiservicebinding/">
       
       
-      <link rel="icon" href="../../favicons/favicon.ico">
+        <link rel="next" href="../apiservicenamespace/">
+      
+      
+      <link rel="icon" href="../../../../../favicons/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
     
     
       
-        <title>Quickstart - docs.kube-bind.io</title>
+        <title>ClusterBindings - docs.kube-bind.io</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.6f8fc17f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -51,7 +48,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -77,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#quickstart" class="md-skip">
+        <a href="#clusterbindings" class="md-skip">
           Skip to content
         </a>
       
@@ -95,9 +92,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="docs.kube-bind.io" class="md-header__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
+    <a href="../../../../.." title="docs.kube-bind.io" class="md-header__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
       
-  <img src="../../logo.svg" alt="logo">
+  <img src="../../../../../logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -114,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Quickstart
+              ClusterBindings
             
           </span>
         </div>
@@ -233,7 +230,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../.." class="md-tabs__link">
+        <a href="../../../../.." class="md-tabs__link">
           
   
     
@@ -249,13 +246,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../../../../setup/" class="md-tabs__link">
           
   
     
@@ -275,7 +270,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../contributing/" class="md-tabs__link">
+        <a href="../../../../../contributing/" class="md-tabs__link">
           
   
     
@@ -291,11 +286,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../developers/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../../../" class="md-tabs__link">
           
   
     
@@ -315,7 +312,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../reference/" class="md-tabs__link">
+        <a href="../../../../../reference/" class="md-tabs__link">
           
   
     
@@ -350,9 +347,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="docs.kube-bind.io" class="md-nav__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
+    <a href="../../../../.." title="docs.kube-bind.io" class="md-nav__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
       
-  <img src="../../logo.svg" alt="logo">
+  <img src="../../../../../logo.svg" alt="logo">
 
     </a>
     docs.kube-bind.io
@@ -402,7 +399,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../.." class="md-nav__link ">
+            <a href="../../../../.." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -434,8 +431,6 @@
       
   
   
-    
-  
   
   
     
@@ -456,22 +451,21 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../../../../setup/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -482,13 +476,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Setup
@@ -501,30 +495,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Quickstart
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../../setup/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -533,44 +507,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      Prerequisites
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#start-with-kube-bind" class="md-nav__link">
-    <span class="md-ellipsis">
-      Start with Kube-Bind
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -583,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../local-setup-with-kind/" class="md-nav__link">
+      <a href="../../../../../setup/local-setup-with-kind/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -604,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../helm/" class="md-nav__link">
+      <a href="../../../../../setup/helm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -625,7 +561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../kubectl-plugin/" class="md-nav__link">
+      <a href="../../../../../setup/kubectl-plugin/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -676,7 +612,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../contributing/" class="md-nav__link ">
+            <a href="../../../../../contributing/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -708,6 +644,8 @@
       
   
   
+    
+  
   
   
     
@@ -724,21 +662,22 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../developers/" class="md-nav__link ">
+            <a href="../../../../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -749,13 +688,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Developers
@@ -796,7 +735,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../developers/backend/" class="md-nav__link ">
+            <a href="../../../../backend/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -875,7 +814,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/backend/http/cluster-binding/" class="md-nav__link">
+      <a href="../../../../backend/http/cluster-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -896,7 +835,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/backend/http/api-binding/" class="md-nav__link">
+      <a href="../../../../backend/http/api-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -930,6 +869,8 @@
                 
   
   
+    
+  
   
   
     
@@ -947,18 +888,16 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../developers/konnector/" class="md-nav__link ">
+            <a href="../../../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -975,7 +914,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             Konnector
@@ -988,8 +927,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -1005,13 +946,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_3_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_2" checked>
         
           
           <label class="md-nav__link" for="__nav_4_3_2" id="__nav_4_3_2_label" tabindex="0">
@@ -1025,7 +964,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_3_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_3_2">
             <span class="md-nav__icon md-icon"></span>
             Controllers
@@ -1039,7 +978,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/konnector/" class="md-nav__link">
+      <a href="../../konnector/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1060,7 +999,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/apiservicebinding/" class="md-nav__link">
+      <a href="../../apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1078,8 +1017,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -1095,13 +1036,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_3_2_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3_2_3" checked>
         
           
           <label class="md-nav__link" for="__nav_4_3_2_3" id="__nav_4_3_2_3_label" tabindex="0">
@@ -1115,7 +1054,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_3_2_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_3_2_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_3_2_3">
             <span class="md-nav__icon md-icon"></span>
             Cluster
@@ -1126,10 +1065,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    ClusterBindings
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1138,6 +1097,35 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1150,7 +1138,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
+      <a href="../apiservicenamespace/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1171,7 +1159,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
+      <a href="../apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1250,7 +1238,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/" class="md-nav__link ">
+            <a href="../../../../../reference/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1329,7 +1317,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind/" class="md-nav__link">
+      <a href="../../../../../reference/cli/bind/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1350,7 +1338,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind_apiservice/" class="md-nav__link">
+      <a href="../../../../../reference/cli/bind_apiservice/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1475,7 +1463,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
+      <a href="../../../../../reference/crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1496,7 +1484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
+      <a href="../../../../../reference/crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1517,7 +1505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
+      <a href="../../../../../reference/crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1538,7 +1526,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
+      <a href="../../../../../reference/crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1559,7 +1547,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/clusterbindings/" class="md-nav__link">
+      <a href="../../../../../reference/crd/kube-bind.io/clusterbindings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1623,18 +1611,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Prerequisites
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#start-with-kube-bind" class="md-nav__link">
-    <span class="md-ellipsis">
-      Start with Kube-Bind
+      Overview
     </span>
   </a>
   
@@ -1658,22 +1637,93 @@
   
 
 
-<h1 id="quickstart">Quickstart</h1>
-<h2 id="prerequisites">Prerequisites</h2>
+<h1 id="clusterbindings">ClusterBindings</h1>
+<p>The ClusterBinding controller watches <code>Secrets</code> (referenced by <code>APIServiceBindings</code>) in the <strong>consumer
+cluster</strong> and <code>ClusterBindings</code>, the referenced <code>Secrets</code>, and <code>APIServiceExport</code> in the <strong>provider
+cluster</strong>.</p>
+<p>It is responsible for:</p>
 <ul>
-<li><a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl</a></li>
+<li>synchronizing the secret referenced by the <code>ClusterBinding</code> in the <strong>provider cluster</strong> to the secret referenced by the <code>APIServiceBindings</code> in the <strong>consumer cluster</strong></li>
+<li>reporting heartbeat to <code>ClusterBinding</code> in the <strong>provider cluster</strong></li>
+<li>reporting konnector version <code>ClusterBinding</code> in the <strong>provider cluster</strong></li>
+<li>reporting heartbeat to all <code>APIServiceBindings</code> managed by <code>ClusterBinding</code> in the <strong>consumer cluster</strong></li>
 </ul>
-<h2 id="start-with-kube-bind">Start with Kube-Bind</h2>
-<p>If you are reading this page - we need help populating this page.</p>
+<h2 id="overview">Overview</h2>
+<pre class="mermaid"><code>flowchart TD
+    %% Nodes
+    start@{ shape: start }
+    stop@{ shape: stop }
+
+    enqueue_reconcile(["Enqueue reconcile call for ClusterBinding"])
+
+    update_cluster_binding(["Update ClusterBinding"])
+    is_cluster_binding_update_successful{"update&lt;br&gt;successful?"}
+
+    get_cluster_binding_kubeconfig_secret(["Get referenced provider kubeconfig secret"])
+    is_cluster_binding_kubeconfig_secret_valid{"secret&lt;br&gt;valid?"}
+
+    set_cluster_binding_condition_secret_valid_to_true(["Set condition 'SecretValid' to true"])
+    set_cluster_binding_condition_secret_valid_to_false(["Set condition 'SecretValid' to false"])
+    set_cluster_binding_condition_valid_version_to_true(["Set condition 'ValidVersion' to true"])
+    set_cluster_binding_condition_valid_version_to_false(["Set condition 'ValidVersion' to false"])
+    set_cluster_binding_condition_ready(["Set condition 'Ready' to summary"])
+
+    set_cluster_binding_status_last_heartbeat(["Set status 'LastHeartbeatTime' to now"])
+    set_cluster_binding_status_konnector_version(["Set status 'KonnectorVersion'"])
+
+    get_api_binding_kubeconfig_secret(["Get consumer kubeconfig secret"])
+    create_api_binding_kubeconfig_secret(["Create consumer kubeconfig secret"])
+    update_api_binding_kubeconfig_secret(["Update consumer kubeconfig secret"])
+    is_api_binding_kubeconfig_secret_present{"secret&lt;br&gt;exists?"}
+
+    set_api_binding_status_heartbeating_to_true(["Set APIServiceBinding conditions 'Heartbeating' to true"])
+    set_api_binding_status_heartbeating_to_false(["Set APIServiceBinding conditions 'Heartbeating' to false"])
+
+    get_konnector_version(["Get konnector version"])
+    is_konnector_version_valid{"version&lt;br&gt;valid?"}
+
+    %% Transitions
+    start --&gt; enqueue_reconcile
+    enqueue_reconcile --&gt; get_cluster_binding_kubeconfig_secret
+    get_cluster_binding_kubeconfig_secret --&gt; is_cluster_binding_kubeconfig_secret_valid
+
+    is_cluster_binding_kubeconfig_secret_valid --&gt; |yes| get_api_binding_kubeconfig_secret
+        get_api_binding_kubeconfig_secret --&gt; is_api_binding_kubeconfig_secret_present
+        is_api_binding_kubeconfig_secret_present --&gt; |yes| update_api_binding_kubeconfig_secret
+        is_api_binding_kubeconfig_secret_present --&gt; |no| create_api_binding_kubeconfig_secret
+        update_api_binding_kubeconfig_secret --&gt; set_cluster_binding_condition_secret_valid_to_true
+        create_api_binding_kubeconfig_secret --&gt; set_cluster_binding_condition_secret_valid_to_true
+
+    is_cluster_binding_kubeconfig_secret_valid --&gt; |no| set_cluster_binding_condition_secret_valid_to_false
+
+    set_cluster_binding_condition_secret_valid_to_true --&gt; set_cluster_binding_status_last_heartbeat
+    set_cluster_binding_condition_secret_valid_to_false --&gt; set_cluster_binding_status_last_heartbeat
+
+    set_cluster_binding_status_last_heartbeat --&gt; get_konnector_version
+    get_konnector_version --&gt; is_konnector_version_valid
+
+    is_konnector_version_valid --&gt; |yes| set_cluster_binding_status_konnector_version
+        set_cluster_binding_status_konnector_version --&gt; set_cluster_binding_condition_valid_version_to_true
+
+    is_konnector_version_valid --&gt; |no| set_cluster_binding_condition_valid_version_to_false
+
+    set_cluster_binding_condition_valid_version_to_true --&gt; set_cluster_binding_condition_ready
+    set_cluster_binding_condition_valid_version_to_false --&gt; set_cluster_binding_condition_ready
+
+    set_cluster_binding_condition_ready --&gt; update_cluster_binding
+    update_cluster_binding --&gt; is_cluster_binding_update_successful
+
+    is_cluster_binding_update_successful --&gt; |yes| set_api_binding_status_heartbeating_to_true
+    is_cluster_binding_update_successful --&gt; |no| set_api_binding_status_heartbeating_to_false
+
+    set_api_binding_status_heartbeating_to_true --&gt; stop
+    set_api_binding_status_heartbeating_to_false --&gt; stop</code></pre>
 
 
 
 
 
 
-
-  
-  
 
 
 
@@ -1746,10 +1796,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
       
     
   </body>

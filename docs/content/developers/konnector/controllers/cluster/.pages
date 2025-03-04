@@ -1,4 +1,5 @@
 nav:
+  - apiserviceexport.md
   - clusterbinding.md
   - apiservicenamespace.md
   - apiservicebinding.md

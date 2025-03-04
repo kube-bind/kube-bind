@@ -1,0 +1,4 @@
+nav:
+  - konnector.md
+  - apiservicebinding.md
+  - Cluster: cluster

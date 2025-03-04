@@ -28,12 +28,13 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 
+	"github.com/kube-bind/kube-bind/cli/pkg/help"
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/plugin"
 )
 
 var (
 	// TODO: add other examples related to permission claim commands.
-	bindExampleUses = `
+	BindExampleUses = `
 	# select a kube-bind.io compatible service from the given URL, e.g. an API service.
 	%[1]s bind https://mangodb.com/exports
 
@@ -51,9 +52,18 @@ var (
 func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	opts := plugin.NewBindOptions(streams)
 	cmd := &cobra.Command{
-		Use:          "bind",
-		Short:        "Bind different remote types into the current cluster.",
-		Example:      fmt.Sprintf(bindExampleUses, "kubectl"),
+		Use:   "bind",
+		Short: "kubectl plugin for Kube-Bind.io, bind different remote types into the current cluster.",
+		Long: help.Doc(`
+		kube-bind is a project that aims to provide better support for
+		service providers and consumers that reside in distinct Kubernetes clusters.
+
+		For more information, see: https://kube-bind.io
+
+		To bind a remote service, use the 'kubectl bind' command.
+		Please check the examples below for more information.
+	`),
+		Example:      fmt.Sprintf(BindExampleUses, "kubectl"),
 		SilenceUsage: true,
 		Args: func(cmd *cobra.Command, args []string) error {
 			for _, arg := range args {

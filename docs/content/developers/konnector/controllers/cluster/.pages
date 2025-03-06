@@ -2,3 +2,4 @@ nav:
   - clusterbinding.md
   - apiservicenamespace.md
   - apiservicebinding.md
+  - apiserviceexport.md

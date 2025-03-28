@@ -31,6 +31,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type GenericClusterInformer interface {
@@ -97,6 +98,9 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericClusterInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().APIServiceNamespaces().Informer()}, nil
 	case kubebindv1alpha1.SchemeGroupVersion.WithResource("clusterbindings"):
 		return &genericClusterInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha1().ClusterBindings().Informer()}, nil
+	// Group=kube-bind.io, Version=V1alpha2
+	case kubebindv1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas"):
+		return &genericClusterInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIResourceSchemas().Informer()}, nil
 	}
 
 	return nil, fmt.Errorf("no informer found for %v", resource)
@@ -121,6 +125,10 @@ func (f *sharedScopedInformerFactory) ForResource(resource schema.GroupVersionRe
 		return &genericInformer{lister: cache.NewGenericLister(informer.GetIndexer(), resource.GroupResource()), informer: informer}, nil
 	case kubebindv1alpha1.SchemeGroupVersion.WithResource("clusterbindings"):
 		informer := f.KubeBind().V1alpha1().ClusterBindings().Informer()
+		return &genericInformer{lister: cache.NewGenericLister(informer.GetIndexer(), resource.GroupResource()), informer: informer}, nil
+	// Group=kube-bind.io, Version=V1alpha2
+	case kubebindv1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas"):
+		informer := f.KubeBind().V1alpha2().APIResourceSchemas().Informer()
 		return &genericInformer{lister: cache.NewGenericLister(informer.GetIndexer(), resource.GroupResource()), informer: informer}, nil
 	}
 

@@ -33,8 +33,11 @@ import (
 	kcpclient "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/cluster"
 	kcpkubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/cluster/typed/kubebind/v1alpha1"
 	fakekubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/cluster/typed/kubebind/v1alpha1/fake"
+	kcpkubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/cluster/typed/kubebind/v1alpha2"
+	fakekubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/cluster/typed/kubebind/v1alpha2/fake"
 	clientscheme "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/scheme"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/typed/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/typed/kubebind/v1alpha2"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.
@@ -76,6 +79,11 @@ func (c *ClusterClientset) KubeBindV1alpha1() kcpkubebindv1alpha1.KubeBindV1alph
 	return &fakekubebindv1alpha1.KubeBindV1alpha1ClusterClient{Fake: c.Fake}
 }
 
+// KubeBindV1alpha2 retrieves the KubeBindV1alpha2ClusterClient.
+func (c *ClusterClientset) KubeBindV1alpha2() kcpkubebindv1alpha2.KubeBindV1alpha2ClusterInterface {
+	return &fakekubebindv1alpha2.KubeBindV1alpha2ClusterClient{Fake: c.Fake}
+}
+
 // Cluster scopes this clientset to one cluster.
 func (c *ClusterClientset) Cluster(clusterPath logicalcluster.Path) client.Interface {
 	if clusterPath == logicalcluster.Wildcard {
@@ -111,4 +119,9 @@ func (c *Clientset) Tracker() kcptesting.ScopedObjectTracker {
 // KubeBindV1alpha1 retrieves the KubeBindV1alpha1Client.
 func (c *Clientset) KubeBindV1alpha1() kubebindv1alpha1.KubeBindV1alpha1Interface {
 	return &fakekubebindv1alpha1.KubeBindV1alpha1Client{Fake: c.Fake, ClusterPath: c.clusterPath}
+}
+
+// KubeBindV1alpha2 retrieves the KubeBindV1alpha2Client.
+func (c *Clientset) KubeBindV1alpha2() kubebindv1alpha2.KubeBindV1alpha2Interface {
+	return &fakekubebindv1alpha2.KubeBindV1alpha2Client{Fake: c.Fake, ClusterPath: c.clusterPath}
 }

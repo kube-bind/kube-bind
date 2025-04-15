@@ -29,12 +29,17 @@ import (
 
 type KubeBindV1alpha2Interface interface {
 	RESTClient() rest.Interface
+	APIConversionsGetter
 	APIResourceSchemasGetter
 }
 
 // KubeBindV1alpha2Client is used to interact with features provided by the kube-bind.io group.
 type KubeBindV1alpha2Client struct {
 	restClient rest.Interface
+}
+
+func (c *KubeBindV1alpha2Client) APIConversions() APIConversionInterface {
+	return newAPIConversions(c)
 }
 
 func (c *KubeBindV1alpha2Client) APIResourceSchemas(namespace string) APIResourceSchemaInterface {

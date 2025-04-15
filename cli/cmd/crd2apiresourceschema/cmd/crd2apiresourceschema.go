@@ -23,10 +23,11 @@ import (
 
 	"github.com/spf13/cobra"
 
-	crd2apiresourceschemacmd "github.com/kube-bind/kube-bind/cli/pkg/crd2apiresourceschema/cmd"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/component-base/version"
 	"k8s.io/klog/v2"
+
+	crd2apiresourceschemacmd "github.com/kube-bind/kube-bind/cli/pkg/crd2apiresourceschema/cmd"
 )
 
 func CRD2APIResourceSchemaCmd() *cobra.Command {

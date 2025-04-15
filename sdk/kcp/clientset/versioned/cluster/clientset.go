@@ -34,12 +34,14 @@ import (
 
 	client "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/cluster/typed/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/cluster/typed/kubebind/v1alpha2"
 )
 
 type ClusterInterface interface {
 	Cluster(logicalcluster.Path) client.Interface
 	Discovery() discovery.DiscoveryInterface
 	KubeBindV1alpha1() kubebindv1alpha1.KubeBindV1alpha1ClusterInterface
+	KubeBindV1alpha2() kubebindv1alpha2.KubeBindV1alpha2ClusterInterface
 }
 
 // ClusterClientset contains the clients for groups.
@@ -47,6 +49,7 @@ type ClusterClientset struct {
 	*discovery.DiscoveryClient
 	clientCache      kcpclient.Cache[*client.Clientset]
 	kubebindV1alpha1 *kubebindv1alpha1.KubeBindV1alpha1ClusterClient
+	kubebindV1alpha2 *kubebindv1alpha2.KubeBindV1alpha2ClusterClient
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -60,6 +63,11 @@ func (c *ClusterClientset) Discovery() discovery.DiscoveryInterface {
 // KubeBindV1alpha1 retrieves the KubeBindV1alpha1ClusterClient.
 func (c *ClusterClientset) KubeBindV1alpha1() kubebindv1alpha1.KubeBindV1alpha1ClusterInterface {
 	return c.kubebindV1alpha1
+}
+
+// KubeBindV1alpha2 retrieves the KubeBindV1alpha2ClusterClient.
+func (c *ClusterClientset) KubeBindV1alpha2() kubebindv1alpha2.KubeBindV1alpha2ClusterInterface {
+	return c.kubebindV1alpha2
 }
 
 // Cluster scopes this clientset to one cluster.
@@ -115,6 +123,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*ClusterCli
 	cs.clientCache = cache
 	var err error
 	cs.kubebindV1alpha1, err = kubebindv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
+	cs.kubebindV1alpha2, err = kubebindv1alpha2.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}

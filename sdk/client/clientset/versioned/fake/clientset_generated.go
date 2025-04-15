@@ -28,6 +28,8 @@ import (
 	clientset "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha1"
 	fakekubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha1/fake"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha2"
+	fakekubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha2/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.
@@ -87,4 +89,9 @@ var (
 // KubeBindV1alpha1 retrieves the KubeBindV1alpha1Client
 func (c *Clientset) KubeBindV1alpha1() kubebindv1alpha1.KubeBindV1alpha1Interface {
 	return &fakekubebindv1alpha1.FakeKubeBindV1alpha1{Fake: &c.Fake}
+}
+
+// KubeBindV1alpha2 retrieves the KubeBindV1alpha2Client
+func (c *Clientset) KubeBindV1alpha2() kubebindv1alpha2.KubeBindV1alpha2Interface {
+	return &fakekubebindv1alpha2.FakeKubeBindV1alpha2{Fake: &c.Fake}
 }

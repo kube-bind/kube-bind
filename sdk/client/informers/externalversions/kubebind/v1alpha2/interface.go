@@ -24,6 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// APIConversions returns a APIConversionInformer.
+	APIConversions() APIConversionInformer
 	// APIResourceSchemas returns a APIResourceSchemaInformer.
 	APIResourceSchemas() APIResourceSchemaInformer
 }
@@ -37,6 +39,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// APIConversions returns a APIConversionInformer.
+func (v *version) APIConversions() APIConversionInformer {
+	return &aPIConversionInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // APIResourceSchemas returns a APIResourceSchemaInformer.

@@ -40,8 +40,6 @@ type APIResourceSchemasGetter interface {
 type APIResourceSchemaInterface interface {
 	Create(ctx context.Context, aPIResourceSchema *v1alpha2.APIResourceSchema, opts v1.CreateOptions) (*v1alpha2.APIResourceSchema, error)
 	Update(ctx context.Context, aPIResourceSchema *v1alpha2.APIResourceSchema, opts v1.UpdateOptions) (*v1alpha2.APIResourceSchema, error)
-	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, aPIResourceSchema *v1alpha2.APIResourceSchema, opts v1.UpdateOptions) (*v1alpha2.APIResourceSchema, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
 	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha2.APIResourceSchema, error)

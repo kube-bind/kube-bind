@@ -29,12 +29,8 @@ type FakeKubeBindV1alpha2 struct {
 	*testing.Fake
 }
 
-func (c *FakeKubeBindV1alpha2) APIConversions() v1alpha2.APIConversionInterface {
-	return &FakeAPIConversions{c}
-}
-
-func (c *FakeKubeBindV1alpha2) APIResourceSchemas(namespace string) v1alpha2.APIResourceSchemaInterface {
-	return &FakeAPIResourceSchemas{c, namespace}
+func (c *FakeKubeBindV1alpha2) APIResourceSchemas() v1alpha2.APIResourceSchemaInterface {
+	return &FakeAPIResourceSchemas{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

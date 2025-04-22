@@ -8,13 +8,19 @@ metadata:
 spec:
   group: kube-bind.io
   names:
+    categories:
+    - kcp
     kind: APIResourceSchema
     listKind: APIResourceSchemaList
     plural: apiresourceschemas
     singular: apiresourceschema
-  scope: Namespaced
+  scope: Cluster
   versions:
-  - name: v1alpha2
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha2
     schema:
       openAPIV3Schema:
         description: APIResourceSchema
@@ -86,8 +92,6 @@ spec:
                               Attempting to use a user or basic auth e.g. "user:password@" is not
                               allowed. Fragments ("#...") and query parameters ("?...") are not
                               allowed, either.
-
-                              Note: kcp does not support provided service names like Kubernetes does.
                             format: uri
                             type: string
                         type: object
@@ -123,24 +127,8 @@ spec:
                   - Cluster
                   - Namespaced
                 description: |-
-                  InformerScope indicates whether the defined custom resource is cluster- or namespace-scoped.
+                  InformerScope indicates whether the informer for defined custom resource is cluster- or namespace-scoped.
                   Allowed values are `Cluster` and `Namespaced`.
-                type: string
-              nameValidation:
-                default: DNS1123Subdomain
-                description: |-
-                  nameValidation can be used to configure name validation for bound APIs.
-                  Allowed values are `DNS1123Subdomain` and `PathSegmentName`.
-                  - DNS1123Subdomain: a lowercase RFC 1123 subdomain must consist of lower case
-                    alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character.
-                    Regex used is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
-                  - PathSegmentName: validates the name can be safely encoded as a path segment.
-                    The name may not be '.' or '..' and the name may not contain '/' or '%'.
-
-                  Defaults to `DNS1123Subdomain`, matching the behaviour of CRDs.
-                enum:
-                - DNS1123Subdomain
-                - PathSegmentName
                 type: string
               names:
                 description: names specify the resource and kind names for the custom
@@ -359,3 +347,4 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}

@@ -18,14 +18,6 @@ limitations under the License.
 
 package v1alpha2
 
-// APIConversionListerExpansion allows custom methods to be added to
-// APIConversionLister.
-type APIConversionListerExpansion interface{}
-
 // APIResourceSchemaListerExpansion allows custom methods to be added to
 // APIResourceSchemaLister.
 type APIResourceSchemaListerExpansion interface{}
-
-// APIResourceSchemaNamespaceListerExpansion allows custom methods to be added to
-// APIResourceSchemaNamespaceLister.
-type APIResourceSchemaNamespaceListerExpansion interface{}

@@ -33,7 +33,6 @@ import (
 // FakeAPIResourceSchemas implements APIResourceSchemaInterface
 type FakeAPIResourceSchemas struct {
 	Fake *FakeKubeBindV1alpha2
-	ns   string
 }
 
 var apiresourceschemasResource = v1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas")
@@ -44,8 +43,7 @@ var apiresourceschemasKind = v1alpha2.SchemeGroupVersion.WithKind("APIResourceSc
 func (c *FakeAPIResourceSchemas) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha2.APIResourceSchema, err error) {
 	emptyResult := &v1alpha2.APIResourceSchema{}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetActionWithOptions(apiresourceschemasResource, c.ns, name, options), emptyResult)
-
+		Invokes(testing.NewRootGetActionWithOptions(apiresourceschemasResource, name, options), emptyResult)
 	if obj == nil {
 		return emptyResult, err
 	}
@@ -56,8 +54,7 @@ func (c *FakeAPIResourceSchemas) Get(ctx context.Context, name string, options v
 func (c *FakeAPIResourceSchemas) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha2.APIResourceSchemaList, err error) {
 	emptyResult := &v1alpha2.APIResourceSchemaList{}
 	obj, err := c.Fake.
-		Invokes(testing.NewListActionWithOptions(apiresourceschemasResource, apiresourceschemasKind, c.ns, opts), emptyResult)
-
+		Invokes(testing.NewRootListActionWithOptions(apiresourceschemasResource, apiresourceschemasKind, opts), emptyResult)
 	if obj == nil {
 		return emptyResult, err
 	}
@@ -78,16 +75,14 @@ func (c *FakeAPIResourceSchemas) List(ctx context.Context, opts v1.ListOptions) 
 // Watch returns a watch.Interface that watches the requested aPIResourceSchemas.
 func (c *FakeAPIResourceSchemas) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
-		InvokesWatch(testing.NewWatchActionWithOptions(apiresourceschemasResource, c.ns, opts))
-
+		InvokesWatch(testing.NewRootWatchActionWithOptions(apiresourceschemasResource, opts))
 }
 
 // Create takes the representation of a aPIResourceSchema and creates it.  Returns the server's representation of the aPIResourceSchema, and an error, if there is any.
 func (c *FakeAPIResourceSchemas) Create(ctx context.Context, aPIResourceSchema *v1alpha2.APIResourceSchema, opts v1.CreateOptions) (result *v1alpha2.APIResourceSchema, err error) {
 	emptyResult := &v1alpha2.APIResourceSchema{}
 	obj, err := c.Fake.
-		Invokes(testing.NewCreateActionWithOptions(apiresourceschemasResource, c.ns, aPIResourceSchema, opts), emptyResult)
-
+		Invokes(testing.NewRootCreateActionWithOptions(apiresourceschemasResource, aPIResourceSchema, opts), emptyResult)
 	if obj == nil {
 		return emptyResult, err
 	}
@@ -98,8 +93,7 @@ func (c *FakeAPIResourceSchemas) Create(ctx context.Context, aPIResourceSchema *
 func (c *FakeAPIResourceSchemas) Update(ctx context.Context, aPIResourceSchema *v1alpha2.APIResourceSchema, opts v1.UpdateOptions) (result *v1alpha2.APIResourceSchema, err error) {
 	emptyResult := &v1alpha2.APIResourceSchema{}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateActionWithOptions(apiresourceschemasResource, c.ns, aPIResourceSchema, opts), emptyResult)
-
+		Invokes(testing.NewRootUpdateActionWithOptions(apiresourceschemasResource, aPIResourceSchema, opts), emptyResult)
 	if obj == nil {
 		return emptyResult, err
 	}
@@ -109,14 +103,13 @@ func (c *FakeAPIResourceSchemas) Update(ctx context.Context, aPIResourceSchema *
 // Delete takes name of the aPIResourceSchema and deletes it. Returns an error if one occurs.
 func (c *FakeAPIResourceSchemas) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(apiresourceschemasResource, c.ns, name, opts), &v1alpha2.APIResourceSchema{})
-
+		Invokes(testing.NewRootDeleteActionWithOptions(apiresourceschemasResource, name, opts), &v1alpha2.APIResourceSchema{})
 	return err
 }
 
 // DeleteCollection deletes a collection of objects.
 func (c *FakeAPIResourceSchemas) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionActionWithOptions(apiresourceschemasResource, c.ns, opts, listOpts)
+	action := testing.NewRootDeleteCollectionActionWithOptions(apiresourceschemasResource, opts, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1alpha2.APIResourceSchemaList{})
 	return err
@@ -126,8 +119,7 @@ func (c *FakeAPIResourceSchemas) DeleteCollection(ctx context.Context, opts v1.D
 func (c *FakeAPIResourceSchemas) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.APIResourceSchema, err error) {
 	emptyResult := &v1alpha2.APIResourceSchema{}
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceActionWithOptions(apiresourceschemasResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
-
+		Invokes(testing.NewRootPatchSubresourceActionWithOptions(apiresourceschemasResource, name, pt, data, opts, subresources...), emptyResult)
 	if obj == nil {
 		return emptyResult, err
 	}

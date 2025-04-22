@@ -37,7 +37,10 @@ const (
 // APIResourceSchema
 // +crd
 // +genclient
+// +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:scope=Cluster,categories=kcp
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type APIResourceSchema struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -84,21 +87,6 @@ type APIResourceSchemaCRDSpec struct {
 	// +listMapKey=name
 	// +kubebuilder:validation:MinItems=1
 	Versions []APIResourceVersion `json:"versions"`
-
-	// nameValidation can be used to configure name validation for bound APIs.
-	// Allowed values are `DNS1123Subdomain` and `PathSegmentName`.
-	// - DNS1123Subdomain: a lowercase RFC 1123 subdomain must consist of lower case
-	//   alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character.
-	//   Regex used is '[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*'
-	// - PathSegmentName: validates the name can be safely encoded as a path segment.
-	//   The name may not be '.' or '..' and the name may not contain '/' or '%'.
-	//
-	// Defaults to `DNS1123Subdomain`, matching the behaviour of CRDs.
-	//
-	// +optional
-	// +kubebuilder:validation:Enum=DNS1123Subdomain;PathSegmentName
-	// +kubebuilder:default=DNS1123Subdomain
-	NameValidation string `json:"nameValidation,omitempty"`
 
 	// conversion defines conversion settings for the defined custom resource.
 	// +optional
@@ -215,9 +203,8 @@ type WebhookClientConfig struct {
 	// allowed. Fragments ("#...") and query parameters ("?...") are not
 	// allowed, either.
 	//
-	// Note: kcp does not support provided service names like Kubernetes does.
 	// +kubebuilder:validation:Format=uri
-	URL string `json:"url,omitempty"`
+	URL *string `json:"url,omitempty"`
 
 	// caBundle is a PEM encoded CA bundle which will be used to validate the webhook's server certificate.
 	// If unspecified, system trust roots on the apiserver are used.
@@ -257,105 +244,4 @@ func (v *APIResourceVersion) SetSchema(schema *apiextensionsv1.JSONSchemaProps) 
 	}
 	v.Schema.Raw = raw
 	return nil
-}
-
-const (
-	// VersionPreservationAnnotationKeyPrefix is the prefix for the annotation key used to preserve fields from an API
-	// version that would otherwise be lost during round-tripping to a different API version. An example key and value
-	// might look like this: preserve.conversion.apis.kcp.io/v2: {"spec.someNewField": "someValue"}.
-	VersionPreservationAnnotationKeyPrefix = "preserve.conversion.apis.kcp.io/"
-)
-
-// +crd
-// +genclient
-// +genclient:nonNamespaced
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Cluster,categories=kcp
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-
-// APIConversion contains rules to convert between different API versions in an APIResourceSchema. The name must match
-// the name of the APIResourceSchema for the conversions to take effect.
-type APIConversion struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata"`
-
-	// Spec holds the desired state.
-	Spec APIConversionSpec `json:"spec"`
-}
-
-// APIConversionSpec contains rules to convert between different API versions in an APIResourceSchema.
-type APIConversionSpec struct {
-	// conversions specify rules to convert between different API versions in an APIResourceSchema.
-	//
-	// +required
-	// +listType=map
-	// +listMapKey=from
-	// +listMapKey=to
-	Conversions []APIVersionConversion `json:"conversions"`
-}
-
-// APIVersionConversion contains rules to convert between two specific API versions in an
-// APIResourceSchema. Additionally, to avoid data loss when round-tripping from a version that
-// contains a new field to one that doesn't and back again, you can specify a list of fields to
-// preserve (these are stored in annotations).
-type APIVersionConversion struct {
-	// from is the source version.
-	//
-	// +required
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Pattern=^v[1-9][0-9]*([a-z]+[1-9][0-9]*)?$
-	From string `json:"from"`
-
-	// to is the target version.
-	//
-	// +required
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:Pattern=^v[1-9][0-9]*([a-z]+[1-9][0-9]*)?$
-	To string `json:"to"`
-
-	// rules contains field-specific conversion expressions.
-	//
-	// +required
-	// +listType=map
-	// +listMapKey=destination
-	Rules []APIConversionRule `json:"rules"`
-
-	// preserve contains a list of JSONPath expressions to fields to preserve in the originating version
-	// of the object, relative to its root, such as '.spec.name.first'.
-	//
-	// +optional
-	Preserve []string `json:"preserve,omitempty"`
-}
-
-// APIConversionRule specifies how to convert a single field.
-type APIConversionRule struct {
-	// field is a JSONPath expression to the field in the originating version of the object, relative to its root, such
-	// as '.spec.name.first'.
-	//
-	// +required
-	// +kubebuilder:validation:MinLength=1
-	Field string `json:"field"`
-
-	// destination is a JSONPath expression to the field in the target version of the object, relative to
-	// its root, such as '.spec.name.first'.
-	//
-	// +required
-	// +kubebuilder:validation:MinLength=1
-	Destination string `json:"destination"`
-
-	// transformation is an optional CEL expression used to execute user-specified rules to transform the
-	// originating field -- identified by 'self' -- to the destination field.
-	//
-	// +optional
-	Transformation string `json:"transformation,omitempty"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// APIConversionList is a list of APIConversion resources.
-type APIConversionList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata"`
-
-	Items []APIConversion `json:"items"`
 }

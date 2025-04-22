@@ -29,7 +29,6 @@ import (
 
 type KubeBindV1alpha2Interface interface {
 	RESTClient() rest.Interface
-	APIConversionsGetter
 	APIResourceSchemasGetter
 }
 
@@ -38,12 +37,8 @@ type KubeBindV1alpha2Client struct {
 	restClient rest.Interface
 }
 
-func (c *KubeBindV1alpha2Client) APIConversions() APIConversionInterface {
-	return newAPIConversions(c)
-}
-
-func (c *KubeBindV1alpha2Client) APIResourceSchemas(namespace string) APIResourceSchemaInterface {
-	return newAPIResourceSchemas(c, namespace)
+func (c *KubeBindV1alpha2Client) APIResourceSchemas() APIResourceSchemaInterface {
+	return newAPIResourceSchemas(c)
 }
 
 // NewForConfig creates a new KubeBindV1alpha2Client for the given config.

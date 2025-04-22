@@ -17,8 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -30,15 +28,21 @@ import (
 )
 
 var (
-	CRD2APIResourceSchemaUses = ``
+	CRD2APIResourceSchemaUses = `
+# Generate and create APIResourceSchema objects for all CRDs in the cluster
+crd2apiresourceschema --kubeconfig ~/.kube/config
+
+# Generate and create APIResourceSchema objects for all CRDs in the cluster, specifying a different kubeconfig
+crd2apiresourceschema --kubeconfig /path/to/your/kubeconfig
+`
 )
 
 func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	opts := plugin.NewCRD2APIResourceSchemaOptions(streams)
 	cmd := &cobra.Command{
 		Use:          "crd2apiresourceschema",
-		Short:        "Create APIResourceSchema from provided CRD in the cluster.",
-		Example:      fmt.Sprintf(CRD2APIResourceSchemaUses, "crd2apiresourceschema"),
+		Short:        "Create APIResourceSchema from provided CRDs in the cluster.",
+		Example:      CRD2APIResourceSchemaUses,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := logsv1.ValidateAndApply(opts.Logs, nil); err != nil {

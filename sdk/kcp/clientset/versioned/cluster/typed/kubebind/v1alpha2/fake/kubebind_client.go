@@ -48,10 +48,6 @@ func (c *KubeBindV1alpha2ClusterClient) APIResourceSchemas() kcpkubebindv1alpha2
 	return &aPIResourceSchemasClusterClient{Fake: c.Fake}
 }
 
-func (c *KubeBindV1alpha2ClusterClient) APIConversions() kcpkubebindv1alpha2.APIConversionClusterInterface {
-	return &aPIConversionsClusterClient{Fake: c.Fake}
-}
-
 var _ kubebindv1alpha2.KubeBindV1alpha2Interface = (*KubeBindV1alpha2Client)(nil)
 
 type KubeBindV1alpha2Client struct {
@@ -64,10 +60,6 @@ func (c *KubeBindV1alpha2Client) RESTClient() rest.Interface {
 	return ret
 }
 
-func (c *KubeBindV1alpha2Client) APIResourceSchemas(namespace string) kubebindv1alpha2.APIResourceSchemaInterface {
-	return &aPIResourceSchemasClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
-}
-
-func (c *KubeBindV1alpha2Client) APIConversions() kubebindv1alpha2.APIConversionInterface {
-	return &aPIConversionsClient{Fake: c.Fake, ClusterPath: c.ClusterPath}
+func (c *KubeBindV1alpha2Client) APIResourceSchemas() kubebindv1alpha2.APIResourceSchemaInterface {
+	return &aPIResourceSchemasClient{Fake: c.Fake, ClusterPath: c.ClusterPath}
 }

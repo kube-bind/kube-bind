@@ -123,12 +123,7 @@ func (b *CRD2APIResourceSchemaOptions) Run(ctx context.Context) error {
 
 func convertCRDToAPIResourceSchema(crd *apiextensionsv1.CustomResourceDefinition, prefix string) (*kubebindv1alpha2.APIResourceSchema, error) {
 	name := prefix + "." + crd.Name
-
-	informerScope := kubebindv1alpha2.ClusterScope
-	if crd.Spec.Scope == apiextensionsv1.NamespaceScoped {
-		informerScope = kubebindv1alpha2.NamespacedScope
-	}
-
+	informerScope := kubebindv1alpha2.NamespacedScope
 	apiResourceSchema := &kubebindv1alpha2.APIResourceSchema{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),

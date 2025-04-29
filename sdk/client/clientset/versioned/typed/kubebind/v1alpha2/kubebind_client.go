@@ -37,8 +37,8 @@ type KubeBindV1alpha2Client struct {
 	restClient rest.Interface
 }
 
-func (c *KubeBindV1alpha2Client) APIResourceSchemas() APIResourceSchemaInterface {
-	return newAPIResourceSchemas(c)
+func (c *KubeBindV1alpha2Client) APIResourceSchemas(namespace string) APIResourceSchemaInterface {
+	return newAPIResourceSchemas(c, namespace)
 }
 
 // NewForConfig creates a new KubeBindV1alpha2Client for the given config.

@@ -63,5 +63,5 @@ func NewScoped(f internalinterfaces.SharedScopedInformerFactory, namespace strin
 
 // APIResourceSchemas returns a APIResourceSchemaInformer
 func (v *scopedVersion) APIResourceSchemas() APIResourceSchemaInformer {
-	return &aPIResourceSchemaScopedInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+	return &aPIResourceSchemaScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

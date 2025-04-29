@@ -38,7 +38,7 @@ const (
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Cluster,categories=kcp
+// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type APIResourceSchema struct {
 	metav1.TypeMeta   `json:",inline"`

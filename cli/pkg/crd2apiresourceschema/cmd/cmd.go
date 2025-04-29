@@ -29,11 +29,17 @@ import (
 
 var (
 	CRD2APIResourceSchemaUses = `
+# Generate APIResourceSchemas from provided CRDs in the cluster and save them to YAML files in the specified output directory
+crd2apiresourceschema --output-dir /output/dir
+
+# Generate APIResourceSchemas from provided CRDs in the cluster and save them to YAML files, specifying a different kubeconfig and output directory
+crd2apiresourceschema --kubeconfig /path/to/your/kubeconfig --output-dir /path/to/output/dir
+
 # Generate and create APIResourceSchema objects for all CRDs in the cluster
-crd2apiresourceschema --kubeconfig ~/.kube/config
+crd2apiresourceschema --generate-in-cluster
 
 # Generate and create APIResourceSchema objects for all CRDs in the cluster, specifying a different kubeconfig
-crd2apiresourceschema --kubeconfig /path/to/your/kubeconfig
+crd2apiresourceschema --kubeconfig /path/to/your/kubeconfig --generate-in-cluster
 `
 )
 

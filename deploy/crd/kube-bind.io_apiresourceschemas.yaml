@@ -9,12 +9,12 @@ spec:
   group: kube-bind.io
   names:
     categories:
-    - kcp
+    - kube-bindings
     kind: APIResourceSchema
     listKind: APIResourceSchemaList
     plural: apiresourceschemas
     singular: apiresourceschema
-  scope: Cluster
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .metadata.creationTimestamp

@@ -56,6 +56,10 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 				return err
 			}
 
+			if err := opts.Validate(); err != nil {
+				return err
+			}
+
 			return opts.Run(cmd.Context())
 		},
 	}

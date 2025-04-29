@@ -38,6 +38,7 @@ import (
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	applyconfigurationskubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/kubebind/v1alpha2"
+	kcpkubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/cluster/typed/kubebind/v1alpha2"
 	kubebindv1alpha2client "github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned/typed/kubebind/v1alpha2"
 )
 
@@ -49,17 +50,17 @@ type aPIResourceSchemasClusterClient struct {
 }
 
 // Cluster scopes the client down to a particular cluster.
-func (c *aPIResourceSchemasClusterClient) Cluster(clusterPath logicalcluster.Path) kubebindv1alpha2client.APIResourceSchemaInterface {
+func (c *aPIResourceSchemasClusterClient) Cluster(clusterPath logicalcluster.Path) kcpkubebindv1alpha2.APIResourceSchemasNamespacer {
 	if clusterPath == logicalcluster.Wildcard {
 		panic("A specific cluster must be provided when scoping, not the wildcard.")
 	}
 
-	return &aPIResourceSchemasClient{Fake: c.Fake, ClusterPath: clusterPath}
+	return &aPIResourceSchemasNamespacer{Fake: c.Fake, ClusterPath: clusterPath}
 }
 
 // List takes label and field selectors, and returns the list of APIResourceSchemas that match those selectors across all clusters.
 func (c *aPIResourceSchemasClusterClient) List(ctx context.Context, opts metav1.ListOptions) (*kubebindv1alpha2.APIResourceSchemaList, error) {
-	obj, err := c.Fake.Invokes(kcptesting.NewRootListAction(aPIResourceSchemasResource, aPIResourceSchemasKind, logicalcluster.Wildcard, opts), &kubebindv1alpha2.APIResourceSchemaList{})
+	obj, err := c.Fake.Invokes(kcptesting.NewListAction(aPIResourceSchemasResource, aPIResourceSchemasKind, logicalcluster.Wildcard, metav1.NamespaceAll, opts), &kubebindv1alpha2.APIResourceSchemaList{})
 	if obj == nil {
 		return nil, err
 	}
@@ -79,16 +80,26 @@ func (c *aPIResourceSchemasClusterClient) List(ctx context.Context, opts metav1.
 
 // Watch returns a watch.Interface that watches the requested APIResourceSchemas across all clusters.
 func (c *aPIResourceSchemasClusterClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	return c.Fake.InvokesWatch(kcptesting.NewRootWatchAction(aPIResourceSchemasResource, logicalcluster.Wildcard, opts))
+	return c.Fake.InvokesWatch(kcptesting.NewWatchAction(aPIResourceSchemasResource, logicalcluster.Wildcard, metav1.NamespaceAll, opts))
+}
+
+type aPIResourceSchemasNamespacer struct {
+	*kcptesting.Fake
+	ClusterPath logicalcluster.Path
+}
+
+func (n *aPIResourceSchemasNamespacer) Namespace(namespace string) kubebindv1alpha2client.APIResourceSchemaInterface {
+	return &aPIResourceSchemasClient{Fake: n.Fake, ClusterPath: n.ClusterPath, Namespace: namespace}
 }
 
 type aPIResourceSchemasClient struct {
 	*kcptesting.Fake
 	ClusterPath logicalcluster.Path
+	Namespace   string
 }
 
 func (c *aPIResourceSchemasClient) Create(ctx context.Context, aPIResourceSchema *kubebindv1alpha2.APIResourceSchema, opts metav1.CreateOptions) (*kubebindv1alpha2.APIResourceSchema, error) {
-	obj, err := c.Fake.Invokes(kcptesting.NewRootCreateAction(aPIResourceSchemasResource, c.ClusterPath, aPIResourceSchema), &kubebindv1alpha2.APIResourceSchema{})
+	obj, err := c.Fake.Invokes(kcptesting.NewCreateAction(aPIResourceSchemasResource, c.ClusterPath, c.Namespace, aPIResourceSchema), &kubebindv1alpha2.APIResourceSchema{})
 	if obj == nil {
 		return nil, err
 	}
@@ -96,7 +107,7 @@ func (c *aPIResourceSchemasClient) Create(ctx context.Context, aPIResourceSchema
 }
 
 func (c *aPIResourceSchemasClient) Update(ctx context.Context, aPIResourceSchema *kubebindv1alpha2.APIResourceSchema, opts metav1.UpdateOptions) (*kubebindv1alpha2.APIResourceSchema, error) {
-	obj, err := c.Fake.Invokes(kcptesting.NewRootUpdateAction(aPIResourceSchemasResource, c.ClusterPath, aPIResourceSchema), &kubebindv1alpha2.APIResourceSchema{})
+	obj, err := c.Fake.Invokes(kcptesting.NewUpdateAction(aPIResourceSchemasResource, c.ClusterPath, c.Namespace, aPIResourceSchema), &kubebindv1alpha2.APIResourceSchema{})
 	if obj == nil {
 		return nil, err
 	}
@@ -104,7 +115,7 @@ func (c *aPIResourceSchemasClient) Update(ctx context.Context, aPIResourceSchema
 }
 
 func (c *aPIResourceSchemasClient) UpdateStatus(ctx context.Context, aPIResourceSchema *kubebindv1alpha2.APIResourceSchema, opts metav1.UpdateOptions) (*kubebindv1alpha2.APIResourceSchema, error) {
-	obj, err := c.Fake.Invokes(kcptesting.NewRootUpdateSubresourceAction(aPIResourceSchemasResource, c.ClusterPath, "status", aPIResourceSchema), &kubebindv1alpha2.APIResourceSchema{})
+	obj, err := c.Fake.Invokes(kcptesting.NewUpdateSubresourceAction(aPIResourceSchemasResource, c.ClusterPath, "status", c.Namespace, aPIResourceSchema), &kubebindv1alpha2.APIResourceSchema{})
 	if obj == nil {
 		return nil, err
 	}
@@ -112,19 +123,19 @@ func (c *aPIResourceSchemasClient) UpdateStatus(ctx context.Context, aPIResource
 }
 
 func (c *aPIResourceSchemasClient) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	_, err := c.Fake.Invokes(kcptesting.NewRootDeleteActionWithOptions(aPIResourceSchemasResource, c.ClusterPath, name, opts), &kubebindv1alpha2.APIResourceSchema{})
+	_, err := c.Fake.Invokes(kcptesting.NewDeleteActionWithOptions(aPIResourceSchemasResource, c.ClusterPath, c.Namespace, name, opts), &kubebindv1alpha2.APIResourceSchema{})
 	return err
 }
 
 func (c *aPIResourceSchemasClient) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	action := kcptesting.NewRootDeleteCollectionAction(aPIResourceSchemasResource, c.ClusterPath, listOpts)
+	action := kcptesting.NewDeleteCollectionAction(aPIResourceSchemasResource, c.ClusterPath, c.Namespace, listOpts)
 
 	_, err := c.Fake.Invokes(action, &kubebindv1alpha2.APIResourceSchemaList{})
 	return err
 }
 
 func (c *aPIResourceSchemasClient) Get(ctx context.Context, name string, options metav1.GetOptions) (*kubebindv1alpha2.APIResourceSchema, error) {
-	obj, err := c.Fake.Invokes(kcptesting.NewRootGetAction(aPIResourceSchemasResource, c.ClusterPath, name), &kubebindv1alpha2.APIResourceSchema{})
+	obj, err := c.Fake.Invokes(kcptesting.NewGetAction(aPIResourceSchemasResource, c.ClusterPath, c.Namespace, name), &kubebindv1alpha2.APIResourceSchema{})
 	if obj == nil {
 		return nil, err
 	}
@@ -133,7 +144,7 @@ func (c *aPIResourceSchemasClient) Get(ctx context.Context, name string, options
 
 // List takes label and field selectors, and returns the list of APIResourceSchemas that match those selectors.
 func (c *aPIResourceSchemasClient) List(ctx context.Context, opts metav1.ListOptions) (*kubebindv1alpha2.APIResourceSchemaList, error) {
-	obj, err := c.Fake.Invokes(kcptesting.NewRootListAction(aPIResourceSchemasResource, aPIResourceSchemasKind, c.ClusterPath, opts), &kubebindv1alpha2.APIResourceSchemaList{})
+	obj, err := c.Fake.Invokes(kcptesting.NewListAction(aPIResourceSchemasResource, aPIResourceSchemasKind, c.ClusterPath, c.Namespace, opts), &kubebindv1alpha2.APIResourceSchemaList{})
 	if obj == nil {
 		return nil, err
 	}
@@ -152,11 +163,11 @@ func (c *aPIResourceSchemasClient) List(ctx context.Context, opts metav1.ListOpt
 }
 
 func (c *aPIResourceSchemasClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	return c.Fake.InvokesWatch(kcptesting.NewRootWatchAction(aPIResourceSchemasResource, c.ClusterPath, opts))
+	return c.Fake.InvokesWatch(kcptesting.NewWatchAction(aPIResourceSchemasResource, c.ClusterPath, c.Namespace, opts))
 }
 
 func (c *aPIResourceSchemasClient) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (*kubebindv1alpha2.APIResourceSchema, error) {
-	obj, err := c.Fake.Invokes(kcptesting.NewRootPatchSubresourceAction(aPIResourceSchemasResource, c.ClusterPath, name, pt, data, subresources...), &kubebindv1alpha2.APIResourceSchema{})
+	obj, err := c.Fake.Invokes(kcptesting.NewPatchSubresourceAction(aPIResourceSchemasResource, c.ClusterPath, c.Namespace, name, pt, data, subresources...), &kubebindv1alpha2.APIResourceSchema{})
 	if obj == nil {
 		return nil, err
 	}
@@ -175,7 +186,7 @@ func (c *aPIResourceSchemasClient) Apply(ctx context.Context, applyConfiguration
 	if name == nil {
 		return nil, fmt.Errorf("applyConfiguration.Name must be provided to Apply")
 	}
-	obj, err := c.Fake.Invokes(kcptesting.NewRootPatchSubresourceAction(aPIResourceSchemasResource, c.ClusterPath, *name, types.ApplyPatchType, data), &kubebindv1alpha2.APIResourceSchema{})
+	obj, err := c.Fake.Invokes(kcptesting.NewPatchSubresourceAction(aPIResourceSchemasResource, c.ClusterPath, c.Namespace, *name, types.ApplyPatchType, data), &kubebindv1alpha2.APIResourceSchema{})
 	if obj == nil {
 		return nil, err
 	}
@@ -194,7 +205,7 @@ func (c *aPIResourceSchemasClient) ApplyStatus(ctx context.Context, applyConfigu
 	if name == nil {
 		return nil, fmt.Errorf("applyConfiguration.Name must be provided to Apply")
 	}
-	obj, err := c.Fake.Invokes(kcptesting.NewRootPatchSubresourceAction(aPIResourceSchemasResource, c.ClusterPath, *name, types.ApplyPatchType, data, "status"), &kubebindv1alpha2.APIResourceSchema{})
+	obj, err := c.Fake.Invokes(kcptesting.NewPatchSubresourceAction(aPIResourceSchemasResource, c.ClusterPath, c.Namespace, *name, types.ApplyPatchType, data, "status"), &kubebindv1alpha2.APIResourceSchema{})
 	if obj == nil {
 		return nil, err
 	}

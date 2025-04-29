@@ -19,7 +19,12 @@ package plugin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -27,10 +32,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
+	"k8s.io/component-base/version"
 
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/base"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -40,6 +47,11 @@ type CRD2APIResourceSchemaOptions struct {
 	Options *base.Options
 	Logs    *logs.Options
 	Print   *genericclioptions.PrintFlags
+
+	// GenerateInCluster indicates whether to generate the APIResourceSchema in-cluster.
+	GenerateInCluster bool
+	// OutputDir is the directory where the APIResourceSchemas will be written.
+	OutputDir string
 }
 
 func NewCRD2APIResourceSchemaOptions(streams genericclioptions.IOStreams) *CRD2APIResourceSchemaOptions {
@@ -54,14 +66,21 @@ func (b *CRD2APIResourceSchemaOptions) AddCmdFlags(cmd *cobra.Command) {
 	b.Options.BindFlags(cmd)
 	logsv1.AddFlags(b.Logs, cmd.Flags())
 	b.Print.AddFlags(cmd)
+
+	cmd.Flags().BoolVar(&b.GenerateInCluster, "generate-in-cluster", b.GenerateInCluster, "Generate the APIResourceSchema in-cluster.")
+	cmd.Flags().StringVar(&b.OutputDir, "output-dir", b.OutputDir, "Directory where APIResourceSchemas will be written.")
 }
 
 func (b *CRD2APIResourceSchemaOptions) Complete(args []string) error {
-	if err := b.Options.Complete(); err != nil {
-		return err
+	return b.Options.Complete()
+}
+
+func (b *CRD2APIResourceSchemaOptions) Validate() error {
+	if b.GenerateInCluster && b.OutputDir != "" {
+		return errors.New("output-dir and generate-in-cluster cannot be used together")
 	}
 
-	return nil
+	return b.Options.Validate()
 }
 
 // Run starts the process of converting CRDs to APIResourceSchema objects.
@@ -75,7 +94,10 @@ func (b *CRD2APIResourceSchemaOptions) Run(ctx context.Context) error {
 		return fmt.Errorf("failed to create dynamic client: %w", err)
 	}
 
-	apiResourceSchemaGVR := kubebindv1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas")
+	if b.OutputDir == "" {
+		b.OutputDir = "."
+	}
+
 	crdGVR := apiextensionsv1.SchemeGroupVersion.WithResource("customresourcedefinitions")
 	crdList, err := client.Resource(crdGVR).List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -93,9 +115,11 @@ func (b *CRD2APIResourceSchemaOptions) Run(ctx context.Context) error {
 			continue
 		}
 
-		apiResourceSchema, err := convertCRDToAPIResourceSchema(crdObj, "apiresourceschema")
+		prefix := fmt.Sprintf("v%s-%s", time.Now().Format("060102"), string(version.Get().GitCommit))
+		apiResourceSchema, err := convertCRDToAPIResourceSchema(crdObj, prefix)
 		if err != nil {
 			fmt.Fprintf(b.Options.ErrOut, "Failed to convert CRD %s to APIResourceSchema: %v\n", crdObj.Name, err)
+			continue
 		}
 
 		if apiResourceSchema == nil {
@@ -103,21 +127,34 @@ func (b *CRD2APIResourceSchemaOptions) Run(ctx context.Context) error {
 			continue
 		}
 
-		unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(apiResourceSchema)
-		if err != nil {
-			return fmt.Errorf("failed to convert APIResourceSchema to unstructured: %w", err)
+		if b.GenerateInCluster {
+			if err := generateAPIResourceSchemaInCluster(ctx, client, apiResourceSchema, b.Options.ErrOut, b.Options.Out); err != nil {
+				continue
+			}
 		}
-		unstructuredResource := &unstructured.Unstructured{Object: unstructuredObj}
-
-		_, err = client.Resource(apiResourceSchemaGVR).Create(ctx, unstructuredResource, metav1.CreateOptions{})
-		if err != nil {
-			fmt.Fprintf(b.Options.ErrOut, "Failed to create APIResourceSchema for CRD %s: %v\n", crdObj.Name, err)
-			continue
+		if err := writeObjectToYAML(b.OutputDir, apiResourceSchema, b.Options.Out); err != nil {
+			return err
 		}
-
-		fmt.Fprintf(b.Options.Out, "Successfully created APIResourceSchema for CRD %s\n", crdObj.Name)
 	}
 
+	return nil
+}
+
+func generateAPIResourceSchemaInCluster(ctx context.Context, client dynamic.Interface, apiResourceSchema *kubebindv1alpha2.APIResourceSchema, errOut, out io.Writer) error {
+	apiResourceSchemaGVR := kubebindv1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas")
+	unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(apiResourceSchema)
+	if err != nil {
+		return fmt.Errorf("failed to convert APIResourceSchema to unstructured: %w", err)
+	}
+	unstructuredResource := &unstructured.Unstructured{Object: unstructuredObj}
+
+	_, err = client.Resource(apiResourceSchemaGVR).Create(ctx, unstructuredResource, metav1.CreateOptions{})
+	if err != nil {
+		fmt.Fprintf(errOut, "Failed to create APIResourceSchema for CRD %s: %v\n", apiResourceSchema.Name, err)
+		return err
+	}
+
+	fmt.Fprintf(out, "Successfully created APIResourceSchema for CRD %s\n", apiResourceSchema.Name)
 	return nil
 }
 
@@ -195,4 +232,34 @@ func convertCRDToAPIResourceSchema(crd *apiextensionsv1.CustomResourceDefinition
 	}
 
 	return apiResourceSchema, nil
+}
+
+func writeObjectToYAML(outputDir string, apiResourceSchema *kubebindv1alpha2.APIResourceSchema, logger io.Writer) error {
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory %s: %w", outputDir, err)
+	}
+
+	scheme := runtime.NewScheme()
+	if err := kubebindv1alpha2.AddToScheme(scheme); err != nil {
+		return fmt.Errorf("failed to register kubebindv1alpha2 API group: %w", err)
+	}
+
+	codecs := serializer.NewCodecFactory(scheme)
+	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeYAML)
+	if !ok {
+		return fmt.Errorf("unsupported media type %q", runtime.ContentTypeYAML)
+	}
+	encoder := codecs.EncoderForVersion(info.Serializer, kubebindv1alpha2.SchemeGroupVersion)
+
+	out, err := runtime.Encode(encoder, apiResourceSchema)
+	if err != nil {
+		return fmt.Errorf("failed to encode APIResourceSchema %s: %w", apiResourceSchema.Name, err)
+	}
+	outputPath := filepath.Join(outputDir, fmt.Sprintf("%s.yaml", apiResourceSchema.Name))
+	if err := os.WriteFile(outputPath, out, 0644); err != nil {
+		return fmt.Errorf("failed to write APIResourceSchema to file %s: %w", outputPath, err)
+	}
+
+	fmt.Fprintf(logger, "Wrote APIResourceSchema %s to %s\n", apiResourceSchema.Name, outputPath)
+	return nil
 }

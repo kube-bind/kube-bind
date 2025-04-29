@@ -44,8 +44,13 @@ func (c *KubeBindV1alpha2ClusterClient) Cluster(clusterPath logicalcluster.Path)
 	return &KubeBindV1alpha2Client{Fake: c.Fake, ClusterPath: clusterPath}
 }
 
+<<<<<<< HEAD
 func (c *KubeBindV1alpha2ClusterClient) APIResourceSchemas() kcpkubebindv1alpha2.APIResourceSchemaClusterInterface {
 	return &aPIResourceSchemasClusterClient{Fake: c.Fake}
+=======
+func (c *KubeBindV1alpha2ClusterClient) BoundAPIResourceSchemas() kcpkubebindv1alpha2.BoundAPIResourceSchemaClusterInterface {
+	return &boundAPIResourceSchemasClusterClient{Fake: c.Fake}
+>>>>>>> 927b5de (Introduce v1alpha2 BoundAPIResourceSchema)
 }
 
 var _ kubebindv1alpha2.KubeBindV1alpha2Interface = (*KubeBindV1alpha2Client)(nil)
@@ -60,6 +65,11 @@ func (c *KubeBindV1alpha2Client) RESTClient() rest.Interface {
 	return ret
 }
 
+<<<<<<< HEAD
 func (c *KubeBindV1alpha2Client) APIResourceSchemas(namespace string) kubebindv1alpha2.APIResourceSchemaInterface {
 	return &aPIResourceSchemasClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
+=======
+func (c *KubeBindV1alpha2Client) BoundAPIResourceSchemas(namespace string) kubebindv1alpha2.BoundAPIResourceSchemaInterface {
+	return &boundAPIResourceSchemasClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
+>>>>>>> 927b5de (Introduce v1alpha2 BoundAPIResourceSchema)
 }

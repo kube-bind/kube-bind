@@ -180,7 +180,7 @@ func convertCRDToAPIResourceSchema(crd *apiextensionsv1.CustomResourceDefinition
 	}
 
 	if len(crd.Spec.Versions) > 1 && crd.Spec.Conversion == nil {
-		return nil, fmt.Errorf("multiple versions specified but no conversion strategy")
+		return nil, fmt.Errorf("multiple versions specified for CRD %q but no conversion strategy", crd.Name)
 	}
 
 	if crd.Spec.Conversion != nil {

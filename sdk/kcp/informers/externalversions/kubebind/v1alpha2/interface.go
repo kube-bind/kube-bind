@@ -26,13 +26,10 @@ import (
 )
 
 type ClusterInterface interface {
-<<<<<<< HEAD
 	// APIResourceSchemas returns a APIResourceSchemaClusterInformer
 	APIResourceSchemas() APIResourceSchemaClusterInformer
-=======
 	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaClusterInformer
 	BoundAPIResourceSchemas() BoundAPIResourceSchemaClusterInformer
->>>>>>> 927b5de (Introduce v1alpha2 BoundAPIResourceSchema)
 }
 
 type version struct {
@@ -45,25 +42,21 @@ func New(f internalinterfaces.SharedInformerFactory, tweakListOptions internalin
 	return &version{factory: f, tweakListOptions: tweakListOptions}
 }
 
-<<<<<<< HEAD
 // APIResourceSchemas returns a APIResourceSchemaClusterInformer
 func (v *version) APIResourceSchemas() APIResourceSchemaClusterInformer {
 	return &aPIResourceSchemaClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
-type Interface interface {
-	// APIResourceSchemas returns a APIResourceSchemaInformer
-	APIResourceSchemas() APIResourceSchemaInformer
-=======
 // BoundAPIResourceSchemas returns a BoundAPIResourceSchemaClusterInformer
 func (v *version) BoundAPIResourceSchemas() BoundAPIResourceSchemaClusterInformer {
 	return &boundAPIResourceSchemaClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 type Interface interface {
+	// APIResourceSchemas returns a APIResourceSchemaInformer
+	APIResourceSchemas() APIResourceSchemaInformer
 	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer
 	BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer
->>>>>>> 927b5de (Introduce v1alpha2 BoundAPIResourceSchema)
 }
 
 type scopedVersion struct {
@@ -77,13 +70,12 @@ func NewScoped(f internalinterfaces.SharedScopedInformerFactory, namespace strin
 	return &scopedVersion{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-<<<<<<< HEAD
 // APIResourceSchemas returns a APIResourceSchemaInformer
 func (v *scopedVersion) APIResourceSchemas() APIResourceSchemaInformer {
 	return &aPIResourceSchemaScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-=======
+}
+
 // BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer
 func (v *scopedVersion) BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer {
 	return &boundAPIResourceSchemaScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
->>>>>>> 927b5de (Introduce v1alpha2 BoundAPIResourceSchema)
 }

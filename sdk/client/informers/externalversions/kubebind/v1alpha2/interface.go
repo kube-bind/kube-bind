@@ -24,13 +24,10 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-<<<<<<< HEAD
 	// APIResourceSchemas returns a APIResourceSchemaInformer.
 	APIResourceSchemas() APIResourceSchemaInformer
-=======
 	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
 	BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer
->>>>>>> 927b5de (Introduce v1alpha2 BoundAPIResourceSchema)
 }
 
 type version struct {
@@ -44,13 +41,12 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-<<<<<<< HEAD
 // APIResourceSchemas returns a APIResourceSchemaInformer.
 func (v *version) APIResourceSchemas() APIResourceSchemaInformer {
 	return &aPIResourceSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-=======
+}
+
 // BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
 func (v *version) BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer {
 	return &boundAPIResourceSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
->>>>>>> 927b5de (Introduce v1alpha2 BoundAPIResourceSchema)
 }

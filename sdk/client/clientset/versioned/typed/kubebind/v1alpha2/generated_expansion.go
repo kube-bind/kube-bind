@@ -18,8 +18,6 @@ limitations under the License.
 
 package v1alpha2
 
-<<<<<<< HEAD
 type APIResourceSchemaExpansion interface{}
-=======
+
 type BoundAPIResourceSchemaExpansion interface{}
->>>>>>> 927b5de (Introduce v1alpha2 BoundAPIResourceSchema)

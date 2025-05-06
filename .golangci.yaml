@@ -1,9 +1,8 @@
+version: "2"
 run:
-  timeout: 10m
   allow-parallel-runners: true
-
 linters:
-  disable-all: true
+  default: none
   enable:
     - asasalint
     - asciicheck
@@ -17,10 +16,8 @@ linters:
     - errchkjson
     - gocritic
     - godot
-    - gofmt
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - importas
     - ineffassign
@@ -36,39 +33,56 @@ linters:
     - unused
     - usestdlibvars
     - whitespace
-
-linters-settings:
-  goconst:
-    ignore-tests: true
-  nolintlint:
-    allow-unused: false
-    allow-leading-space: false
-    require-specific: true
-  revive:
-    # make sure error-strings issues actually surface (default confidence is 0.8)
-    confidence: 0.6
+  settings:
+    nolintlint:
+      require-specific: true
+      allow-unused: false
+    revive:
+      confidence: 0.6
+      rules:
+        - name: context-keys-type
+        - name: duplicated-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: if-return
+        - name: increment-decrement
+        - name: var-declaration
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: errorf
+        - name: superfluous-else
+        - name: unreachable-code
+        - name: bool-literal-in-expr
+        - name: constant-logical-expr
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      - name: context-keys-type
-      - name: duplicated-imports
-      - name: error-return
-      - name: error-strings
-      - name: error-naming
-      - name: if-return
-      - name: increment-decrement
-      - name: var-declaration
-      - name: package-comments
-      - name: range
-      - name: receiver-naming
-      - name: time-naming
-      - name: errorf
-      - name: superfluous-else
-      - name: unreachable-code
-      - name: bool-literal-in-expr
-      - name: constant-logical-expr
-
+      - linters:
+          - goconst
+        path: (.+)_test\.go
+    paths:
+      - pkg/client
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-dirs:
-    - pkg/client
-
-  max-same-issues: 0
   max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+  exclusions:
+    generated: lax
+    paths:
+      - pkg/client
+      - third_party$
+      - builtin$
+      - examples$

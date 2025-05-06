@@ -207,10 +207,10 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 
 	// start controllers
-	go s.Controllers.ServiceExport.Start(ctx, 1)
-	go s.Controllers.ServiceNamespace.Start(ctx, 1)
-	go s.Controllers.ClusterBinding.Start(ctx, 1)
-	go s.Controllers.ServiceExportRequest.Start(ctx, 1)
+	go s.ServiceExport.Start(ctx, 1)
+	go s.ServiceNamespace.Start(ctx, 1)
+	go s.ClusterBinding.Start(ctx, 1)
+	go s.ServiceExportRequest.Start(ctx, 1)
 
 	go func() {
 		<-ctx.Done()

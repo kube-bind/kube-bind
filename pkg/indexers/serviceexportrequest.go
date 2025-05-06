@@ -32,7 +32,7 @@ func IndexServiceExportRequestByGroupResource(obj interface{}) ([]string, error)
 	}
 	keys := []string{}
 	for _, gr := range sbr.Spec.Resources {
-		keys = append(keys, gr.GroupResource.Resource+"."+gr.GroupResource.Group)
+		keys = append(keys, gr.Resource+"."+gr.Group)
 	}
 	return keys, nil
 }
@@ -44,7 +44,7 @@ func IndexServiceExportRequestByServiceExport(obj interface{}) ([]string, error)
 	}
 	keys := []string{}
 	for _, gr := range sbr.Spec.Resources {
-		keys = append(keys, sbr.Namespace+"/"+gr.GroupResource.Resource+"."+gr.GroupResource.Group)
+		keys = append(keys, sbr.Namespace+"/"+gr.Resource+"."+gr.Group)
 	}
 	return keys, nil
 }

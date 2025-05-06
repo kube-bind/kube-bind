@@ -176,7 +176,7 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 }
 
 func (c *controller) enqueueServiceExport(logger klog.Logger, _ interface{}) {
-	bindings, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.reconciler.consumerSecretRefKey)
+	bindings, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.consumerSecretRefKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -189,7 +189,7 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, _ interface{}) {
 			runtime.HandleError(err)
 			return
 		}
-		logger.V(2).Info("queueing APIServiceBinding", "key", key, "reason", "APIServiceExport", "ServiceExportKey", c.reconciler.consumerSecretRefKey)
+		logger.V(2).Info("queueing APIServiceBinding", "key", key, "reason", "APIServiceExport", "ServiceExportKey", c.consumerSecretRefKey)
 		c.queue.Add(key)
 	}
 }

@@ -100,8 +100,8 @@ func NewWorkspace(t *testing.T, config *rest.Config, options ...ClusterWorkspace
 	}
 
 	// workaround broken GenerateName for workspaces: https://github.com/kcp-dev/kcp/pull/2193
-	ws.ObjectMeta.Name = ws.ObjectMeta.GenerateName
-	ws.ObjectMeta.GenerateName = ""
+	ws.Name = ws.GenerateName
+	ws.GenerateName = ""
 	token := make([]byte, 4)
 	rand.Read(token) //nolint:errcheck
 	base36hash := strings.ToLower(base36.EncodeBytes(token))

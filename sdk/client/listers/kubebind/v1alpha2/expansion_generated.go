@@ -18,7 +18,6 @@ limitations under the License.
 
 package v1alpha2
 
-<<<<<<< HEAD
 // APIResourceSchemaListerExpansion allows custom methods to be added to
 // APIResourceSchemaLister.
 type APIResourceSchemaListerExpansion interface{}
@@ -26,7 +25,7 @@ type APIResourceSchemaListerExpansion interface{}
 // APIResourceSchemaNamespaceListerExpansion allows custom methods to be added to
 // APIResourceSchemaNamespaceLister.
 type APIResourceSchemaNamespaceListerExpansion interface{}
-=======
+
 // BoundAPIResourceSchemaListerExpansion allows custom methods to be added to
 // BoundAPIResourceSchemaLister.
 type BoundAPIResourceSchemaListerExpansion interface{}
@@ -34,4 +33,3 @@ type BoundAPIResourceSchemaListerExpansion interface{}
 // BoundAPIResourceSchemaNamespaceListerExpansion allows custom methods to be added to
 // BoundAPIResourceSchemaNamespaceLister.
 type BoundAPIResourceSchemaNamespaceListerExpansion interface{}
->>>>>>> 927b5de (Introduce v1alpha2 BoundAPIResourceSchema)

@@ -14,11 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-<<<<<<< HEAD
 // Package v1alpha2 defines the v1alpha2 version of the Kube Bind API
-=======
-// Package v1alpha1 defines the v1alpha1 version of the Kube Bind API
->>>>>>> 927b5de (Introduce v1alpha2 BoundAPIResourceSchema)
 //
 // +groupName=kube-bind.io
 // +groupGoName=KubeBind

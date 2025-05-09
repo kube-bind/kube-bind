@@ -26,15 +26,12 @@ import (
 type Interface interface {
 	// APIResourceSchemas returns a APIResourceSchemaInformer.
 	APIResourceSchemas() APIResourceSchemaInformer
-<<<<<<< HEAD
-	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
-	BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer
-=======
 	// APIServiceExports returns a APIServiceExportInformer.
 	APIServiceExports() APIServiceExportInformer
 	// APIServiceExportRequests returns a APIServiceExportRequestInformer.
 	APIServiceExportRequests() APIServiceExportRequestInformer
->>>>>>> 4f9ab6b (Refactor APIServiceExport and APIServiceExportRequest for v1alpha2)
+	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
+	BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer
 }
 
 type version struct {
@@ -53,11 +50,6 @@ func (v *version) APIResourceSchemas() APIResourceSchemaInformer {
 	return &aPIResourceSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-<<<<<<< HEAD
-// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
-func (v *version) BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer {
-	return &boundAPIResourceSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
-=======
 // APIServiceExports returns a APIServiceExportInformer.
 func (v *version) APIServiceExports() APIServiceExportInformer {
 	return &aPIServiceExportInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
@@ -66,5 +58,9 @@ func (v *version) APIServiceExports() APIServiceExportInformer {
 // APIServiceExportRequests returns a APIServiceExportRequestInformer.
 func (v *version) APIServiceExportRequests() APIServiceExportRequestInformer {
 	return &aPIServiceExportRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
->>>>>>> 4f9ab6b (Refactor APIServiceExport and APIServiceExportRequest for v1alpha2)
+}
+
+// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
+func (v *version) BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer {
+	return &boundAPIResourceSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// APIResourceSchemas returns a APIResourceSchemaInformer.
 	APIResourceSchemas() APIResourceSchemaInformer
+	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
+	BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer
 }
 
 type version struct {
@@ -42,4 +44,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // APIResourceSchemas returns a APIResourceSchemaInformer.
 func (v *version) APIResourceSchemas() APIResourceSchemaInformer {
 	return &aPIResourceSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
+func (v *version) BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer {
+	return &boundAPIResourceSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

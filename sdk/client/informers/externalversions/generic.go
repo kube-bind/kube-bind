@@ -69,6 +69,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=kube-bind.io, Version=v1alpha2
 	case v1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIResourceSchemas().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("boundapiresourceschemas"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().BoundAPIResourceSchemas().Informer()}, nil
 
 	}
 

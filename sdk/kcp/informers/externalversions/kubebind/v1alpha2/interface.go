@@ -28,6 +28,8 @@ import (
 type ClusterInterface interface {
 	// APIResourceSchemas returns a APIResourceSchemaClusterInformer
 	APIResourceSchemas() APIResourceSchemaClusterInformer
+	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaClusterInformer
+	BoundAPIResourceSchemas() BoundAPIResourceSchemaClusterInformer
 }
 
 type version struct {
@@ -45,9 +47,16 @@ func (v *version) APIResourceSchemas() APIResourceSchemaClusterInformer {
 	return &aPIResourceSchemaClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
+// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaClusterInformer
+func (v *version) BoundAPIResourceSchemas() BoundAPIResourceSchemaClusterInformer {
+	return &boundAPIResourceSchemaClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
 type Interface interface {
 	// APIResourceSchemas returns a APIResourceSchemaInformer
 	APIResourceSchemas() APIResourceSchemaInformer
+	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer
+	BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer
 }
 
 type scopedVersion struct {
@@ -64,4 +73,9 @@ func NewScoped(f internalinterfaces.SharedScopedInformerFactory, namespace strin
 // APIResourceSchemas returns a APIResourceSchemaInformer
 func (v *scopedVersion) APIResourceSchemas() APIResourceSchemaInformer {
 	return &aPIResourceSchemaScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer
+func (v *scopedVersion) BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer {
+	return &boundAPIResourceSchemaScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

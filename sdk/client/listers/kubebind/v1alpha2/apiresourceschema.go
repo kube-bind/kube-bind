@@ -19,10 +19,11 @@ limitations under the License.
 package v1alpha2
 
 import (
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/listers"
 	"k8s.io/client-go/tools/cache"
+
+	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 // APIResourceSchemaLister helps list APIResourceSchemas.

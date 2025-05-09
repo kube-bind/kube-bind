@@ -19,9 +19,10 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha2"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
+
+	v1alpha2 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha2"
 )
 
 type FakeKubeBindV1alpha2 struct {
@@ -32,17 +33,16 @@ func (c *FakeKubeBindV1alpha2) APIResourceSchemas(namespace string) v1alpha2.API
 	return &FakeAPIResourceSchemas{c, namespace}
 }
 
-<<<<<<< HEAD
-func (c *FakeKubeBindV1alpha2) BoundAPIResourceSchemas(namespace string) v1alpha2.BoundAPIResourceSchemaInterface {
-	return &FakeBoundAPIResourceSchemas{c, namespace}
-=======
 func (c *FakeKubeBindV1alpha2) APIServiceExports(namespace string) v1alpha2.APIServiceExportInterface {
 	return &FakeAPIServiceExports{c, namespace}
 }
 
 func (c *FakeKubeBindV1alpha2) APIServiceExportRequests(namespace string) v1alpha2.APIServiceExportRequestInterface {
 	return &FakeAPIServiceExportRequests{c, namespace}
->>>>>>> 4f9ab6b (Refactor APIServiceExport and APIServiceExportRequest for v1alpha2)
+}
+
+func (c *FakeKubeBindV1alpha2) BoundAPIResourceSchemas(namespace string) v1alpha2.BoundAPIResourceSchemaInterface {
+	return &FakeBoundAPIResourceSchemas{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

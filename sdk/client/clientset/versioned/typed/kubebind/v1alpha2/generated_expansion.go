@@ -19,3 +19,7 @@ limitations under the License.
 package v1alpha2
 
 type APIResourceSchemaExpansion interface{}
+
+type APIServiceExportExpansion interface{}
+
+type APIServiceExportRequestExpansion interface{}

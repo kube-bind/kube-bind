@@ -23,14 +23,13 @@ import (
 	json "encoding/json"
 	"fmt"
 
+	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/kubebind/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
-
-	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/kubebind/v1alpha1"
 )
 
 // FakeAPIServiceExports implements APIServiceExportInterface

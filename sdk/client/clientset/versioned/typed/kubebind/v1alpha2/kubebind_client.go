@@ -21,15 +21,16 @@ package v1alpha2
 import (
 	"net/http"
 
-	rest "k8s.io/client-go/rest"
-
 	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/scheme"
+	rest "k8s.io/client-go/rest"
 )
 
 type KubeBindV1alpha2Interface interface {
 	RESTClient() rest.Interface
 	APIResourceSchemasGetter
+	APIServiceExportsGetter
+	APIServiceExportRequestsGetter
 }
 
 // KubeBindV1alpha2Client is used to interact with features provided by the kube-bind.io group.
@@ -39,6 +40,14 @@ type KubeBindV1alpha2Client struct {
 
 func (c *KubeBindV1alpha2Client) APIResourceSchemas(namespace string) APIResourceSchemaInterface {
 	return newAPIResourceSchemas(c, namespace)
+}
+
+func (c *KubeBindV1alpha2Client) APIServiceExports(namespace string) APIServiceExportInterface {
+	return newAPIServiceExports(c, namespace)
+}
+
+func (c *KubeBindV1alpha2Client) APIServiceExportRequests(namespace string) APIServiceExportRequestInterface {
+	return newAPIServiceExportRequests(c, namespace)
 }
 
 // NewForConfig creates a new KubeBindV1alpha2Client for the given config.

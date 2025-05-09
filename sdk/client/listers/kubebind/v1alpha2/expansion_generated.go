@@ -26,6 +26,7 @@ type APIResourceSchemaListerExpansion interface{}
 // APIResourceSchemaNamespaceLister.
 type APIResourceSchemaNamespaceListerExpansion interface{}
 
+<<<<<<< HEAD
 // BoundAPIResourceSchemaListerExpansion allows custom methods to be added to
 // BoundAPIResourceSchemaLister.
 type BoundAPIResourceSchemaListerExpansion interface{}
@@ -33,3 +34,20 @@ type BoundAPIResourceSchemaListerExpansion interface{}
 // BoundAPIResourceSchemaNamespaceListerExpansion allows custom methods to be added to
 // BoundAPIResourceSchemaNamespaceLister.
 type BoundAPIResourceSchemaNamespaceListerExpansion interface{}
+=======
+// APIServiceExportListerExpansion allows custom methods to be added to
+// APIServiceExportLister.
+type APIServiceExportListerExpansion interface{}
+
+// APIServiceExportNamespaceListerExpansion allows custom methods to be added to
+// APIServiceExportNamespaceLister.
+type APIServiceExportNamespaceListerExpansion interface{}
+
+// APIServiceExportRequestListerExpansion allows custom methods to be added to
+// APIServiceExportRequestLister.
+type APIServiceExportRequestListerExpansion interface{}
+
+// APIServiceExportRequestNamespaceListerExpansion allows custom methods to be added to
+// APIServiceExportRequestNamespaceLister.
+type APIServiceExportRequestNamespaceListerExpansion interface{}
+>>>>>>> 4f9ab6b (Refactor APIServiceExport and APIServiceExportRequest for v1alpha2)

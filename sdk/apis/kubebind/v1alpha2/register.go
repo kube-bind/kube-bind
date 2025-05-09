@@ -48,8 +48,15 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&APIResourceSchema{},
 		&APIResourceSchemaList{},
+<<<<<<< HEAD
 		&BoundAPIResourceSchema{},
 		&BoundAPIResourceSchemaList{},
+=======
+		&APIServiceExport{},
+		&APIServiceExportList{},
+		&APIServiceExportRequest{},
+		&APIServiceExportRequestList{},
+>>>>>>> 4f9ab6b (Refactor APIServiceExport and APIServiceExportRequest for v1alpha2)
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

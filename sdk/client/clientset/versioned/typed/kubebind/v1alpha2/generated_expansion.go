@@ -20,4 +20,10 @@ package v1alpha2
 
 type APIResourceSchemaExpansion interface{}
 
+<<<<<<< HEAD
 type BoundAPIResourceSchemaExpansion interface{}
+=======
+type APIServiceExportExpansion interface{}
+
+type APIServiceExportRequestExpansion interface{}
+>>>>>>> 4f9ab6b (Refactor APIServiceExport and APIServiceExportRequest for v1alpha2)

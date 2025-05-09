@@ -35,6 +35,8 @@ import (
 type KubeBindV1alpha2ClusterInterface interface {
 	KubeBindV1alpha2ClusterScoper
 	APIResourceSchemasClusterGetter
+	APIServiceExportsClusterGetter
+	APIServiceExportRequestsClusterGetter
 }
 
 type KubeBindV1alpha2ClusterScoper interface {
@@ -54,6 +56,14 @@ func (c *KubeBindV1alpha2ClusterClient) Cluster(clusterPath logicalcluster.Path)
 
 func (c *KubeBindV1alpha2ClusterClient) APIResourceSchemas() APIResourceSchemaClusterInterface {
 	return &aPIResourceSchemasClusterInterface{clientCache: c.clientCache}
+}
+
+func (c *KubeBindV1alpha2ClusterClient) APIServiceExports() APIServiceExportClusterInterface {
+	return &aPIServiceExportsClusterInterface{clientCache: c.clientCache}
+}
+
+func (c *KubeBindV1alpha2ClusterClient) APIServiceExportRequests() APIServiceExportRequestClusterInterface {
+	return &aPIServiceExportRequestsClusterInterface{clientCache: c.clientCache}
 }
 
 // NewForConfig creates a new KubeBindV1alpha2ClusterClient for the given config.

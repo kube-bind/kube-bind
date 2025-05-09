@@ -28,6 +28,10 @@ import (
 type ClusterInterface interface {
 	// APIResourceSchemas returns a APIResourceSchemaClusterInformer
 	APIResourceSchemas() APIResourceSchemaClusterInformer
+	// APIServiceExports returns a APIServiceExportClusterInformer
+	APIServiceExports() APIServiceExportClusterInformer
+	// APIServiceExportRequests returns a APIServiceExportRequestClusterInformer
+	APIServiceExportRequests() APIServiceExportRequestClusterInformer
 }
 
 type version struct {
@@ -45,9 +49,23 @@ func (v *version) APIResourceSchemas() APIResourceSchemaClusterInformer {
 	return &aPIResourceSchemaClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
+// APIServiceExports returns a APIServiceExportClusterInformer
+func (v *version) APIServiceExports() APIServiceExportClusterInformer {
+	return &aPIServiceExportClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceExportRequests returns a APIServiceExportRequestClusterInformer
+func (v *version) APIServiceExportRequests() APIServiceExportRequestClusterInformer {
+	return &aPIServiceExportRequestClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
 type Interface interface {
 	// APIResourceSchemas returns a APIResourceSchemaInformer
 	APIResourceSchemas() APIResourceSchemaInformer
+	// APIServiceExports returns a APIServiceExportInformer
+	APIServiceExports() APIServiceExportInformer
+	// APIServiceExportRequests returns a APIServiceExportRequestInformer
+	APIServiceExportRequests() APIServiceExportRequestInformer
 }
 
 type scopedVersion struct {
@@ -64,4 +82,14 @@ func NewScoped(f internalinterfaces.SharedScopedInformerFactory, namespace strin
 // APIResourceSchemas returns a APIResourceSchemaInformer
 func (v *scopedVersion) APIResourceSchemas() APIResourceSchemaInformer {
 	return &aPIResourceSchemaScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceExports returns a APIServiceExportInformer
+func (v *scopedVersion) APIServiceExports() APIServiceExportInformer {
+	return &aPIServiceExportScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceExportRequests returns a APIServiceExportRequestInformer
+func (v *scopedVersion) APIServiceExportRequests() APIServiceExportRequestInformer {
+	return &aPIServiceExportRequestScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

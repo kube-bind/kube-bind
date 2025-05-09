@@ -33,6 +33,14 @@ func (c *FakeKubeBindV1alpha2) APIResourceSchemas(namespace string) v1alpha2.API
 	return &FakeAPIResourceSchemas{c, namespace}
 }
 
+func (c *FakeKubeBindV1alpha2) APIServiceExports(namespace string) v1alpha2.APIServiceExportInterface {
+	return &FakeAPIServiceExports{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha2) APIServiceExportRequests(namespace string) v1alpha2.APIServiceExportRequestInterface {
+	return &FakeAPIServiceExportRequests{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeKubeBindV1alpha2) RESTClient() rest.Interface {

@@ -101,6 +101,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=kube-bind.io, Version=V1alpha2
 	case kubebindv1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas"):
 		return &genericClusterInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIResourceSchemas().Informer()}, nil
+	case kubebindv1alpha2.SchemeGroupVersion.WithResource("apiserviceexports"):
+		return &genericClusterInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIServiceExports().Informer()}, nil
+	case kubebindv1alpha2.SchemeGroupVersion.WithResource("apiserviceexportrequests"):
+		return &genericClusterInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIServiceExportRequests().Informer()}, nil
 	}
 
 	return nil, fmt.Errorf("no informer found for %v", resource)
@@ -129,6 +133,12 @@ func (f *sharedScopedInformerFactory) ForResource(resource schema.GroupVersionRe
 	// Group=kube-bind.io, Version=V1alpha2
 	case kubebindv1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas"):
 		informer := f.KubeBind().V1alpha2().APIResourceSchemas().Informer()
+		return &genericInformer{lister: cache.NewGenericLister(informer.GetIndexer(), resource.GroupResource()), informer: informer}, nil
+	case kubebindv1alpha2.SchemeGroupVersion.WithResource("apiserviceexports"):
+		informer := f.KubeBind().V1alpha2().APIServiceExports().Informer()
+		return &genericInformer{lister: cache.NewGenericLister(informer.GetIndexer(), resource.GroupResource()), informer: informer}, nil
+	case kubebindv1alpha2.SchemeGroupVersion.WithResource("apiserviceexportrequests"):
+		informer := f.KubeBind().V1alpha2().APIServiceExportRequests().Informer()
 		return &genericInformer{lister: cache.NewGenericLister(informer.GetIndexer(), resource.GroupResource()), informer: informer}, nil
 	}
 

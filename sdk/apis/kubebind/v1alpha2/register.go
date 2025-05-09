@@ -47,6 +47,11 @@ func Resource(resource string) schema.GroupResource {
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&APIResourceSchema{},
+		&APIResourceSchemaList{},
+		&APIServiceExport{},
+		&APIServiceExportList{},
+		&APIServiceExportRequest{},
+		&APIServiceExportRequestList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

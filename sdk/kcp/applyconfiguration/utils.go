@@ -19,18 +19,17 @@ limitations under the License.
 package applyconfiguration
 
 import (
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	runtime "k8s.io/apimachinery/pkg/runtime"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
-	testing "k8s.io/client-go/testing"
-
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	conditionsv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/conditions/v1alpha1"
 	internal "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/internal"
 	applyconfigurationkubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/kubebind/v1alpha1"
 	applyconfigurationmetav1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	testing "k8s.io/client-go/testing"
 )
 
 // ForKind returns an apply configuration type for the given GroupVersionKind, or nil if no

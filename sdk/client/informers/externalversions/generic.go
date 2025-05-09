@@ -21,11 +21,10 @@ package externalversions
 import (
 	"fmt"
 
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	cache "k8s.io/client-go/tools/cache"
-
 	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	schema "k8s.io/apimachinery/pkg/runtime/schema"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // GenericInformer is type of SharedIndexInformer which will locate and delegate to other
@@ -69,8 +68,15 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=kube-bind.io, Version=v1alpha2
 	case v1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIResourceSchemas().Informer()}, nil
+<<<<<<< HEAD
 	case v1alpha2.SchemeGroupVersion.WithResource("boundapiresourceschemas"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().BoundAPIResourceSchemas().Informer()}, nil
+=======
+	case v1alpha2.SchemeGroupVersion.WithResource("apiserviceexports"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIServiceExports().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("apiserviceexportrequests"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIServiceExportRequests().Informer()}, nil
+>>>>>>> 4f9ab6b (Refactor APIServiceExport and APIServiceExportRequest for v1alpha2)
 
 	}
 

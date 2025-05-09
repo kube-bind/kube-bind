@@ -19,10 +19,11 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
-	v1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
+
+	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	v1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/meta/v1"
 )
 
 // APIServiceNamespaceApplyConfiguration represents a declarative configuration of the APIServiceNamespace type for use

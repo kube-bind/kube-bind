@@ -19,8 +19,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 // ClusterBindingStatusApplyConfiguration represents a declarative configuration of the ClusterBindingStatus type for use

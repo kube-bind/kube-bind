@@ -19,8 +19,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
 // APIServiceExportSpecApplyConfiguration represents a declarative configuration of the APIServiceExportSpec type for use

@@ -932,6 +932,6 @@ spec:
         - message: informerScope is immutable
           rule: self.metadata.name == self.spec.names.plural+"."+self.spec.group
     served: true
-    storage: false
+    storage: true
     subresources:
       status: {}

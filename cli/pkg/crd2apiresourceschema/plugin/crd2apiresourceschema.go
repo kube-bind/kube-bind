@@ -215,13 +215,14 @@ func convertCRDToAPIResourceSchema(crd *apiextensionsv1.CustomResourceDefinition
 			DeprecationWarning:       crdVersion.DeprecationWarning,
 			AdditionalPrinterColumns: crdVersion.AdditionalPrinterColumns,
 		}
-
 		if crdVersion.Schema != nil && crdVersion.Schema.OpenAPIV3Schema != nil {
 			rawSchema, err := json.Marshal(crdVersion.Schema.OpenAPIV3Schema)
 			if err != nil {
 				return nil, fmt.Errorf("error converting schema for version %q: %w", crdVersion.Name, err)
 			}
-			apiResourceVersion.Schema = runtime.RawExtension{Raw: rawSchema}
+			apiResourceVersion.Schema = kubebindv1alpha2.CRDVersionSchema{
+				OpenAPIV3Schema: runtime.RawExtension{Raw: rawSchema},
+			}
 		}
 
 		if crdVersion.Subresources != nil {

@@ -135,8 +135,6 @@ const (
 
 // APIServiceExportStatus stores status information about a APIServiceExport. It
 // reflects the status of the CRD of the consumer cluster.
-
-// TODO: ADD BoundAPIResourceSchema status
 type APIServiceExportStatus struct {
 	// acceptedNames are the names that are actually being used to serve discovery.
 	// They may be different than the names in spec.
@@ -155,6 +153,32 @@ type APIServiceExportStatus struct {
 	// conditions is a list of conditions that apply to the APIServiceExport. It is
 	// updated by the konnector on the consumer cluster.
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
+
+	// boundSchemas contains references to all BoundAPIResourceSchema objects
+	// associated with this APIServiceExport, tracking consumer usage status.
+	// +optional
+	// +listType=map
+	// +listMapKey=consumerID
+	BoundSchemas []BoundSchemaReference `json:"boundSchemas,omitempty"`
+}
+
+// BoundSchemaReference contains a reference to a BoundAPIResourceSchema with status information.
+type BoundSchemaReference struct {
+	// name is the name of the BoundAPIResourceSchema.
+	// +required
+	Name string `json:"name"`
+
+	// namespace is the namespace of the BoundAPIResourceSchema.
+	// +required
+	Namespace string `json:"namespace"`
+
+	// Conditions represent the latest available observations of the object's state.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// Instantiations tracks the number of instances of the resource on the consumer side.
+	// +optional
+	Instantiations int `json:"instantiations,omitempty"`
 }
 
 // APIServiceExportList is the objects list that represents the APIServiceExport.

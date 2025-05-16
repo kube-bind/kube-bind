@@ -33,6 +33,10 @@ func (c *FakeKubeBindV1alpha2) APIResourceSchemas(namespace string) v1alpha2.API
 	return &FakeAPIResourceSchemas{c, namespace}
 }
 
+func (c *FakeKubeBindV1alpha2) APIServiceBindings() v1alpha2.APIServiceBindingInterface {
+	return &FakeAPIServiceBindings{c}
+}
+
 func (c *FakeKubeBindV1alpha2) APIServiceExports(namespace string) v1alpha2.APIServiceExportInterface {
 	return &FakeAPIServiceExports{c, namespace}
 }

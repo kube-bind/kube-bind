@@ -26,6 +26,10 @@ type APIResourceSchemaListerExpansion interface{}
 // APIResourceSchemaNamespaceLister.
 type APIResourceSchemaNamespaceListerExpansion interface{}
 
+// APIServiceBindingListerExpansion allows custom methods to be added to
+// APIServiceBindingLister.
+type APIServiceBindingListerExpansion interface{}
+
 // APIServiceExportListerExpansion allows custom methods to be added to
 // APIServiceExportLister.
 type APIServiceExportListerExpansion interface{}

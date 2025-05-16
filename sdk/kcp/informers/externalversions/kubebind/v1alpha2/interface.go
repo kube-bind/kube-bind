@@ -28,6 +28,12 @@ import (
 type ClusterInterface interface {
 	// APIResourceSchemas returns a APIResourceSchemaClusterInformer
 	APIResourceSchemas() APIResourceSchemaClusterInformer
+	// APIServiceBindings returns a APIServiceBindingClusterInformer
+	APIServiceBindings() APIServiceBindingClusterInformer
+	// APIServiceExports returns a APIServiceExportClusterInformer
+	APIServiceExports() APIServiceExportClusterInformer
+	// APIServiceExportRequests returns a APIServiceExportRequestClusterInformer
+	APIServiceExportRequests() APIServiceExportRequestClusterInformer
 	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaClusterInformer
 	BoundAPIResourceSchemas() BoundAPIResourceSchemaClusterInformer
 }
@@ -47,6 +53,21 @@ func (v *version) APIResourceSchemas() APIResourceSchemaClusterInformer {
 	return &aPIResourceSchemaClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
+// APIServiceBindings returns a APIServiceBindingClusterInformer
+func (v *version) APIServiceBindings() APIServiceBindingClusterInformer {
+	return &aPIServiceBindingClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceExports returns a APIServiceExportClusterInformer
+func (v *version) APIServiceExports() APIServiceExportClusterInformer {
+	return &aPIServiceExportClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceExportRequests returns a APIServiceExportRequestClusterInformer
+func (v *version) APIServiceExportRequests() APIServiceExportRequestClusterInformer {
+	return &aPIServiceExportRequestClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
 // BoundAPIResourceSchemas returns a BoundAPIResourceSchemaClusterInformer
 func (v *version) BoundAPIResourceSchemas() BoundAPIResourceSchemaClusterInformer {
 	return &boundAPIResourceSchemaClusterInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
@@ -55,6 +76,12 @@ func (v *version) BoundAPIResourceSchemas() BoundAPIResourceSchemaClusterInforme
 type Interface interface {
 	// APIResourceSchemas returns a APIResourceSchemaInformer
 	APIResourceSchemas() APIResourceSchemaInformer
+	// APIServiceBindings returns a APIServiceBindingInformer
+	APIServiceBindings() APIServiceBindingInformer
+	// APIServiceExports returns a APIServiceExportInformer
+	APIServiceExports() APIServiceExportInformer
+	// APIServiceExportRequests returns a APIServiceExportRequestInformer
+	APIServiceExportRequests() APIServiceExportRequestInformer
 	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer
 	BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer
 }
@@ -73,6 +100,21 @@ func NewScoped(f internalinterfaces.SharedScopedInformerFactory, namespace strin
 // APIResourceSchemas returns a APIResourceSchemaInformer
 func (v *scopedVersion) APIResourceSchemas() APIResourceSchemaInformer {
 	return &aPIResourceSchemaScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceBindings returns a APIServiceBindingInformer
+func (v *scopedVersion) APIServiceBindings() APIServiceBindingInformer {
+	return &aPIServiceBindingScopedInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceExports returns a APIServiceExportInformer
+func (v *scopedVersion) APIServiceExports() APIServiceExportInformer {
+	return &aPIServiceExportScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// APIServiceExportRequests returns a APIServiceExportRequestInformer
+func (v *scopedVersion) APIServiceExportRequests() APIServiceExportRequestInformer {
+	return &aPIServiceExportRequestScopedInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer

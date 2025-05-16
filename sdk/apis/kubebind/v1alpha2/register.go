@@ -50,6 +50,12 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&APIResourceSchemaList{},
 		&BoundAPIResourceSchema{},
 		&BoundAPIResourceSchemaList{},
+		&APIServiceBinding{},
+		&APIServiceBindingList{},
+		&APIServiceExport{},
+		&APIServiceExportList{},
+		&APIServiceExportRequest{},
+		&APIServiceExportRequestList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

@@ -33,7 +33,6 @@ import (
 	"github.com/kube-bind/kube-bind/contrib/example-backend/deploy"
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
 type Server struct {

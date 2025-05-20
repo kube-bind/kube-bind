@@ -31,7 +31,7 @@ func TestWebhookCRDStorageVersion(t *testing.T) {
 			Versions: []v1.CustomResourceDefinitionVersion{
 				{
 					Served:  true,
-					Name:    "v1alpha1",
+					Name:    "v1alpha2",
 					Storage: false,
 				},
 				{

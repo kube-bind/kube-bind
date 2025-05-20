@@ -28,14 +28,14 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog/v2"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type reconciler struct {
 	providerNamespace string
 
-	getServiceNamespace    func(name string) (*kubebindv1alpha1.APIServiceNamespace, error)
-	createServiceNamespace func(ctx context.Context, sn *kubebindv1alpha1.APIServiceNamespace) (*kubebindv1alpha1.APIServiceNamespace, error)
+	getServiceNamespace    func(name string) (*kubebindv1alpha2.APIServiceNamespace, error)
+	createServiceNamespace func(ctx context.Context, sn *kubebindv1alpha2.APIServiceNamespace) (*kubebindv1alpha2.APIServiceNamespace, error)
 
 	getProviderObject    func(ns, name string) (*unstructured.Unstructured, error)
 	createProviderObject func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
@@ -58,7 +58,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 			return err
 		} else if errors.IsNotFound(err) {
 			logger.V(1).Info("creating APIServiceNamespace", "namespace", ns)
-			sn, err = r.createServiceNamespace(ctx, &kubebindv1alpha1.APIServiceNamespace{
+			sn, err = r.createServiceNamespace(ctx, &kubebindv1alpha2.APIServiceNamespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      ns,
 					Namespace: r.providerNamespace,
@@ -189,7 +189,7 @@ func (r *reconciler) ensureDownstreamFinalizer(ctx context.Context, obj *unstruc
 	// check that downstream has our finalizer
 	found := false
 	for _, f := range obj.GetFinalizers() {
-		if f == kubebindv1alpha1.DownstreamFinalizer {
+		if f == kubebindv1alpha2.DownstreamFinalizer {
 			found = true
 			break
 		}
@@ -198,7 +198,7 @@ func (r *reconciler) ensureDownstreamFinalizer(ctx context.Context, obj *unstruc
 	if !found {
 		logger.V(2).Info("adding finalizer to downstream object")
 		obj = obj.DeepCopy()
-		obj.SetFinalizers(append(obj.GetFinalizers(), kubebindv1alpha1.DownstreamFinalizer))
+		obj.SetFinalizers(append(obj.GetFinalizers(), kubebindv1alpha2.DownstreamFinalizer))
 		var err error
 		if obj, err = r.updateConsumerObject(ctx, obj); err != nil {
 			return nil, err
@@ -214,7 +214,7 @@ func (r *reconciler) removeDownstreamFinalizer(ctx context.Context, obj *unstruc
 	finalizers := []string{}
 	found := false
 	for _, f := range obj.GetFinalizers() {
-		if f == kubebindv1alpha1.DownstreamFinalizer {
+		if f == kubebindv1alpha2.DownstreamFinalizer {
 			found = true
 			continue
 		}

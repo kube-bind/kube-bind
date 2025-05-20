@@ -37,10 +37,10 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -50,7 +50,7 @@ const (
 // NewController returns a new controller for ServiceBindings.
 func NewController(
 	consumerSecretRefKey, providerNamespace string,
-	reconcileServiceBinding func(binding *kubebindv1alpha1.APIServiceBinding) bool,
+	reconcileServiceBinding func(binding *kubebindv1alpha2.APIServiceBinding) bool,
 	consumerConfig, providerConfig *rest.Config,
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
 	serviceExportInformer bindinformers.APIServiceExportInformer,
@@ -94,17 +94,17 @@ func NewController(
 			providerNamespace:       providerNamespace,
 			reconcileServiceBinding: reconcileServiceBinding,
 
-			getServiceExport: func(name string) (*kubebindv1alpha1.APIServiceExport, error) {
+			getServiceExport: func(name string) (*kubebindv1alpha2.APIServiceExport, error) {
 				return serviceExportInformer.Lister().APIServiceExports(providerNamespace).Get(name)
 			},
-			getServiceBinding: func(name string) (*kubebindv1alpha1.APIServiceBinding, error) {
+			getServiceBinding: func(name string) (*kubebindv1alpha2.APIServiceBinding, error) {
 				return serviceBindingInformer.Lister().Get(name)
 			},
-			getClusterBinding: func(ctx context.Context) (*kubebindv1alpha1.ClusterBinding, error) {
-				return providerBindClient.KubeBindV1alpha1().ClusterBindings(providerNamespace).Get(ctx, "cluster", metav1.GetOptions{})
+			getClusterBinding: func(ctx context.Context) (*kubebindv1alpha2.ClusterBinding, error) {
+				return providerBindClient.KubeBindV1alpha2().ClusterBindings(providerNamespace).Get(ctx, "cluster", metav1.GetOptions{})
 			},
-			updateServiceExportStatus: func(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error) {
-				return providerBindClient.KubeBindV1alpha1().APIServiceExports(providerNamespace).UpdateStatus(ctx, export, metav1.UpdateOptions{})
+			updateServiceExportStatus: func(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error) {
+				return providerBindClient.KubeBindV1alpha2().APIServiceExports(providerNamespace).UpdateStatus(ctx, export, metav1.UpdateOptions{})
 			},
 			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return crdInformer.Lister().Get(name)
@@ -117,9 +117,9 @@ func NewController(
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceBinding, *kubebindv1alpha1.APIServiceBindingSpec, *kubebindv1alpha1.APIServiceBindingStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceBinding] {
-				return consumerBindClient.KubeBindV1alpha1().APIServiceBindings()
+		commit: committer.NewCommitter[*kubebindv1alpha2.APIServiceBinding, *kubebindv1alpha2.APIServiceBindingSpec, *kubebindv1alpha2.APIServiceBindingStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha2.APIServiceBinding] {
+				return consumerBindClient.KubeBindV1alpha2().APIServiceBindings()
 			},
 		),
 	}
@@ -129,13 +129,13 @@ func NewController(
 	})
 
 	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceExport(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueServiceExport(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceExport(logger, obj)
 		},
 	}); err != nil {
@@ -145,7 +145,7 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.APIServiceBindingSpec, *kubebindv1alpha1.APIServiceBindingStatus]
+type Resource = committer.Resource[*kubebindv1alpha2.APIServiceBindingSpec, *kubebindv1alpha2.APIServiceBindingStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // controller reconciles ServiceBindings with there ServiceExports counterparts.
@@ -164,7 +164,7 @@ type controller struct {
 	commit CommitFunc
 }
 
-func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueServiceBinding(logger klog.Logger, obj any) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -175,15 +175,15 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueServiceExport(logger klog.Logger, _ interface{}) {
-	bindings, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.consumerSecretRefKey)
+func (c *controller) enqueueServiceExport(logger klog.Logger, _ any) {
+	bindings, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.reconciler.consumerSecretRefKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
 	for _, obj := range bindings {
-		binding := obj.(*kubebindv1alpha1.APIServiceBinding)
+		binding := obj.(*kubebindv1alpha2.APIServiceBinding)
 		key, err := cache.MetaNamespaceKeyFunc(binding)
 		if err != nil {
 			runtime.HandleError(err)
@@ -194,7 +194,7 @@ func (c *controller) enqueueServiceExport(logger klog.Logger, _ interface{}) {
 	}
 }
 
-func (c *controller) enqueueCRD(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueCRD(logger klog.Logger, obj any) {
 	name, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -207,7 +207,7 @@ func (c *controller) enqueueCRD(logger klog.Logger, obj interface{}) {
 		return
 	}
 	for _, obj := range exports {
-		export := obj.(*kubebindv1alpha1.APIServiceExport)
+		export := obj.(*kubebindv1alpha2.APIServiceExport)
 		key := export.Name
 		logger.V(2).Info("queueing APIServiceBinding", "key", key, "reason", "CustomResourceDefinition", "CustomResourceDefinitionKey", name)
 		c.queue.Add(key)
@@ -225,25 +225,25 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 	defer logger.Info("Shutting down controller")
 
 	c.serviceBindingInformer.Informer().AddDynamicEventHandler(ctx, controllerName, cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceBinding(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueServiceBinding(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceBinding(logger, obj)
 		},
 	})
 
 	c.crdInformer.Informer().AddDynamicEventHandler(ctx, controllerName, cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueCRD(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueCRD(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueCRD(logger, obj)
 		},
 	})

@@ -37,8 +37,8 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -109,13 +109,13 @@ func (inf *DynamicMultiNamespaceInformer) Start(ctx context.Context) {
 	defer logger.Info("Shutting down controller")
 
 	inf.serviceNamespaceInformer.Informer().AddDynamicEventHandler(ctx, controllerName, cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			inf.enqueueServiceNamespace(obj)
 		},
-		UpdateFunc: func(oldObj, newObj interface{}) {
+		UpdateFunc: func(oldObj, newObj any) {
 			inf.enqueueServiceNamespace(newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			inf.enqueueServiceNamespace(obj)
 		},
 	})
@@ -131,7 +131,7 @@ func (inf *DynamicMultiNamespaceInformer) Start(ctx context.Context) {
 	}()
 }
 
-func (inf *DynamicMultiNamespaceInformer) enqueueServiceNamespace(obj interface{}) {
+func (inf *DynamicMultiNamespaceInformer) enqueueServiceNamespace(obj any) {
 	logger := klog.FromContext(context.Background()).WithValues("controller", controllerName, "gvr", inf.gvr)
 
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
@@ -221,7 +221,7 @@ func (inf *DynamicMultiNamespaceInformer) Get(ns, name string) (runtime.Object, 
 	} else if len(snss) > 1 {
 		return nil, fmt.Errorf("unexpected multiple APIServiceNamespaces for namespace %s", ns)
 	}
-	sns := snss[0].(*kubebindv1alpha1.APIServiceNamespace)
+	sns := snss[0].(*kubebindv1alpha2.APIServiceNamespace)
 
 	inf.lock.RLock()
 	defer inf.lock.RUnlock()
@@ -242,7 +242,7 @@ func (inf *DynamicMultiNamespaceInformer) List(ns string) ([]runtime.Object, err
 	} else if len(snss) > 1 {
 		return nil, fmt.Errorf("unexpected multiple APIServiceNamespaces for namespace %s", ns)
 	}
-	sns := snss[0].(*kubebindv1alpha1.APIServiceNamespace)
+	sns := snss[0].(*kubebindv1alpha2.APIServiceNamespace)
 
 	inf.lock.RLock()
 	defer inf.lock.RUnlock()

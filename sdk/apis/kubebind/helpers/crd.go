@@ -22,13 +22,13 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 func IsOwnedByBinding(name string, uid types.UID, refs []v1.OwnerReference) bool {
 	for _, ref := range refs {
 		parts := strings.SplitN(ref.APIVersion, "/", 2)
-		if parts[0] != v1alpha1.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
+		if parts[0] != v1alpha2.SchemeGroupVersion.Group || ref.Kind != "APIServiceBinding" {
 			continue
 		}
 		if ref.Name != name {

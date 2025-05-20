@@ -54,14 +54,14 @@ func init() {
 	utilruntime.Must(tenancyv1alpha1.AddToScheme(kcpScheme))
 }
 
-func WithName(s string, formatArgs ...interface{}) ClusterWorkspaceOption {
+func WithName(s string, formatArgs ...any) ClusterWorkspaceOption {
 	return func(ws *tenancyv1alpha1.Workspace) {
 		ws.Name = fmt.Sprintf(s, formatArgs...)
 		ws.GenerateName = ""
 	}
 }
 
-func WithGenerateName(s string, formatArgs ...interface{}) ClusterWorkspaceOption {
+func WithGenerateName(s string, formatArgs ...any) ClusterWorkspaceOption {
 	return func(ws *tenancyv1alpha1.Workspace) {
 		s = fmt.Sprintf(s, formatArgs...)
 		// Workspace.ObjectMeta.GenerateName is broken in kcp: https://github.com/kcp-dev/kcp/pull/2193

@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
@@ -35,8 +35,8 @@ func TestEnsureCRDConditionsCopied(t *testing.T) {
 	tests := []struct {
 		name     string
 		getCRD   func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-		export   *kubebindv1alpha1.APIServiceExport
-		expected *kubebindv1alpha1.APIServiceExport
+		export   *kubebindv1alpha2.APIServiceExport
+		expected *kubebindv1alpha2.APIServiceExport
 		wantErr  bool
 	}{
 		{
@@ -96,12 +96,12 @@ func newCRD(name string, conditions []apiextensionsv1.CustomResourceDefinitionCo
 	}
 }
 
-func newExport(name string, conditions []conditionsapi.Condition) *kubebindv1alpha1.APIServiceExport {
-	return &kubebindv1alpha1.APIServiceExport{
+func newExport(name string, conditions []conditionsapi.Condition) *kubebindv1alpha2.APIServiceExport {
+	return &kubebindv1alpha2.APIServiceExport{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Status: kubebindv1alpha1.APIServiceExportStatus{
+		Status: kubebindv1alpha2.APIServiceExportStatus{
 			Conditions: conditions,
 		},
 	}

@@ -22,7 +22,7 @@ limitations under the License.
 package v1alpha2
 
 // APIConversionClusterListerExpansion allows custom methods to be added to APIConversionClusterLister.
-type APIConversionClusterListerExpansion interface{}
+type APIConversionClusterListerExpansion any
 
 // APIConversionListerExpansion allows custom methods to be added to APIConversionLister.
-type APIConversionListerExpansion interface{}
+type APIConversionListerExpansion any

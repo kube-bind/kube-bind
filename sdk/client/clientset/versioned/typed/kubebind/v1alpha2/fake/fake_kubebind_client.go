@@ -45,8 +45,16 @@ func (c *FakeKubeBindV1alpha2) APIServiceExportRequests(namespace string) v1alph
 	return &FakeAPIServiceExportRequests{c, namespace}
 }
 
+func (c *FakeKubeBindV1alpha2) APIServiceNamespaces(namespace string) v1alpha2.APIServiceNamespaceInterface {
+	return &FakeAPIServiceNamespaces{c, namespace}
+}
+
 func (c *FakeKubeBindV1alpha2) BoundAPIResourceSchemas(namespace string) v1alpha2.BoundAPIResourceSchemaInterface {
 	return &FakeBoundAPIResourceSchemas{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha2) ClusterBindings(namespace string) v1alpha2.ClusterBindingInterface {
+	return &FakeClusterBindings{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

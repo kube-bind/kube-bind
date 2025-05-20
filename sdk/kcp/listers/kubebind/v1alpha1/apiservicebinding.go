@@ -58,7 +58,7 @@ func NewAPIServiceBindingClusterLister(indexer cache.Indexer) *aPIServiceBinding
 
 // List lists all APIServiceBindings in the indexer across all workspaces.
 func (s *aPIServiceBindingClusterLister) List(selector labels.Selector) (ret []*kubebindv1alpha1.APIServiceBinding, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+	err = cache.ListAll(s.indexer, selector, func(m any) {
 		ret = append(ret, m.(*kubebindv1alpha1.APIServiceBinding))
 	})
 	return ret, err
@@ -89,7 +89,7 @@ type aPIServiceBindingLister struct {
 
 // List lists all APIServiceBindings in the indexer for a workspace.
 func (s *aPIServiceBindingLister) List(selector labels.Selector) (ret []*kubebindv1alpha1.APIServiceBinding, err error) {
-	err = kcpcache.ListAllByCluster(s.indexer, s.clusterName, selector, func(i interface{}) {
+	err = kcpcache.ListAllByCluster(s.indexer, s.clusterName, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha1.APIServiceBinding))
 	})
 	return ret, err
@@ -123,7 +123,7 @@ type aPIServiceBindingScopedLister struct {
 
 // List lists all APIServiceBindings in the indexer for a workspace.
 func (s *aPIServiceBindingScopedLister) List(selector labels.Selector) (ret []*kubebindv1alpha1.APIServiceBinding, err error) {
-	err = cache.ListAll(s.indexer, selector, func(i interface{}) {
+	err = cache.ListAll(s.indexer, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha1.APIServiceBinding))
 	})
 	return ret, err

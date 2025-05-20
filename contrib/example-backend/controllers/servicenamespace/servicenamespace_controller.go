@@ -136,13 +136,13 @@ func NewController(
 	})
 
 	if _, err := namespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueNamespace(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueNamespace(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueNamespace(logger, obj)
 		},
 	}); err != nil {
@@ -150,13 +150,13 @@ func NewController(
 	}
 
 	if _, err := serviceNamespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceNamespace(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueServiceNamespace(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceNamespace(logger, obj)
 		},
 	}); err != nil {
@@ -164,7 +164,7 @@ func NewController(
 	}
 
 	if _, err := clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueClusterBinding(logger, obj)
 		},
 	}); err != nil {
@@ -172,10 +172,10 @@ func NewController(
 	}
 
 	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceExport(logger, obj)
 		},
-		UpdateFunc: func(old, newObj interface{}) {
+		UpdateFunc: func(old, newObj any) {
 			oldExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
 			if !ok {
 				return
@@ -189,7 +189,7 @@ func NewController(
 			}
 			c.enqueueServiceExport(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceExport(logger, obj)
 		},
 	}); err != nil {
@@ -233,7 +233,7 @@ type Controller struct {
 	commit CommitFunc
 }
 
-func (c *Controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceNamespace(logger klog.Logger, obj any) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -244,7 +244,7 @@ func (c *Controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 	c.queue.Add(key)
 }
 
-func (c *Controller) enqueueClusterBinding(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueClusterBinding(logger klog.Logger, obj any) {
 	cbKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -272,7 +272,7 @@ func (c *Controller) enqueueClusterBinding(logger klog.Logger, obj interface{}) 
 	}
 }
 
-func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceExport(logger klog.Logger, obj any) {
 	seKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -300,7 +300,7 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	}
 }
 
-func (c *Controller) enqueueNamespace(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueNamespace(logger klog.Logger, obj any) {
 	nsKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)

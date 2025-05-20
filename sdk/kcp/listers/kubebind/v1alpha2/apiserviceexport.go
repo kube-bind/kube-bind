@@ -59,7 +59,7 @@ func NewAPIServiceExportClusterLister(indexer cache.Indexer) *aPIServiceExportCl
 
 // List lists all APIServiceExports in the indexer across all workspaces.
 func (s *aPIServiceExportClusterLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.APIServiceExport, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+	err = cache.ListAll(s.indexer, selector, func(m any) {
 		ret = append(ret, m.(*kubebindv1alpha2.APIServiceExport))
 	})
 	return ret, err
@@ -89,7 +89,7 @@ type aPIServiceExportLister struct {
 
 // List lists all APIServiceExports in the indexer for a workspace.
 func (s *aPIServiceExportLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.APIServiceExport, err error) {
-	err = kcpcache.ListAllByCluster(s.indexer, s.clusterName, selector, func(i interface{}) {
+	err = kcpcache.ListAllByCluster(s.indexer, s.clusterName, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.APIServiceExport))
 	})
 	return ret, err
@@ -122,7 +122,7 @@ type aPIServiceExportNamespaceLister struct {
 
 // List lists all APIServiceExports in the indexer for a given workspace and namespace.
 func (s *aPIServiceExportNamespaceLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.APIServiceExport, err error) {
-	err = kcpcache.ListAllByClusterAndNamespace(s.indexer, s.clusterName, s.namespace, selector, func(i interface{}) {
+	err = kcpcache.ListAllByClusterAndNamespace(s.indexer, s.clusterName, s.namespace, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.APIServiceExport))
 	})
 	return ret, err
@@ -157,7 +157,7 @@ type aPIServiceExportScopedLister struct {
 
 // List lists all APIServiceExports in the indexer for a workspace.
 func (s *aPIServiceExportScopedLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.APIServiceExport, err error) {
-	err = cache.ListAll(s.indexer, selector, func(i interface{}) {
+	err = cache.ListAll(s.indexer, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.APIServiceExport))
 	})
 	return ret, err
@@ -176,7 +176,7 @@ type aPIServiceExportScopedNamespaceLister struct {
 
 // List lists all APIServiceExports in the indexer for a given workspace and namespace.
 func (s *aPIServiceExportScopedNamespaceLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.APIServiceExport, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(i interface{}) {
+	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.APIServiceExport))
 	})
 	return ret, err

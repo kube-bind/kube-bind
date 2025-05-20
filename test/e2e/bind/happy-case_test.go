@@ -385,7 +385,7 @@ func simulateBrowser(t *testing.T, authURLCh chan string, resource string) {
 func toUnstructured(t *testing.T, manifest string) *unstructured.Unstructured {
 	t.Helper()
 
-	obj := map[string]interface{}{}
+	obj := map[string]any{}
 	err := yaml.Unmarshal([]byte(manifest), &obj)
 	require.NoError(t, err)
 

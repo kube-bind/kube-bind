@@ -17,15 +17,15 @@ limitations under the License.
 package indexers
 
 import (
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 const (
 	ServiceNamespaceByNamespace = "ServiceNamespaceByNamespace"
 )
 
-func IndexServiceNamespaceByNamespace(obj interface{}) ([]string, error) {
-	sn, ok := obj.(*kubebindv1alpha1.APIServiceNamespace)
+func IndexServiceNamespaceByNamespace(obj any) ([]string, error) {
+	sn, ok := obj.(*kubebindv1alpha2.APIServiceNamespace)
 	if !ok || sn.Status.Namespace == "" {
 		return nil, nil
 	}

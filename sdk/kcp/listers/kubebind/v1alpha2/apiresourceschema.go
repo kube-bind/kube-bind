@@ -59,7 +59,7 @@ func NewAPIResourceSchemaClusterLister(indexer cache.Indexer) *aPIResourceSchema
 
 // List lists all APIResourceSchemas in the indexer across all workspaces.
 func (s *aPIResourceSchemaClusterLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.APIResourceSchema, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+	err = cache.ListAll(s.indexer, selector, func(m any) {
 		ret = append(ret, m.(*kubebindv1alpha2.APIResourceSchema))
 	})
 	return ret, err
@@ -89,7 +89,7 @@ type aPIResourceSchemaLister struct {
 
 // List lists all APIResourceSchemas in the indexer for a workspace.
 func (s *aPIResourceSchemaLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.APIResourceSchema, err error) {
-	err = kcpcache.ListAllByCluster(s.indexer, s.clusterName, selector, func(i interface{}) {
+	err = kcpcache.ListAllByCluster(s.indexer, s.clusterName, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.APIResourceSchema))
 	})
 	return ret, err
@@ -122,7 +122,7 @@ type aPIResourceSchemaNamespaceLister struct {
 
 // List lists all APIResourceSchemas in the indexer for a given workspace and namespace.
 func (s *aPIResourceSchemaNamespaceLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.APIResourceSchema, err error) {
-	err = kcpcache.ListAllByClusterAndNamespace(s.indexer, s.clusterName, s.namespace, selector, func(i interface{}) {
+	err = kcpcache.ListAllByClusterAndNamespace(s.indexer, s.clusterName, s.namespace, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.APIResourceSchema))
 	})
 	return ret, err
@@ -157,7 +157,7 @@ type aPIResourceSchemaScopedLister struct {
 
 // List lists all APIResourceSchemas in the indexer for a workspace.
 func (s *aPIResourceSchemaScopedLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.APIResourceSchema, err error) {
-	err = cache.ListAll(s.indexer, selector, func(i interface{}) {
+	err = cache.ListAll(s.indexer, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.APIResourceSchema))
 	})
 	return ret, err
@@ -176,7 +176,7 @@ type aPIResourceSchemaScopedNamespaceLister struct {
 
 // List lists all APIResourceSchemas in the indexer for a given workspace and namespace.
 func (s *aPIResourceSchemaScopedNamespaceLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.APIResourceSchema, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(i interface{}) {
+	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.APIResourceSchema))
 	})
 	return ret, err

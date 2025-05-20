@@ -18,12 +18,16 @@ limitations under the License.
 
 package v1alpha2
 
-type APIResourceSchemaExpansion interface{}
+type APIResourceSchemaExpansion any
 
-type APIServiceBindingExpansion interface{}
+type APIServiceBindingExpansion any
 
-type APIServiceExportExpansion interface{}
+type APIServiceExportExpansion any
 
-type APIServiceExportRequestExpansion interface{}
+type APIServiceExportRequestExpansion any
 
-type BoundAPIResourceSchemaExpansion interface{}
+type APIServiceNamespaceExpansion any
+
+type BoundAPIResourceSchemaExpansion any
+
+type ClusterBindingExpansion any

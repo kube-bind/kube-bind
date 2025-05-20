@@ -22,7 +22,7 @@ limitations under the License.
 package v1alpha2
 
 // APIServiceBindingClusterListerExpansion allows custom methods to be added to APIServiceBindingClusterLister.
-type APIServiceBindingClusterListerExpansion interface{}
+type APIServiceBindingClusterListerExpansion any
 
 // APIServiceBindingListerExpansion allows custom methods to be added to APIServiceBindingLister.
-type APIServiceBindingListerExpansion interface{}
+type APIServiceBindingListerExpansion any

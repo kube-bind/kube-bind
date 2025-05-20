@@ -17,15 +17,15 @@ limitations under the License.
 package indexers
 
 import (
-	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 const (
 	ServiceExportByCustomResourceDefinition = "serviceExportByCustomResourceDefinition"
 )
 
-func IndexServiceExportByCustomResourceDefinition(obj interface{}) ([]string, error) {
-	export, ok := obj.(*v1alpha1.APIServiceExport)
+func IndexServiceExportByCustomResourceDefinition(obj any) ([]string, error) {
+	export, ok := obj.(*v1alpha2.APIServiceExport)
 	if !ok {
 		return nil, nil
 	}

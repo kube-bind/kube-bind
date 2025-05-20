@@ -22,10 +22,10 @@ limitations under the License.
 package v1alpha1
 
 // APIServiceExportRequestClusterListerExpansion allows custom methods to be added to APIServiceExportRequestClusterLister.
-type APIServiceExportRequestClusterListerExpansion interface{}
+type APIServiceExportRequestClusterListerExpansion any
 
 // APIServiceExportRequestListerExpansion allows custom methods to be added to APIServiceExportRequestLister.
-type APIServiceExportRequestListerExpansion interface{}
+type APIServiceExportRequestListerExpansion any
 
 // APIServiceExportRequestNamespaceListerExpansion allows custom methods to be added to APIServiceExportRequestNamespaceLister.
-type APIServiceExportRequestNamespaceListerExpansion interface{}
+type APIServiceExportRequestNamespaceListerExpansion any

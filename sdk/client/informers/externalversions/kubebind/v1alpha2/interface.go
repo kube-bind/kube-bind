@@ -32,8 +32,12 @@ type Interface interface {
 	APIServiceExports() APIServiceExportInformer
 	// APIServiceExportRequests returns a APIServiceExportRequestInformer.
 	APIServiceExportRequests() APIServiceExportRequestInformer
+	// APIServiceNamespaces returns a APIServiceNamespaceInformer.
+	APIServiceNamespaces() APIServiceNamespaceInformer
 	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
 	BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer
+	// ClusterBindings returns a ClusterBindingInformer.
+	ClusterBindings() ClusterBindingInformer
 }
 
 type version struct {
@@ -67,7 +71,17 @@ func (v *version) APIServiceExportRequests() APIServiceExportRequestInformer {
 	return &aPIServiceExportRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
+// APIServiceNamespaces returns a APIServiceNamespaceInformer.
+func (v *version) APIServiceNamespaces() APIServiceNamespaceInformer {
+	return &aPIServiceNamespaceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
 func (v *version) BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer {
 	return &boundAPIResourceSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ClusterBindings returns a ClusterBindingInformer.
+func (v *version) ClusterBindings() ClusterBindingInformer {
+	return &clusterBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

@@ -59,7 +59,7 @@ func NewBoundAPIResourceSchemaClusterLister(indexer cache.Indexer) *boundAPIReso
 
 // List lists all BoundAPIResourceSchemas in the indexer across all workspaces.
 func (s *boundAPIResourceSchemaClusterLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.BoundAPIResourceSchema, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+	err = cache.ListAll(s.indexer, selector, func(m any) {
 		ret = append(ret, m.(*kubebindv1alpha2.BoundAPIResourceSchema))
 	})
 	return ret, err
@@ -89,7 +89,7 @@ type boundAPIResourceSchemaLister struct {
 
 // List lists all BoundAPIResourceSchemas in the indexer for a workspace.
 func (s *boundAPIResourceSchemaLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.BoundAPIResourceSchema, err error) {
-	err = kcpcache.ListAllByCluster(s.indexer, s.clusterName, selector, func(i interface{}) {
+	err = kcpcache.ListAllByCluster(s.indexer, s.clusterName, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.BoundAPIResourceSchema))
 	})
 	return ret, err
@@ -122,7 +122,7 @@ type boundAPIResourceSchemaNamespaceLister struct {
 
 // List lists all BoundAPIResourceSchemas in the indexer for a given workspace and namespace.
 func (s *boundAPIResourceSchemaNamespaceLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.BoundAPIResourceSchema, err error) {
-	err = kcpcache.ListAllByClusterAndNamespace(s.indexer, s.clusterName, s.namespace, selector, func(i interface{}) {
+	err = kcpcache.ListAllByClusterAndNamespace(s.indexer, s.clusterName, s.namespace, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.BoundAPIResourceSchema))
 	})
 	return ret, err
@@ -157,7 +157,7 @@ type boundAPIResourceSchemaScopedLister struct {
 
 // List lists all BoundAPIResourceSchemas in the indexer for a workspace.
 func (s *boundAPIResourceSchemaScopedLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.BoundAPIResourceSchema, err error) {
-	err = cache.ListAll(s.indexer, selector, func(i interface{}) {
+	err = cache.ListAll(s.indexer, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.BoundAPIResourceSchema))
 	})
 	return ret, err
@@ -176,7 +176,7 @@ type boundAPIResourceSchemaScopedNamespaceLister struct {
 
 // List lists all BoundAPIResourceSchemas in the indexer for a given workspace and namespace.
 func (s *boundAPIResourceSchemaScopedNamespaceLister) List(selector labels.Selector) (ret []*kubebindv1alpha2.BoundAPIResourceSchema, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(i interface{}) {
+	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(i any) {
 		ret = append(ret, i.(*kubebindv1alpha2.BoundAPIResourceSchema))
 	})
 	return ret, err

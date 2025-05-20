@@ -27,24 +27,24 @@ import (
 	runtime2 "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/yaml"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 // ServiceExportToCRD converts a APIServiceExport to a CRD.
-func ServiceExportToCRD(export *kubebindv1alpha1.APIServiceExport) (*apiextensionsv1.CustomResourceDefinition, error) {
+func ServiceExportToCRD(export *kubebindv1alpha2.APIServiceExport) (*apiextensionsv1.CustomResourceDefinition, error) {
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: export.Name,
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: export.Spec.Group,
-			Names: export.Spec.Names,
-			Scope: export.Spec.Scope,
+			Group: export.Spec.APIServiceExportCRDSpec.Group,
+			Names: export.Spec.APIServiceExportCRDSpec.Names,
+			Scope: export.Spec.APIServiceExportCRDSpec.Scope,
 		},
 	}
 
-	for i := range export.Spec.Versions {
-		resourceVersion := export.Spec.Versions[i]
+	for i := range export.Spec.APIServiceExportCRDSpec.Versions {
+		resourceVersion := export.Spec.APIServiceExportCRDSpec.Versions[i]
 
 		crdVersion := apiextensionsv1.CustomResourceDefinitionVersion{
 			Name:                     resourceVersion.Name,
@@ -74,8 +74,8 @@ func ServiceExportToCRD(export *kubebindv1alpha1.APIServiceExport) (*apiextensio
 }
 
 // CRDToServiceExport converts a CRD to a APIServiceExport.
-func CRDToServiceExport(crd *apiextensionsv1.CustomResourceDefinition) (*kubebindv1alpha1.APIServiceExportCRDSpec, error) {
-	spec := &kubebindv1alpha1.APIServiceExportCRDSpec{
+func CRDToServiceExport(crd *apiextensionsv1.CustomResourceDefinition) (*kubebindv1alpha2.APIResourceSchemaCRDSpec, error) {
+	spec := &kubebindv1alpha2.APIResourceSchemaCRDSpec{
 		Group: crd.Spec.Group,
 		Names: crd.Spec.Names,
 		Scope: crd.Spec.Scope,
@@ -91,7 +91,7 @@ func CRDToServiceExport(crd *apiextensionsv1.CustomResourceDefinition) (*kubebin
 			continue
 		}
 
-		apiResourceVersion := kubebindv1alpha1.APIServiceExportVersion{
+		apiResourceVersion := kubebindv1alpha2.APIResourceVersion{
 			Name:                     crdVersion.Name,
 			Served:                   crdVersion.Served,
 			Storage:                  crdVersion.Storage,
@@ -123,7 +123,7 @@ func CRDToServiceExport(crd *apiextensionsv1.CustomResourceDefinition) (*kubebin
 	return spec, nil
 }
 
-func APIServiceExportCRDSpecHash(obj *kubebindv1alpha1.APIServiceExportCRDSpec) string {
+func APIServiceExportCRDSpecHash(obj *kubebindv1alpha2.APIResourceSchemaCRDSpec) string {
 	bs, err := json.Marshal(obj)
 	if err != nil {
 		runtime2.HandleError(err)

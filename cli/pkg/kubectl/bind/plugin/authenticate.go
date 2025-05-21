@@ -33,10 +33,10 @@ import (
 	clientgoversion "k8s.io/client-go/pkg/version"
 
 	"github.com/kube-bind/kube-bind/pkg/version"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
-func getProvider(url string, insecure bool) (*kubebindv1alpha1.BindingProvider, error) {
+func getProvider(url string, insecure bool) (*kubebindv1alpha2.BindingProvider, error) {
 	client := &http.Client{}
 	if insecure {
 		client.Transport = &http.Transport{
@@ -60,7 +60,7 @@ func getProvider(url string, insecure bool) (*kubebindv1alpha1.BindingProvider, 
 		return nil, err
 	}
 
-	provider := &kubebindv1alpha1.BindingProvider{}
+	provider := &kubebindv1alpha2.BindingProvider{}
 	if err := json.Unmarshal(blob, provider); err != nil {
 		return nil, err
 	}
@@ -101,8 +101,8 @@ func validateProviderVersion(providerVersion string) error {
 	return nil
 }
 
-func (b *BindOptions) authenticate(provider *kubebindv1alpha1.BindingProvider, callback, sessionID, clusterID string, urlCh chan<- string) error {
-	var oauth2Method *kubebindv1alpha1.OAuth2CodeGrant
+func (b *BindOptions) authenticate(provider *kubebindv1alpha2.BindingProvider, callback, sessionID, clusterID string, urlCh chan<- string) error {
+	var oauth2Method *kubebindv1alpha2.OAuth2CodeGrant
 	for _, m := range provider.AuthenticationMethods {
 		if m.Method == "OAuth2CodeGrant" {
 			oauth2Method = m.OAuth2CodeGrant

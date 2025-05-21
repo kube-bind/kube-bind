@@ -41,10 +41,10 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -54,7 +54,7 @@ const (
 // NewController returns a new controller for ServiceNamespaces.
 func NewController(
 	config *rest.Config,
-	scope kubebindv1alpha1.Scope,
+	scope kubebindv1alpha2.InformerScope,
 	serviceNamespaceInformer bindinformers.APIServiceNamespaceInformer,
 	clusterBindingInformer bindinformers.ClusterBindingInformer,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
@@ -124,9 +124,9 @@ func NewController(
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceNamespace, *kubebindv1alpha1.APIServiceNamespaceSpec, *kubebindv1alpha1.APIServiceNamespaceStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceNamespace] {
-				return bindClient.KubeBindV1alpha1().APIServiceNamespaces(ns)
+		commit: committer.NewCommitter[*kubebindv1alpha2.APIServiceNamespace, *kubebindv1alpha2.APIServiceNamespaceSpec, *kubebindv1alpha2.APIServiceNamespaceStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha2.APIServiceNamespace] {
+				return bindClient.KubeBindV1alpha2().APIServiceNamespaces(ns)
 			},
 		),
 	}
@@ -176,11 +176,11 @@ func NewController(
 			c.enqueueServiceExport(logger, obj)
 		},
 		UpdateFunc: func(old, newObj any) {
-			oldExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
+			oldExport, ok := old.(*kubebindv1alpha2.APIServiceExport)
 			if !ok {
 				return
 			}
-			newExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
+			newExport, ok := old.(*kubebindv1alpha2.APIServiceExport)
 			if !ok {
 				return
 			}
@@ -199,7 +199,7 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.APIServiceNamespaceSpec, *kubebindv1alpha1.APIServiceNamespaceStatus]
+type Resource = committer.Resource[*kubebindv1alpha2.APIServiceNamespaceSpec, *kubebindv1alpha2.APIServiceNamespaceStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // Controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if

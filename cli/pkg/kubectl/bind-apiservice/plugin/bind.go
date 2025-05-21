@@ -40,7 +40,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/base"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 // BindAPIServiceOptions are the options for the kubectl-bind-apiservice command.
@@ -257,12 +257,12 @@ func (b *BindAPIServiceOptions) getRequestManifest() ([]byte, error) {
 	return body, nil
 }
 
-func (b *BindAPIServiceOptions) unmarshalManifest(bs []byte) (*kubebindv1alpha1.APIServiceExportRequest, error) {
-	var request kubebindv1alpha1.APIServiceExportRequest
+func (b *BindAPIServiceOptions) unmarshalManifest(bs []byte) (*kubebindv1alpha2.APIServiceExportRequest, error) {
+	var request kubebindv1alpha2.APIServiceExportRequest
 	if err := yaml.Unmarshal(bs, &request); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal manifest: %w", err)
 	}
-	if request.APIVersion != kubebindv1alpha1.SchemeGroupVersion.String() {
+	if request.APIVersion != kubebindv1alpha2.SchemeGroupVersion.String() {
 		return nil, fmt.Errorf("invalid apiVersion %q", request.APIVersion)
 	}
 	if request.Kind != "APIServiceExportRequest" {

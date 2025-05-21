@@ -59,7 +59,7 @@ func NewClusterBindingClusterLister(indexer cache.Indexer) *clusterBindingCluste
 
 // List lists all ClusterBindings in the indexer across all workspaces.
 func (s *clusterBindingClusterLister) List(selector labels.Selector) (ret []*kubebindv1alpha1.ClusterBinding, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m any) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
 		ret = append(ret, m.(*kubebindv1alpha1.ClusterBinding))
 	})
 	return ret, err
@@ -89,7 +89,7 @@ type clusterBindingLister struct {
 
 // List lists all ClusterBindings in the indexer for a workspace.
 func (s *clusterBindingLister) List(selector labels.Selector) (ret []*kubebindv1alpha1.ClusterBinding, err error) {
-	err = kcpcache.ListAllByCluster(s.indexer, s.clusterName, selector, func(i any) {
+	err = kcpcache.ListAllByCluster(s.indexer, s.clusterName, selector, func(i interface{}) {
 		ret = append(ret, i.(*kubebindv1alpha1.ClusterBinding))
 	})
 	return ret, err
@@ -122,7 +122,7 @@ type clusterBindingNamespaceLister struct {
 
 // List lists all ClusterBindings in the indexer for a given workspace and namespace.
 func (s *clusterBindingNamespaceLister) List(selector labels.Selector) (ret []*kubebindv1alpha1.ClusterBinding, err error) {
-	err = kcpcache.ListAllByClusterAndNamespace(s.indexer, s.clusterName, s.namespace, selector, func(i any) {
+	err = kcpcache.ListAllByClusterAndNamespace(s.indexer, s.clusterName, s.namespace, selector, func(i interface{}) {
 		ret = append(ret, i.(*kubebindv1alpha1.ClusterBinding))
 	})
 	return ret, err
@@ -157,7 +157,7 @@ type clusterBindingScopedLister struct {
 
 // List lists all ClusterBindings in the indexer for a workspace.
 func (s *clusterBindingScopedLister) List(selector labels.Selector) (ret []*kubebindv1alpha1.ClusterBinding, err error) {
-	err = cache.ListAll(s.indexer, selector, func(i any) {
+	err = cache.ListAll(s.indexer, selector, func(i interface{}) {
 		ret = append(ret, i.(*kubebindv1alpha1.ClusterBinding))
 	})
 	return ret, err
@@ -176,7 +176,7 @@ type clusterBindingScopedNamespaceLister struct {
 
 // List lists all ClusterBindings in the indexer for a given workspace and namespace.
 func (s *clusterBindingScopedNamespaceLister) List(selector labels.Selector) (ret []*kubebindv1alpha1.ClusterBinding, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(i any) {
+	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(i interface{}) {
 		ret = append(ret, i.(*kubebindv1alpha1.ClusterBinding))
 	})
 	return ret, err

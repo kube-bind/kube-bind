@@ -24,8 +24,8 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
-	kubebindhelpers "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1/helpers"
+	kubebindhelpers "github.com/kube-bind/kube-bind/sdk/apis/kubebind/helpers"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 )
@@ -34,10 +34,10 @@ type reconciler struct {
 	getCRD              func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	deleteServiceExport func(ctx context.Context, namespace, name string) error
 
-	requeue func(export *kubebindv1alpha1.APIServiceExport)
+	requeue func(export *kubebindv1alpha2.APIServiceExport)
 }
 
-func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) error {
 	var errs []error
 
 	if specChanged, err := r.ensureSchema(ctx, export); err != nil {
@@ -50,7 +50,7 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha1.API
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha1.APIServiceExport) (specChanged bool, err error) {
+func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (specChanged bool, err error) {
 	logger := klog.FromContext(ctx)
 
 	crd, err := r.getCRD(export.Name)
@@ -68,7 +68,7 @@ func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha1.
 	if err != nil {
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.APIServiceExportConditionProviderInSync,
+			kubebindv1alpha2.APIServiceExportConditionProviderInSync,
 			"CustomResourceDefinitionUpdateFailed",
 			conditionsapi.ConditionSeverityError,
 			"CustomResourceDefinition %s cannot be converted into a APIServiceExport: %s",
@@ -77,18 +77,18 @@ func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha1.
 		return false, nil // nothing we can do
 	}
 
-	if hash := kubebindhelpers.APIServiceExportCRDSpecHash(expected); export.Annotations[kubebindv1alpha1.SourceSpecHashAnnotationKey] != hash {
+	if hash := kubebindhelpers.APIServiceExportCRDSpecHash(expected); export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] != hash {
 		// both exist, update APIServiceExport
 		logger.V(1).Info("Updating APIServiceExport")
 		export.Spec.APIServiceExportCRDSpec = *expected
 		if export.Annotations == nil {
 			export.Annotations = map[string]string{}
 		}
-		export.Annotations[kubebindv1alpha1.SourceSpecHashAnnotationKey] = hash
+		export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hash
 		return true, nil
 	}
 
-	conditions.MarkTrue(export, kubebindv1alpha1.APIServiceExportConditionProviderInSync)
+	conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionProviderInSync)
 
 	return false, nil
 }

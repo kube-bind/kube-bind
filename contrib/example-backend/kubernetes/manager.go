@@ -33,8 +33,8 @@ import (
 	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 type Manager struct {
@@ -132,7 +132,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 
 	// first look for ClusterBinding to get old secret name
 	kubeconfigSecretName := kuberesources.KubeconfigSecretName
-	cb, err := m.bindClient.KubeBindV1alpha1().ClusterBindings(ns).Get(ctx, kuberesources.ClusterBindingName, metav1.GetOptions{})
+	cb, err := m.bindClient.KubeBindV1alpha2().ClusterBindings(ns).Get(ctx, kuberesources.ClusterBindingName, metav1.GetOptions{})
 	switch {
 	case errors.IsNotFound(err):
 		if err := kuberesources.CreateClusterBinding(ctx, m.bindClient, ns, "kubeconfig", m.providerPrettyName); err != nil {

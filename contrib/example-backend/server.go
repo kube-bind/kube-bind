@@ -33,6 +33,7 @@ import (
 	"github.com/kube-bind/kube-bind/contrib/example-backend/deploy"
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type Server struct {
@@ -85,7 +86,7 @@ func NewServer(config *Config) (*Server, error) {
 		config.Options.ExternalCA,
 		config.Options.TLSExternalServerName,
 		config.KubeInformers.Core().V1().Namespaces(),
-		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up Kubernetes Manager: %w", err)
@@ -113,7 +114,7 @@ func NewServer(config *Config) (*Server, error) {
 		config.Options.TestingAutoSelect,
 		signingKey,
 		encryptionKey,
-		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
+		kubebindv1alpha2.InformerScope(config.Options.ConsumerScope),
 		s.Kubernetes,
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),
 	)
@@ -125,9 +126,9 @@ func NewServer(config *Config) (*Server, error) {
 	// construct controllers
 	s.ClusterBinding, err = clusterbinding.NewController(
 		config.ClientConfig,
-		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
-		config.BindInformers.KubeBind().V1alpha1().ClusterBindings(),
-		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		kubebindv1alpha2.InformerScope(config.Options.ConsumerScope),
+		config.BindInformers.KubeBind().V1alpha2().ClusterBindings(),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
 		config.KubeInformers.Rbac().V1().ClusterRoles(),
 		config.KubeInformers.Rbac().V1().ClusterRoleBindings(),
 		config.KubeInformers.Rbac().V1().RoleBindings(),
@@ -138,10 +139,10 @@ func NewServer(config *Config) (*Server, error) {
 	}
 	s.ServiceNamespace, err = servicenamespace.NewController(
 		config.ClientConfig,
-		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
-		config.BindInformers.KubeBind().V1alpha1().APIServiceNamespaces(),
-		config.BindInformers.KubeBind().V1alpha1().ClusterBindings(),
-		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		kubebindv1alpha2.InformerScope(config.Options.ConsumerScope),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceNamespaces(),
+		config.BindInformers.KubeBind().V1alpha2().ClusterBindings(),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
 		config.KubeInformers.Core().V1().Namespaces(),
 		config.KubeInformers.Rbac().V1().Roles(),
 		config.KubeInformers.Rbac().V1().RoleBindings(),
@@ -151,7 +152,7 @@ func NewServer(config *Config) (*Server, error) {
 	}
 	s.ServiceExport, err = serviceexport.NewController(
 		config.ClientConfig,
-		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
 	)
 	if err != nil {
@@ -159,10 +160,10 @@ func NewServer(config *Config) (*Server, error) {
 	}
 	s.ServiceExportRequest, err = serviceexportrequest.NewController(
 		config.ClientConfig,
-		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
-		kubebindv1alpha1.Isolation(config.Options.ClusterScopedIsolation),
-		config.BindInformers.KubeBind().V1alpha1().APIServiceExportRequests(),
-		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		kubebindv1alpha2.InformerScope(config.Options.ConsumerScope),
+		kubebindv1alpha2.Isolation(config.Options.ClusterScopedIsolation),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceExportRequests(),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
 	)
 	if err != nil {

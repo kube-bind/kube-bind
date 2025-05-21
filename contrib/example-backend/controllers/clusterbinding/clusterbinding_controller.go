@@ -40,10 +40,10 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/pkg/committer"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -53,7 +53,7 @@ const (
 // NewController returns a new controller to reconcile ClusterBindings.
 func NewController(
 	config *rest.Config,
-	scope kubebindv1alpha1.Scope,
+	scope kubebindv1alpha2.InformerScope,
 	clusterBindingInformer bindinformers.ClusterBindingInformer,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 	clusterRoleInformer rbacinformers.ClusterRoleInformer,
@@ -97,7 +97,7 @@ func NewController(
 
 		reconciler: reconciler{
 			scope: scope,
-			listServiceExports: func(ns string) ([]*kubebindv1alpha1.APIServiceExport, error) {
+			listServiceExports: func(ns string) ([]*kubebindv1alpha2.APIServiceExport, error) {
 				return serviceExportInformer.Lister().APIServiceExports(ns).List(labels.Everything())
 			},
 			getClusterRole: func(name string) (*rbacv1.ClusterRole, error) {
@@ -135,9 +135,9 @@ func NewController(
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.ClusterBinding, *kubebindv1alpha1.ClusterBindingSpec, *kubebindv1alpha1.ClusterBindingStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.ClusterBinding] {
-				return bindClient.KubeBindV1alpha1().ClusterBindings(ns)
+		commit: committer.NewCommitter[*kubebindv1alpha2.ClusterBinding, *kubebindv1alpha2.ClusterBindingSpec, *kubebindv1alpha2.ClusterBindingStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha2.ClusterBinding] {
+				return bindClient.KubeBindV1alpha2().ClusterBindings(ns)
 			},
 		),
 	}
@@ -173,7 +173,7 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.ClusterBindingSpec, *kubebindv1alpha1.ClusterBindingStatus]
+type Resource = committer.Resource[*kubebindv1alpha2.ClusterBindingSpec, *kubebindv1alpha2.ClusterBindingStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // Controller reconciles ClusterBinding conditions.

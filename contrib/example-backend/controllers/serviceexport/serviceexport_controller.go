@@ -36,10 +36,10 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -80,9 +80,9 @@ func NewController(
 				return crdInformer.Lister().Get(name)
 			},
 			deleteServiceExport: func(ctx context.Context, ns, name string) error {
-				return bindClient.KubeBindV1alpha1().APIServiceExports(ns).Delete(ctx, name, metav1.DeleteOptions{})
+				return bindClient.KubeBindV1alpha2().APIServiceExports(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
-			requeue: func(export *kubebindv1alpha1.APIServiceExport) {
+			requeue: func(export *kubebindv1alpha2.APIServiceExport) {
 				key, err := cache.MetaNamespaceKeyFunc(export)
 				if err != nil {
 					runtime.HandleError(err)
@@ -92,9 +92,9 @@ func NewController(
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceExport, *kubebindv1alpha1.APIServiceExportSpec, *kubebindv1alpha1.APIServiceExportStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceExport] {
-				return bindClient.KubeBindV1alpha1().APIServiceExports(ns)
+		commit: committer.NewCommitter[*kubebindv1alpha2.APIServiceExport, *kubebindv1alpha2.APIServiceExportSpec, *kubebindv1alpha2.APIServiceExportStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha2.APIServiceExport] {
+				return bindClient.KubeBindV1alpha2().APIServiceExports(ns)
 			},
 		),
 	}
@@ -134,7 +134,7 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.APIServiceExportSpec, *kubebindv1alpha1.APIServiceExportStatus]
+type Resource = committer.Resource[*kubebindv1alpha2.APIServiceExportSpec, *kubebindv1alpha2.APIServiceExportStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // Controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
@@ -180,7 +180,7 @@ func (c *Controller) enqueueCRD(logger klog.Logger, obj any) {
 	}
 
 	for _, obj := range exports {
-		export, ok := obj.(*kubebindv1alpha1.APIServiceExport)
+		export, ok := obj.(*kubebindv1alpha2.APIServiceExport)
 		if !ok {
 			runtime.HandleError(fmt.Errorf("unexpected type %T", obj))
 			return

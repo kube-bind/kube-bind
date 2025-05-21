@@ -27,11 +27,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type reconciler struct {
-	scope kubebindv1alpha1.Scope
+	scope kubebindv1alpha2.InformerScope
 
 	getNamespace    func(name string) (*corev1.Namespace, error)
 	createNamespace func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error)
@@ -42,7 +42,7 @@ type reconciler struct {
 	updateRoleBinding func(ctx context.Context, cr *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
 }
 
-func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.APIServiceNamespace) error {
+func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha2.APIServiceNamespace) error {
 	var ns *corev1.Namespace
 	nsName := sns.Namespace + "-" + sns.Name
 	if sns.Status.Namespace != "" {
@@ -54,7 +54,7 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.APISer
 			ObjectMeta: metav1.ObjectMeta{
 				Name: nsName,
 				Annotations: map[string]string{
-					kubebindv1alpha1.APIServiceNamespaceAnnotationKey: sns.Namespace + "/" + sns.Name,
+					kubebindv1alpha2.APIServiceNamespaceAnnotationKey: sns.Namespace + "/" + sns.Name,
 				},
 			},
 		}
@@ -63,7 +63,7 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.APISer
 		}
 	}
 
-	if c.scope == kubebindv1alpha1.NamespacedScope {
+	if c.scope == kubebindv1alpha2.NamespacedScope {
 		if err := c.ensureRBACRoleBinding(ctx, nsName, sns); err != nil {
 			return fmt.Errorf("failed to ensure RBAC: %w", err)
 		}
@@ -76,7 +76,7 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha1.APISer
 	return nil
 }
 
-func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, ns string, sns *kubebindv1alpha1.APIServiceNamespace) error {
+func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, ns string, sns *kubebindv1alpha2.APIServiceNamespace) error {
 	objName := "kube-binder"
 	binding, err := c.getRoleBinding(ns, objName)
 	if err != nil && !errors.IsNotFound(err) {

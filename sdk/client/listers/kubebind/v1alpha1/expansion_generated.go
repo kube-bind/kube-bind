@@ -20,36 +20,36 @@ package v1alpha1
 
 // APIServiceBindingListerExpansion allows custom methods to be added to
 // APIServiceBindingLister.
-type APIServiceBindingListerExpansion any
+type APIServiceBindingListerExpansion interface{}
 
 // APIServiceExportListerExpansion allows custom methods to be added to
 // APIServiceExportLister.
-type APIServiceExportListerExpansion any
+type APIServiceExportListerExpansion interface{}
 
 // APIServiceExportNamespaceListerExpansion allows custom methods to be added to
 // APIServiceExportNamespaceLister.
-type APIServiceExportNamespaceListerExpansion any
+type APIServiceExportNamespaceListerExpansion interface{}
 
 // APIServiceExportRequestListerExpansion allows custom methods to be added to
 // APIServiceExportRequestLister.
-type APIServiceExportRequestListerExpansion any
+type APIServiceExportRequestListerExpansion interface{}
 
 // APIServiceExportRequestNamespaceListerExpansion allows custom methods to be added to
 // APIServiceExportRequestNamespaceLister.
-type APIServiceExportRequestNamespaceListerExpansion any
+type APIServiceExportRequestNamespaceListerExpansion interface{}
 
 // APIServiceNamespaceListerExpansion allows custom methods to be added to
 // APIServiceNamespaceLister.
-type APIServiceNamespaceListerExpansion any
+type APIServiceNamespaceListerExpansion interface{}
 
 // APIServiceNamespaceNamespaceListerExpansion allows custom methods to be added to
 // APIServiceNamespaceNamespaceLister.
-type APIServiceNamespaceNamespaceListerExpansion any
+type APIServiceNamespaceNamespaceListerExpansion interface{}
 
 // ClusterBindingListerExpansion allows custom methods to be added to
 // ClusterBindingLister.
-type ClusterBindingListerExpansion any
+type ClusterBindingListerExpansion interface{}
 
 // ClusterBindingNamespaceListerExpansion allows custom methods to be added to
 // ClusterBindingNamespaceLister.
-type ClusterBindingNamespaceListerExpansion any
+type ClusterBindingNamespaceListerExpansion interface{}

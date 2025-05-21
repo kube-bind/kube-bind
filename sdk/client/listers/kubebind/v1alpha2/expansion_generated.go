@@ -20,52 +20,52 @@ package v1alpha2
 
 // APIResourceSchemaListerExpansion allows custom methods to be added to
 // APIResourceSchemaLister.
-type APIResourceSchemaListerExpansion any
+type APIResourceSchemaListerExpansion interface{}
 
 // APIResourceSchemaNamespaceListerExpansion allows custom methods to be added to
 // APIResourceSchemaNamespaceLister.
-type APIResourceSchemaNamespaceListerExpansion any
+type APIResourceSchemaNamespaceListerExpansion interface{}
 
 // APIServiceBindingListerExpansion allows custom methods to be added to
 // APIServiceBindingLister.
-type APIServiceBindingListerExpansion any
+type APIServiceBindingListerExpansion interface{}
 
 // APIServiceExportListerExpansion allows custom methods to be added to
 // APIServiceExportLister.
-type APIServiceExportListerExpansion any
+type APIServiceExportListerExpansion interface{}
 
 // APIServiceExportNamespaceListerExpansion allows custom methods to be added to
 // APIServiceExportNamespaceLister.
-type APIServiceExportNamespaceListerExpansion any
+type APIServiceExportNamespaceListerExpansion interface{}
 
 // APIServiceExportRequestListerExpansion allows custom methods to be added to
 // APIServiceExportRequestLister.
-type APIServiceExportRequestListerExpansion any
+type APIServiceExportRequestListerExpansion interface{}
 
 // APIServiceExportRequestNamespaceListerExpansion allows custom methods to be added to
 // APIServiceExportRequestNamespaceLister.
-type APIServiceExportRequestNamespaceListerExpansion any
+type APIServiceExportRequestNamespaceListerExpansion interface{}
 
 // APIServiceNamespaceListerExpansion allows custom methods to be added to
 // APIServiceNamespaceLister.
-type APIServiceNamespaceListerExpansion any
+type APIServiceNamespaceListerExpansion interface{}
 
 // APIServiceNamespaceNamespaceListerExpansion allows custom methods to be added to
 // APIServiceNamespaceNamespaceLister.
-type APIServiceNamespaceNamespaceListerExpansion any
+type APIServiceNamespaceNamespaceListerExpansion interface{}
 
 // BoundAPIResourceSchemaListerExpansion allows custom methods to be added to
 // BoundAPIResourceSchemaLister.
-type BoundAPIResourceSchemaListerExpansion any
+type BoundAPIResourceSchemaListerExpansion interface{}
 
 // BoundAPIResourceSchemaNamespaceListerExpansion allows custom methods to be added to
 // BoundAPIResourceSchemaNamespaceLister.
-type BoundAPIResourceSchemaNamespaceListerExpansion any
+type BoundAPIResourceSchemaNamespaceListerExpansion interface{}
 
 // ClusterBindingListerExpansion allows custom methods to be added to
 // ClusterBindingLister.
-type ClusterBindingListerExpansion any
+type ClusterBindingListerExpansion interface{}
 
 // ClusterBindingNamespaceListerExpansion allows custom methods to be added to
 // ClusterBindingNamespaceLister.
-type ClusterBindingNamespaceListerExpansion any
+type ClusterBindingNamespaceListerExpansion interface{}

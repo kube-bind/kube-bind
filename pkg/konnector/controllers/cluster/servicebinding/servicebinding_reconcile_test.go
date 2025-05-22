@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
@@ -34,7 +34,7 @@ func TestEnsureCRDs(t *testing.T) {
 	tests := []struct {
 		name             string
 		bindingName      string
-		getServiceExport func(name string) (*kubebindv1alpha1.APIServiceExport, error)
+		getServiceExport func(name string) (*kubebindv1alpha2.APIServiceExport, error)
 		getCRD           func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 		expectConditions conditionsapi.Conditions
 	}{
@@ -103,26 +103,26 @@ func newCRD(name string) *apiextensionsv1.CustomResourceDefinition {
 	}
 }
 
-func newGetServiceExport(name string, crd *kubebindv1alpha1.APIServiceExport) func(name string) (*kubebindv1alpha1.APIServiceExport, error) {
-	return func(n string) (*kubebindv1alpha1.APIServiceExport, error) {
+func newGetServiceExport(name string, crd *kubebindv1alpha2.APIServiceExport) func(name string) (*kubebindv1alpha2.APIServiceExport, error) {
+	return func(n string) (*kubebindv1alpha2.APIServiceExport, error) {
 		if n == name {
 			return crd, nil
 		}
-		return nil, errors.NewNotFound(kubebindv1alpha1.SchemeGroupVersion.WithResource("apiserviceexports").GroupResource(), "not found")
+		return nil, errors.NewNotFound(kubebindv1alpha2.SchemeGroupVersion.WithResource("apiserviceexports").GroupResource(), "not found")
 	}
 }
 
-func newServiceExport(name string) *kubebindv1alpha1.APIServiceExport {
-	return &kubebindv1alpha1.APIServiceExport{
+func newServiceExport(name string) *kubebindv1alpha2.APIServiceExport {
+	return &kubebindv1alpha2.APIServiceExport{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: kubebindv1alpha1.APIServiceExportSpec{},
+		Spec: kubebindv1alpha2.APIServiceExportSpec{},
 	}
 }
 
-func newBinding(name string) *kubebindv1alpha1.APIServiceBinding {
-	return &kubebindv1alpha1.APIServiceBinding{
+func newBinding(name string) *kubebindv1alpha2.APIServiceBinding {
+	return &kubebindv1alpha2.APIServiceBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},

@@ -264,8 +264,8 @@ func TestApplyDoesNotAlterLastTransitionTime(t *testing.T) {
 	before := newConditioned("test")
 	after := &conditioned{
 		Unstructured: &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"status": map[string]interface{}{
+			Object: map[string]any{
+				"status": map[string]any{
 					"conditions": conditionsapi.Conditions{
 						conditionsapi.Condition{
 							Type:               "foo",

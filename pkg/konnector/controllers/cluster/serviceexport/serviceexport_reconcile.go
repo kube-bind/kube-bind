@@ -37,10 +37,10 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/spec"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/status"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 type reconciler struct {
@@ -55,7 +55,7 @@ type reconciler struct {
 	syncContext map[string]syncContext // by CRD name
 
 	getCRD            func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	getServiceBinding func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
+	getServiceBinding func(name string) (*kubebindv1alpha2.APIServiceBinding, error)
 }
 
 type syncContext struct {
@@ -63,7 +63,7 @@ type syncContext struct {
 	cancel     func()
 }
 
-func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebindv1alpha2.APIServiceExport) error {
 	errs := []error{}
 
 	if err := r.ensureControllers(ctx, name, export); err != nil {
@@ -82,7 +82,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebin
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureControllers(ctx context.Context, name string, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) ensureControllers(ctx context.Context, name string, export *kubebindv1alpha2.APIServiceExport) error {
 	logger := klog.FromContext(ctx)
 
 	if export == nil {
@@ -151,13 +151,13 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	// start a new syncer
 
 	var syncVersion string
-	for _, v := range export.Spec.Versions {
+	for _, v := range export.Spec.APIServiceExportCRDSpec.Versions {
 		if v.Served {
 			syncVersion = v.Name
 			break
 		}
 	}
-	gvr := runtimeschema.GroupVersionResource{Group: export.Spec.Group, Version: syncVersion, Resource: export.Spec.Names.Plural}
+	gvr := runtimeschema.GroupVersionResource{Group: export.Spec.APIServiceExportCRDSpec.Group, Version: syncVersion, Resource: export.Spec.APIServiceExportCRDSpec.Names.Plural}
 
 	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
 	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
@@ -176,7 +176,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	consumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
 
 	var providerInf multinsinformer.GetterInformer
-	if crd.Spec.Scope == apiextensionsv1.ClusterScoped || export.Spec.InformerScope == kubebindv1alpha1.ClusterScope {
+	if crd.Spec.Scope == apiextensionsv1.ClusterScoped || export.Spec.InformerScope == kubebindv1alpha2.ClusterScope {
 		factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
 		factory.ForResource(gvr).Lister() // wire the GVR up in the informer factory
 		providerInf = multinsinformer.GetterInformerWrapper{
@@ -254,14 +254,14 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureServiceBindingConditionCopied(_ context.Context, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) ensureServiceBindingConditionCopied(_ context.Context, export *kubebindv1alpha2.APIServiceExport) error {
 	binding, err := r.getServiceBinding(export.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.APIServiceExportConditionConnected,
+			kubebindv1alpha2.APIServiceExportConditionConnected,
 			"APIServiceBindingNotFound",
 			conditionsapi.ConditionSeverityInfo,
 			"No APIServiceBinding exists.",
@@ -269,7 +269,7 @@ func (r *reconciler) ensureServiceBindingConditionCopied(_ context.Context, expo
 
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.APIServiceExportConditionConsumerInSync,
+			kubebindv1alpha2.APIServiceExportConditionConsumerInSync,
 			"NA",
 			conditionsapi.ConditionSeverityInfo,
 			"No APIServiceBinding exists.",
@@ -278,16 +278,16 @@ func (r *reconciler) ensureServiceBindingConditionCopied(_ context.Context, expo
 		return nil
 	}
 
-	conditions.MarkTrue(export, kubebindv1alpha1.APIServiceExportConditionConnected)
+	conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionConnected)
 
-	if inSync := conditions.Get(binding, kubebindv1alpha1.APIServiceBindingConditionSchemaInSync); inSync != nil {
+	if inSync := conditions.Get(binding, kubebindv1alpha2.APIServiceBindingConditionSchemaInSync); inSync != nil {
 		inSync := inSync.DeepCopy()
-		inSync.Type = kubebindv1alpha1.APIServiceExportConditionConsumerInSync
+		inSync.Type = kubebindv1alpha2.APIServiceExportConditionConsumerInSync
 		conditions.Set(export, inSync)
 	} else {
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.APIServiceExportConditionConsumerInSync,
+			kubebindv1alpha2.APIServiceExportConditionConsumerInSync,
 			"Unknown",
 			conditionsapi.ConditionSeverityInfo,
 			"APIServiceBinding %s in the consumer cluster does not have a SchemaInSync condition.",
@@ -298,7 +298,7 @@ func (r *reconciler) ensureServiceBindingConditionCopied(_ context.Context, expo
 	return nil
 }
 
-func (r *reconciler) ensureCRDConditionsCopied(_ context.Context, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) ensureCRDConditionsCopied(_ context.Context, export *kubebindv1alpha2.APIServiceExport) error {
 	crd, err := r.getCRD(export.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err

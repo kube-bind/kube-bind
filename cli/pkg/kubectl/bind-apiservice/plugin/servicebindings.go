@@ -27,8 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 
-	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/helpers"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"

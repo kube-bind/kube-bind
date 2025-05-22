@@ -947,9 +947,10 @@ spec:
                   - name
                   - namespace
                   type: object
+                minItems: 1
                 type: array
                 x-kubernetes-list-map-keys:
-                - consumerID
+                - name
                 x-kubernetes-list-type: map
               conditions:
                 description: |-

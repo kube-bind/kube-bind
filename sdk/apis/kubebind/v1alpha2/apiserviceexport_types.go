@@ -158,7 +158,8 @@ type APIServiceExportStatus struct {
 	// associated with this APIServiceExport, tracking consumer usage status.
 	// +optional
 	// +listType=map
-	// +listMapKey=consumerID
+	// +listMapKey=name
+	// +kubebuilder:validation:MinItems=1
 	BoundSchemas []BoundSchemaReference `json:"boundSchemas,omitempty"`
 }
 

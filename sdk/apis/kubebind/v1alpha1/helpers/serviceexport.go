@@ -27,11 +27,11 @@ import (
 	runtime2 "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/yaml"
 
-	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 )
 
 // ServiceExportToCRD converts a APIServiceExport to a CRD.
-func ServiceExportToCRD(export *kubebindv1alpha2.APIServiceExport) (*apiextensionsv1.CustomResourceDefinition, error) {
+func ServiceExportToCRD(export *kubebindv1alpha1.APIServiceExport) (*apiextensionsv1.CustomResourceDefinition, error) {
 	crd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: export.Name,
@@ -74,8 +74,8 @@ func ServiceExportToCRD(export *kubebindv1alpha2.APIServiceExport) (*apiextensio
 }
 
 // CRDToServiceExport converts a CRD to a APIServiceExport.
-func CRDToServiceExport(crd *apiextensionsv1.CustomResourceDefinition) (*kubebindv1alpha2.APIResourceSchemaCRDSpec, error) {
-	spec := &kubebindv1alpha2.APIResourceSchemaCRDSpec{
+func CRDToServiceExport(crd *apiextensionsv1.CustomResourceDefinition) (*kubebindv1alpha1.APIServiceExportCRDSpec, error) {
+	spec := &kubebindv1alpha1.APIServiceExportCRDSpec{
 		Group: crd.Spec.Group,
 		Names: crd.Spec.Names,
 		Scope: crd.Spec.Scope,
@@ -91,7 +91,7 @@ func CRDToServiceExport(crd *apiextensionsv1.CustomResourceDefinition) (*kubebin
 			continue
 		}
 
-		apiResourceVersion := kubebindv1alpha2.APIResourceVersion{
+		apiResourceVersion := kubebindv1alpha1.APIServiceExportVersion{
 			Name:                     crdVersion.Name,
 			Served:                   crdVersion.Served,
 			Storage:                  crdVersion.Storage,
@@ -123,7 +123,7 @@ func CRDToServiceExport(crd *apiextensionsv1.CustomResourceDefinition) (*kubebin
 	return spec, nil
 }
 
-func APIServiceExportCRDSpecHash(obj *kubebindv1alpha2.APIResourceSchemaCRDSpec) string {
+func APIServiceExportCRDSpecHash(obj *kubebindv1alpha1.APIServiceExportCRDSpec) string {
 	bs, err := json.Marshal(obj)
 	if err != nil {
 		runtime2.HandleError(err)

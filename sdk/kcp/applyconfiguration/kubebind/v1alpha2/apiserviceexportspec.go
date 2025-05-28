@@ -25,24 +25,15 @@ import (
 // APIServiceExportSpecApplyConfiguration represents a declarative configuration of the APIServiceExportSpec type for use
 // with apply.
 type APIServiceExportSpecApplyConfiguration struct {
-	APIServiceExportCRDSpec *APIResourceSchemaCRDSpecApplyConfiguration    `json:",inline"`
-	Resources               []APIResourceSchemaReferenceApplyConfiguration `json:"resources,omitempty"`
-	InformerScope           *kubebindv1alpha2.InformerScope                `json:"informerScope,omitempty"`
-	ClusterScopedIsolation  *kubebindv1alpha2.Isolation                    `json:"clusterScopedIsolation,omitempty"`
+	Resources              []APIResourceSchemaReferenceApplyConfiguration `json:"resources,omitempty"`
+	InformerScope          *kubebindv1alpha2.InformerScope                `json:"informerScope,omitempty"`
+	ClusterScopedIsolation *kubebindv1alpha2.Isolation                    `json:"clusterScopedIsolation,omitempty"`
 }
 
 // APIServiceExportSpecApplyConfiguration constructs a declarative configuration of the APIServiceExportSpec type for use with
 // apply.
 func APIServiceExportSpec() *APIServiceExportSpecApplyConfiguration {
 	return &APIServiceExportSpecApplyConfiguration{}
-}
-
-// WithAPIServiceExportCRDSpec sets the APIServiceExportCRDSpec field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the APIServiceExportCRDSpec field is set to the value of the last call.
-func (b *APIServiceExportSpecApplyConfiguration) WithAPIServiceExportCRDSpec(value *APIResourceSchemaCRDSpecApplyConfiguration) *APIServiceExportSpecApplyConfiguration {
-	b.APIServiceExportCRDSpec = value
-	return b
 }
 
 // WithResources adds the given value to the Resources field in the declarative configuration

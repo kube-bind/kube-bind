@@ -19,14 +19,18 @@ limitations under the License.
 package v1alpha2
 
 import (
-	v1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/meta/v1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
+	v1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/conditions/v1alpha1"
 )
 
 // BoundAPIResourceSchemaStatusApplyConfiguration represents a declarative configuration of the BoundAPIResourceSchemaStatus type for use
 // with apply.
 type BoundAPIResourceSchemaStatusApplyConfiguration struct {
-	Conditions     []v1.ConditionApplyConfiguration `json:"conditions,omitempty"`
-	Instantiations *int                             `json:"instantiations,omitempty"`
+	AcceptedNames  *v1.CustomResourceDefinitionNames      `json:"acceptedNames,omitempty"`
+	StoredVersions []string                               `json:"storedVersions,omitempty"`
+	Conditions     []v1alpha1.ConditionApplyConfiguration `json:"conditions,omitempty"`
+	Instantiations *int                                   `json:"instantiations,omitempty"`
 }
 
 // BoundAPIResourceSchemaStatusApplyConfiguration constructs a declarative configuration of the BoundAPIResourceSchemaStatus type for use with
@@ -35,10 +39,28 @@ func BoundAPIResourceSchemaStatus() *BoundAPIResourceSchemaStatusApplyConfigurat
 	return &BoundAPIResourceSchemaStatusApplyConfiguration{}
 }
 
+// WithAcceptedNames sets the AcceptedNames field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AcceptedNames field is set to the value of the last call.
+func (b *BoundAPIResourceSchemaStatusApplyConfiguration) WithAcceptedNames(value v1.CustomResourceDefinitionNames) *BoundAPIResourceSchemaStatusApplyConfiguration {
+	b.AcceptedNames = &value
+	return b
+}
+
+// WithStoredVersions adds the given value to the StoredVersions field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the StoredVersions field.
+func (b *BoundAPIResourceSchemaStatusApplyConfiguration) WithStoredVersions(values ...string) *BoundAPIResourceSchemaStatusApplyConfiguration {
+	for i := range values {
+		b.StoredVersions = append(b.StoredVersions, values[i])
+	}
+	return b
+}
+
 // WithConditions adds the given value to the Conditions field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
 // If called multiple times, values provided by each call will be appended to the Conditions field.
-func (b *BoundAPIResourceSchemaStatusApplyConfiguration) WithConditions(values ...*v1.ConditionApplyConfiguration) *BoundAPIResourceSchemaStatusApplyConfiguration {
+func (b *BoundAPIResourceSchemaStatusApplyConfiguration) WithConditions(values ...*v1alpha1.ConditionApplyConfiguration) *BoundAPIResourceSchemaStatusApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
 			panic("nil value passed to WithConditions")

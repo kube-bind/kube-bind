@@ -25,8 +25,9 @@ import (
 // APIServiceBindingStatusApplyConfiguration represents a declarative configuration of the APIServiceBindingStatus type for use
 // with apply.
 type APIServiceBindingStatusApplyConfiguration struct {
-	ProviderPrettyName *string              `json:"providerPrettyName,omitempty"`
-	Conditions         *v1alpha1.Conditions `json:"conditions,omitempty"`
+	ProviderPrettyName *string                                    `json:"providerPrettyName,omitempty"`
+	Conditions         *v1alpha1.Conditions                       `json:"conditions,omitempty"`
+	BoundResources     []BoundResourceReferenceApplyConfiguration `json:"boundResources,omitempty"`
 }
 
 // APIServiceBindingStatusApplyConfiguration constructs a declarative configuration of the APIServiceBindingStatus type for use with
@@ -48,5 +49,18 @@ func (b *APIServiceBindingStatusApplyConfiguration) WithProviderPrettyName(value
 // If called multiple times, the Conditions field is set to the value of the last call.
 func (b *APIServiceBindingStatusApplyConfiguration) WithConditions(value v1alpha1.Conditions) *APIServiceBindingStatusApplyConfiguration {
 	b.Conditions = &value
+	return b
+}
+
+// WithBoundResources adds the given value to the BoundResources field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, values provided by each call will be appended to the BoundResources field.
+func (b *APIServiceBindingStatusApplyConfiguration) WithBoundResources(values ...*BoundResourceReferenceApplyConfiguration) *APIServiceBindingStatusApplyConfiguration {
+	for i := range values {
+		if values[i] == nil {
+			panic("nil value passed to WithBoundResources")
+		}
+		b.BoundResources = append(b.BoundResources, *values[i])
+	}
 	return b
 }

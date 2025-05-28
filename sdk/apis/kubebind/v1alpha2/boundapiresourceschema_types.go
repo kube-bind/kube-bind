@@ -17,7 +17,10 @@ limitations under the License.
 package v1alpha2
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 // BoundAPIResourceSchema
@@ -77,9 +80,22 @@ const (
 
 // BoundAPIResourceSchemaStatus defines the observed state of the BoundAPIResourceSchema.
 type BoundAPIResourceSchemaStatus struct {
+	// acceptedNames are the names that are actually being used to serve discovery.
+	// They may be different than the names in spec.
+	// +optional
+	AcceptedNames apiextensionsv1.CustomResourceDefinitionNames `json:"acceptedNames"`
+
+	// storedVersions lists all versions of CustomResources that were ever persisted. Tracking these
+	// versions allows a migration path for stored versions in etcd. The field is mutable
+	// so a migration controller can finish a migration to another version (ensuring
+	// no old objects are left in storage), and then remove the rest of the
+	// versions from this list.
+	// Versions may not be removed from `spec.versions` while they exist in this list.
+	// +optional
+	StoredVersions []string `json:"storedVersions"`
 	// Conditions represent the latest available observations of the object's state.
 	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	Conditions []conditionsapi.Condition `json:"conditions,omitempty"`
 
 	// Instantiations tracks the number of instances of the resource on the consumer side.
 	// +optional

@@ -103,6 +103,9 @@ func NewController(
 			getClusterBinding: func(ctx context.Context) (*kubebindv1alpha2.ClusterBinding, error) {
 				return providerBindClient.KubeBindV1alpha2().ClusterBindings(providerNamespace).Get(ctx, "cluster", metav1.GetOptions{})
 			},
+			getAPIResourceSchema: func(ctx context.Context, namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+				return providerBindClient.KubeBindV1alpha2().APIResourceSchemas(namespace).Get(ctx, name, metav1.GetOptions{})
+			},
 			updateServiceExportStatus: func(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error) {
 				return providerBindClient.KubeBindV1alpha2().APIServiceExports(providerNamespace).UpdateStatus(ctx, export, metav1.UpdateOptions{})
 			},

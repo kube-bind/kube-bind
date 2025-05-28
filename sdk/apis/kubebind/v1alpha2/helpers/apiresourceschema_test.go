@@ -51,12 +51,12 @@ func TestWebhookCRDStorageVersion(t *testing.T) {
 		},
 	}
 
-	output, err := CRDToServiceExport(&input)
+	output, err := CRDToAPIResourceSchema(&input, "test")
 
 	require.NoError(t, err)
 
 	atLeastOneStorageVersion := false
-	for _, v := range output.Versions {
+	for _, v := range output.Spec.Versions {
 		atLeastOneStorageVersion = atLeastOneStorageVersion || v.Storage
 	}
 	if !atLeastOneStorageVersion {

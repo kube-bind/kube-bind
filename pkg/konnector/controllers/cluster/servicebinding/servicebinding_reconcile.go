@@ -18,6 +18,7 @@ package servicebinding
 
 import (
 	"context"
+	"fmt"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -38,6 +39,7 @@ type reconciler struct {
 	getServiceExport        func(ns string) (*kubebindv1alpha2.APIServiceExport, error)
 	getServiceBinding       func(name string) (*kubebindv1alpha2.APIServiceBinding, error)
 	getClusterBinding       func(ctx context.Context) (*kubebindv1alpha2.ClusterBinding, error)
+	getAPIResourceSchema    func(ctx context.Context, namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error)
 
 	updateServiceExportStatus func(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)
 
@@ -113,33 +115,62 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 		return nil // nothing we can do here
 	}
 
-	crd, err := kubebindhelpers.ServiceExportToCRD(export)
+	// Get all APIResourceSchema objects referenced by the export
+	schemas, err := r.getAPIResourceSchemasFromExport(ctx, export)
 	if err != nil {
 		conditions.MarkFalse(
 			binding,
 			kubebindv1alpha2.APIServiceBindingConditionConnected,
-			"APIServiceExportInvalid",
+			"APIResourceSchemaFetchFailed",
 			conditionsapi.ConditionSeverityError,
-			"APIServiceExport %s on the service provider cluster is invalid: %s",
-			binding.Name, err,
+			"Failed to fetch APIResourceSchema objects: %s",
+			err,
 		)
-		return nil // nothing we can do here
+		return nil
 	}
 
-	// put binding owner reference on the CRD.
-	newReference := metav1.OwnerReference{
+	// Process each schema
+	for _, schema := range schemas {
+		if err := r.ensureAPIResourceSchema(ctx, binding, schema); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	// If we processed all schemas without errors, mark the binding as connected
+	if len(errs) == 0 {
+		conditions.MarkTrue(binding, kubebindv1alpha2.APIServiceBindingConditionConnected)
+	}
+
+	return utilerrors.NewAggregate(errs)
+}
+
+func (r *reconciler) ensureAPIResourceSchema(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding, schema *kubebindv1alpha2.APIResourceSchema) error {
+	crd, err := kubebindhelpers.APIResourceSchemaToCRD(schema)
+	if err != nil {
+		conditions.MarkFalse(
+			binding,
+			kubebindv1alpha2.APIServiceBindingConditionConnected,
+			"APIResourceSchemaInvalid",
+			conditionsapi.ConditionSeverityError,
+			"APIResourceSchema %s is invalid: %s",
+			schema.Name, err,
+		)
+		return nil
+	}
+
+	crd.OwnerReferences = append(crd.OwnerReferences, metav1.OwnerReference{
 		APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
 		Kind:       "APIServiceBinding",
 		Name:       binding.Name,
 		UID:        binding.UID,
 		Controller: ptr.To(true),
-	}
-	crd.OwnerReferences = append(crd.OwnerReferences, newReference)
+	})
 
 	existing, err := r.getCRD(crd.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
+		// Create new CRD
 		if _, err := r.createCRD(ctx, crd); err != nil && !errors.IsInvalid(err) {
 			return err
 		} else if errors.IsInvalid(err) {
@@ -149,16 +180,14 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 				"CustomResourceDefinitionCreateFailed",
 				conditionsapi.ConditionSeverityError,
 				"CustomResourceDefinition %s cannot be created: %s",
-				binding.Name, err,
+				crd.Name, err,
 			)
 			return nil
 		}
 
-		conditions.MarkTrue(binding, kubebindv1alpha2.APIServiceBindingConditionConnected)
-		return nil // we wait for a new reconcile to update APIServiceExport status
+		return nil
 	}
 
-	// first check this really ours and we don't override something else
 	if !kubebindhelpers.IsOwnedByBinding(binding.Name, binding.UID, existing.OwnerReferences) {
 		conditions.MarkFalse(
 			binding,
@@ -173,7 +202,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 
 	crd.ObjectMeta = existing.ObjectMeta
 	if _, err := r.updateCRD(ctx, crd); err != nil && !errors.IsInvalid(err) {
-		return nil
+		return err
 	} else if errors.IsInvalid(err) {
 		conditions.MarkFalse(
 			binding,
@@ -181,14 +210,12 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 			"CustomResourceDefinitionUpdateFailed",
 			conditionsapi.ConditionSeverityError,
 			"CustomResourceDefinition %s cannot be updated: %s",
-			binding.Name, err,
+			crd.Name, err,
 		)
 		return nil
 	}
 
-	conditions.MarkTrue(binding, kubebindv1alpha2.APIServiceBindingConditionConnected)
-
-	return utilerrors.NewAggregate(errs)
+	return nil
 }
 
 func (r *reconciler) ensurePrettyName(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding) error {
@@ -203,4 +230,25 @@ func (r *reconciler) ensurePrettyName(ctx context.Context, binding *kubebindv1al
 	binding.Status.ProviderPrettyName = clusterBinding.Spec.ProviderPrettyName
 
 	return nil
+}
+
+func (r *reconciler) getAPIResourceSchemasFromExport(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) ([]*kubebindv1alpha2.APIResourceSchema, error) {
+	schemas := make([]*kubebindv1alpha2.APIResourceSchema, 0, len(export.Spec.Resources))
+
+	for _, ref := range export.Spec.Resources {
+		if ref.Type != "APIResourceSchema" {
+			return nil, fmt.Errorf("unsupported resource type %q in APIServiceExport %s",
+				ref.Type, export.Name)
+		}
+
+		schema, err := r.getAPIResourceSchema(ctx, export.Namespace, ref.Name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get APIResourceSchema %s/%s: %w",
+				export.Namespace, ref.Name, err)
+		}
+
+		schemas = append(schemas, schema)
+	}
+
+	return schemas, nil
 }

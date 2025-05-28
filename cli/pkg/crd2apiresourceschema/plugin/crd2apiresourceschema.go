@@ -18,7 +18,6 @@ package plugin
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -41,6 +40,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/base"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
 )
 
 type CRD2APIResourceSchemaOptions struct {
@@ -116,7 +116,7 @@ func (b *CRD2APIResourceSchemaOptions) Run(ctx context.Context) error {
 		}
 
 		prefix := fmt.Sprintf("v%s-%s", time.Now().Format("060102"), string(version.Get().GitCommit))
-		apiResourceSchema, err := convertCRDToAPIResourceSchema(crdObj, prefix)
+		apiResourceSchema, err := helpers.CRDToAPIResourceSchema(crdObj, prefix)
 		if err != nil {
 			fmt.Fprintf(b.Options.ErrOut, "Failed to convert CRD %s to APIResourceSchema: %v\n", crdObj.Name, err)
 			continue
@@ -156,83 +156,6 @@ func generateAPIResourceSchemaInCluster(ctx context.Context, client dynamic.Inte
 
 	fmt.Fprintf(out, "Successfully created APIResourceSchema for CRD %s\n", apiResourceSchema.Name)
 	return nil
-}
-
-func convertCRDToAPIResourceSchema(crd *apiextensionsv1.CustomResourceDefinition, prefix string) (*kubebindv1alpha2.APIResourceSchema, error) {
-	name := prefix + "." + crd.Name
-	informerScope := kubebindv1alpha2.NamespacedScope
-	apiResourceSchema := &kubebindv1alpha2.APIResourceSchema{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
-			Kind:       "APIResourceSchema",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		Spec: kubebindv1alpha2.APIResourceSchemaSpec{
-			InformerScope: informerScope,
-			APIResourceSchemaCRDSpec: kubebindv1alpha2.APIResourceSchemaCRDSpec{
-				Group: crd.Spec.Group,
-				Names: crd.Spec.Names,
-				Scope: crd.Spec.Scope,
-			},
-		},
-	}
-
-	if len(crd.Spec.Versions) > 1 && crd.Spec.Conversion == nil {
-		return nil, fmt.Errorf("multiple versions specified for CRD %q but no conversion strategy", crd.Name)
-	}
-
-	if crd.Spec.Conversion != nil {
-		crConversion := &kubebindv1alpha2.CustomResourceConversion{
-			Strategy: kubebindv1alpha2.ConversionStrategyType(crd.Spec.Conversion.Strategy),
-		}
-
-		if crd.Spec.Conversion.Strategy == "Webhook" {
-			crConversion.Webhook = &kubebindv1alpha2.WebhookConversion{
-				ConversionReviewVersions: crd.Spec.Conversion.Webhook.ConversionReviewVersions,
-			}
-
-			if crd.Spec.Conversion.Webhook.ClientConfig != nil {
-				crConversion.Webhook.ClientConfig = &kubebindv1alpha2.WebhookClientConfig{
-					URL:      crd.Spec.Conversion.Webhook.ClientConfig.URL,
-					CABundle: crd.Spec.Conversion.Webhook.ClientConfig.CABundle,
-				}
-			}
-		}
-
-		apiResourceSchema.Spec.Conversion = crConversion
-	}
-
-	for i := range crd.Spec.Versions {
-		crdVersion := crd.Spec.Versions[i]
-
-		apiResourceVersion := kubebindv1alpha2.APIResourceVersion{
-			Name:                     crdVersion.Name,
-			Served:                   crdVersion.Served,
-			Storage:                  crdVersion.Storage,
-			Deprecated:               crdVersion.Deprecated,
-			DeprecationWarning:       crdVersion.DeprecationWarning,
-			AdditionalPrinterColumns: crdVersion.AdditionalPrinterColumns,
-		}
-		if crdVersion.Schema != nil && crdVersion.Schema.OpenAPIV3Schema != nil {
-			rawSchema, err := json.Marshal(crdVersion.Schema.OpenAPIV3Schema)
-			if err != nil {
-				return nil, fmt.Errorf("error converting schema for version %q: %w", crdVersion.Name, err)
-			}
-			apiResourceVersion.Schema = kubebindv1alpha2.CRDVersionSchema{
-				OpenAPIV3Schema: runtime.RawExtension{Raw: rawSchema},
-			}
-		}
-
-		if crdVersion.Subresources != nil {
-			apiResourceVersion.Subresources = *crdVersion.Subresources
-		}
-
-		apiResourceSchema.Spec.Versions = append(apiResourceSchema.Spec.Versions, apiResourceVersion)
-	}
-
-	return apiResourceSchema, nil
 }
 
 func writeObjectToYAML(outputDir string, apiResourceSchema *kubebindv1alpha2.APIResourceSchema, logger io.Writer) error {

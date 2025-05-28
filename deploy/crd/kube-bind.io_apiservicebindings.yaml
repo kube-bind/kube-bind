@@ -233,6 +233,29 @@ spec:
             description: status contains reconciliation information for a service
               binding.
             properties:
+              boundResources:
+                description: |-
+                  BoundResources contains references to all BoundAPIResourceSchema objects
+                  associated with this APIServiceBinding, tracking consumer usage status.
+                items:
+                  description: BoundResourceReference contains a reference to a BoundAPIResourceSchema
+                    with status information.
+                  properties:
+                    name:
+                      description: name is the name of the BoundAPIResourceSchema.
+                      type: string
+                    namespace:
+                      description: namespace is the namespace of the BoundAPIResourceSchema.
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                minItems: 1
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
               conditions:
                 description: conditions is a list of conditions that apply to the
                   APIServiceBinding.

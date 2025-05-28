@@ -22,7 +22,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	applyconfigurationsmetav1 "k8s.io/client-go/applyconfigurations/meta/v1"
+	metav1 "k8s.io/client-go/applyconfigurations/meta/v1"
 	testing "k8s.io/client-go/testing"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
@@ -32,7 +32,7 @@ import (
 	internal "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/internal"
 	applyconfigurationkubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/kubebind/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/kubebind/v1alpha2"
-	metav1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/meta/v1"
+	applyconfigurationmetav1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/meta/v1"
 )
 
 // ForKind returns an apply configuration type for the given GroupVersionKind, or nil if no
@@ -128,8 +128,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &kubebindv1alpha2.BoundAPIResourceSchemaSpecApplyConfiguration{}
 	case v1alpha2.SchemeGroupVersion.WithKind("BoundAPIResourceSchemaStatus"):
 		return &kubebindv1alpha2.BoundAPIResourceSchemaStatusApplyConfiguration{}
-	case v1alpha2.SchemeGroupVersion.WithKind("BoundSchemaReference"):
-		return &kubebindv1alpha2.BoundSchemaReferenceApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("BoundResourceReference"):
+		return &kubebindv1alpha2.BoundResourceReferenceApplyConfiguration{}
 	case v1alpha2.SchemeGroupVersion.WithKind("ClusterBinding"):
 		return &kubebindv1alpha2.ClusterBindingApplyConfiguration{}
 	case v1alpha2.SchemeGroupVersion.WithKind("ClusterBindingSpec"):
@@ -155,19 +155,19 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 	case v1.SchemeGroupVersion.WithKind("Condition"):
 		return &metav1.ConditionApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("DeleteOptions"):
-		return &applyconfigurationsmetav1.DeleteOptionsApplyConfiguration{}
+		return &metav1.DeleteOptionsApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("LabelSelector"):
-		return &applyconfigurationsmetav1.LabelSelectorApplyConfiguration{}
+		return &metav1.LabelSelectorApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("LabelSelectorRequirement"):
-		return &applyconfigurationsmetav1.LabelSelectorRequirementApplyConfiguration{}
+		return &metav1.LabelSelectorRequirementApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ManagedFieldsEntry"):
-		return &metav1.ManagedFieldsEntryApplyConfiguration{}
+		return &applyconfigurationmetav1.ManagedFieldsEntryApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("ObjectMeta"):
-		return &metav1.ObjectMetaApplyConfiguration{}
+		return &applyconfigurationmetav1.ObjectMetaApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("OwnerReference"):
-		return &metav1.OwnerReferenceApplyConfiguration{}
+		return &applyconfigurationmetav1.OwnerReferenceApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("TypeMeta"):
-		return &metav1.TypeMetaApplyConfiguration{}
+		return &applyconfigurationmetav1.TypeMetaApplyConfiguration{}
 
 	}
 	return nil

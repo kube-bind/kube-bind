@@ -97,6 +97,25 @@ type APIServiceBindingStatus struct {
 
 	// conditions is a list of conditions that apply to the APIServiceBinding.
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
+
+	// BoundResources contains references to all BoundAPIResourceSchema objects
+	// associated with this APIServiceBinding, tracking consumer usage status.
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MinItems=1
+	BoundResources []BoundResourceReference `json:"boundResources,omitempty"`
+}
+
+// BoundResourceReference contains a reference to a BoundAPIResourceSchema with status information.
+type BoundResourceReference struct {
+	// name is the name of the BoundAPIResourceSchema.
+	// +required
+	Name string `json:"name"`
+
+	// namespace is the namespace of the BoundAPIResourceSchema.
+	// +required
+	Namespace string `json:"namespace"`
 }
 
 // APIServiceBindingList is a list of APIServiceBindings.

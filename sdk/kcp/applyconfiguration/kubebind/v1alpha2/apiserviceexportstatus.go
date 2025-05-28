@@ -27,10 +27,9 @@ import (
 // APIServiceExportStatusApplyConfiguration represents a declarative configuration of the APIServiceExportStatus type for use
 // with apply.
 type APIServiceExportStatusApplyConfiguration struct {
-	AcceptedNames  *v1.CustomResourceDefinitionNames        `json:"acceptedNames,omitempty"`
-	StoredVersions []string                                 `json:"storedVersions,omitempty"`
-	Conditions     *v1alpha1.Conditions                     `json:"conditions,omitempty"`
-	BoundSchemas   []BoundSchemaReferenceApplyConfiguration `json:"boundSchemas,omitempty"`
+	AcceptedNames  *v1.CustomResourceDefinitionNames `json:"acceptedNames,omitempty"`
+	StoredVersions []string                          `json:"storedVersions,omitempty"`
+	Conditions     *v1alpha1.Conditions              `json:"conditions,omitempty"`
 }
 
 // APIServiceExportStatusApplyConfiguration constructs a declarative configuration of the APIServiceExportStatus type for use with
@@ -62,18 +61,5 @@ func (b *APIServiceExportStatusApplyConfiguration) WithStoredVersions(values ...
 // If called multiple times, the Conditions field is set to the value of the last call.
 func (b *APIServiceExportStatusApplyConfiguration) WithConditions(value v1alpha1.Conditions) *APIServiceExportStatusApplyConfiguration {
 	b.Conditions = &value
-	return b
-}
-
-// WithBoundSchemas adds the given value to the BoundSchemas field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the BoundSchemas field.
-func (b *APIServiceExportStatusApplyConfiguration) WithBoundSchemas(values ...*BoundSchemaReferenceApplyConfiguration) *APIServiceExportStatusApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithBoundSchemas")
-		}
-		b.BoundSchemas = append(b.BoundSchemas, *values[i])
-	}
 	return b
 }

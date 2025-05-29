@@ -25,9 +25,9 @@ import (
 // APIServiceBindingStatusApplyConfiguration represents a declarative configuration of the APIServiceBindingStatus type for use
 // with apply.
 type APIServiceBindingStatusApplyConfiguration struct {
-	ProviderPrettyName *string                                    `json:"providerPrettyName,omitempty"`
-	Conditions         *v1alpha1.Conditions                       `json:"conditions,omitempty"`
-	BoundResources     []BoundResourceReferenceApplyConfiguration `json:"boundResources,omitempty"`
+	ProviderPrettyName *string                                  `json:"providerPrettyName,omitempty"`
+	Conditions         *v1alpha1.Conditions                     `json:"conditions,omitempty"`
+	BoundSchemas       []BoundSchemaReferenceApplyConfiguration `json:"boundSchemas,omitempty"`
 }
 
 // APIServiceBindingStatusApplyConfiguration constructs a declarative configuration of the APIServiceBindingStatus type for use with
@@ -52,15 +52,15 @@ func (b *APIServiceBindingStatusApplyConfiguration) WithConditions(value v1alpha
 	return b
 }
 
-// WithBoundResources adds the given value to the BoundResources field in the declarative configuration
+// WithBoundSchemas adds the given value to the BoundSchemas field in the declarative configuration
 // and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the BoundResources field.
-func (b *APIServiceBindingStatusApplyConfiguration) WithBoundResources(values ...*BoundResourceReferenceApplyConfiguration) *APIServiceBindingStatusApplyConfiguration {
+// If called multiple times, values provided by each call will be appended to the BoundSchemas field.
+func (b *APIServiceBindingStatusApplyConfiguration) WithBoundSchemas(values ...*BoundSchemaReferenceApplyConfiguration) *APIServiceBindingStatusApplyConfiguration {
 	for i := range values {
 		if values[i] == nil {
-			panic("nil value passed to WithBoundResources")
+			panic("nil value passed to WithBoundSchemas")
 		}
-		b.BoundResources = append(b.BoundResources, *values[i])
+		b.BoundSchemas = append(b.BoundSchemas, *values[i])
 	}
 	return b
 }

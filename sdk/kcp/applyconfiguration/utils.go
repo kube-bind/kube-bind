@@ -128,8 +128,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &kubebindv1alpha2.BoundAPIResourceSchemaSpecApplyConfiguration{}
 	case v1alpha2.SchemeGroupVersion.WithKind("BoundAPIResourceSchemaStatus"):
 		return &kubebindv1alpha2.BoundAPIResourceSchemaStatusApplyConfiguration{}
-	case v1alpha2.SchemeGroupVersion.WithKind("BoundResourceReference"):
-		return &kubebindv1alpha2.BoundResourceReferenceApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("BoundSchemaReference"):
+		return &kubebindv1alpha2.BoundSchemaReferenceApplyConfiguration{}
 	case v1alpha2.SchemeGroupVersion.WithKind("ClusterBinding"):
 		return &kubebindv1alpha2.ClusterBindingApplyConfiguration{}
 	case v1alpha2.SchemeGroupVersion.WithKind("ClusterBindingSpec"):

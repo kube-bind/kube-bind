@@ -18,17 +18,11 @@ limitations under the License.
 
 package v1alpha2
 
-import (
-	v1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/meta/v1"
-)
-
 // BoundSchemaReferenceApplyConfiguration represents a declarative configuration of the BoundSchemaReference type for use
 // with apply.
 type BoundSchemaReferenceApplyConfiguration struct {
-	Name           *string                          `json:"name,omitempty"`
-	Namespace      *string                          `json:"namespace,omitempty"`
-	Conditions     []v1.ConditionApplyConfiguration `json:"conditions,omitempty"`
-	Instantiations *int                             `json:"instantiations,omitempty"`
+	Name      *string `json:"name,omitempty"`
+	Namespace *string `json:"namespace,omitempty"`
 }
 
 // BoundSchemaReferenceApplyConfiguration constructs a declarative configuration of the BoundSchemaReference type for use with
@@ -50,26 +44,5 @@ func (b *BoundSchemaReferenceApplyConfiguration) WithName(value string) *BoundSc
 // If called multiple times, the Namespace field is set to the value of the last call.
 func (b *BoundSchemaReferenceApplyConfiguration) WithNamespace(value string) *BoundSchemaReferenceApplyConfiguration {
 	b.Namespace = &value
-	return b
-}
-
-// WithConditions adds the given value to the Conditions field in the declarative configuration
-// and returns the receiver, so that objects can be build by chaining "With" function invocations.
-// If called multiple times, values provided by each call will be appended to the Conditions field.
-func (b *BoundSchemaReferenceApplyConfiguration) WithConditions(values ...*v1.ConditionApplyConfiguration) *BoundSchemaReferenceApplyConfiguration {
-	for i := range values {
-		if values[i] == nil {
-			panic("nil value passed to WithConditions")
-		}
-		b.Conditions = append(b.Conditions, *values[i])
-	}
-	return b
-}
-
-// WithInstantiations sets the Instantiations field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Instantiations field is set to the value of the last call.
-func (b *BoundSchemaReferenceApplyConfiguration) WithInstantiations(value int) *BoundSchemaReferenceApplyConfiguration {
-	b.Instantiations = &value
 	return b
 }

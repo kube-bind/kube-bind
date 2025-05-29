@@ -70,7 +70,7 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
-	apiextensionsClient, err := apiextensionsclient.NewForConfig(consumerConfig)
+	consumerAPIExtensionsClient, err := apiextensionsclient.NewForConfig(consumerConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -103,8 +103,11 @@ func NewController(
 			getClusterBinding: func(ctx context.Context) (*kubebindv1alpha2.ClusterBinding, error) {
 				return providerBindClient.KubeBindV1alpha2().ClusterBindings(providerNamespace).Get(ctx, "cluster", metav1.GetOptions{})
 			},
-			getAPIResourceSchema: func(ctx context.Context, namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-				return providerBindClient.KubeBindV1alpha2().APIResourceSchemas(namespace).Get(ctx, name, metav1.GetOptions{})
+			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+				return providerBindClient.KubeBindV1alpha2().APIResourceSchemas(providerNamespace).Get(ctx, name, metav1.GetOptions{})
+			},
+			getBoundAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
+				return providerBindClient.KubeBindV1alpha2().BoundAPIResourceSchemas(providerNamespace).Get(ctx, name, metav1.GetOptions{})
 			},
 			updateServiceExportStatus: func(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error) {
 				return providerBindClient.KubeBindV1alpha2().APIServiceExports(providerNamespace).UpdateStatus(ctx, export, metav1.UpdateOptions{})
@@ -113,10 +116,10 @@ func NewController(
 				return crdInformer.Lister().Get(name)
 			},
 			updateCRD: func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error) {
-				return apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
+				return consumerAPIExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Update(ctx, crd, metav1.UpdateOptions{})
 			},
 			createCRD: func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error) {
-				return apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, crd, metav1.CreateOptions{})
+				return consumerAPIExtensionsClient.ApiextensionsV1().CustomResourceDefinitions().Create(ctx, crd, metav1.CreateOptions{})
 			},
 		},
 

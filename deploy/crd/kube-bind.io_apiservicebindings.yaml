@@ -233,12 +233,12 @@ spec:
             description: status contains reconciliation information for a service
               binding.
             properties:
-              boundResources:
+              boundSchemas:
                 description: |-
-                  BoundResources contains references to all BoundAPIResourceSchema objects
+                  BoundSchemas contains references to all BoundAPIResourceSchema objects
                   associated with this APIServiceBinding, tracking consumer usage status.
                 items:
-                  description: BoundResourceReference contains a reference to a BoundAPIResourceSchema
+                  description: BoundSchemaReference contains a reference to a BoundAPIResourceSchema
                     with status information.
                   properties:
                     name:

@@ -233,7 +233,6 @@ func (r *reconciler) ensureBoundAPIResourceSchema(ctx context.Context, export *k
 	// Check if InformerScope needs updating
 	if boundSchema.Spec.InformerScope != schema.Spec.InformerScope {
 		boundSchema.Spec.InformerScope = schema.Spec.InformerScope
-
 	}
 
 	if !reflect.DeepEqual(boundSchema.Spec.APIResourceSchemaCRDSpec, schema.Spec.APIResourceSchemaCRDSpec) {

@@ -107,7 +107,6 @@ func NewController(
 			},
 			getBoundAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
 				return providerBindClient.KubeBindV1alpha2().BoundAPIResourceSchemas(providerNamespace).Get(ctx, name, metav1.GetOptions{})
-
 			},
 			createBoundAPIResourceSchema: func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
 				return providerBindClient.KubeBindV1alpha2().BoundAPIResourceSchemas(providerNamespace).Create(ctx, boundSchema, metav1.CreateOptions{})

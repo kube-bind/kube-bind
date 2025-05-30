@@ -156,11 +156,15 @@ func (r *reconciler) referenceBoundAPIResourceSchema(ctx context.Context, bindin
 	}
 
 	if boundSchema == nil {
-		return nil // Schema not found, nothing to do
+		return nil
 	}
+
+	group := boundSchema.Spec.APIResourceSchemaCRDSpec.Group
+	resource := boundSchema.Spec.APIResourceSchemaCRDSpec.Names.Plural
+
 	if len(binding.Status.BoundSchemas) > 0 {
 		for _, ref := range binding.Status.BoundSchemas {
-			if ref.Name == boundSchema.Name && ref.Namespace == boundSchema.Namespace {
+			if ref.Group == group && ref.Resource == resource {
 				return nil
 			}
 		}
@@ -169,11 +173,13 @@ func (r *reconciler) referenceBoundAPIResourceSchema(ctx context.Context, bindin
 	if binding.Status.BoundSchemas == nil {
 		binding.Status.BoundSchemas = []kubebindv1alpha2.BoundSchemaReference{}
 	}
-	// Add reference to the bound schema
+
 	binding.Status.BoundSchemas = append(binding.Status.BoundSchemas,
 		kubebindv1alpha2.BoundSchemaReference{
-			Name:      boundSchema.Name,
-			Namespace: boundSchema.Namespace,
+			GroupResource: kubebindv1alpha2.GroupResource{
+				Group:    group,
+				Resource: resource,
+			},
 		})
 
 	return nil

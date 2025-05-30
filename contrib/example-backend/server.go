@@ -129,6 +129,7 @@ func NewServer(config *Config) (*Server, error) {
 		kubebindv1alpha2.InformerScope(config.Options.ConsumerScope),
 		config.BindInformers.KubeBind().V1alpha2().ClusterBindings(),
 		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
+		config.BindInformers.KubeBind().V1alpha2().APIResourceSchemas(),
 		config.KubeInformers.Rbac().V1().ClusterRoles(),
 		config.KubeInformers.Rbac().V1().ClusterRoleBindings(),
 		config.KubeInformers.Rbac().V1().RoleBindings(),

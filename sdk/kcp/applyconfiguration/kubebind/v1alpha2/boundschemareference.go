@@ -21,8 +21,7 @@ package v1alpha2
 // BoundSchemaReferenceApplyConfiguration represents a declarative configuration of the BoundSchemaReference type for use
 // with apply.
 type BoundSchemaReferenceApplyConfiguration struct {
-	Name      *string `json:"name,omitempty"`
-	Namespace *string `json:"namespace,omitempty"`
+	GroupResourceApplyConfiguration `json:",inline"`
 }
 
 // BoundSchemaReferenceApplyConfiguration constructs a declarative configuration of the BoundSchemaReference type for use with
@@ -31,18 +30,18 @@ func BoundSchemaReference() *BoundSchemaReferenceApplyConfiguration {
 	return &BoundSchemaReferenceApplyConfiguration{}
 }
 
-// WithName sets the Name field in the declarative configuration to the given value
+// WithGroup sets the Group field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Name field is set to the value of the last call.
-func (b *BoundSchemaReferenceApplyConfiguration) WithName(value string) *BoundSchemaReferenceApplyConfiguration {
-	b.Name = &value
+// If called multiple times, the Group field is set to the value of the last call.
+func (b *BoundSchemaReferenceApplyConfiguration) WithGroup(value string) *BoundSchemaReferenceApplyConfiguration {
+	b.Group = &value
 	return b
 }
 
-// WithNamespace sets the Namespace field in the declarative configuration to the given value
+// WithResource sets the Resource field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Namespace field is set to the value of the last call.
-func (b *BoundSchemaReferenceApplyConfiguration) WithNamespace(value string) *BoundSchemaReferenceApplyConfiguration {
-	b.Namespace = &value
+// If called multiple times, the Resource field is set to the value of the last call.
+func (b *BoundSchemaReferenceApplyConfiguration) WithResource(value string) *BoundSchemaReferenceApplyConfiguration {
+	b.Resource = &value
 	return b
 }

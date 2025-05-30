@@ -17,19 +17,26 @@ limitations under the License.
 package helpers
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"math/big"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 // CRDToAPIResourceSchema converts a CustomResourceDefinition to an APIResourceSchema.
 func CRDToAPIResourceSchema(crd *apiextensionsv1.CustomResourceDefinition, prefix string) (*kubebindv1alpha2.APIResourceSchema, error) {
-	name := prefix + "." + crd.Name
+	name := crd.Name
+	if prefix != "" {
+		name = prefix + "." + crd.Name
+	}
+
 	informerScope := kubebindv1alpha2.NamespacedScope
 	apiResourceSchema := &kubebindv1alpha2.APIResourceSchema{
 		TypeMeta: metav1.TypeMeta{
@@ -159,4 +166,23 @@ func APIResourceSchemaToCRD(schema *kubebindv1alpha2.APIResourceSchema) (*apiext
 	}
 
 	return crd, nil
+}
+func APIResourceSchemaCRDSpecHash(obj *kubebindv1alpha2.APIResourceSchemaCRDSpec) string {
+	bs, err := json.Marshal(obj)
+	if err != nil {
+		utilruntime.HandleError(err)
+		return ""
+	}
+
+	return toSha224Base62(string(bs))
+}
+
+func toSha224Base62(s string) string {
+	return toBase62(sha256.Sum224([]byte(s)))
+}
+
+func toBase62(hash [28]byte) string {
+	var i big.Int
+	i.SetBytes(hash[:])
+	return i.Text(62)
 }

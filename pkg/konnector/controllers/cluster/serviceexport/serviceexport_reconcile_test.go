@@ -43,7 +43,7 @@ func TestEnsureCRDConditionsCopiedToBoundSchema(t *testing.T) {
 	}{
 		{
 			name: "merging",
-			getCRD: newGetCRD("foo", newCRD("foo", []apiextensionsv1.CustomResourceDefinitionCondition{
+			getCRD: newGetCRD("foo-schema", newCRD("foo-schema", []apiextensionsv1.CustomResourceDefinitionCondition{
 				{Type: "Something", Status: "True", Reason: "Reason", Message: "message"},
 				{Type: "Established", Status: "True", Reason: "Reason", Message: "message"},
 			})),
@@ -69,21 +69,17 @@ func TestEnsureCRDConditionsCopiedToBoundSchema(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Track updated schema
 			var updatedSchema *kubebindv1alpha2.BoundAPIResourceSchema
-
+			ctx := context.Background()
 			r := &reconciler{
-				getCRD:                    tt.getCRD,
-				getAPIResourceSchema:      newGetAPIResourceSchema(tt.schema),
-				getBoundAPIResourceSchema: newGetBoundAPIResourceSchema(tt.boundSchema),
-				updateBoundAPIResourceSchema: func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) error {
-					updatedSchema = boundSchema.DeepCopy()
-					return nil
-				},
+				getCRD:                       tt.getCRD,
+				getAPIResourceSchema:         newGetAPIResourceSchema(ctx, tt.schema),
+				getBoundAPIResourceSchema:    newGetBoundAPIResourceSchema(ctx, tt.boundSchema),
+				updateBoundAPIResourceSchema: newUpdateBoundAPIResourceSchema(&updatedSchema),
 			}
 
 			if err := r.ensureCRDConditionsCopiedToBoundSchema(context.Background(), tt.export); (err != nil) != tt.wantErr {
 				t.Errorf("ensureCRDConditionsCopiedToBoundSchema() error = %v, wantErr %v", err, tt.wantErr)
 			} else if err == nil && updatedSchema != nil {
-				// Reset timestamp for comparison
 				for i := range updatedSchema.Status.Conditions {
 					updatedSchema.Status.Conditions[i].LastTransitionTime = metav1.Time{}
 				}
@@ -135,21 +131,28 @@ func newAPIResourceSchema(name, namespace, group, plural string) *kubebindv1alph
 	}
 }
 
-func newGetAPIResourceSchema(schema *kubebindv1alpha2.APIResourceSchema) func(namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-	return func(namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-		if namespace == schema.Namespace && name == schema.Name {
+func newGetAPIResourceSchema(_ context.Context, schema *kubebindv1alpha2.APIResourceSchema) func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+	return func(_ context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+		if name == schema.Name {
 			return schema, nil
 		}
 		return nil, errors.NewNotFound(kubebindv1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas").GroupResource(), name)
 	}
 }
 
-func newGetBoundAPIResourceSchema(boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) func(namespace, name, consumerID string) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
-	return func(namespace, name, consumerID string) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
-		if namespace == boundSchema.Namespace && name == boundSchema.Name {
+func newGetBoundAPIResourceSchema(_ context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
+	return func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
+		if name == boundSchema.Name {
 			return boundSchema, nil
 		}
 		return nil, errors.NewNotFound(kubebindv1alpha2.SchemeGroupVersion.WithResource("boundapiresourceschemas").GroupResource(), name)
+	}
+}
+
+func newUpdateBoundAPIResourceSchema(updatedSchemaPtr **kubebindv1alpha2.BoundAPIResourceSchema) func(context.Context, *kubebindv1alpha2.BoundAPIResourceSchema) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
+	return func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
+		*updatedSchemaPtr = boundSchema.DeepCopy()
+		return boundSchema, nil
 	}
 }
 

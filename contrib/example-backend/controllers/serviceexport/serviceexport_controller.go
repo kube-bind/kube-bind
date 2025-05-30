@@ -79,6 +79,9 @@ func NewController(
 			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return crdInformer.Lister().Get(name)
 			},
+			getAPIResourceSchema: func(ctx context.Context, ns, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+				return bindClient.KubeBindV1alpha2().APIResourceSchemas(ns).Get(ctx, name, metav1.GetOptions{})
+			},
 			deleteServiceExport: func(ctx context.Context, ns, name string) error {
 				return bindClient.KubeBindV1alpha2().APIServiceExports(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},

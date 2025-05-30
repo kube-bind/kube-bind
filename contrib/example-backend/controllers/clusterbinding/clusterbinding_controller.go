@@ -100,6 +100,9 @@ func NewController(
 			listServiceExports: func(ns string) ([]*kubebindv1alpha2.APIServiceExport, error) {
 				return serviceExportInformer.Lister().APIServiceExports(ns).List(labels.Everything())
 			},
+			getAPIResourceSchema: func(ctx context.Context, namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+				return bindClient.KubeBindV1alpha2().APIResourceSchemas(namespace).Get(ctx, name, metav1.GetOptions{})
+			},
 			getClusterRole: func(name string) (*rbacv1.ClusterRole, error) {
 				return clusterRoleInformer.Lister().Get(name)
 			},

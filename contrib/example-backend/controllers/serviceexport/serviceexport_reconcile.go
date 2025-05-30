@@ -103,7 +103,6 @@ func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha2.
 		}
 
 		conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionProviderInSync)
-
 	}
 
 	return false, nil

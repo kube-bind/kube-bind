@@ -39,10 +39,10 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/servicebinding"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -106,7 +106,7 @@ func New(
 			getSecret: func(ns, name string) (*corev1.Secret, error) {
 				return secretInformer.Lister().Secrets(ns).Get(name)
 			},
-			newClusterController: func(consumerSecretRefKey, providerNamespace string, reconcileServiceBinding func(binding *kubebindv1alpha1.APIServiceBinding) bool, providerConfig *rest.Config) (startable, error) {
+			newClusterController: func(consumerSecretRefKey, providerNamespace string, reconcileServiceBinding func(binding *kubebindv1alpha2.APIServiceBinding) bool, providerConfig *rest.Config) (startable, error) {
 				providerConfig = rest.CopyConfig(providerConfig)
 				providerConfig = rest.AddUserAgent(providerConfig, controllerName)
 
@@ -123,9 +123,9 @@ func New(
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceBinding, *kubebindv1alpha1.APIServiceBindingSpec, *kubebindv1alpha1.APIServiceBindingStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceBinding] {
-				return bindClient.KubeBindV1alpha1().APIServiceBindings()
+		commit: committer.NewCommitter[*kubebindv1alpha2.APIServiceBinding, *kubebindv1alpha2.APIServiceBindingSpec, *kubebindv1alpha2.APIServiceBindingStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha2.APIServiceBinding] {
+				return bindClient.KubeBindV1alpha2().APIServiceBindings()
 			},
 		),
 	}
@@ -139,13 +139,13 @@ func New(
 	})
 
 	if _, err := serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceBinding(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueServiceBinding(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceBinding(logger, obj)
 		},
 	}); err != nil {
@@ -153,13 +153,13 @@ func New(
 	}
 
 	if _, err := secretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueSecret(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueSecret(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueSecret(logger, obj)
 		},
 	}); err != nil {
@@ -169,7 +169,7 @@ func New(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.APIServiceBindingSpec, *kubebindv1alpha1.APIServiceBindingStatus]
+type Resource = committer.Resource[*kubebindv1alpha2.APIServiceBindingSpec, *kubebindv1alpha2.APIServiceBindingStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 type GenericController interface {
@@ -198,7 +198,7 @@ type Controller struct {
 	commit CommitFunc
 }
 
-func (c *Controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceBinding(logger klog.Logger, obj any) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -209,7 +209,7 @@ func (c *Controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 	c.queue.Add(key)
 }
 
-func (c *Controller) enqueueSecret(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueSecret(logger klog.Logger, obj any) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)

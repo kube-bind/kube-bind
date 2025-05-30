@@ -132,7 +132,7 @@ type APIResourceVersion struct {
 	// +required
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +structType=atomic
-	Schema runtime.RawExtension `json:"schema"`
+	Schema CRDVersionSchema `json:"schema"`
 	// subresources specify what subresources this version of the defined custom resource have.
 	//
 	// +optional
@@ -145,6 +145,16 @@ type APIResourceVersion struct {
 	// +listType=map
 	// +listMapKey=name
 	AdditionalPrinterColumns []apiextensionsv1.CustomResourceColumnDefinition `json:"additionalPrinterColumns,omitempty"`
+}
+
+type CRDVersionSchema struct {
+	// openAPIV3Schema is the OpenAPI v3 schema to use for validation and pruning.
+	//
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +structType=atomic
+	// +required
+	// +kubebuilder:validation:Required
+	OpenAPIV3Schema runtime.RawExtension `json:"openAPIV3Schema"`
 }
 
 // CustomResourceConversion describes how to convert different versions of a CR.
@@ -222,11 +232,11 @@ type APIResourceSchemaList struct {
 }
 
 func (v *APIResourceVersion) GetSchema() (*apiextensionsv1.JSONSchemaProps, error) {
-	if v.Schema.Raw == nil {
+	if v.Schema.OpenAPIV3Schema.Raw == nil {
 		return nil, nil
 	}
 	var schema apiextensionsv1.JSONSchemaProps
-	if err := json.Unmarshal(v.Schema.Raw, &schema); err != nil {
+	if err := json.Unmarshal(v.Schema.OpenAPIV3Schema.Raw, &schema); err != nil {
 		return nil, err
 	}
 	return &schema, nil
@@ -234,13 +244,13 @@ func (v *APIResourceVersion) GetSchema() (*apiextensionsv1.JSONSchemaProps, erro
 
 func (v *APIResourceVersion) SetSchema(schema *apiextensionsv1.JSONSchemaProps) error {
 	if schema == nil {
-		v.Schema.Raw = nil
+		v.Schema.OpenAPIV3Schema.Raw = nil
 		return nil
 	}
 	raw, err := json.Marshal(schema)
 	if err != nil {
 		return err
 	}
-	v.Schema.Raw = raw
+	v.Schema.OpenAPIV3Schema.Raw = raw
 	return nil
 }

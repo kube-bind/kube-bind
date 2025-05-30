@@ -26,24 +26,24 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
-	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1/helpers"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 )
 
 type reconciler struct {
-	informerScope          kubebindv1alpha1.Scope
-	clusterScopedIsolation kubebindv1alpha1.Isolation
+	informerScope          kubebindv1alpha2.InformerScope
+	clusterScopedIsolation kubebindv1alpha2.Isolation
 
-	getCRD              func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	getServiceExport    func(ns, name string) (*kubebindv1alpha1.APIServiceExport, error)
-	createServiceExport func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error)
-
+	getCRD                     func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
+	getServiceExport           func(ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
+	createServiceExport        func(ctx context.Context, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)
+	createAPIResourceSchema    func(ctx context.Context, schema *kubebindv1alpha2.APIResourceSchema) (*kubebindv1alpha2.APIResourceSchema, error)
 	deleteServiceExportRequest func(ctx context.Context, namespace, name string) error
 }
 
-func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha1.APIServiceExportRequest) error {
+func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	var errs []error
 
 	if err := r.ensureExports(ctx, req); err != nil {
@@ -55,10 +55,10 @@ func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha1.APISer
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.APIServiceExportRequest) error {
+func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	logger := klog.FromContext(ctx)
 
-	if req.Status.Phase == kubebindv1alpha1.APIServiceExportRequestPhasePending {
+	if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhasePending {
 		failure := false
 		for _, res := range req.Spec.Resources {
 			name := res.Resource + "." + res.Group
@@ -69,7 +69,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 			if apierrors.IsNotFound(err) {
 				conditions.MarkFalse(
 					req,
-					kubebindv1alpha1.APIServiceExportRequestConditionExportsReady,
+					kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
 					"CRDNotFound",
 					conditionsapi.ConditionSeverityError,
 					"CustomResourceDefinition %s in the service provider cluster not found",
@@ -85,11 +85,11 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 				continue
 			}
 
-			exportSpec, err := helpers.CRDToServiceExport(crd)
+			schema, err := helpers.CRDToAPIResourceSchema(crd, "")
 			if err != nil {
 				conditions.MarkFalse(
 					req,
-					kubebindv1alpha1.APIServiceExportRequestConditionExportsReady,
+					kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
 					"CRDInvalid",
 					conditionsapi.ConditionSeverityError,
 					"CustomResourceDefinition %s cannot be converted to a APIServiceExport: %v",
@@ -99,24 +99,32 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 				failure = true
 				break
 			}
-			hash := helpers.APIServiceExportCRDSpecHash(exportSpec)
-			export := &kubebindv1alpha1.APIServiceExport{
+			hash := helpers.APIResourceSchemaCRDSpecHash(&schema.Spec.APIResourceSchemaCRDSpec)
+			export := &kubebindv1alpha2.APIServiceExport{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      crd.Name,
 					Namespace: req.Namespace,
 					Annotations: map[string]string{
-						kubebindv1alpha1.SourceSpecHashAnnotationKey: hash,
+						kubebindv1alpha2.SourceSpecHashAnnotationKey: hash,
 					},
 				},
-				Spec: kubebindv1alpha1.APIServiceExportSpec{
-					APIServiceExportCRDSpec: *exportSpec,
-					InformerScope:           r.informerScope,
+				Spec: kubebindv1alpha2.APIServiceExportSpec{
+					Resources: []kubebindv1alpha2.APIResourceSchemaReference{
+						{
+							Type: "APIResourceSchema",
+							Name: schema.Name,
+						},
+					},
+					InformerScope: r.informerScope,
 				},
 			}
-			if exportSpec.Scope == apiextensionsv1.ClusterScoped {
+			if schema.Spec.Scope == apiextensionsv1.ClusterScoped {
 				export.Spec.ClusterScopedIsolation = r.clusterScopedIsolation
 			}
-
+			logger.V(1).Info("Creating APIResourceSchema", "name", schema.Name, "namespace", schema.Namespace)
+			if _, err = r.createAPIResourceSchema(ctx, schema); err != nil {
+				return err
+			}
 			logger.V(1).Info("Creating APIServiceExport", "name", export.Name, "namespace", export.Namespace)
 			if _, err = r.createServiceExport(ctx, export); err != nil {
 				return err
@@ -124,14 +132,14 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha1.AP
 		}
 
 		if !failure {
-			conditions.MarkTrue(req, kubebindv1alpha1.APIServiceExportRequestConditionExportsReady)
-			req.Status.Phase = kubebindv1alpha1.APIServiceExportRequestPhaseSucceeded
+			conditions.MarkTrue(req, kubebindv1alpha2.APIServiceExportRequestConditionExportsReady)
+			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseSucceeded
 			return nil
 		}
 
 		if time.Since(req.CreationTimestamp.Time) > time.Minute {
-			req.Status.Phase = kubebindv1alpha1.APIServiceExportRequestPhaseFailed
-			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha1.APIServiceExportRequestConditionExportsReady)
+			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
+			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha2.APIServiceExportRequestConditionExportsReady)
 		}
 
 		return nil

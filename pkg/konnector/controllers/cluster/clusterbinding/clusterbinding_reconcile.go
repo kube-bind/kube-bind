@@ -29,7 +29,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/pkg/version"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 )
@@ -46,7 +46,7 @@ type reconciler struct {
 	createConsumerSecret func(ctx context.Context, secret *corev1.Secret) (*corev1.Secret, error)
 }
 
-func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
+func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha2.ClusterBinding) error {
 	var errs []error
 
 	if err := r.ensureConsumerSecret(ctx, binding); err != nil {
@@ -66,7 +66,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.Cl
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureHeartbeat(_ context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
+func (r *reconciler) ensureHeartbeat(_ context.Context, binding *kubebindv1alpha2.ClusterBinding) error {
 	binding.Status.HeartbeatInterval.Duration = r.heartbeatInterval
 	if now := time.Now(); binding.Status.LastHeartbeatTime.IsZero() || now.After(binding.Status.LastHeartbeatTime.Add(r.heartbeatInterval/2)) {
 		binding.Status.LastHeartbeatTime.Time = now
@@ -75,7 +75,7 @@ func (r *reconciler) ensureHeartbeat(_ context.Context, binding *kubebindv1alpha
 	return nil
 }
 
-func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
+func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebindv1alpha2.ClusterBinding) error {
 	logger := klog.FromContext(ctx)
 
 	providerSecret, err := r.getProviderSecret()
@@ -84,7 +84,7 @@ func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebind
 	} else if errors.IsNotFound(err) {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.ClusterBindingConditionSecretValid,
+			kubebindv1alpha2.ClusterBindingConditionSecretValid,
 			"ProviderSecretNotFound",
 			conditionsapi.ConditionSeverityWarning,
 			"Provider secret %s/%s not found",
@@ -96,7 +96,7 @@ func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebind
 	if _, found := providerSecret.Data[binding.Spec.KubeconfigSecretRef.Key]; !found {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.ClusterBindingConditionSecretValid,
+			kubebindv1alpha2.ClusterBindingConditionSecretValid,
 			"ProviderSecretInvalid",
 			conditionsapi.ConditionSeverityWarning,
 			"Provider secret %s/%s is missing %q string key.",
@@ -143,13 +143,13 @@ func (r *reconciler) ensureConsumerSecret(ctx context.Context, binding *kubebind
 
 	conditions.MarkTrue(
 		binding,
-		kubebindv1alpha1.ClusterBindingConditionSecretValid,
+		kubebindv1alpha2.ClusterBindingConditionSecretValid,
 	)
 
 	return nil
 }
 
-func (r *reconciler) ensureKonnectorVersion(_ context.Context, binding *kubebindv1alpha1.ClusterBinding) error {
+func (r *reconciler) ensureKonnectorVersion(_ context.Context, binding *kubebindv1alpha2.ClusterBinding) error {
 	gitVersion := componentbaseversion.Get().GitVersion
 	ver, err := version.BinaryVersion(gitVersion)
 	if err != nil {
@@ -157,7 +157,7 @@ func (r *reconciler) ensureKonnectorVersion(_ context.Context, binding *kubebind
 
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.ClusterBindingConditionValidVersion,
+			kubebindv1alpha2.ClusterBindingConditionValidVersion,
 			"ParseError",
 			conditionsapi.ConditionSeverityWarning,
 			"Konnector binary version string %q cannot be parsed: %v",
@@ -171,7 +171,7 @@ func (r *reconciler) ensureKonnectorVersion(_ context.Context, binding *kubebind
 
 	conditions.MarkTrue(
 		binding,
-		kubebindv1alpha1.ClusterBindingConditionValidVersion,
+		kubebindv1alpha2.ClusterBindingConditionValidVersion,
 	)
 
 	return nil

@@ -35,7 +35,12 @@ import (
 type KubeBindV1alpha2ClusterInterface interface {
 	KubeBindV1alpha2ClusterScoper
 	APIResourceSchemasClusterGetter
+	APIServiceBindingsClusterGetter
+	APIServiceExportsClusterGetter
+	APIServiceExportRequestsClusterGetter
+	APIServiceNamespacesClusterGetter
 	BoundAPIResourceSchemasClusterGetter
+	ClusterBindingsClusterGetter
 }
 
 type KubeBindV1alpha2ClusterScoper interface {
@@ -57,8 +62,28 @@ func (c *KubeBindV1alpha2ClusterClient) APIResourceSchemas() APIResourceSchemaCl
 	return &aPIResourceSchemasClusterInterface{clientCache: c.clientCache}
 }
 
+func (c *KubeBindV1alpha2ClusterClient) APIServiceBindings() APIServiceBindingClusterInterface {
+	return &aPIServiceBindingsClusterInterface{clientCache: c.clientCache}
+}
+
+func (c *KubeBindV1alpha2ClusterClient) APIServiceExports() APIServiceExportClusterInterface {
+	return &aPIServiceExportsClusterInterface{clientCache: c.clientCache}
+}
+
+func (c *KubeBindV1alpha2ClusterClient) APIServiceExportRequests() APIServiceExportRequestClusterInterface {
+	return &aPIServiceExportRequestsClusterInterface{clientCache: c.clientCache}
+}
+
+func (c *KubeBindV1alpha2ClusterClient) APIServiceNamespaces() APIServiceNamespaceClusterInterface {
+	return &aPIServiceNamespacesClusterInterface{clientCache: c.clientCache}
+}
+
 func (c *KubeBindV1alpha2ClusterClient) BoundAPIResourceSchemas() BoundAPIResourceSchemaClusterInterface {
 	return &boundAPIResourceSchemasClusterInterface{clientCache: c.clientCache}
+}
+
+func (c *KubeBindV1alpha2ClusterClient) ClusterBindings() ClusterBindingClusterInterface {
+	return &clusterBindingsClusterInterface{clientCache: c.clientCache}
 }
 
 // NewForConfig creates a new KubeBindV1alpha2ClusterClient for the given config.

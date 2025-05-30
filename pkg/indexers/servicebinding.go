@@ -17,7 +17,7 @@ limitations under the License.
 package indexers
 
 import (
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 const (
@@ -25,15 +25,15 @@ const (
 	ByServiceBindingKubeconfigSecret = "byKubeconfigSecret"
 )
 
-func IndexServiceBindingByKubeconfigSecret(obj interface{}) ([]string, error) {
-	binding, ok := obj.(*kubebindv1alpha1.APIServiceBinding)
+func IndexServiceBindingByKubeconfigSecret(obj any) ([]string, error) {
+	binding, ok := obj.(*kubebindv1alpha2.APIServiceBinding)
 	if !ok {
 		return nil, nil
 	}
 	return []string{ByServiceBindingKubeconfigSecretKey(binding)}, nil
 }
 
-func ByServiceBindingKubeconfigSecretKey(binding *kubebindv1alpha1.APIServiceBinding) string {
+func ByServiceBindingKubeconfigSecretKey(binding *kubebindv1alpha2.APIServiceBinding) string {
 	ref := &binding.Spec.KubeconfigSecretRef
 	return ref.Namespace + "/" + ref.Name
 }

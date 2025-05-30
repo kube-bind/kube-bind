@@ -142,7 +142,6 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 	}
 
 	// If we processed all schemas without errors, mark the binding as connected
-	// Check if anything went wrong - either errors or negative conditions
 	if len(errs) == 0 && !conditions.IsFalse(binding, kubebindv1alpha2.APIServiceBindingConditionConnected) {
 		conditions.MarkTrue(binding, kubebindv1alpha2.APIServiceBindingConditionConnected)
 	}
@@ -195,7 +194,6 @@ func (r *reconciler) ensureCRDsFromAPIResourceSchema(ctx context.Context, bindin
 		return nil
 	}
 
-	// put binding owner reference on the CRD.
 	newReference := metav1.OwnerReference{
 		APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
 		Kind:       "APIServiceBinding",
@@ -209,7 +207,6 @@ func (r *reconciler) ensureCRDsFromAPIResourceSchema(ctx context.Context, bindin
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
-		// Create new CRD
 		if _, err := r.createCRD(ctx, crd); err != nil && !errors.IsInvalid(err) {
 			return err
 		} else if errors.IsInvalid(err) {
@@ -219,7 +216,7 @@ func (r *reconciler) ensureCRDsFromAPIResourceSchema(ctx context.Context, bindin
 				"CustomResourceDefinitionCreateFailed",
 				conditionsapi.ConditionSeverityError,
 				"CustomResourceDefinition %s cannot be created: %s",
-				binding.Name, err,
+				crd.Name, err,
 			)
 			return nil
 		}

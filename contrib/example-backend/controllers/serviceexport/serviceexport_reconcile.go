@@ -31,8 +31,9 @@ import (
 )
 
 type reconciler struct {
-	getCRD              func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	deleteServiceExport func(ctx context.Context, namespace, name string) error
+	getCRD               func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
+	getAPIResourceSchema func(ctx context.Context, ns, name string) (*kubebindv1alpha2.APIResourceSchema, error)
+	deleteServiceExport  func(ctx context.Context, namespace, name string) error
 
 	requeue func(export *kubebindv1alpha2.APIServiceExport)
 }
@@ -53,42 +54,57 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha2.API
 func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (specChanged bool, err error) {
 	logger := klog.FromContext(ctx)
 
-	crd, err := r.getCRD(export.Name)
-	if err != nil && !errors.IsNotFound(err) {
-		return false, err
-	}
-
-	if crd == nil {
-		// CRD missing => delete SER too
-		logger.V(1).Info("Deleting APIServiceExport because CRD is missing")
-		return false, r.deleteServiceExport(ctx, export.Namespace, export.Name)
-	}
-
-	expected, err := kubebindhelpers.CRDToServiceExport(crd)
-	if err != nil {
-		conditions.MarkFalse(
-			export,
-			kubebindv1alpha2.APIServiceExportConditionProviderInSync,
-			"CustomResourceDefinitionUpdateFailed",
-			conditionsapi.ConditionSeverityError,
-			"CustomResourceDefinition %s cannot be converted into a APIServiceExport: %s",
-			export.Name, err,
-		)
-		return false, nil // nothing we can do
-	}
-
-	if hash := kubebindhelpers.APIServiceExportCRDSpecHash(expected); export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] != hash {
-		// both exist, update APIServiceExport
-		logger.V(1).Info("Updating APIServiceExport")
-		export.Spec.APIServiceExportCRDSpec = *expected
-		if export.Annotations == nil {
-			export.Annotations = map[string]string{}
+	for _, resourceRef := range export.Spec.Resources {
+		if resourceRef.Type != "APIResourceSchema" {
+			logger.V(1).Info("Skipping unsupported resource type", "type", resourceRef.Type)
+			continue
 		}
-		export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hash
-		return true, nil
-	}
 
-	conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionProviderInSync)
+		schema, err := r.getAPIResourceSchema(ctx, export.Namespace, resourceRef.Name)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				continue
+			}
+			return false, err
+		}
+		crd, err := r.getCRD(schema.Name)
+		if err != nil && !errors.IsNotFound(err) {
+			return false, err
+		}
+
+		if crd == nil {
+			// CRD missing => delete SER too
+			logger.V(1).Info("Deleting APIServiceExport because CRD is missing")
+			return false, r.deleteServiceExport(ctx, export.Namespace, export.Name)
+		}
+
+		expected, err := kubebindhelpers.CRDToAPIResourceSchema(crd, "")
+		if err != nil {
+			conditions.MarkFalse(
+				export,
+				kubebindv1alpha2.APIServiceExportConditionProviderInSync,
+				"CustomResourceDefinitionUpdateFailed",
+				conditionsapi.ConditionSeverityError,
+				"CustomResourceDefinition %s cannot be converted into a APIServiceExport: %s",
+				export.Name, err,
+			)
+			return false, nil // nothing we can do
+		}
+
+		if hash := kubebindhelpers.APIResourceSchemaCRDSpecHash(&expected.Spec.APIResourceSchemaCRDSpec); export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] != hash {
+			// both exist, update APIServiceExport
+			logger.V(1).Info("Updating APIServiceExport")
+			schema.Spec.APIResourceSchemaCRDSpec = expected.Spec.APIResourceSchemaCRDSpec
+			if schema.Annotations == nil {
+				schema.Annotations = map[string]string{}
+			}
+			schema.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hash
+			return true, nil
+		}
+
+		conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionProviderInSync)
+
+	}
 
 	return false, nil
 }

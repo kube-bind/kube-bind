@@ -59,10 +59,10 @@ type reconciler struct {
 
 	getCRD                       func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getServiceBinding            func(name string) (*kubebindv1alpha2.APIServiceBinding, error)
-	getAPIResourceSchema         func(namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error)
-	getBoundAPIResourceSchema    func(namespace, name string, consumerID string) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
-	createBoundAPIResourceSchema func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) error
-	updateBoundAPIResourceSchema func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) error
+	getAPIResourceSchema         func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
+	getBoundAPIResourceSchema    func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
+	createBoundAPIResourceSchema func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
+	updateBoundAPIResourceSchema func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
 }
 
 type syncContext struct {
@@ -137,11 +137,8 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 			continue
 		}
 
-		// Mark this schema as processed
-		processedSchemas[resourceRef.Name] = true
-
 		// Fetch the APIResourceSchema
-		schema, err := r.getAPIResourceSchema(export.Namespace, resourceRef.Name)
+		schema, err := r.getAPIResourceSchema(ctx, resourceRef.Name)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				// Stop the controller for this schema if it exists
@@ -169,6 +166,8 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 		if err := r.ensureControllerForSchema(ctx, export, schema); err != nil {
 			errs = append(errs, err)
 		}
+
+		processedSchemas[resourceRef.Name] = true
 	}
 
 	// Stop controllers for schemas that are no longer referenced
@@ -190,7 +189,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 }
 
 func (r *reconciler) ensureBoundAPIResourceSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport, schema *kubebindv1alpha2.APIResourceSchema) error {
-	boundSchema, err := r.getBoundAPIResourceSchema(export.Namespace, schema.Name, export.Name)
+	boundSchema, err := r.getBoundAPIResourceSchema(ctx, schema.Name)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Create new BoundAPIResourceSchema
@@ -198,9 +197,6 @@ func (r *reconciler) ensureBoundAPIResourceSchema(ctx context.Context, export *k
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      schema.Name,
 					Namespace: export.Namespace,
-					Labels: map[string]string{
-						"kube-bind.io/consumer-id": export.Name,
-					},
 					OwnerReferences: []metav1.OwnerReference{
 						{
 							APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
@@ -217,7 +213,19 @@ func (r *reconciler) ensureBoundAPIResourceSchema(ctx context.Context, export *k
 				},
 			}
 
-			return r.createBoundAPIResourceSchema(ctx, boundSchema)
+			conditions.MarkFalse(
+				boundSchema,
+				kubebindv1alpha2.BoundAPIResourceSchemaValid,
+				string(kubebindv1alpha2.BoundAPIResourceSchemaPending),
+				conditionsapi.ConditionSeverityInfo,
+				"Waiting for CRD to be created in consumer cluster",
+			)
+
+			_, err := r.createBoundAPIResourceSchema(ctx, boundSchema)
+			if err != nil {
+				return fmt.Errorf("failed to create BoundAPIResourceSchema %s: %w", boundSchema.Name, err)
+			}
+			return nil
 		}
 		return err
 	}
@@ -232,7 +240,12 @@ func (r *reconciler) ensureBoundAPIResourceSchema(ctx context.Context, export *k
 		boundSchema.Spec.APIResourceSchemaCRDSpec = schema.Spec.APIResourceSchemaCRDSpec
 	}
 
-	return r.updateBoundAPIResourceSchema(ctx, boundSchema)
+	_, err = r.updateBoundAPIResourceSchema(ctx, boundSchema)
+	if err != nil {
+		return fmt.Errorf("failed to update BoundAPIResourceSchema %s: %w", boundSchema.Name, err)
+	}
+
+	return nil
 }
 
 func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport, schema *kubebindv1alpha2.APIResourceSchema) error {
@@ -373,15 +386,10 @@ func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context,
 	if export == nil {
 		return nil
 	}
-
 	var errs []error
-
+	allValid := true // assume all BoundAPIResourceSchemas are valid
 	for _, resourceRef := range export.Spec.Resources {
-		if resourceRef.Type != "APIResourceSchema" {
-			continue
-		}
-
-		schema, err := r.getAPIResourceSchema(export.Namespace, resourceRef.Name)
+		schema, err := r.getAPIResourceSchema(ctx, resourceRef.Name)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				continue
@@ -399,7 +407,7 @@ func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context,
 			continue
 		}
 
-		boundSchema, err := r.getBoundAPIResourceSchema(export.Namespace, schema.Name, export.Name)
+		boundSchema, err := r.getBoundAPIResourceSchema(ctx, schema.Name)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				continue // BoundAPIResourceSchema not found, nothing to update
@@ -407,9 +415,10 @@ func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context,
 			errs = append(errs, err)
 			continue
 		}
-		exportIndex := map[conditionsapi.ConditionType]int{}
-		for i, c := range export.Status.Conditions {
-			exportIndex[c.Type] = i
+
+		boundSchemaIndex := map[conditionsapi.ConditionType]int{}
+		for i, c := range boundSchema.Status.Conditions {
+			boundSchemaIndex[c.Type] = i
 		}
 		for _, c := range crd.Status.Conditions {
 			if conditionsapi.ConditionType(c.Type) == conditionsapi.ReadyCondition {
@@ -430,20 +439,37 @@ func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context,
 			}
 
 			// update or append
-			if i, found := exportIndex[conditionsapi.ConditionType(c.Type)]; found {
-				export.Status.Conditions[i] = copied
+			if i, found := boundSchemaIndex[conditionsapi.ConditionType(c.Type)]; found {
+				boundSchema.Status.Conditions[i] = copied
 			} else {
-				export.Status.Conditions = append(export.Status.Conditions, copied)
+				boundSchema.Status.Conditions = append(boundSchema.Status.Conditions, copied)
 			}
 		}
-		conditions.SetSummary(export)
+		conditions.SetSummary(boundSchema)
 
 		boundSchema.Status.AcceptedNames = crd.Status.AcceptedNames
 		boundSchema.Status.StoredVersions = crd.Status.StoredVersions
 
-		if err := r.updateBoundAPIResourceSchema(ctx, boundSchema); err != nil {
+		if _, err := r.updateBoundAPIResourceSchema(ctx, boundSchema); err != nil {
 			errs = append(errs, err)
+			allValid = false // at least one BoundAPIResourceSchema is not valid
 		}
+	}
+
+	// Set APIServiceExport Ready condition based on all BoundAPIResourceSchemas
+	if allValid {
+		conditions.MarkTrue(
+			export,
+			kubebindv1alpha2.APIServiceExportConditionConnected,
+		)
+	} else {
+		conditions.MarkFalse(
+			export,
+			kubebindv1alpha2.APIServiceExportConditionConnected,
+			"BoundAPIResourceSchemasNotValid",
+			conditionsapi.ConditionSeverityWarning,
+			"One or more BoundAPIResourceSchemas are not valid",
+		)
 	}
 
 	return utilerrors.NewAggregate(errs)

@@ -38,11 +38,11 @@ import (
 type reconciler struct {
 	scope kubebindv1alpha2.InformerScope
 
-	listServiceExports func(ns string) ([]*kubebindv1alpha2.APIServiceExport, error)
-
-	getClusterRole    func(name string) (*rbacv1.ClusterRole, error)
-	createClusterRole func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error)
-	updateClusterRole func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error)
+	listServiceExports   func(ns string) ([]*kubebindv1alpha2.APIServiceExport, error)
+	getAPIResourceSchema func(ctx context.Context, namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error)
+	getClusterRole       func(name string) (*rbacv1.ClusterRole, error)
+	createClusterRole    func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error)
+	updateClusterRole    func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error)
 
 	getClusterRoleBinding    func(name string) (*rbacv1.ClusterRoleBinding, error)
 	createClusterRoleBinding func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
@@ -148,11 +148,18 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *
 		},
 	}
 	for _, export := range exports {
-		expected.Rules = append(expected.Rules, rbacv1.PolicyRule{
-			APIGroups: []string{export.Spec.APIServiceExportCRDSpec.Group},
-			Resources: []string{export.Spec.APIServiceExportCRDSpec.Names.Plural},
-			Verbs:     []string{"get", "list", "watch", "update", "patch", "delete", "create"},
-		})
+		for _, res := range export.Spec.Resources {
+			schema, err := r.getAPIResourceSchema(ctx, clusterBinding.Namespace, res.Name)
+			if err != nil {
+				continue
+			}
+
+			expected.Rules = append(expected.Rules, rbacv1.PolicyRule{
+				APIGroups: []string{schema.Spec.APIResourceSchemaCRDSpec.Group},
+				Resources: []string{schema.Spec.APIResourceSchemaCRDSpec.Names.Plural},
+				Verbs:     []string{"get", "list", "watch", "update", "patch", "delete", "create"},
+			})
+		}
 	}
 
 	if role == nil {

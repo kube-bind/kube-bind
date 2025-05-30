@@ -85,7 +85,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 				continue
 			}
 
-			exportSpec, err := helpers.CRDToServiceExport(crd)
+			schema, err := helpers.CRDToAPIResourceSchema(crd, "")
 			if err != nil {
 				conditions.MarkFalse(
 					req,
@@ -99,7 +99,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 				failure = true
 				break
 			}
-			hash := helpers.APIServiceExportCRDSpecHash(exportSpec)
+			hash := helpers.APIResourceSchemaCRDSpecHash(&schema.Spec.APIResourceSchemaCRDSpec)
 			export := &kubebindv1alpha2.APIServiceExport{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      crd.Name,
@@ -109,11 +109,16 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 					},
 				},
 				Spec: kubebindv1alpha2.APIServiceExportSpec{
-					APIServiceExportCRDSpec: *exportSpec,
-					InformerScope:           r.informerScope,
+					Resources: []kubebindv1alpha2.APIResourceSchemaReference{
+						{
+							Type: "APIResourceSchema",
+							Name: schema.Name,
+						},
+					},
+					InformerScope: r.informerScope,
 				},
 			}
-			if exportSpec.Scope == apiextensionsv1.ClusterScoped {
+			if schema.Spec.Scope == apiextensionsv1.ClusterScoped {
 				export.Spec.ClusterScopedIsolation = r.clusterScopedIsolation
 			}
 

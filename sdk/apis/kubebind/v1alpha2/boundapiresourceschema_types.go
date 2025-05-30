@@ -50,17 +50,13 @@ type BoundAPIResourceSchemaSpec struct {
 	APIResourceSchemaCRDSpec `json:",inline"`
 }
 
-// BoundAPIResourceSchemaConditionType is type of BoundAPIResourceSchemaCondition
-// +kubebuilder:validation:Enum=Valid;Invalid
-type BoundAPIResourceSchemaConditionType string
-
 const (
 	// BoundAPIResourceSchemaReady indicates that the API resource schema is ready.
 	// It is set to true when the API resource schema is accepted and there are no drifts detected.
-	BoundAPIResourceSchemaValid BoundAPIResourceSchemaConditionType = "Valid"
+	BoundAPIResourceSchemaValid conditionsapi.ConditionType = "Valid"
 	// BoundAPIResourceSchemaDriftDetected indicates that there is a drift between the consumer's API and the expected API.
 	// It is set to true when the API resource schema is not accepted or there are drifts detected.
-	BoundAPIResourceSchemaInvalid BoundAPIResourceSchemaConditionType = "Invalid"
+	BoundAPIResourceSchemaInvalid conditionsapi.ConditionType = "Invalid"
 )
 
 // BoundAPIResourceSchemaConditionReason is the set of reasons for specific condition type.
@@ -77,6 +73,14 @@ const (
 	// BoundAPIResourceSchemaDriftDetected indicates that there is a drift between the consumer's API and the expected API.
 	BoundAPIResourceSchemaDriftDetected BoundAPIResourceSchemaConditionReason = "DriftDetected"
 )
+
+func (in *BoundAPIResourceSchema) GetConditions() conditionsapi.Conditions {
+	return in.Status.Conditions
+}
+
+func (in *BoundAPIResourceSchema) SetConditions(conditions conditionsapi.Conditions) {
+	in.Status.Conditions = conditions
+}
 
 // BoundAPIResourceSchemaStatus defines the observed state of the BoundAPIResourceSchema.
 type BoundAPIResourceSchemaStatus struct {

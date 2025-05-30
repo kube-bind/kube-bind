@@ -241,21 +241,25 @@ spec:
                   description: BoundSchemaReference contains a reference to a BoundAPIResourceSchema
                     with status information.
                   properties:
-                    name:
-                      description: name is the name of the BoundAPIResourceSchema.
+                    group:
+                      default: ""
+                      description: |-
+                        group is the name of an API group.
+                        For core groups this is the empty string '""'.
+                      pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
                       type: string
-                    namespace:
-                      description: namespace is the namespace of the BoundAPIResourceSchema.
+                    resource:
+                      description: |-
+                        resource is the name of the resource.
+                        Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+                        not provided by an service binding export.
+                      pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
                       type: string
                   required:
-                  - name
-                  - namespace
+                  - resource
                   type: object
                 minItems: 1
                 type: array
-                x-kubernetes-list-map-keys:
-                - name
-                x-kubernetes-list-type: map
               conditions:
                 description: conditions is a list of conditions that apply to the
                   APIServiceBinding.

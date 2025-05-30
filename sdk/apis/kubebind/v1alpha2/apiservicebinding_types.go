@@ -101,21 +101,13 @@ type APIServiceBindingStatus struct {
 	// BoundSchemas contains references to all BoundAPIResourceSchema objects
 	// associated with this APIServiceBinding, tracking consumer usage status.
 	// +optional
-	// +listType=map
-	// +listMapKey=name
 	// +kubebuilder:validation:MinItems=1
 	BoundSchemas []BoundSchemaReference `json:"boundSchemas,omitempty"`
 }
 
 // BoundSchemaReference contains a reference to a BoundAPIResourceSchema with status information.
 type BoundSchemaReference struct {
-	// name is the name of the BoundAPIResourceSchema.
-	// +required
-	Name string `json:"name"`
-
-	// namespace is the namespace of the BoundAPIResourceSchema.
-	// +required
-	Namespace string `json:"namespace"`
+	GroupResource `json:",inline"`
 }
 
 // APIServiceBindingList is a list of APIServiceBindings.

@@ -100,6 +100,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 				break
 			}
 			hash := helpers.APIResourceSchemaCRDSpecHash(&schema.Spec.APIResourceSchemaCRDSpec)
+			schema.Namespace = req.Namespace
 			export := &kubebindv1alpha2.APIServiceExport{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      crd.Name,

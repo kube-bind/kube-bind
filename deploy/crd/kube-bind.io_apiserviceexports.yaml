@@ -509,19 +509,11 @@ spec:
                   - name
                   - type
                   type: object
-                minItems: 1
                 type: array
             required:
             - informerScope
             - resources
             type: object
-            x-kubernetes-validations:
-            - message: informerScope must be Cluster for cluster-scoped resources
-              rule: self.scope == "Namespaced" || self.informerScope == "Cluster"
-            - message: clusterScopedIsolation must be defined for cluster-scoped resources
-              rule: self.scope == "Namespaced" || has(self.clusterScopedIsolation)
-            - message: clusterScopedIsolation is not relevant for namespaced resources
-              rule: self.scope == "Cluster" || !has(self.clusterScopedIsolation)
           status:
             description: status contains reconciliation information for the resource.
             properties:
@@ -634,9 +626,6 @@ spec:
         required:
         - spec
         type: object
-        x-kubernetes-validations:
-        - message: informerScope is immutable
-          rule: self.metadata.name == self.spec.names.plural+"."+self.spec.group
     served: true
     storage: true
     subresources:

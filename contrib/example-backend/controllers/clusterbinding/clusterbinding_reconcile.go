@@ -151,7 +151,7 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *
 		for _, res := range export.Spec.Resources {
 			schema, err := r.getAPIResourceSchema(ctx, clusterBinding.Namespace, res.Name)
 			if err != nil {
-				continue
+				return fmt.Errorf("failed to get APIResourceSchema %s/%s: %w", clusterBinding.Namespace, res.Name, err)
 			}
 
 			expected.Rules = append(expected.Rules, rbacv1.PolicyRule{

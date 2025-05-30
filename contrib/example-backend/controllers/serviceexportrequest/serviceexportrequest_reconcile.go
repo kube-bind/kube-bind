@@ -36,10 +36,10 @@ type reconciler struct {
 	informerScope          kubebindv1alpha2.InformerScope
 	clusterScopedIsolation kubebindv1alpha2.Isolation
 
-	getCRD              func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	getServiceExport    func(ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
-	createServiceExport func(ctx context.Context, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)
-
+	getCRD                     func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
+	getServiceExport           func(ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
+	createServiceExport        func(ctx context.Context, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)
+	createAPIResourceSchema    func(ctx context.Context, schema *kubebindv1alpha2.APIResourceSchema) (*kubebindv1alpha2.APIResourceSchema, error)
 	deleteServiceExportRequest func(ctx context.Context, namespace, name string) error
 }
 
@@ -121,7 +121,10 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 			if schema.Spec.Scope == apiextensionsv1.ClusterScoped {
 				export.Spec.ClusterScopedIsolation = r.clusterScopedIsolation
 			}
-
+			logger.V(1).Info("Creating APIResourceSchema", "name", schema.Name, "namespace", schema.Namespace)
+			if _, err = r.createAPIResourceSchema(ctx, schema); err != nil {
+				return err
+			}
 			logger.V(1).Info("Creating APIServiceExport", "name", export.Name, "namespace", export.Namespace)
 			if _, err = r.createServiceExport(ctx, export); err != nil {
 				return err

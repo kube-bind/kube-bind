@@ -22,10 +22,10 @@ limitations under the License.
 package v1alpha2
 
 // APIResourceSchemaClusterListerExpansion allows custom methods to be added to APIResourceSchemaClusterLister.
-type APIResourceSchemaClusterListerExpansion interface{}
+type APIResourceSchemaClusterListerExpansion any
 
 // APIResourceSchemaListerExpansion allows custom methods to be added to APIResourceSchemaLister.
-type APIResourceSchemaListerExpansion interface{}
+type APIResourceSchemaListerExpansion any
 
 // APIResourceSchemaNamespaceListerExpansion allows custom methods to be added to APIResourceSchemaNamespaceLister.
-type APIResourceSchemaNamespaceListerExpansion interface{}
+type APIResourceSchemaNamespaceListerExpansion any

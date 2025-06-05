@@ -33,7 +33,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 var (
@@ -42,7 +42,7 @@ var (
 )
 
 func init() {
-	utilruntime.Must(kubebindv1alpha1.AddToScheme(kubebindSchema))
+	utilruntime.Must(kubebindv1alpha2.AddToScheme(kubebindSchema))
 }
 
 type LocalhostCallbackAuthenticator struct {

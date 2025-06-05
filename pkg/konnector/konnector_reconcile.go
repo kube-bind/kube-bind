@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type startable interface {
@@ -38,7 +38,7 @@ type reconciler struct {
 	lock        sync.RWMutex
 	controllers map[string]*controllerContext // by service binding name
 
-	newClusterController func(consumerSecretRefKey, providerNamespace string, reconcileServiceBinding func(binding *kubebindv1alpha1.APIServiceBinding) bool, providerConfig *rest.Config) (startable, error)
+	newClusterController func(consumerSecretRefKey, providerNamespace string, reconcileServiceBinding func(binding *kubebindv1alpha2.APIServiceBinding) bool, providerConfig *rest.Config) (startable, error)
 	getSecret            func(ns, name string) (*corev1.Secret, error)
 }
 
@@ -48,7 +48,7 @@ type controllerContext struct {
 	serviceBindings sets.Set[string] // when this is empty, the Controller should be stopped by closing the context
 }
 
-func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
+func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding) error {
 	logger := klog.FromContext(ctx)
 
 	var kubeconfig string
@@ -128,7 +128,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 	ctrl, err := r.newClusterController(
 		binding.Spec.KubeconfigSecretRef.Namespace+"/"+binding.Spec.KubeconfigSecretRef.Name,
 		providerNamespace,
-		func(svcBinding *kubebindv1alpha1.APIServiceBinding) bool {
+		func(svcBinding *kubebindv1alpha2.APIServiceBinding) bool {
 			r.lock.RLock()
 			defer r.lock.RUnlock()
 			return r.controllers[binding.Name].serviceBindings.Has(svcBinding.Name)

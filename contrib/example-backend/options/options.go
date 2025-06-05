@@ -27,7 +27,7 @@ import (
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type Options struct {
@@ -80,8 +80,8 @@ func NewOptions() *Options {
 		ExtraOptions: ExtraOptions{
 			NamespacePrefix:        "cluster",
 			PrettyName:             "Example Backend",
-			ConsumerScope:          string(kubebindv1alpha1.NamespacedScope),
-			ClusterScopedIsolation: string(kubebindv1alpha1.IsolationPrefixed),
+			ConsumerScope:          string(kubebindv1alpha2.NamespacedScope),
+			ClusterScopedIsolation: string(kubebindv1alpha2.IsolationPrefixed),
 		},
 	}
 }
@@ -118,18 +118,18 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 
 	// normalize the scope and the isolation
 	if strings.ToLower(options.ConsumerScope) == "namespaced" {
-		options.ConsumerScope = string(kubebindv1alpha1.NamespacedScope)
+		options.ConsumerScope = string(kubebindv1alpha2.NamespacedScope)
 	}
 	if strings.ToLower(options.ConsumerScope) == "cluster" {
-		options.ConsumerScope = string(kubebindv1alpha1.ClusterScope)
+		options.ConsumerScope = string(kubebindv1alpha2.ClusterScope)
 	}
 	switch strings.ToLower(options.ClusterScopedIsolation) {
 	case "prefixed":
-		options.ClusterScopedIsolation = string(kubebindv1alpha1.IsolationPrefixed)
+		options.ClusterScopedIsolation = string(kubebindv1alpha2.IsolationPrefixed)
 	case "namespaced":
-		options.ClusterScopedIsolation = string(kubebindv1alpha1.IsolationNamespaced)
+		options.ClusterScopedIsolation = string(kubebindv1alpha2.IsolationNamespaced)
 	case "none":
-		options.ClusterScopedIsolation = string(kubebindv1alpha1.IsolationNone)
+		options.ClusterScopedIsolation = string(kubebindv1alpha2.IsolationNone)
 	}
 
 	if options.ExternalCAFile != "" && options.ExternalCA != nil {
@@ -168,8 +168,8 @@ func (options *CompletedOptions) Validate() error {
 	if err := options.Cookie.Validate(); err != nil {
 		return err
 	}
-	if options.ConsumerScope != string(kubebindv1alpha1.NamespacedScope) && options.ConsumerScope != string(kubebindv1alpha1.ClusterScope) {
-		return fmt.Errorf("consumer scope must be either %q or %q", kubebindv1alpha1.NamespacedScope, kubebindv1alpha1.ClusterScope)
+	if options.ConsumerScope != string(kubebindv1alpha2.NamespacedScope) && options.ConsumerScope != string(kubebindv1alpha2.ClusterScope) {
+		return fmt.Errorf("consumer scope must be either %q or %q", kubebindv1alpha2.NamespacedScope, kubebindv1alpha2.ClusterScope)
 	}
 
 	if options.ExternalAddress != "" {

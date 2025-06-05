@@ -22,10 +22,10 @@ limitations under the License.
 package v1alpha2
 
 // BoundAPIResourceSchemaClusterListerExpansion allows custom methods to be added to BoundAPIResourceSchemaClusterLister.
-type BoundAPIResourceSchemaClusterListerExpansion interface{}
+type BoundAPIResourceSchemaClusterListerExpansion any
 
 // BoundAPIResourceSchemaListerExpansion allows custom methods to be added to BoundAPIResourceSchemaLister.
-type BoundAPIResourceSchemaListerExpansion interface{}
+type BoundAPIResourceSchemaListerExpansion any
 
 // BoundAPIResourceSchemaNamespaceListerExpansion allows custom methods to be added to BoundAPIResourceSchemaNamespaceLister.
-type BoundAPIResourceSchemaNamespaceListerExpansion interface{}
+type BoundAPIResourceSchemaNamespaceListerExpansion any

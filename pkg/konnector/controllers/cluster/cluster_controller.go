@@ -39,12 +39,12 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/servicebinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -57,7 +57,7 @@ const (
 func NewController(
 	consumerSecretRefKey string,
 	providerNamespace string,
-	reconcileServiceBinding func(binding *kubebindv1alpha1.APIServiceBinding) bool,
+	reconcileServiceBinding func(binding *kubebindv1alpha2.APIServiceBinding) bool,
 	consumerConfig, providerConfig *rest.Config,
 	namespaceInformer dynamic.Informer[corelisters.NamespaceLister],
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
@@ -106,9 +106,9 @@ func NewController(
 		heartbeatInterval,
 		consumerConfig,
 		providerConfig,
-		providerBindInformers.KubeBind().V1alpha1().ClusterBindings(),
+		providerBindInformers.KubeBind().V1alpha2().ClusterBindings(),
 		serviceBindingInformer,
-		providerBindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		providerBindInformers.KubeBind().V1alpha2().APIServiceExports(),
 		consumerSecretInformers.Core().V1().Secrets(),
 		providerKubeInformers.Core().V1().Secrets(),
 	)
@@ -118,7 +118,7 @@ func NewController(
 	namespacedeletionCtrl, err := namespacedeletion.NewController(
 		providerConfig,
 		providerNamespace,
-		providerBindInformers.KubeBind().V1alpha1().APIServiceNamespaces(),
+		providerBindInformers.KubeBind().V1alpha2().APIServiceNamespaces(),
 		namespaceInformer,
 	)
 	if err != nil {
@@ -131,7 +131,7 @@ func NewController(
 		consumerConfig,
 		providerConfig,
 		serviceBindingInformer,
-		providerBindInformers.KubeBind().V1alpha1().APIServiceExports(),
+		providerBindInformers.KubeBind().V1alpha2().APIServiceExports(),
 		crdInformer,
 	)
 	if err != nil {
@@ -142,8 +142,8 @@ func NewController(
 		providerNamespace,
 		consumerConfig,
 		providerConfig,
-		providerBindInformers.KubeBind().V1alpha1().APIServiceExports(),
-		providerBindInformers.KubeBind().V1alpha1().APIServiceNamespaces(),
+		providerBindInformers.KubeBind().V1alpha2().APIServiceExports(),
+		providerBindInformers.KubeBind().V1alpha2().APIServiceNamespaces(),
 		serviceBindingInformer,
 		crdInformer,
 	)
@@ -221,10 +221,10 @@ func (c *controller) Start(ctx context.Context) {
 		case <-ctx.Done():
 			// timeout
 			logger.Info("informers did not sync in time", "timeout", heartbeatInterval/2)
-			c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.APIServiceBinding) {
+			c.updateServiceBindings(ctx, func(binding *kubebindv1alpha2.APIServiceBinding) {
 				conditions.MarkFalse(
 					binding,
-					kubebindv1alpha1.APIServiceBindingConditionInformersSynced,
+					kubebindv1alpha2.APIServiceBindingConditionInformersSynced,
 					"InformerSyncTimeout",
 					conditionsapi.ConditionSeverityError,
 					"Informers did not sync within %s",
@@ -242,8 +242,8 @@ func (c *controller) Start(ctx context.Context) {
 	}
 
 	logger.V(2).Info("setting InformersSynced condition to true on service binding")
-	c.updateServiceBindings(ctx, func(binding *kubebindv1alpha1.APIServiceBinding) {
-		conditions.MarkTrue(binding, kubebindv1alpha1.APIServiceBindingConditionInformersSynced)
+	c.updateServiceBindings(ctx, func(binding *kubebindv1alpha2.APIServiceBinding) {
+		conditions.MarkTrue(binding, kubebindv1alpha2.APIServiceBindingConditionInformersSynced)
 	})
 
 	go c.clusterbindingCtrl.Start(ctx, 2)
@@ -254,7 +254,7 @@ func (c *controller) Start(ctx context.Context) {
 	<-ctx.Done()
 }
 
-func (c *controller) updateServiceBindings(ctx context.Context, update func(*kubebindv1alpha1.APIServiceBinding)) {
+func (c *controller) updateServiceBindings(ctx context.Context, update func(*kubebindv1alpha2.APIServiceBinding)) {
 	logger := klog.FromContext(ctx)
 
 	objs, err := c.serviceBindingIndexer.ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.consumerSecretRefKey)
@@ -263,13 +263,13 @@ func (c *controller) updateServiceBindings(ctx context.Context, update func(*kub
 		return
 	}
 	for _, obj := range objs {
-		binding := obj.(*kubebindv1alpha1.APIServiceBinding)
+		binding := obj.(*kubebindv1alpha2.APIServiceBinding)
 		orig := binding
 		binding = binding.DeepCopy()
 		update(binding)
 		if !reflect.DeepEqual(binding.Status.Conditions, orig.Status.Conditions) {
 			logger.V(2).Info("updating service binding", "binding", binding.Name)
-			if _, err := c.bindClient.KubeBindV1alpha1().APIServiceBindings().UpdateStatus(ctx, binding, metav1.UpdateOptions{}); err != nil {
+			if _, err := c.bindClient.KubeBindV1alpha2().APIServiceBindings().UpdateStatus(ctx, binding, metav1.UpdateOptions{}); err != nil {
 				logger.Error(err, "failed to update service binding", "binding", binding.Name)
 				continue
 			}

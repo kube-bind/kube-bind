@@ -17,6 +17,7 @@ SHELL := /usr/bin/env bash -e
 
 GO_INSTALL = ./hack/go-install.sh
 
+ROOT_DIR=$(abspath .)
 TOOLS_DIR=hack/tools
 TOOLS_GOBIN_DIR := $(abspath $(TOOLS_DIR))
 GOBIN_DIR=$(abspath ./bin )
@@ -151,8 +152,12 @@ $(CODE_GENERATOR):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/kcp-dev/code-generator/v2 $(CODE_GENERATOR_BIN) $(CODE_GENERATOR_VER)
 
 lint: $(GOLANGCI_LINT) $(LOGCHECK) ## Run linters
-	$(GOLANGCI_LINT) run ./...
+	$(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) -c $(ROOT_DIR)/.golangci.yaml --timeout 20m
 .PHONY: lint
+
+fix-lint: $(GOLANGCI_LINT)
+	GOLANGCI_LINT_FLAGS="--fix" $(MAKE) lint
+.PHONY: fix-lint
 
 vendor: ## Vendor the dependencies
 	go mod tidy

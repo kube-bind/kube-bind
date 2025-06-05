@@ -26,7 +26,7 @@ const (
 	NamespacesByIdentity = "namespacesByIdentity"
 )
 
-func IndexNamespacesByIdentity(obj interface{}) ([]string, error) {
+func IndexNamespacesByIdentity(obj any) ([]string, error) {
 	ns, ok := obj.(*corev1.Namespace)
 	if !ok {
 		return nil, nil

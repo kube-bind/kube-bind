@@ -36,6 +36,7 @@ ${KUBE_APPLYCONFIGURATION_GEN} \
   --output-pkg github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration \
   --output-dir "sdk/kcp/applyconfiguration" \
   github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1 \
+  github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2 \
   github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1 \
   k8s.io/apimachinery/pkg/apis/meta/v1 \
   k8s.io/apimachinery/pkg/runtime \
@@ -43,6 +44,7 @@ ${KUBE_APPLYCONFIGURATION_GEN} \
 
 "${KUBE_CLIENT_GEN}" \
   --input github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1 \
+  --input github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2 \
   --input-base="" \
   --apply-configuration-package=github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration \
   --clientset-name "versioned"  \

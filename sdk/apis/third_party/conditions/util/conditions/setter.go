@@ -86,7 +86,7 @@ func TrueCondition(t conditionsapi.ConditionType) *conditionsapi.Condition {
 }
 
 // FalseCondition returns a condition with Status=False and the given type.
-func FalseCondition(t conditionsapi.ConditionType, reason string, severity conditionsapi.ConditionSeverity, messageFormat string, messageArgs ...interface{}) *conditionsapi.Condition {
+func FalseCondition(t conditionsapi.ConditionType, reason string, severity conditionsapi.ConditionSeverity, messageFormat string, messageArgs ...any) *conditionsapi.Condition {
 	return &conditionsapi.Condition{
 		Type:     t,
 		Status:   corev1.ConditionFalse,
@@ -97,7 +97,7 @@ func FalseCondition(t conditionsapi.ConditionType, reason string, severity condi
 }
 
 // UnknownCondition returns a condition with Status=Unknown and the given type.
-func UnknownCondition(t conditionsapi.ConditionType, reason string, messageFormat string, messageArgs ...interface{}) *conditionsapi.Condition {
+func UnknownCondition(t conditionsapi.ConditionType, reason string, messageFormat string, messageArgs ...any) *conditionsapi.Condition {
 	return &conditionsapi.Condition{
 		Type:    t,
 		Status:  corev1.ConditionUnknown,
@@ -112,12 +112,12 @@ func MarkTrue(to Setter, t conditionsapi.ConditionType) {
 }
 
 // MarkUnknown sets Status=Unknown for the condition with the given type.
-func MarkUnknown(to Setter, t conditionsapi.ConditionType, reason, messageFormat string, messageArgs ...interface{}) {
+func MarkUnknown(to Setter, t conditionsapi.ConditionType, reason, messageFormat string, messageArgs ...any) {
 	Set(to, UnknownCondition(t, reason, messageFormat, messageArgs...))
 }
 
 // MarkFalse sets Status=False for the condition with the given type.
-func MarkFalse(to Setter, t conditionsapi.ConditionType, reason string, severity conditionsapi.ConditionSeverity, messageFormat string, messageArgs ...interface{}) {
+func MarkFalse(to Setter, t conditionsapi.ConditionType, reason string, severity conditionsapi.ConditionSeverity, messageFormat string, messageArgs ...any) {
 	Set(to, FalseCondition(t, reason, severity, messageFormat, messageArgs...))
 }
 

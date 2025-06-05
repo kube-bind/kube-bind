@@ -31,7 +31,6 @@ import (
 	"google.golang.org/grpc"
 	grpcinsecure "google.golang.org/grpc/credentials/insecure"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -72,8 +71,7 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiserviceexportrequests"},
 	)
 	require.NoError(t, err)
-	// Wait for CRDs to be fully established
-	WaitForCRDsToBeEstablished(t, crdClient)
+
 	fs := pflag.NewFlagSet("example-backend", pflag.ContinueOnError)
 	options := options.NewOptions()
 	options.AddFlags(fs)
@@ -137,43 +135,4 @@ func createDexClient(t *testing.T, addr net.Addr) {
 		_, err = dexapi.NewDexClient(conn).DeleteClient(ctx, &dexapi.DeleteClientReq{Id: "kube-bind-" + port})
 		require.NoError(t, err)
 	})
-}
-
-func WaitForCRDsToBeEstablished(t *testing.T, crdClient apiextensionsclient.Interface) {
-	t.Logf("Waiting for kube-bind CRDs to be established")
-
-	crdNames := []string{
-		"apiresourceschemas." + kubebindv1alpha2.GroupName,
-		"boundapiresourceschemas." + kubebindv1alpha2.GroupName,
-		"clusterbindings." + kubebindv1alpha2.GroupName,
-		"apiserviceexports." + kubebindv1alpha2.GroupName,
-		"apiservicenamespaces." + kubebindv1alpha2.GroupName,
-		"apiserviceexportrequests." + kubebindv1alpha2.GroupName,
-	}
-
-	for _, name := range crdNames {
-		require.Eventually(t, func() bool {
-			crd, err := crdClient.ApiextensionsV1().CustomResourceDefinitions().Get(
-				context.Background(),
-				name,
-				metav1.GetOptions{},
-			)
-			if err != nil {
-				t.Logf("CRD %s not found yet: %v", name, err)
-				return false
-			}
-
-			// Check if the CRD is established
-			for _, condition := range crd.Status.Conditions {
-				if condition.Type == apiextensionsv1.Established &&
-					condition.Status == apiextensionsv1.ConditionTrue {
-					t.Logf("CRD %s is established", name)
-					return true
-				}
-			}
-
-			t.Logf("CRD %s found but not yet established", name)
-			return false
-		}, 60*time.Second, 1*time.Second, "CRD %s failed to become established", name)
-	}
 }

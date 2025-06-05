@@ -31,14 +31,15 @@ import (
 	"google.golang.org/grpc"
 	grpcinsecure "google.golang.org/grpc/credentials/insecure"
 
-	backend "github.com/kube-bind/kube-bind/contrib/example-backend"
-	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
-	"github.com/kube-bind/kube-bind/deploy/crd"
-	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+
+	backend "github.com/kube-bind/kube-bind/contrib/example-backend"
+	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
+	"github.com/kube-bind/kube-bind/deploy/crd"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 func StartBackend(t *testing.T, clientConfig *rest.Config, args ...string) (net.Addr, *backend.Server) {

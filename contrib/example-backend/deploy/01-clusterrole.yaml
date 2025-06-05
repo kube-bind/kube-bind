@@ -43,3 +43,23 @@ rules:
   resources:
     - "apiservicenamespaces"
   verbs: ["create","delete","patch","update","get","list","watch"]
+- apiGroups:
+    - "kube-bind.io"
+  resources:
+    - "apiresourceschemas"
+  verbs: ["create","delete","patch","update","get","list","watch"]
+- apiGroups:
+    - "kube-bind.io"
+  resources:
+    - "apiresourceschemas/status"
+  verbs: ["get","patch","update"]
+- apiGroups:
+    - "kube-bind.io"
+  resources:
+    - "boundapiresourceschemas"
+  verbs: ["create","delete","patch","update","get","list","watch"]
+- apiGroups:
+    - "kube-bind.io"
+  resources:
+    - "boundapiresourceschemas/status"
+  verbs: ["get","patch","update"]

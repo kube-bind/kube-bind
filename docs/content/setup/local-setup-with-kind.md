@@ -202,7 +202,7 @@ replicaset.apps/mangodb-6ff44cbbf   1         1         1       100s
 
 The App cluster will consume MangoDB CRs provided by the Backend.
 
-### Step one: create the Backend cluster
+### Step one: create the App cluster
 
 Again, let's start by stashing the host's external IP in a variable as we're going to use it often (possibly the same one as for the Backend cluster):
 

@@ -14,15 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script ensures that the generated client code checked into git is up-to-date
-# with the generator. If it is not, re-generate the configuration to update it.
-
 set -o errexit
 set -o nounset
 set -o pipefail
 
-
-export BACKEND_HOST_IP=192.168.0.34
+source "$(dirname "$0")/host-ip.sh"
+get_host_ip
 
 cat << EOF_BackendClusterDefinition | kind create cluster --config=-
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -57,11 +54,11 @@ config:
     staticClients:
       - id: kube-bind
         redirectURIs:
-          - 'http://${BACKEND_HOST_IP}:8080/callback'
+          - 'http://${HOST_IP}:8080/callback'
         name: 'Kube Bind'
         secret: ZXhhbXBsZS1hcHAtc2VjcmV0
 
-    issuer: http://${BACKEND_HOST_IP}:5556/dex
+    issuer: http://${HOST_IP}:5556/dex
 
     storage:
       type: kubernetes
@@ -103,7 +100,7 @@ kubectl apply -f ../../test/e2e/bind/fixtures/provider/crd-mangodb.yaml
 kubectl create namespace backend
 # This is the address that will be used when generating kubeconfigs the App cluster,
 # and so we need to be able to reach it from outside.
-export BACKEND_KUBE_API_EXTERNAL_ADDRESS="$(kubectl config view --minify -o json | jq '.clusters[0].cluster.server' -r)"
+BACKEND_KUBE_API_EXTERNAL_ADDRESS="$(kubectl config view --minify -o json | jq '.clusters[0].cluster.server' -r)"
 # For demo example let's just bind "cluster-admin" ClusterRole to backend's "default" ServiceAccount.
 kubectl create clusterrolebinding backend-admin --clusterrole cluster-admin --serviceaccount backend:default
 # Create a new Deployment for the MangoDB backend.
@@ -116,8 +113,8 @@ kubectl --namespace backend \
         --external-address "${BACKEND_KUBE_API_EXTERNAL_ADDRESS}" \
         --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
         --oidc-issuer-client-id=kube-bind \
-        --oidc-issuer-url=http://${BACKEND_HOST_IP}:5556/dex \
-        --oidc-callback-url=http://${BACKEND_HOST_IP}:8080/callback \
+        --oidc-issuer-url=http://${HOST_IP}:5556/dex \
+        --oidc-callback-url=http://${HOST_IP}:8080/callback \
         --pretty-name="BigCorp.com" \
         --namespace-prefix="kube-bind-" \
         --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \

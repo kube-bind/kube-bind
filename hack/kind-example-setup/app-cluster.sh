@@ -14,22 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script ensures that the generated client code checked into git is up-to-date
-# with the generator. If it is not, re-generate the configuration to update it.
-
-
 set -o nounset
 set -o pipefail
 
-export APP_HOST_IP=192.168.0.34
-export BACKEND_HOST_IP=192.168.0.34
+source "$(dirname "$0")/host-ip.sh"
+get_host_ip
 
 cat << EOF_AppClusterDefinition | kind create cluster --config=-
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 name: app
 networking:
-  apiServerAddress: ${APP_HOST_IP}
+  apiServerAddress: ${HOST_IP}
 EOF_AppClusterDefinition
 
-kubectl-bind bind http://${BACKEND_HOST_IP}:8080/export
+kubectl bind http://${HOST_IP}:8080/export

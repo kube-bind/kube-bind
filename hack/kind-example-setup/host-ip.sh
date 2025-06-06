@@ -14,9 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
-set -o pipefail
-
-kind delete cluster --name backend
-kind delete cluster --name app
+get_host_ip() {
+  local os
+  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  if [[  "$os" == linux ]]; then
+    export HOST_IP="$(hostname -i | cut -d' ' -f1)"
+  elif [[ "$os" == darwin ]]; then
+    export HOST_IP="$(ifconfig | grep "inet " | grep -v 127.0.0.1 | cut -d\  -f2)"
+  fi
+}

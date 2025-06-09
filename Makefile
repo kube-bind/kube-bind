@@ -359,7 +359,7 @@ image-local:
 	@echo "Successfully built local images with tag $(REV)"
 
 .PHONY: kind-load
-kind-load: image-local ## Load locally built images into kind cluster
+kind-load:
 	@echo "Loading images into kind cluster '$(KIND_CLUSTER)'"
 	kind load docker-image $(KO_DOCKER_REPO)/konnector:$(REV) --name $(KIND_CLUSTER)
 	kind load docker-image $(KO_DOCKER_REPO)/example-backend:$(REV) --name $(KIND_CLUSTER)

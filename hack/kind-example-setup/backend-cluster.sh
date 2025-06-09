@@ -29,6 +29,8 @@ cat << EOF_BackendClusterDefinition | kind create cluster --config=-
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 name: backend
+networking:
+  apiServerAddress: ${HOST_IP}
 nodes:
 - role: control-plane
   extraPortMappings:
@@ -44,7 +46,7 @@ EOF_BackendClusterDefinition
 
 if [[ -n "${EXAMPLE_BACKEND_IMAGE:-}" ]]; then
   pushd "$(dirname "$0")/../.."
-  KIND_CLUSTER=app make kind-load
+  KIND_CLUSTER=backend make kind-load
   popd
 
   if [[ -z "${TAG:-}" ]]; then

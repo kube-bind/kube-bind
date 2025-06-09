@@ -37,14 +37,14 @@ func ServiceExportToCRD(export *kubebindv1alpha1.APIServiceExport) (*apiextensio
 			Name: export.Name,
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
-			Group: export.Spec.APIServiceExportCRDSpec.Group,
-			Names: export.Spec.APIServiceExportCRDSpec.Names,
-			Scope: export.Spec.APIServiceExportCRDSpec.Scope,
+			Group: export.Spec.Group,
+			Names: export.Spec.Names,
+			Scope: export.Spec.Scope,
 		},
 	}
 
-	for i := range export.Spec.APIServiceExportCRDSpec.Versions {
-		resourceVersion := export.Spec.APIServiceExportCRDSpec.Versions[i]
+	for i := range export.Spec.Versions {
+		resourceVersion := export.Spec.Versions[i]
 
 		crdVersion := apiextensionsv1.CustomResourceDefinitionVersion{
 			Name:                     resourceVersion.Name,

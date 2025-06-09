@@ -326,4 +326,38 @@ deploy-docs: venv ## Deploy docs
 	. $(VENV)/activate; \
 	REMOTE=$(REMOTE) BRANCH=$(BRANCH) docs/scripts/deploy-docs.sh
 
+# Image build configuration
+# REV is the short git sha of latest commit.
+REV=$(shell git rev-parse --short HEAD)
+KIND_CLUSTER ?= backend
+KO_DOCKER_REPO ?= kube-bind
+
+.PHONY: image-local
+image-local:
+	@echo "Building images locally with tag $(REV)"
+	@command -v ko >/dev/null 2>&1 || { echo "ko not found. Install with: go install github.com/google/ko@latest"; exit 1; }
+
+	@echo "Building konnector image locally..."
+	KO_DOCKER_REPO=$(KO_DOCKER_REPO) ko build \
+		--local \
+		-B \
+		-t $(REV) \
+		./cmd/konnector
+
+	@echo "Building example-backend image locally..."
+	KO_DOCKER_REPO=$(KO_DOCKER_REPO) ko build \
+		--local \
+		-B \
+		-t $(REV) \
+		./cmd/example-backend
+
+	@echo "Successfully built local images with tag $(REV)"
+
+.PHONY: kind-load
+kind-load: image-local ## Load locally built images into kind cluster
+	@echo "Loading images into kind cluster '$(KIND_CLUSTER)'"
+	kind load docker-image $(KO_DOCKER_REPO)/konnector:$(REV) --name $(KIND_CLUSTER)
+	kind load docker-image $(KO_DOCKER_REPO)/example-backend:$(REV) --name $(KIND_CLUSTER)
+	@echo "Successfully loaded images into kind cluster '$(KIND_CLUSTER)'"
+
 include Makefile.venv

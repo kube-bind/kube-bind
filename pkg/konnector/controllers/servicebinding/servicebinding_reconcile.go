@@ -24,7 +24,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/client-go/tools/clientcmd"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 )
@@ -33,7 +33,7 @@ type reconciler struct {
 	getConsumerSecret func(ns, name string) (*corev1.Secret, error)
 }
 
-func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
+func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding) error {
 	var errs []error
 
 	if err := r.ensureValidKubeconfigSecret(ctx, binding); err != nil {
@@ -45,14 +45,14 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha1.AP
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureValidKubeconfigSecret(_ context.Context, binding *kubebindv1alpha1.APIServiceBinding) error {
+func (r *reconciler) ensureValidKubeconfigSecret(_ context.Context, binding *kubebindv1alpha2.APIServiceBinding) error {
 	secret, err := r.getConsumerSecret(binding.Spec.KubeconfigSecretRef.Namespace, binding.Spec.KubeconfigSecretRef.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
+			kubebindv1alpha2.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretNotFound",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s not found. Rerun kubectl bind for repair.",
@@ -65,7 +65,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(_ context.Context, binding *kub
 	if !found {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
+			kubebindv1alpha2.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s is missing %q string key.",
@@ -80,7 +80,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(_ context.Context, binding *kub
 	if err != nil {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
+			kubebindv1alpha2.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: %v",
@@ -94,7 +94,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(_ context.Context, binding *kub
 	if !found {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
+			kubebindv1alpha2.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: current context %q not found",
@@ -107,7 +107,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(_ context.Context, binding *kub
 	if kubeContext.Namespace == "" {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
+			kubebindv1alpha2.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: current context %q has no namespace set",
@@ -120,7 +120,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(_ context.Context, binding *kub
 	if _, err := clientcmd.RESTConfigFromKubeConfig(kubeconfig); err != nil {
 		conditions.MarkFalse(
 			binding,
-			kubebindv1alpha1.APIServiceBindingConditionSecretValid,
+			kubebindv1alpha2.APIServiceBindingConditionSecretValid,
 			"KubeconfigSecretInvalid",
 			conditionsapi.ConditionSeverityError,
 			"Kubeconfig secret %s/%s has an invalid kubeconfig: %v",
@@ -133,7 +133,7 @@ func (r *reconciler) ensureValidKubeconfigSecret(_ context.Context, binding *kub
 
 	conditions.MarkTrue(
 		binding,
-		kubebindv1alpha1.APIServiceBindingConditionSecretValid,
+		kubebindv1alpha2.APIServiceBindingConditionSecretValid,
 	)
 
 	return nil

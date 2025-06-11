@@ -48,8 +48,28 @@ func (c *KubeBindV1alpha2ClusterClient) APIResourceSchemas() kcpkubebindv1alpha2
 	return &aPIResourceSchemasClusterClient{Fake: c.Fake}
 }
 
+func (c *KubeBindV1alpha2ClusterClient) APIServiceBindings() kcpkubebindv1alpha2.APIServiceBindingClusterInterface {
+	return &aPIServiceBindingsClusterClient{Fake: c.Fake}
+}
+
+func (c *KubeBindV1alpha2ClusterClient) APIServiceExports() kcpkubebindv1alpha2.APIServiceExportClusterInterface {
+	return &aPIServiceExportsClusterClient{Fake: c.Fake}
+}
+
+func (c *KubeBindV1alpha2ClusterClient) APIServiceExportRequests() kcpkubebindv1alpha2.APIServiceExportRequestClusterInterface {
+	return &aPIServiceExportRequestsClusterClient{Fake: c.Fake}
+}
+
+func (c *KubeBindV1alpha2ClusterClient) APIServiceNamespaces() kcpkubebindv1alpha2.APIServiceNamespaceClusterInterface {
+	return &aPIServiceNamespacesClusterClient{Fake: c.Fake}
+}
+
 func (c *KubeBindV1alpha2ClusterClient) BoundAPIResourceSchemas() kcpkubebindv1alpha2.BoundAPIResourceSchemaClusterInterface {
 	return &boundAPIResourceSchemasClusterClient{Fake: c.Fake}
+}
+
+func (c *KubeBindV1alpha2ClusterClient) ClusterBindings() kcpkubebindv1alpha2.ClusterBindingClusterInterface {
+	return &clusterBindingsClusterClient{Fake: c.Fake}
 }
 
 var _ kubebindv1alpha2.KubeBindV1alpha2Interface = (*KubeBindV1alpha2Client)(nil)
@@ -64,10 +84,30 @@ func (c *KubeBindV1alpha2Client) RESTClient() rest.Interface {
 	return ret
 }
 
-func (c *KubeBindV1alpha2Client) APIResourceSchemas(namespace string) kubebindv1alpha2.APIResourceSchemaInterface {
-	return &aPIResourceSchemasClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
+func (c *KubeBindV1alpha2Client) APIResourceSchemas() kubebindv1alpha2.APIResourceSchemaInterface {
+	return &aPIResourceSchemasClient{Fake: c.Fake, ClusterPath: c.ClusterPath}
+}
+
+func (c *KubeBindV1alpha2Client) APIServiceBindings() kubebindv1alpha2.APIServiceBindingInterface {
+	return &aPIServiceBindingsClient{Fake: c.Fake, ClusterPath: c.ClusterPath}
+}
+
+func (c *KubeBindV1alpha2Client) APIServiceExports(namespace string) kubebindv1alpha2.APIServiceExportInterface {
+	return &aPIServiceExportsClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
+}
+
+func (c *KubeBindV1alpha2Client) APIServiceExportRequests(namespace string) kubebindv1alpha2.APIServiceExportRequestInterface {
+	return &aPIServiceExportRequestsClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
+}
+
+func (c *KubeBindV1alpha2Client) APIServiceNamespaces(namespace string) kubebindv1alpha2.APIServiceNamespaceInterface {
+	return &aPIServiceNamespacesClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
 }
 
 func (c *KubeBindV1alpha2Client) BoundAPIResourceSchemas(namespace string) kubebindv1alpha2.BoundAPIResourceSchemaInterface {
 	return &boundAPIResourceSchemasClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
+}
+
+func (c *KubeBindV1alpha2Client) ClusterBindings(namespace string) kubebindv1alpha2.ClusterBindingInterface {
+	return &clusterBindingsClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
 }

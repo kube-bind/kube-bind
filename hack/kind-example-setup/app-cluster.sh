@@ -17,8 +17,12 @@
 set -o nounset
 set -o pipefail
 
-source "$(dirname "$0")/host-ip.sh"
-get_host_ip
+DEFAULT_KONNECTOR_IMAGE="ghcr.io/kube-bind/konnector:v0.4.6"
+
+if [[ -z "${HOST_IP:-}" ]]; then
+  source "$(dirname "$0")/host-ip.sh"
+  get_host_ip
+fi
 
 cat << EOF_AppClusterDefinition | kind create cluster --config=-
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -28,4 +32,22 @@ networking:
   apiServerAddress: ${HOST_IP}
 EOF_AppClusterDefinition
 
-kubectl bind http://${HOST_IP}:8080/export
+kubectl config use-context kind-app
+
+if [[ -n "${KONNECTOR_IMAGE:-}" ]]; then
+  pushd "$(dirname "$0")/../.."
+  KIND_CLUSTER=app make kind-load
+  popd
+
+  if [[ -z "${TAG:-}" ]]; then
+    REV=$(git rev-parse --short HEAD)
+    TAG=${REV}
+  fi
+  konnector_image="${KONNECTOR_IMAGE}:${TAG}"
+  echo "Using override konnector image: ${konnector_image}"
+  $(dirname "$0")/../../bin/kubectl-bind --konnector-image=${konnector_image} http://${HOST_IP}:8080/export
+else
+  konnector_image=${DEFAULT_KONNECTOR_IMAGE}
+  echo "Using default konnector image: ${konnector_image}"
+  kubectl bind --konnector-image=${konnector_image} http://${HOST_IP}:8080/export
+fi

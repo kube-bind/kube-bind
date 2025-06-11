@@ -43,33 +43,32 @@ type APIResourceSchemaInformer interface {
 type aPIResourceSchemaInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
-	namespace        string
 }
 
 // NewAPIResourceSchemaInformer constructs a new informer for APIResourceSchema type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewAPIResourceSchemaInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredAPIResourceSchemaInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewAPIResourceSchemaInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredAPIResourceSchemaInformer(client, resyncPeriod, indexers, nil)
 }
 
 // NewFilteredAPIResourceSchemaInformer constructs a new informer for APIResourceSchema type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredAPIResourceSchemaInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredAPIResourceSchemaInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha2().APIResourceSchemas(namespace).List(context.TODO(), options)
+				return client.KubeBindV1alpha2().APIResourceSchemas().List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha2().APIResourceSchemas(namespace).Watch(context.TODO(), options)
+				return client.KubeBindV1alpha2().APIResourceSchemas().Watch(context.TODO(), options)
 			},
 		},
 		&kubebindv1alpha2.APIResourceSchema{},
@@ -79,7 +78,7 @@ func NewFilteredAPIResourceSchemaInformer(client versioned.Interface, namespace 
 }
 
 func (f *aPIResourceSchemaInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredAPIResourceSchemaInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+	return NewFilteredAPIResourceSchemaInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
 func (f *aPIResourceSchemaInformer) Informer() cache.SharedIndexInformer {

@@ -29,12 +29,32 @@ type FakeKubeBindV1alpha2 struct {
 	*testing.Fake
 }
 
-func (c *FakeKubeBindV1alpha2) APIResourceSchemas(namespace string) v1alpha2.APIResourceSchemaInterface {
-	return &FakeAPIResourceSchemas{c, namespace}
+func (c *FakeKubeBindV1alpha2) APIResourceSchemas() v1alpha2.APIResourceSchemaInterface {
+	return &FakeAPIResourceSchemas{c}
+}
+
+func (c *FakeKubeBindV1alpha2) APIServiceBindings() v1alpha2.APIServiceBindingInterface {
+	return &FakeAPIServiceBindings{c}
+}
+
+func (c *FakeKubeBindV1alpha2) APIServiceExports(namespace string) v1alpha2.APIServiceExportInterface {
+	return &FakeAPIServiceExports{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha2) APIServiceExportRequests(namespace string) v1alpha2.APIServiceExportRequestInterface {
+	return &FakeAPIServiceExportRequests{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha2) APIServiceNamespaces(namespace string) v1alpha2.APIServiceNamespaceInterface {
+	return &FakeAPIServiceNamespaces{c, namespace}
 }
 
 func (c *FakeKubeBindV1alpha2) BoundAPIResourceSchemas(namespace string) v1alpha2.BoundAPIResourceSchemaInterface {
 	return &FakeBoundAPIResourceSchemas{c, namespace}
+}
+
+func (c *FakeKubeBindV1alpha2) ClusterBindings(namespace string) v1alpha2.ClusterBindingInterface {
+	return &FakeClusterBindings{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

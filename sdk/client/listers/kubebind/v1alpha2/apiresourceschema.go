@@ -32,8 +32,9 @@ type APIResourceSchemaLister interface {
 	// List lists all APIResourceSchemas in the indexer.
 	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha2.APIResourceSchema, err error)
-	// APIResourceSchemas returns an object that can list and get APIResourceSchemas.
-	APIResourceSchemas(namespace string) APIResourceSchemaNamespaceLister
+	// Get retrieves the APIResourceSchema from the index for a given name.
+	// Objects returned here must be treated as read-only.
+	Get(name string) (*v1alpha2.APIResourceSchema, error)
 	APIResourceSchemaListerExpansion
 }
 
@@ -45,27 +46,4 @@ type aPIResourceSchemaLister struct {
 // NewAPIResourceSchemaLister returns a new APIResourceSchemaLister.
 func NewAPIResourceSchemaLister(indexer cache.Indexer) APIResourceSchemaLister {
 	return &aPIResourceSchemaLister{listers.New[*v1alpha2.APIResourceSchema](indexer, v1alpha2.Resource("apiresourceschema"))}
-}
-
-// APIResourceSchemas returns an object that can list and get APIResourceSchemas.
-func (s *aPIResourceSchemaLister) APIResourceSchemas(namespace string) APIResourceSchemaNamespaceLister {
-	return aPIResourceSchemaNamespaceLister{listers.NewNamespaced[*v1alpha2.APIResourceSchema](s.ResourceIndexer, namespace)}
-}
-
-// APIResourceSchemaNamespaceLister helps list and get APIResourceSchemas.
-// All objects returned here must be treated as read-only.
-type APIResourceSchemaNamespaceLister interface {
-	// List lists all APIResourceSchemas in the indexer for a given namespace.
-	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.APIResourceSchema, err error)
-	// Get retrieves the APIResourceSchema from the indexer for a given namespace and name.
-	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.APIResourceSchema, error)
-	APIResourceSchemaNamespaceListerExpansion
-}
-
-// aPIResourceSchemaNamespaceLister implements the APIResourceSchemaNamespaceLister
-// interface.
-type aPIResourceSchemaNamespaceLister struct {
-	listers.ResourceIndexer[*v1alpha2.APIResourceSchema]
 }

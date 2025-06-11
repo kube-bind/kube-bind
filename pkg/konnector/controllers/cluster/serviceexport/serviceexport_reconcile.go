@@ -18,6 +18,9 @@ package serviceexport
 
 import (
 	"context"
+	"fmt"
+	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -37,10 +40,10 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/spec"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/status"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 type reconciler struct {
@@ -54,8 +57,12 @@ type reconciler struct {
 	lock        sync.Mutex
 	syncContext map[string]syncContext // by CRD name
 
-	getCRD            func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	getServiceBinding func(name string) (*kubebindv1alpha1.APIServiceBinding, error)
+	getCRD                       func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
+	getServiceBinding            func(name string) (*kubebindv1alpha2.APIServiceBinding, error)
+	getAPIResourceSchema         func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
+	getBoundAPIResourceSchema    func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
+	createBoundAPIResourceSchema func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
+	updateBoundAPIResourceSchema func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
 }
 
 type syncContext struct {
@@ -63,7 +70,7 @@ type syncContext struct {
 	cancel     func()
 }
 
-func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebindv1alpha2.APIServiceExport) error {
 	errs := []error{}
 
 	if err := r.ensureControllers(ctx, name, export); err != nil {
@@ -74,7 +81,7 @@ func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebin
 		if err := r.ensureServiceBindingConditionCopied(ctx, export); err != nil {
 			errs = append(errs, err)
 		}
-		if err := r.ensureCRDConditionsCopied(ctx, export); err != nil {
+		if err := r.ensureCRDConditionsCopiedToBoundSchema(ctx, export); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -82,35 +89,22 @@ func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebin
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureControllers(ctx context.Context, name string, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) ensureControllers(ctx context.Context, name string, export *kubebindv1alpha2.APIServiceExport) error {
 	logger := klog.FromContext(ctx)
 
 	if export == nil {
 		// stop dangling syncers on delete
 		r.lock.Lock()
 		defer r.lock.Unlock()
-		if c, found := r.syncContext[name]; found {
-			logger.V(1).Info("Stopping APIServiceExport sync", "reason", "APIServiceExport deleted")
-			c.cancel()
-			delete(r.syncContext, name)
-		}
-		return nil
-	}
 
-	var errs []error
-	crd, err := r.getCRD(export.Name)
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	} else if errors.IsNotFound(err) {
-		// stop it
-		r.lock.Lock()
-		defer r.lock.Unlock()
-		if c, found := r.syncContext[export.Name]; found {
-			logger.V(1).Info("Stopping APIServiceExport sync", "reason", "NoCustomResourceDefinition")
-			c.cancel()
-			delete(r.syncContext, export.Name)
+		// Clean up any controllers associated with this export
+		for key, c := range r.syncContext {
+			if strings.HasSuffix(key, "."+name) {
+				logger.V(1).Info("Stopping APIServiceExport sync", "key", key, "reason", "APIServiceExport deleted")
+				c.cancel()
+				delete(r.syncContext, key)
+			}
 		}
-
 		return nil
 	}
 
@@ -120,44 +114,174 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 		return err
 	}
 	if binding == nil {
-		// stop it
+		// Stop all controllers for this export
 		r.lock.Lock()
 		defer r.lock.Unlock()
-		if c, found := r.syncContext[export.Name]; found {
-			logger.V(1).Info("Stopping APIServiceExport sync", "reason", "NoAPIServiceBinding")
-			c.cancel()
-			delete(r.syncContext, export.Name)
+		for key, c := range r.syncContext {
+			if strings.HasSuffix(key, "."+export.Name) {
+				logger.V(1).Info("Stopping APIServiceExport sync", "key", key, "reason", "NoAPIServiceBinding")
+				c.cancel()
+				delete(r.syncContext, key)
+			}
 		}
-
 		return nil
 	}
 
+	// Process each resource referenced by the export
+	var errs []error
+	processedSchemas := make(map[string]bool)
+
+	for _, resourceRef := range export.Spec.Resources {
+		if resourceRef.Type != "APIResourceSchema" {
+			logger.V(1).Info("Skipping unsupported resource type", "type", resourceRef.Type)
+			continue
+		}
+
+		// Fetch the APIResourceSchema
+		schema, err := r.getAPIResourceSchema(ctx, resourceRef.Name)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				// Stop the controller for this schema if it exists
+				r.lock.Lock()
+				key := resourceRef.Name + "." + export.Name
+				if c, found := r.syncContext[key]; found {
+					logger.V(1).Info("Stopping APIServiceExport resource sync", "key", key, "reason", "APIResourceSchema not found")
+					c.cancel()
+					delete(r.syncContext, key)
+				}
+				r.lock.Unlock()
+				continue
+			}
+			errs = append(errs, err)
+			continue
+		}
+
+		// Ensure BoundAPIResourceSchema exists for tracking status
+		if err := r.ensureBoundAPIResourceSchema(ctx, export, schema); err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		// Start/update controller for this schema
+		if err := r.ensureControllerForSchema(ctx, export, schema); err != nil {
+			errs = append(errs, err)
+		}
+
+		processedSchemas[resourceRef.Name] = true
+	}
+
+	// Stop controllers for schemas that are no longer referenced
 	r.lock.Lock()
-	c, found := r.syncContext[export.Name]
+	for key, c := range r.syncContext {
+		parts := strings.Split(key, ".")
+		if len(parts) == 2 && parts[1] == export.Name {
+			schemaName := parts[0]
+			if !processedSchemas[schemaName] {
+				logger.V(1).Info("Stopping APIServiceExport resource sync", "key", key, "reason", "Schema no longer referenced")
+				c.cancel()
+				delete(r.syncContext, key)
+			}
+		}
+	}
+	r.lock.Unlock()
+
+	return utilerrors.NewAggregate(errs)
+}
+
+func (r *reconciler) ensureBoundAPIResourceSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport, schema *kubebindv1alpha2.APIResourceSchema) error {
+	boundSchema, err := r.getBoundAPIResourceSchema(ctx, schema.Name)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Create new BoundAPIResourceSchema
+			boundSchema = &kubebindv1alpha2.BoundAPIResourceSchema{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      schema.Name,
+					Namespace: export.Namespace,
+					OwnerReferences: []metav1.OwnerReference{
+						{
+							APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
+							Kind:       "APIServiceExport",
+							Name:       export.Name,
+							UID:        export.UID,
+							Controller: func() *bool { b := true; return &b }(),
+						},
+					},
+				},
+				Spec: kubebindv1alpha2.BoundAPIResourceSchemaSpec{
+					InformerScope:            schema.Spec.InformerScope,
+					APIResourceSchemaCRDSpec: schema.Spec.APIResourceSchemaCRDSpec,
+				},
+			}
+
+			conditions.MarkFalse(
+				boundSchema,
+				kubebindv1alpha2.BoundAPIResourceSchemaValid,
+				string(kubebindv1alpha2.BoundAPIResourceSchemaPending),
+				conditionsapi.ConditionSeverityInfo,
+				"Waiting for CRD to be created in consumer cluster",
+			)
+
+			_, err := r.createBoundAPIResourceSchema(ctx, boundSchema)
+			if err != nil {
+				return fmt.Errorf("failed to create BoundAPIResourceSchema %s: %w", boundSchema.Name, err)
+			}
+			return nil
+		}
+		return err
+	}
+
+	// Check if InformerScope needs updating
+	if boundSchema.Spec.InformerScope != schema.Spec.InformerScope {
+		boundSchema.Spec.InformerScope = schema.Spec.InformerScope
+	}
+
+	if !reflect.DeepEqual(boundSchema.Spec.APIResourceSchemaCRDSpec, schema.Spec.APIResourceSchemaCRDSpec) {
+		boundSchema.Spec.APIResourceSchemaCRDSpec = schema.Spec.APIResourceSchemaCRDSpec
+	}
+
+	_, err = r.updateBoundAPIResourceSchema(ctx, boundSchema)
+	if err != nil {
+		return fmt.Errorf("failed to update BoundAPIResourceSchema %s: %w", boundSchema.Name, err)
+	}
+
+	return nil
+}
+
+func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport, schema *kubebindv1alpha2.APIResourceSchema) error {
+	logger := klog.FromContext(ctx)
+	key := schema.Name + "." + export.Name
+
+	r.lock.Lock()
+	c, found := r.syncContext[key]
 	if found {
 		if c.generation == export.Generation {
 			r.lock.Unlock()
 			return nil // all as expected
 		}
 
-		// technically, we could be less aggressive here if nothing big changed in the resource, e.g. just schemas. But ¯\_(ツ)_/¯
-
-		logger.V(1).Info("Stopping APIServiceExport sync", "reason", "GenerationChanged", "generation", export.Generation)
+		logger.V(1).Info("Stopping APIServiceExport resource sync", "key", key, "reason", "GenerationChanged", "generation", schema.Generation)
 		c.cancel()
-		delete(r.syncContext, export.Name)
+		delete(r.syncContext, key)
 	}
 	r.lock.Unlock()
 
 	// start a new syncer
-
 	var syncVersion string
-	for _, v := range export.Spec.Versions {
+	for _, v := range schema.Spec.Versions {
 		if v.Served {
 			syncVersion = v.Name
 			break
 		}
 	}
-	gvr := runtimeschema.GroupVersionResource{Group: export.Spec.Group, Version: syncVersion, Resource: export.Spec.Names.Plural}
+	if syncVersion == "" {
+		return fmt.Errorf("no served version found for APIResourceSchema %s", schema.Name)
+	}
+
+	gvr := runtimeschema.GroupVersionResource{
+		Group:    schema.Spec.Group,
+		Version:  syncVersion,
+		Resource: schema.Spec.Names.Plural,
+	}
 
 	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
 	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
@@ -176,7 +300,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	consumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
 
 	var providerInf multinsinformer.GetterInformer
-	if crd.Spec.Scope == apiextensionsv1.ClusterScoped || export.Spec.InformerScope == kubebindv1alpha1.ClusterScope {
+	if schema.Spec.Scope == apiextensionsv1.ClusterScoped || schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope {
 		factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
 		factory.ForResource(gvr).Lister() // wire the GVR up in the informer factory
 		providerInf = multinsinformer.GetterInformerWrapper{
@@ -184,6 +308,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 			Delegate: factory,
 		}
 	} else {
+		var err error
 		providerInf, err = multinsinformer.NewDynamicMultiNamespaceInformer(
 			gvr,
 			r.providerNamespace,
@@ -209,6 +334,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 		runtime.HandleError(err)
 		return nil // nothing we can do here
 	}
+
 	statusCtrl, err := status.NewController(
 		gvr,
 		r.providerNamespace,
@@ -224,44 +350,138 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 		return nil // nothing we can do here
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
+	// Create a new context for this controller
+	ctxWithCancel, cancel := context.WithCancel(ctx)
 
-	consumerInf.Start(ctx.Done())
-	providerInf.Start(ctx)
+	consumerInf.Start(ctxWithCancel.Done())
+	providerInf.Start(ctxWithCancel)
 
 	go func() {
 		// to not block the main thread
-		consumerSynced := consumerInf.WaitForCacheSync(ctx.Done())
-		logger.V(2).Info("Synced informers", "consumer", consumerSynced)
+		consumerSynced := consumerInf.WaitForCacheSync(ctxWithCancel.Done())
+		logger.V(2).Info("Synced informers", "key", key, "consumer", consumerSynced)
 
-		providerSynced := providerInf.WaitForCacheSync(ctx.Done())
-		logger.V(2).Info("Synced informers", "provider", providerSynced)
+		providerSynced := providerInf.WaitForCacheSync(ctxWithCancel.Done())
+		logger.V(2).Info("Synced informers", "key", key, "provider", providerSynced)
 
-		go specCtrl.Start(ctx, 1)
-		go statusCtrl.Start(ctx, 1)
+		go specCtrl.Start(ctxWithCancel, 1)
+		go statusCtrl.Start(ctxWithCancel, 1)
 	}()
 
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	if c, found := r.syncContext[export.Name]; found {
+	if c, found := r.syncContext[key]; found {
 		c.cancel()
 	}
-	r.syncContext[export.Name] = syncContext{
-		generation: export.Generation,
+	r.syncContext[key] = syncContext{
+		generation: schema.Generation,
 		cancel:     cancel,
+	}
+
+	return nil
+}
+
+func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) error {
+	if export == nil {
+		return nil
+	}
+	var errs []error
+	allValid := true // assume all BoundAPIResourceSchemas are valid
+	for _, resourceRef := range export.Spec.Resources {
+		schema, err := r.getAPIResourceSchema(ctx, resourceRef.Name)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				continue
+			}
+			errs = append(errs, err)
+			continue
+		}
+
+		crd, err := r.getCRD(schema.Name)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				continue
+			}
+			errs = append(errs, err)
+			continue
+		}
+
+		boundSchema, err := r.getBoundAPIResourceSchema(ctx, schema.Name)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				continue // BoundAPIResourceSchema not found, nothing to update
+			}
+			errs = append(errs, err)
+			continue
+		}
+
+		boundSchemaIndex := map[conditionsapi.ConditionType]int{}
+		for i, c := range boundSchema.Status.Conditions {
+			boundSchemaIndex[c.Type] = i
+		}
+		for _, c := range crd.Status.Conditions {
+			if conditionsapi.ConditionType(c.Type) == conditionsapi.ReadyCondition {
+				continue
+			}
+
+			severity := conditionsapi.ConditionSeverityError
+			if c.Status == apiextensionsv1.ConditionTrue {
+				severity = conditionsapi.ConditionSeverityNone
+			}
+			copied := conditionsapi.Condition{
+				Type:               conditionsapi.ConditionType(c.Type),
+				Status:             corev1.ConditionStatus(c.Status),
+				Severity:           severity, // CRD conditions have no severity
+				LastTransitionTime: c.LastTransitionTime,
+				Reason:             c.Reason,
+				Message:            c.Message,
+			}
+
+			// update or append
+			if i, found := boundSchemaIndex[conditionsapi.ConditionType(c.Type)]; found {
+				boundSchema.Status.Conditions[i] = copied
+			} else {
+				boundSchema.Status.Conditions = append(boundSchema.Status.Conditions, copied)
+			}
+		}
+		conditions.SetSummary(boundSchema)
+
+		boundSchema.Status.AcceptedNames = crd.Status.AcceptedNames
+		boundSchema.Status.StoredVersions = crd.Status.StoredVersions
+
+		if _, err := r.updateBoundAPIResourceSchema(ctx, boundSchema); err != nil {
+			errs = append(errs, err)
+			allValid = false // at least one BoundAPIResourceSchema is not valid
+		}
+	}
+
+	// Set APIServiceExport Ready condition based on all BoundAPIResourceSchemas
+	if allValid {
+		conditions.MarkTrue(
+			export,
+			kubebindv1alpha2.APIServiceExportConditionConnected,
+		)
+	} else {
+		conditions.MarkFalse(
+			export,
+			kubebindv1alpha2.APIServiceExportConditionConnected,
+			"BoundAPIResourceSchemasNotValid",
+			conditionsapi.ConditionSeverityWarning,
+			"One or more BoundAPIResourceSchemas are not valid",
+		)
 	}
 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureServiceBindingConditionCopied(_ context.Context, export *kubebindv1alpha1.APIServiceExport) error {
+func (r *reconciler) ensureServiceBindingConditionCopied(_ context.Context, export *kubebindv1alpha2.APIServiceExport) error {
 	binding, err := r.getServiceBinding(export.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.APIServiceExportConditionConnected,
+			kubebindv1alpha2.APIServiceExportConditionConnected,
 			"APIServiceBindingNotFound",
 			conditionsapi.ConditionSeverityInfo,
 			"No APIServiceBinding exists.",
@@ -269,7 +489,7 @@ func (r *reconciler) ensureServiceBindingConditionCopied(_ context.Context, expo
 
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.APIServiceExportConditionConsumerInSync,
+			kubebindv1alpha2.APIServiceExportConditionConsumerInSync,
 			"NA",
 			conditionsapi.ConditionSeverityInfo,
 			"No APIServiceBinding exists.",
@@ -278,67 +498,22 @@ func (r *reconciler) ensureServiceBindingConditionCopied(_ context.Context, expo
 		return nil
 	}
 
-	conditions.MarkTrue(export, kubebindv1alpha1.APIServiceExportConditionConnected)
+	conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionConnected)
 
-	if inSync := conditions.Get(binding, kubebindv1alpha1.APIServiceBindingConditionSchemaInSync); inSync != nil {
+	if inSync := conditions.Get(binding, kubebindv1alpha2.APIServiceBindingConditionSchemaInSync); inSync != nil {
 		inSync := inSync.DeepCopy()
-		inSync.Type = kubebindv1alpha1.APIServiceExportConditionConsumerInSync
+		inSync.Type = kubebindv1alpha2.APIServiceExportConditionConsumerInSync
 		conditions.Set(export, inSync)
 	} else {
 		conditions.MarkFalse(
 			export,
-			kubebindv1alpha1.APIServiceExportConditionConsumerInSync,
+			kubebindv1alpha2.APIServiceExportConditionConsumerInSync,
 			"Unknown",
 			conditionsapi.ConditionSeverityInfo,
 			"APIServiceBinding %s in the consumer cluster does not have a SchemaInSync condition.",
 			binding.Name,
 		)
 	}
-
-	return nil
-}
-
-func (r *reconciler) ensureCRDConditionsCopied(_ context.Context, export *kubebindv1alpha1.APIServiceExport) error {
-	crd, err := r.getCRD(export.Name)
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	} else if errors.IsNotFound(err) {
-		return nil // nothing to copy
-	}
-
-	exportIndex := map[conditionsapi.ConditionType]int{}
-	for i, c := range export.Status.Conditions {
-		exportIndex[c.Type] = i
-	}
-	for _, c := range crd.Status.Conditions {
-		if conditionsapi.ConditionType(c.Type) == conditionsapi.ReadyCondition {
-			continue
-		}
-
-		severity := conditionsapi.ConditionSeverityError
-		if c.Status == apiextensionsv1.ConditionTrue {
-			severity = conditionsapi.ConditionSeverityNone
-		}
-		copied := conditionsapi.Condition{
-			Type:               conditionsapi.ConditionType(c.Type),
-			Status:             corev1.ConditionStatus(c.Status),
-			Severity:           severity, // CRD conditions have no severity
-			LastTransitionTime: c.LastTransitionTime,
-			Reason:             c.Reason,
-			Message:            c.Message,
-		}
-
-		// update or append
-		if i, found := exportIndex[conditionsapi.ConditionType(c.Type)]; found {
-			export.Status.Conditions[i] = copied
-		} else {
-			export.Status.Conditions = append(export.Status.Conditions, copied)
-		}
-	}
-	conditions.SetSummary(export)
-
-	export.Status.AcceptedNames = crd.Status.AcceptedNames
-	export.Status.StoredVersions = crd.Status.StoredVersions
 
 	return nil
 }

@@ -2,15 +2,19 @@ module github.com/kube-bind/kube-bind/cli
 
 go 1.23.4
 
-replace github.com/kube-bind/kube-bind/sdk/apis => ../sdk/apis
+replace (
+	github.com/kube-bind/kube-bind => ../
+	github.com/kube-bind/kube-bind/sdk/apis => ../sdk/apis
+	github.com/kube-bind/kube-bind/sdk/client => ../sdk/client
+)
 
 require (
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/fatih/color v1.18.0
-	github.com/kube-bind/kube-bind v0.4.6
-	github.com/kube-bind/kube-bind/sdk/apis v0.4.6
-	github.com/kube-bind/kube-bind/sdk/client v0.4.6
+	github.com/kube-bind/kube-bind v0.0.0-00010101000000-000000000000
+	github.com/kube-bind/kube-bind/sdk/apis v0.4.8
+	github.com/kube-bind/kube-bind/sdk/client v0.0.0-20250515145715-d9f20e7c840d
 	github.com/mdp/qrterminal/v3 v3.2.0
 	github.com/muesli/reflow v0.3.0
 	github.com/spf13/cobra v1.8.1

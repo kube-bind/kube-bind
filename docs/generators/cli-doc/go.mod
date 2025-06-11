@@ -4,13 +4,13 @@ go 1.23.4
 
 replace (
 	github.com/kube-bind/kube-bind => ../../../
-	github.com/kube-bind/kube-bind/cli => ../../../cli
-	github.com/kube-bind/kube-bind/sdk => ../../../sdk
+	github.com/kube-bind/kube-bind/sdk/apis => ../../../sdk/apis
+	github.com/kube-bind/kube-bind/sdk/client => ../../../sdk/client
 )
 
 require (
 	github.com/kcp-dev/kcp v0.26.1
-	github.com/kube-bind/kube-bind/cli v0.0.0-00010101000000-000000000000
+	github.com/kube-bind/kube-bind/cli v0.0.0-20250515145715-d9f20e7c840d
 )
 
 require (
@@ -53,9 +53,9 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kube-bind/kube-bind v0.4.6 // indirect
-	github.com/kube-bind/kube-bind/sdk/apis v0.4.6 // indirect
-	github.com/kube-bind/kube-bind/sdk/client v0.4.6 // indirect
+	github.com/kube-bind/kube-bind v0.4.8 // indirect
+	github.com/kube-bind/kube-bind/sdk/apis v0.4.8 // indirect
+	github.com/kube-bind/kube-bind/sdk/client v0.4.8 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

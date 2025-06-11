@@ -22,9 +22,33 @@ package v1alpha2
 // APIResourceSchemaLister.
 type APIResourceSchemaListerExpansion interface{}
 
-// APIResourceSchemaNamespaceListerExpansion allows custom methods to be added to
-// APIResourceSchemaNamespaceLister.
-type APIResourceSchemaNamespaceListerExpansion interface{}
+// APIServiceBindingListerExpansion allows custom methods to be added to
+// APIServiceBindingLister.
+type APIServiceBindingListerExpansion interface{}
+
+// APIServiceExportListerExpansion allows custom methods to be added to
+// APIServiceExportLister.
+type APIServiceExportListerExpansion interface{}
+
+// APIServiceExportNamespaceListerExpansion allows custom methods to be added to
+// APIServiceExportNamespaceLister.
+type APIServiceExportNamespaceListerExpansion interface{}
+
+// APIServiceExportRequestListerExpansion allows custom methods to be added to
+// APIServiceExportRequestLister.
+type APIServiceExportRequestListerExpansion interface{}
+
+// APIServiceExportRequestNamespaceListerExpansion allows custom methods to be added to
+// APIServiceExportRequestNamespaceLister.
+type APIServiceExportRequestNamespaceListerExpansion interface{}
+
+// APIServiceNamespaceListerExpansion allows custom methods to be added to
+// APIServiceNamespaceLister.
+type APIServiceNamespaceListerExpansion interface{}
+
+// APIServiceNamespaceNamespaceListerExpansion allows custom methods to be added to
+// APIServiceNamespaceNamespaceLister.
+type APIServiceNamespaceNamespaceListerExpansion interface{}
 
 // BoundAPIResourceSchemaListerExpansion allows custom methods to be added to
 // BoundAPIResourceSchemaLister.
@@ -33,3 +57,11 @@ type BoundAPIResourceSchemaListerExpansion interface{}
 // BoundAPIResourceSchemaNamespaceListerExpansion allows custom methods to be added to
 // BoundAPIResourceSchemaNamespaceLister.
 type BoundAPIResourceSchemaNamespaceListerExpansion interface{}
+
+// ClusterBindingListerExpansion allows custom methods to be added to
+// ClusterBindingLister.
+type ClusterBindingListerExpansion interface{}
+
+// ClusterBindingNamespaceListerExpansion allows custom methods to be added to
+// ClusterBindingNamespaceLister.
+type ClusterBindingNamespaceListerExpansion interface{}

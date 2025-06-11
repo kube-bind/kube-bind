@@ -53,7 +53,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 
 // APIResourceSchemas returns a APIResourceSchemaInformer.
 func (v *version) APIResourceSchemas() APIResourceSchemaInformer {
-	return &aPIResourceSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+	return &aPIResourceSchemaInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // APIServiceBindings returns a APIServiceBindingInformer.

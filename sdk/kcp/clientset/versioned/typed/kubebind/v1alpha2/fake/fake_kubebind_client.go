@@ -29,8 +29,8 @@ type FakeKubeBindV1alpha2 struct {
 	*testing.Fake
 }
 
-func (c *FakeKubeBindV1alpha2) APIResourceSchemas(namespace string) v1alpha2.APIResourceSchemaInterface {
-	return &FakeAPIResourceSchemas{c, namespace}
+func (c *FakeKubeBindV1alpha2) APIResourceSchemas() v1alpha2.APIResourceSchemaInterface {
+	return &FakeAPIResourceSchemas{c}
 }
 
 func (c *FakeKubeBindV1alpha2) APIServiceBindings() v1alpha2.APIServiceBindingInterface {

@@ -34,7 +34,7 @@ import (
 // APIResourceSchemasGetter has a method to return a APIResourceSchemaInterface.
 // A group's client should implement this interface.
 type APIResourceSchemasGetter interface {
-	APIResourceSchemas(namespace string) APIResourceSchemaInterface
+	APIResourceSchemas() APIResourceSchemaInterface
 }
 
 // APIResourceSchemaInterface has methods to work with APIResourceSchema resources.
@@ -57,13 +57,13 @@ type aPIResourceSchemas struct {
 }
 
 // newAPIResourceSchemas returns a APIResourceSchemas
-func newAPIResourceSchemas(c *KubeBindV1alpha2Client, namespace string) *aPIResourceSchemas {
+func newAPIResourceSchemas(c *KubeBindV1alpha2Client) *aPIResourceSchemas {
 	return &aPIResourceSchemas{
 		gentype.NewClientWithListAndApply[*v1alpha2.APIResourceSchema, *v1alpha2.APIResourceSchemaList, *kubebindv1alpha2.APIResourceSchemaApplyConfiguration](
 			"apiresourceschemas",
 			c.RESTClient(),
 			scheme.ParameterCodec,
-			namespace,
+			"",
 			func() *v1alpha2.APIResourceSchema { return &v1alpha2.APIResourceSchema{} },
 			func() *v1alpha2.APIResourceSchemaList { return &v1alpha2.APIResourceSchemaList{} }),
 	}

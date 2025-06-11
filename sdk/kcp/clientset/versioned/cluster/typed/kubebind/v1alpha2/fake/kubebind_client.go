@@ -84,8 +84,8 @@ func (c *KubeBindV1alpha2Client) RESTClient() rest.Interface {
 	return ret
 }
 
-func (c *KubeBindV1alpha2Client) APIResourceSchemas(namespace string) kubebindv1alpha2.APIResourceSchemaInterface {
-	return &aPIResourceSchemasClient{Fake: c.Fake, ClusterPath: c.ClusterPath, Namespace: namespace}
+func (c *KubeBindV1alpha2Client) APIResourceSchemas() kubebindv1alpha2.APIResourceSchemaInterface {
+	return &aPIResourceSchemasClient{Fake: c.Fake, ClusterPath: c.ClusterPath}
 }
 
 func (c *KubeBindV1alpha2Client) APIServiceBindings() kubebindv1alpha2.APIServiceBindingInterface {

@@ -14,7 +14,7 @@ spec:
     listKind: APIResourceSchemaList
     plural: apiresourceschemas
     singular: apiresourceschema
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .metadata.creationTimestamp

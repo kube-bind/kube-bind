@@ -41,9 +41,9 @@ type APIResourceSchemasClusterGetter interface {
 }
 
 // APIResourceSchemaClusterInterface can operate on APIResourceSchemas across all clusters,
-// or scope down to one cluster and return a APIResourceSchemasNamespacer.
+// or scope down to one cluster and return a kubebindv1alpha2client.APIResourceSchemaInterface.
 type APIResourceSchemaClusterInterface interface {
-	Cluster(logicalcluster.Path) APIResourceSchemasNamespacer
+	Cluster(logicalcluster.Path) kubebindv1alpha2client.APIResourceSchemaInterface
 	List(ctx context.Context, opts metav1.ListOptions) (*kubebindv1alpha2.APIResourceSchemaList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 }
@@ -53,34 +53,20 @@ type aPIResourceSchemasClusterInterface struct {
 }
 
 // Cluster scopes the client down to a particular cluster.
-func (c *aPIResourceSchemasClusterInterface) Cluster(clusterPath logicalcluster.Path) APIResourceSchemasNamespacer {
+func (c *aPIResourceSchemasClusterInterface) Cluster(clusterPath logicalcluster.Path) kubebindv1alpha2client.APIResourceSchemaInterface {
 	if clusterPath == logicalcluster.Wildcard {
 		panic("A specific cluster must be provided when scoping, not the wildcard.")
 	}
 
-	return &aPIResourceSchemasNamespacer{clientCache: c.clientCache, clusterPath: clusterPath}
+	return c.clientCache.ClusterOrDie(clusterPath).APIResourceSchemas()
 }
 
 // List returns the entire collection of all APIResourceSchemas across all clusters.
 func (c *aPIResourceSchemasClusterInterface) List(ctx context.Context, opts metav1.ListOptions) (*kubebindv1alpha2.APIResourceSchemaList, error) {
-	return c.clientCache.ClusterOrDie(logicalcluster.Wildcard).APIResourceSchemas(metav1.NamespaceAll).List(ctx, opts)
+	return c.clientCache.ClusterOrDie(logicalcluster.Wildcard).APIResourceSchemas().List(ctx, opts)
 }
 
 // Watch begins to watch all APIResourceSchemas across all clusters.
 func (c *aPIResourceSchemasClusterInterface) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	return c.clientCache.ClusterOrDie(logicalcluster.Wildcard).APIResourceSchemas(metav1.NamespaceAll).Watch(ctx, opts)
-}
-
-// APIResourceSchemasNamespacer can scope to objects within a namespace, returning a kubebindv1alpha2client.APIResourceSchemaInterface.
-type APIResourceSchemasNamespacer interface {
-	Namespace(string) kubebindv1alpha2client.APIResourceSchemaInterface
-}
-
-type aPIResourceSchemasNamespacer struct {
-	clientCache kcpclient.Cache[*kubebindv1alpha2client.KubeBindV1alpha2Client]
-	clusterPath logicalcluster.Path
-}
-
-func (n *aPIResourceSchemasNamespacer) Namespace(namespace string) kubebindv1alpha2client.APIResourceSchemaInterface {
-	return n.clientCache.ClusterOrDie(n.clusterPath).APIResourceSchemas(namespace)
+	return c.clientCache.ClusterOrDie(logicalcluster.Wildcard).APIResourceSchemas().Watch(ctx, opts)
 }

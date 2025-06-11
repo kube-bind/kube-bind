@@ -43,8 +43,8 @@ type KubeBindV1alpha2Client struct {
 	restClient rest.Interface
 }
 
-func (c *KubeBindV1alpha2Client) APIResourceSchemas(namespace string) APIResourceSchemaInterface {
-	return newAPIResourceSchemas(c, namespace)
+func (c *KubeBindV1alpha2Client) APIResourceSchemas() APIResourceSchemaInterface {
+	return newAPIResourceSchemas(c)
 }
 
 func (c *KubeBindV1alpha2Client) APIServiceBindings() APIServiceBindingInterface {

@@ -35,10 +35,9 @@ type APIResourceSchemaApplyConfiguration struct {
 
 // APIResourceSchema constructs a declarative configuration of the APIResourceSchema type for use with
 // apply.
-func APIResourceSchema(name, namespace string) *APIResourceSchemaApplyConfiguration {
+func APIResourceSchema(name string) *APIResourceSchemaApplyConfiguration {
 	b := &APIResourceSchemaApplyConfiguration{}
 	b.WithName(name)
-	b.WithNamespace(namespace)
 	b.WithKind("APIResourceSchema")
 	b.WithAPIVersion("kube-bind.io/v1alpha2")
 	return b

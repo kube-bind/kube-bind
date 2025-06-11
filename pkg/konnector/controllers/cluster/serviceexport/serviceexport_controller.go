@@ -103,7 +103,7 @@ func NewController(
 				return serviceBindingInformer.Lister().Get(name)
 			},
 			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-				return providerBindClient.KubeBindV1alpha2().APIResourceSchemas(providerNamespace).Get(ctx, name, metav1.GetOptions{})
+				return providerBindClient.KubeBindV1alpha2().APIResourceSchemas().Get(ctx, name, metav1.GetOptions{})
 			},
 			getBoundAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
 				return providerBindClient.KubeBindV1alpha2().BoundAPIResourceSchemas(providerNamespace).Get(ctx, name, metav1.GetOptions{})

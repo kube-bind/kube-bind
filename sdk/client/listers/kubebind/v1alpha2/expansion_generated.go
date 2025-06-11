@@ -22,10 +22,6 @@ package v1alpha2
 // APIResourceSchemaLister.
 type APIResourceSchemaListerExpansion interface{}
 
-// APIResourceSchemaNamespaceListerExpansion allows custom methods to be added to
-// APIResourceSchemaNamespaceLister.
-type APIResourceSchemaNamespaceListerExpansion interface{}
-
 // APIServiceBindingListerExpansion allows custom methods to be added to
 // APIServiceBindingLister.
 type APIServiceBindingListerExpansion interface{}

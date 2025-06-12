@@ -18,6 +18,7 @@ package http
 
 import (
 	"context"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
@@ -62,6 +63,7 @@ func (s *Server) Addr() net.Addr {
 }
 
 func (s *Server) Start(ctx context.Context) error {
+	log.Println("Starting HTTP server")
 	server := &http.Server{
 		Handler:           s.Router,
 		ReadHeaderTimeout: 1 * time.Minute,
@@ -73,8 +75,10 @@ func (s *Server) Start(ctx context.Context) error {
 
 	go func() {
 		if s.options.KeyFile == "" {
+			log.Println("Serving HTTP on", s.listener.Addr())
 			server.Serve(s.listener) //nolint:errcheck
 		} else {
+			log.Println("Serving HTTPS on", s.listener.Addr())
 			server.ServeTLS(s.listener, s.options.CertFile, s.options.KeyFile) //nolint:errcheck
 		}
 	}()

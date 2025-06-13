@@ -32,6 +32,7 @@ import (
 
 	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
 	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
@@ -161,4 +162,8 @@ func (m *Manager) HandleResources(ctx context.Context, identity, resource, group
 	}
 
 	return kfgSecret.Data["kubeconfig"], nil
+}
+
+func (m *Manager) ListAPIResourceSchemas(ctx context.Context) (*kubebindv1alpha2.APIResourceSchemaList, error) {
+	return m.bindClient.KubeBindV1alpha2().APIResourceSchemas().List(ctx, metav1.ListOptions{})
 }

@@ -84,7 +84,7 @@ accessible.
 and that you have at least one k8s cluster. Take a look at the backend option in the cmd/main.go file***
 
 * apply the CRDs: `kubectl apply -f deploy/crd`
-* In order to populate binding list on website, we need a CRD with label `kube-bind.io/exported: true`. Apply example CRD: `kubectl apply -f deploy/examples/crd-mangodb.yaml`
+* In order to populate binding list on website, we need a CRD with label `kube-bind.io/exported: true`. Apply example CRD: `kubectl apply -f deploy/examples/apiresourceschema.yaml`
 * start the backend binary with the right flags:
 ```shell
 $ make build

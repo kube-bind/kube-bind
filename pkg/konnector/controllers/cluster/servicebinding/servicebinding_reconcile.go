@@ -145,7 +145,6 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 	// If we processed all schemas without errors, mark the binding as connected
 	if len(errs) == 0 && !conditions.IsFalse(binding, kubebindv1alpha2.APIServiceBindingConditionConnected) {
 		conditions.MarkTrue(binding, kubebindv1alpha2.APIServiceBindingConditionConnected)
-		// TODO(mjudeikis): Is this really right place?
 		conditions.MarkTrue(binding, kubebindv1alpha2.APIServiceBindingConditionSchemaInSync)
 	}
 

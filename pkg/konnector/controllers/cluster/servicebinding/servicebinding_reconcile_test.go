@@ -54,6 +54,7 @@ func TestEnsureCRDs(t *testing.T) {
 			}),
 			expectConditions: conditionsapi.Conditions{
 				conditionsapi.Condition{Type: "Connected", Status: "True"},
+				conditionsapi.Condition{Type: "SchemaInSync", Status: "True"},
 			},
 		},
 		{

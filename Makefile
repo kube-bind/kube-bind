@@ -255,6 +255,9 @@ $(KCP):
 	tar xz -C "$(TOOLS_DIR)" --strip-components="1" bin/kcp
 	mv $(TOOLS_DIR)/kcp $(KCP)
 
+run-kcp: $(KCP)
+	$(KCP) start
+
 .PHONY: test-e2e
 ifdef USE_GOTESTSUM
 test-e2e: $(GOTESTSUM)

@@ -57,8 +57,7 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha2.API
 
 func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (specChanged bool, err error) {
 	logger := klog.FromContext(ctx)
-
-	var leafHashes []string
+	leafHashes := make([]string, 0, len(export.Spec.Resources))
 	for _, resourceRef := range export.Spec.Resources {
 		if resourceRef.Type != "APIResourceSchema" {
 			logger.V(1).Info("Skipping unsupported resource type", "type", resourceRef.Type)

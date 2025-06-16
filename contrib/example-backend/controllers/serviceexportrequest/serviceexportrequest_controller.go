@@ -56,6 +56,7 @@ func NewController(
 	serviceExportRequestInformer bindinformers.APIServiceExportRequestInformer,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
+	apiResourceSchemaInformer bindinformers.APIResourceSchemaInformer,
 ) (*Controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
@@ -88,11 +89,17 @@ func NewController(
 		crdLister:  crdInformer.Lister(),
 		crdIndexer: crdInformer.Informer().GetIndexer(),
 
+		apiResourceSchemaLister:  apiResourceSchemaInformer.Lister(),
+		apiResourceSchemaIndexer: apiResourceSchemaInformer.Informer().GetIndexer(),
+
 		reconciler: reconciler{
 			informerScope:          scope,
 			clusterScopedIsolation: isolation,
 			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return crdInformer.Lister().Get(name)
+			},
+			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+				return apiResourceSchemaInformer.Lister().Get(name)
 			},
 			getServiceExport: func(ns, name string) (*kubebindv1alpha2.APIServiceExport, error) {
 				return serviceExportInformer.Lister().APIServiceExports(ns).Get(name)
@@ -185,6 +192,9 @@ type Controller struct {
 
 	crdLister  apiextensionslisters.CustomResourceDefinitionLister
 	crdIndexer cache.Indexer
+
+	apiResourceSchemaLister  bindlisters.APIResourceSchemaLister
+	apiResourceSchemaIndexer cache.Indexer
 
 	reconciler
 

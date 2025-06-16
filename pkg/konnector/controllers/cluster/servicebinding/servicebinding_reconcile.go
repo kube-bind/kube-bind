@@ -127,7 +127,8 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 			"Failed to fetch APIResourceSchema objects: %s",
 			err,
 		)
-		return nil
+		// We dont have schema - try again. Might be a race on provider side.
+		return err
 	}
 
 	// Process each schema
@@ -144,6 +145,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 	// If we processed all schemas without errors, mark the binding as connected
 	if len(errs) == 0 && !conditions.IsFalse(binding, kubebindv1alpha2.APIServiceBindingConditionConnected) {
 		conditions.MarkTrue(binding, kubebindv1alpha2.APIServiceBindingConditionConnected)
+		conditions.MarkTrue(binding, kubebindv1alpha2.APIServiceBindingConditionSchemaInSync)
 	}
 
 	return utilerrors.NewAggregate(errs)

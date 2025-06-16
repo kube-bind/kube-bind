@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net"
 
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -165,6 +166,7 @@ func NewServer(config *Config) (*Server, error) {
 		config.BindInformers.KubeBind().V1alpha2().APIServiceExportRequests(),
 		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
+		config.BindInformers.KubeBind().V1alpha2().APIResourceSchemas(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest Controller: %w", err)
@@ -214,6 +216,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
+		log.Println("Context done")
 	}()
 	return s.WebServer.Start(ctx)
 }

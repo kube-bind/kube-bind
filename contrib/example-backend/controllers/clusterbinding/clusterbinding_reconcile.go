@@ -154,11 +154,18 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *
 				return fmt.Errorf("failed to get APIResourceSchema %w", err)
 			}
 
-			expected.Rules = append(expected.Rules, rbacv1.PolicyRule{
-				APIGroups: []string{schema.Spec.APIResourceSchemaCRDSpec.Group},
-				Resources: []string{schema.Spec.APIResourceSchemaCRDSpec.Names.Plural},
-				Verbs:     []string{"get", "list", "watch", "update", "patch", "delete", "create"},
-			})
+			expected.Rules = append(expected.Rules,
+				rbacv1.PolicyRule{
+					APIGroups: []string{schema.Spec.APIResourceSchemaCRDSpec.Group},
+					Resources: []string{schema.Spec.APIResourceSchemaCRDSpec.Names.Plural},
+					Verbs:     []string{"get", "list", "watch", "update", "patch", "delete", "create"},
+				},
+				rbacv1.PolicyRule{
+					APIGroups: []string{kubebindv1alpha2.GroupName},
+					Resources: []string{"apiresourceschemas"},
+					Verbs:     []string{"get", "list", "watch"},
+				},
+			)
 		}
 	}
 

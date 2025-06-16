@@ -311,13 +311,21 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	apiResourceSchemas, err := h.kubeManager.ListAPIResourceSchemas(r.Context())
+	if err != nil {
+		logger.Error(err, "failed to get api resource schemas")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
 	bs := bytes.Buffer{}
 	if err := resourcesTemplate.Execute(&bs, struct {
-		SessionID string
-		CRDs      []*apiextensionsv1.CustomResourceDefinition
+		SessionID          string
+		CRDs               []*apiextensionsv1.CustomResourceDefinition
+		APIResourceSchemas []kubebindv1alpha2.APIResourceSchema
 	}{
-		SessionID: r.URL.Query().Get("s"),
-		CRDs:      rightScopedCRDs,
+		SessionID:          r.URL.Query().Get("s"),
+		CRDs:               rightScopedCRDs,
+		APIResourceSchemas: apiResourceSchemas.Items,
 	}); err != nil {
 		logger.Error(err, "failed to execute template")
 		http.Error(w, "internal error", http.StatusInternalServerError)

@@ -60,6 +60,18 @@ All the actions shown between the clusters are done by the konnector, except: th
 
 ## Usage
 
+This section allows you to run local kube-bind backend and konnector.
+The main challenge when running it locally is to have multiple clusters available and accessible.
+
+For this we use [kcp](https://github.com/kcp-dev/kcp) to create a local clusters under single kcp instance.
+By having a single kcp instance, we can have multiple clusters available and accessible via same url.
+
+To run kcp, you need to have a kcp binary.
+
+```shell
+$ make run-kcp
+```
+
 To run the current backend, there must be an OIDC issuer installed in place to do the
 the oauth2 workflow.
 
@@ -83,8 +95,16 @@ accessible.
 ***Note: make sure before running the backend that you have the dex server up and running as mentioned above
 and that you have at least one k8s cluster. Take a look at the backend option in the cmd/main.go file***
 
+Create copy of kcp kubeconfig and create provider cluster:
+
+```shell
+$ cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
+$ export KUBECONFIG=.kcp/provider.kubeconfig
+$ kubectl ws create provider --enter
+```
+
 * apply the CRDs: `kubectl apply -f deploy/crd`
-* In order to populate binding list on website, we need a CRD with label `kube-bind.io/exported: true`. Apply example CRD: `kubectl apply -f deploy/examples/crd-mangodb.yaml`
+* In order to populate binding list on website, we need a CRD with label `kube-bind.io/exported: true`. Apply example APIResourceSchema for the CRD: `kubectl apply -f deploy/examples/crd-mangodb.yaml`
 * start the backend binary with the right flags:
 ```shell
 $ make build
@@ -110,4 +130,30 @@ WQh88mNOY0Z3tLy1/WOud7qIEEBxz+POc4j8BsYenYo=
 The `--cookie-signing-key` option is required and supports 32 and 64 byte lengths.
 The `--cookie-encryption-key` option is optional and supports byte lengths of 16, 24, 32 for AES-128, AES-192, or AES-256.
 
-* with a KUBECONFIG against another cluster (a consumer cluster) bind a service: `kubectl bind http://127.0.0.1:8080/export`.
+### Consumer 
+Now create consumer cluster:
+
+```shell
+$ export KUBECONFIG=.kcp/admin.kubeconfig
+$ kubectl ws create consumer --enter
+```
+
+Now create the APIServiceExportRequest:
+
+```shell
+$ ./bin/kubectl-bind http://127.0.0.1:8080/export --dry-run -o yaml > apiserviceexport.yaml
+# This will wait for konnector to be ready. Once this gets running - start the konnector bellow
+$ ./bin/kubectl-bind apiservice --remote-namespace kube-bind-77wsg --remote-kubeconfig .kcp/provider.kubeconfig -f apiserviceexport.yaml  --skip-konnector
+# run konnector
+$ go run ./cmd/konnector/ --lease-namespace default
+```
+
+### Limitations
+
+These limitations are part of the roadmap and will be addressed in the future.
+
+* Currently we don't support related resources, like ConfigMaps, Secrets
+* Currently CRD resources MUST be installed in the provider cluster, even when APIResourceSchema is used.
+  This is to allow the konnector to sync instances of the CRD to the consumer cluster.
+  This should be removed once we introduce sync policies and object wrappers.
+* Currently we dont support granular permissions, like only allow to read/write certain named resources.

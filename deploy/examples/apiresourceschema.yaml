@@ -1,0 +1,39 @@
+apiVersion: kube-bind.io/v1alpha2
+kind: APIResourceSchema
+metadata:
+  name: mangodbs.mangodb.com
+spec:
+  informerScope: Namespaced
+  group: mangodb.com
+  names:
+    kind: MangoDB
+    listKind: MangoDBList
+    plural: mangodbs
+    singular: mangodb
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                tier:
+                  type: string
+                  enum:
+                    - Dedicated
+                    - Shared
+                  default: Shared
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+          required:
+            - spec
+      subresources:
+        status: {}

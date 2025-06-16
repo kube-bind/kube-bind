@@ -72,8 +72,9 @@ func getProvider(url string, insecure bool) (*kubebindv1alpha2.BindingProvider, 
 	}
 	if bindSemVer, err := semver.Parse(strings.TrimLeft(bindVersion, "v")); err != nil {
 		return nil, fmt.Errorf("failed to parse bind version %q: %v", bindVersion, err)
-	} else if min := semver.MustParse("0.3.0"); bindSemVer.GE(min) {
-		// we added this in v0.3.0. Don't test before.
+	} else if min := semver.MustParse("0.5.0"); bindSemVer.GE(min) {
+		// At v0.5.0 we made breaking change for how APIExports looks like.
+		// So we need to test for v0.5.0+. If
 		if err := validateProviderVersion(provider.Version); err != nil {
 			return nil, err
 		}
@@ -84,7 +85,7 @@ func getProvider(url string, insecure bool) (*kubebindv1alpha2.BindingProvider, 
 
 func validateProviderVersion(providerVersion string) error {
 	if providerVersion == "" {
-		return fmt.Errorf("provider version %q is empty, please update the backend to v0.3.0+", providerVersion)
+		return fmt.Errorf("provider version %q is empty, please update the backend to v0.5.0+", providerVersion)
 	} else if providerVersion == "v0.0.0" || providerVersion == "v0.0.0-master+$Format:%H$" {
 		// unversioned, development version
 		return nil
@@ -94,7 +95,8 @@ func validateProviderVersion(providerVersion string) error {
 	if err != nil {
 		return fmt.Errorf("provider version %q cannot be parsed", providerVersion)
 	}
-	if min := semver.MustParse("0.3.0"); providerSemVer.LT(min) {
+	// Check if provider is higher than 0.4.8, we need to have same version of kube-bind to use this provider.
+	if min := semver.MustParse("0.5.0"); providerSemVer.LT(min) {
 		return fmt.Errorf("provider version %s is not supported, must be at least v%s", providerVersion, min)
 	}
 

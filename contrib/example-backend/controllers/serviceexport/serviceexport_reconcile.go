@@ -18,6 +18,9 @@ package serviceexport
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"sort"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -26,13 +29,12 @@ import (
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	kubebindhelpers "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
-	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 )
 
 type reconciler struct {
 	getCRD               func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	getAPIResourceSchema func(ctx context.Context, ns, name string) (*kubebindv1alpha2.APIResourceSchema, error)
+	getAPIResourceSchema func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
 	deleteServiceExport  func(ctx context.Context, namespace, name string) error
 
 	requeue func(export *kubebindv1alpha2.APIServiceExport)
@@ -44,7 +46,9 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha2.API
 	if specChanged, err := r.ensureSchema(ctx, export); err != nil {
 		errs = append(errs, err)
 	} else if specChanged {
-		r.requeue(export)
+		// TODO: This should be separate controller for apiresourceschemas.
+		// This is wrong place now.
+		//	r.requeue(export)
 		return nil
 	}
 
@@ -54,56 +58,50 @@ func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha2.API
 func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (specChanged bool, err error) {
 	logger := klog.FromContext(ctx)
 
+	var leafHashes []string
 	for _, resourceRef := range export.Spec.Resources {
 		if resourceRef.Type != "APIResourceSchema" {
 			logger.V(1).Info("Skipping unsupported resource type", "type", resourceRef.Type)
 			continue
 		}
 
-		schema, err := r.getAPIResourceSchema(ctx, export.Namespace, resourceRef.Name)
+		schema, err := r.getAPIResourceSchema(ctx, resourceRef.Name)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				continue
 			}
 			return false, err
 		}
-		crd, err := r.getCRD(schema.Name)
-		if err != nil && !errors.IsNotFound(err) {
-			return false, err
-		}
 
-		if crd == nil {
-			// CRD missing => delete SER too
-			logger.V(1).Info("Deleting APIServiceExport because CRD is missing")
-			return false, r.deleteServiceExport(ctx, export.Namespace, export.Name)
-		}
-
-		expected, err := kubebindhelpers.CRDToAPIResourceSchema(crd, "")
-		if err != nil {
-			conditions.MarkFalse(
-				export,
-				kubebindv1alpha2.APIServiceExportConditionProviderInSync,
-				"CustomResourceDefinitionUpdateFailed",
-				conditionsapi.ConditionSeverityError,
-				"CustomResourceDefinition %s cannot be converted into a APIServiceExport: %s",
-				export.Name, err,
-			)
-			return false, nil // nothing we can do
-		}
-
-		if hash := kubebindhelpers.APIResourceSchemaCRDSpecHash(&expected.Spec.APIResourceSchemaCRDSpec); export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] != hash {
-			// both exist, update APIServiceExport
-			logger.V(1).Info("Updating APIServiceExport")
-			schema.Spec.APIResourceSchemaCRDSpec = expected.Spec.APIResourceSchemaCRDSpec
-			if schema.Annotations == nil {
-				schema.Annotations = map[string]string{}
-			}
-			schema.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hash
-			return true, nil
-		}
-
-		conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionProviderInSync)
+		hash := kubebindhelpers.APIResourceSchemaCRDSpecHash(&schema.Spec.APIResourceSchemaCRDSpec)
+		leafHashes = append(leafHashes, hash)
 	}
 
+	hashOfHashes := hashOfHashes(leafHashes)
+
+	if export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] != hashOfHashes {
+		// both exist, update APIServiceExport
+		logger.V(1).Info("Updating APIServiceExport. Hash mismatch", "hash", hashOfHashes, "expected", export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey])
+		if export.Annotations == nil {
+			export.Annotations = map[string]string{}
+		}
+		export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hashOfHashes
+		return true, nil
+	}
+
+	conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionProviderInSync)
+
 	return false, nil
+}
+
+func hashOfHashes(hashes []string) string {
+	hexHashes := append([]string{}, hashes...)
+
+	sort.Strings(hexHashes)
+
+	rootHasher := sha256.New()
+	for _, h := range hexHashes {
+		rootHasher.Write([]byte(h))
+	}
+	return hex.EncodeToString(rootHasher.Sum(nil))
 }

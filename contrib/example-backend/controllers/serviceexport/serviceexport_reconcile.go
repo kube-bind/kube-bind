@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"slices"
 	"sort"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -94,8 +95,7 @@ func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha2.
 }
 
 func hashOfHashes(hashes []string) string {
-	hexHashes := append([]string{}, hashes...)
-
+	hexHashes := slices.Clone(hashes)
 	sort.Strings(hexHashes)
 
 	rootHasher := sha256.New()

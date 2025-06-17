@@ -1,11 +1,13 @@
 # Local kube-bind with kind
 
 This guide will walk you through setting up kube-bind between two Kubernetes clusters, where
-* **Backend cluster**:
-  * Deploys: dex, cert-manager, kube-bind/example-backend
-  * Provides: kube-bind compatible backend for MangoDB resources
-* **App cluster**:
-  * Provides: an application consuming MangoDBs
+
+**Backend cluster**:
+  * Deploys dex, cert-manager and kube-bind/example-backend
+  * Provides kube-bind compatible backend for MangoDB resources
+
+**App cluster**:
+  * Provides an application consuming MangoDBs
 
 ## Pre-requisites
 
@@ -28,9 +30,9 @@ To install `kubectl-bind` plugin, please download the archive for your platform 
 >
 > See https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files for more details.
 
-## Backend cluster
+## Provider cluster
 
-The backend cluster we'll prepare in this section will provide a kube-bind compatible backend that will provide a controller for a demo resource "MangoDB" we'll consume in another cluster later.
+The provider cluster we'll prepare in this section will provide a kube-bind compatible backend that will provide a controller for a demo resource "MangoDB" we'll consume in another cluster later.
 
 > What is MangoDB? It is just an example CRD to demonstrate kube-bind's capabilities and testing, without any workloads. See its definition in [/test/e2e/bind/fixtures/provider/crd-mangodb.yaml](/test/e2e/bind/fixtures/provider/crd-mangodb.yaml).
 

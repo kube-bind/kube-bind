@@ -577,13 +577,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#backend-cluster" class="md-nav__link">
+  <a href="#provider-cluster" class="md-nav__link">
     <span class="md-ellipsis">
-      Backend cluster
+      Provider cluster
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Backend cluster">
+    <nav class="md-nav" aria-label="Provider cluster">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1736,13 +1736,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#backend-cluster" class="md-nav__link">
+  <a href="#provider-cluster" class="md-nav__link">
     <span class="md-ellipsis">
-      Backend cluster
+      Provider cluster
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Backend cluster">
+    <nav class="md-nav" aria-label="Provider cluster">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1847,12 +1847,12 @@
 
 
 <h1 id="local-kube-bind-with-kind">Local kube-bind with kind</h1>
-<p>This guide will walk you through setting up kube-bind between two Kubernetes clusters, where
-* <strong>Backend cluster</strong>:
-  * Deploys: dex, cert-manager, kube-bind/example-backend
-  * Provides: kube-bind compatible backend for MangoDB resources
-* <strong>App cluster</strong>:
-  * Provides: an application consuming MangoDBs</p>
+<p>This guide will walk you through setting up kube-bind between two Kubernetes clusters, where</p>
+<p><strong>Backend cluster</strong>:
+  * Deploys dex, cert-manager and kube-bind/example-backend
+  * Provides kube-bind compatible backend for MangoDB resources</p>
+<p><strong>App cluster</strong>:
+  * Provides an application consuming MangoDBs</p>
 <h2 id="pre-requisites">Pre-requisites</h2>
 <p>To start, you'll need following tools available in your system or a VM:</p>
 <ul>
@@ -1870,8 +1870,8 @@
 </code></pre></div>
 <p>See https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files for more details.</p>
 </blockquote>
-<h2 id="backend-cluster">Backend cluster</h2>
-<p>The backend cluster we'll prepare in this section will provide a kube-bind compatible backend that will provide a controller for a demo resource "MangoDB" we'll consume in another cluster later.</p>
+<h2 id="provider-cluster">Provider cluster</h2>
+<p>The provider cluster we'll prepare in this section will provide a kube-bind compatible backend that will provide a controller for a demo resource "MangoDB" we'll consume in another cluster later.</p>
 <blockquote>
 <p>What is MangoDB? It is just an example CRD to demonstrate kube-bind's capabilities and testing, without any workloads. See its definition in <a href="/test/e2e/bind/fixtures/provider/crd-mangodb.yaml">/test/e2e/bind/fixtures/provider/crd-mangodb.yaml</a>.</p>
 </blockquote>

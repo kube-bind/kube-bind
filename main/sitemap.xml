@@ -2,157 +2,157 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
     <url>
         <loc>https://docs.kube-bind.io/main/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/contributing/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/contributing/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/backend/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/backend/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/backend/http/api-binding/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/backend/http/api-binding/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/backend/http/cluster-binding/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/backend/http/cluster-binding/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/konnector/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/konnector/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/konnector/controllers/apiservicebinding/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/konnector/controllers/apiservicebinding/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/konnector/controllers/konnector/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/konnector/controllers/konnector/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/konnector/controllers/cluster/apiservicebinding/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/konnector/controllers/cluster/apiservicebinding/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/konnector/controllers/cluster/apiserviceexport/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/konnector/controllers/cluster/apiserviceexport/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/konnector/controllers/cluster/apiservicenamespace/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/konnector/controllers/cluster/apiservicenamespace/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/developers/konnector/controllers/cluster/clusterbinding/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/developers/konnector/controllers/cluster/clusterbinding/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/reference/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/reference/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/reference/cli/bind/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/reference/cli/bind/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/reference/cli/bind_apiservice/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/reference/cli/bind_apiservice/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/reference/crd/kube-bind.io/apiservicebindings/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/reference/crd/kube-bind.io/apiservicebindings/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/reference/crd/kube-bind.io/apiserviceexportrequests/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/reference/crd/kube-bind.io/apiserviceexportrequests/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/reference/crd/kube-bind.io/apiserviceexports/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/reference/crd/kube-bind.io/apiserviceexports/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/reference/crd/kube-bind.io/apiservicenamespaces/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/reference/crd/kube-bind.io/apiservicenamespaces/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/reference/crd/kube-bind.io/clusterbindings/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/reference/crd/kube-bind.io/clusterbindings/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/setup/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/setup/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/setup/helm/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/setup/helm/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/setup/kubectl-plugin/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/setup/kubectl-plugin/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/setup/local-setup-with-kind/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/setup/local-setup-with-kind/"/>
     </url>
     <url>
         <loc>https://docs.kube-bind.io/main/setup/quickstart/</loc>
-        <lastmod>2025-06-09</lastmod>
+        <lastmod>2025-06-20</lastmod>
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/setup/quickstart/"/>
     </url>

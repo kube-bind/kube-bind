@@ -27,14 +27,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
-	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1/helpers"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 )
 
-func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, config *rest.Config, request *kubebindv1alpha1.APIServiceExportRequest, secretName string) ([]*kubebindv1alpha1.APIServiceBinding, error) {
+func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, config *rest.Config, request *kubebindv1alpha2.APIServiceExportRequest, secretName string) ([]*kubebindv1alpha2.APIServiceBinding, error) {
 	bindClient, err := bindclient.NewForConfig(config)
 	if err != nil {
 		return nil, err
@@ -44,10 +44,10 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 		return nil, err
 	}
 
-	var bindings []*kubebindv1alpha1.APIServiceBinding
+	var bindings []*kubebindv1alpha2.APIServiceBinding
 	for _, resource := range request.Spec.Resources {
 		name := resource.Resource + "." + resource.Group
-		existing, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Get(ctx, name, metav1.GetOptions{})
+		existing, err := bindClient.KubeBindV1alpha2().APIServiceBindings().Get(ctx, name, metav1.GetOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return nil, err
 		} else if err == nil {
@@ -76,14 +76,14 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 				first = false
 				fmt.Fprint(b.Options.IOStreams.ErrOut, ".") //nolint:errcheck
 			}
-			created, err := bindClient.KubeBindV1alpha1().APIServiceBindings().Create(ctx, &kubebindv1alpha1.APIServiceBinding{
+			created, err := bindClient.KubeBindV1alpha2().APIServiceBindings().Create(ctx, &kubebindv1alpha2.APIServiceBinding{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      resource.Resource + "." + resource.Group,
 					Namespace: "kube-bind",
 				},
-				Spec: kubebindv1alpha1.APIServiceBindingSpec{
-					KubeconfigSecretRef: kubebindv1alpha1.ClusterSecretKeyRef{
-						LocalSecretKeyRef: kubebindv1alpha1.LocalSecretKeyRef{
+				Spec: kubebindv1alpha2.APIServiceBindingSpec{
+					KubeconfigSecretRef: kubebindv1alpha2.ClusterSecretKeyRef{
+						LocalSecretKeyRef: kubebindv1alpha2.LocalSecretKeyRef{
 							Name: secretName,
 							Key:  "kubeconfig",
 						},
@@ -102,7 +102,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 				conditionsapi.ConditionSeverityInfo,
 				"Pending",
 			)
-			_, _ = bindClient.KubeBindV1alpha1().APIServiceBindings().UpdateStatus(ctx, created, metav1.UpdateOptions{}) //nolint:errcheck
+			_, _ = bindClient.KubeBindV1alpha2().APIServiceBindings().UpdateStatus(ctx, created, metav1.UpdateOptions{}) //nolint:errcheck
 
 			fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Created APIServiceBinding %s.%s\n", resource.Resource, resource.Group) //nolint:errcheck
 			bindings = append(bindings, created)

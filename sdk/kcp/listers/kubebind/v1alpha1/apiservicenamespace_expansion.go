@@ -22,10 +22,10 @@ limitations under the License.
 package v1alpha1
 
 // APIServiceNamespaceClusterListerExpansion allows custom methods to be added to APIServiceNamespaceClusterLister.
-type APIServiceNamespaceClusterListerExpansion interface{}
+type APIServiceNamespaceClusterListerExpansion any
 
 // APIServiceNamespaceListerExpansion allows custom methods to be added to APIServiceNamespaceLister.
-type APIServiceNamespaceListerExpansion interface{}
+type APIServiceNamespaceListerExpansion any
 
 // APIServiceNamespaceNamespaceListerExpansion allows custom methods to be added to APIServiceNamespaceNamespaceLister.
-type APIServiceNamespaceNamespaceListerExpansion interface{}
+type APIServiceNamespaceNamespaceListerExpansion any

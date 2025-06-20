@@ -25,11 +25,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type reconciler struct {
-	getServiceNamespace func(upstreamNamespace string) (*kubebindv1alpha1.APIServiceNamespace, error)
+	getServiceNamespace func(upstreamNamespace string) (*kubebindv1alpha2.APIServiceNamespace, error)
 
 	getConsumerObject          func(ns, name string) (*unstructured.Unstructured, error)
 	updateConsumerObjectStatus func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)

@@ -26,10 +26,12 @@ import (
 	testing "k8s.io/client-go/testing"
 
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	conditionsv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/conditions/v1alpha1"
 	internal "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/internal"
 	applyconfigurationkubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/kubebind/v1alpha2"
 	applyconfigurationmetav1 "github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration/meta/v1"
 )
 
@@ -84,6 +86,70 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &applyconfigurationkubebindv1alpha1.GroupResourceApplyConfiguration{}
 	case kubebindv1alpha1.SchemeGroupVersion.WithKind("LocalSecretKeyRef"):
 		return &applyconfigurationkubebindv1alpha1.LocalSecretKeyRefApplyConfiguration{}
+
+		// Group=kube-bind.io, Version=v1alpha2
+	case v1alpha2.SchemeGroupVersion.WithKind("APIResourceSchema"):
+		return &kubebindv1alpha2.APIResourceSchemaApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIResourceSchemaCRDSpec"):
+		return &kubebindv1alpha2.APIResourceSchemaCRDSpecApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIResourceSchemaReference"):
+		return &kubebindv1alpha2.APIResourceSchemaReferenceApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIResourceSchemaSpec"):
+		return &kubebindv1alpha2.APIResourceSchemaSpecApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIResourceVersion"):
+		return &kubebindv1alpha2.APIResourceVersionApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceBinding"):
+		return &kubebindv1alpha2.APIServiceBindingApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceBindingSpec"):
+		return &kubebindv1alpha2.APIServiceBindingSpecApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceBindingStatus"):
+		return &kubebindv1alpha2.APIServiceBindingStatusApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceExport"):
+		return &kubebindv1alpha2.APIServiceExportApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceExportRequest"):
+		return &kubebindv1alpha2.APIServiceExportRequestApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceExportRequestResource"):
+		return &kubebindv1alpha2.APIServiceExportRequestResourceApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceExportRequestSpec"):
+		return &kubebindv1alpha2.APIServiceExportRequestSpecApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceExportRequestStatus"):
+		return &kubebindv1alpha2.APIServiceExportRequestStatusApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceExportSpec"):
+		return &kubebindv1alpha2.APIServiceExportSpecApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceExportStatus"):
+		return &kubebindv1alpha2.APIServiceExportStatusApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceNamespace"):
+		return &kubebindv1alpha2.APIServiceNamespaceApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("APIServiceNamespaceStatus"):
+		return &kubebindv1alpha2.APIServiceNamespaceStatusApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("BoundAPIResourceSchema"):
+		return &kubebindv1alpha2.BoundAPIResourceSchemaApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("BoundAPIResourceSchemaSpec"):
+		return &kubebindv1alpha2.BoundAPIResourceSchemaSpecApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("BoundAPIResourceSchemaStatus"):
+		return &kubebindv1alpha2.BoundAPIResourceSchemaStatusApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("BoundSchemaReference"):
+		return &kubebindv1alpha2.BoundSchemaReferenceApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("ClusterBinding"):
+		return &kubebindv1alpha2.ClusterBindingApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("ClusterBindingSpec"):
+		return &kubebindv1alpha2.ClusterBindingSpecApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("ClusterBindingStatus"):
+		return &kubebindv1alpha2.ClusterBindingStatusApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("ClusterSecretKeyRef"):
+		return &kubebindv1alpha2.ClusterSecretKeyRefApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("CRDVersionSchema"):
+		return &kubebindv1alpha2.CRDVersionSchemaApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("CustomResourceConversion"):
+		return &kubebindv1alpha2.CustomResourceConversionApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("GroupResource"):
+		return &kubebindv1alpha2.GroupResourceApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("LocalSecretKeyRef"):
+		return &kubebindv1alpha2.LocalSecretKeyRefApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("WebhookClientConfig"):
+		return &kubebindv1alpha2.WebhookClientConfigApplyConfiguration{}
+	case v1alpha2.SchemeGroupVersion.WithKind("WebhookConversion"):
+		return &kubebindv1alpha2.WebhookConversionApplyConfiguration{}
 
 		// Group=meta.k8s.io, Version=v1
 	case v1.SchemeGroupVersion.WithKind("Condition"):

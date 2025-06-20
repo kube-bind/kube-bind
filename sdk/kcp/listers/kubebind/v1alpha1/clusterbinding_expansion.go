@@ -22,10 +22,10 @@ limitations under the License.
 package v1alpha1
 
 // ClusterBindingClusterListerExpansion allows custom methods to be added to ClusterBindingClusterLister.
-type ClusterBindingClusterListerExpansion interface{}
+type ClusterBindingClusterListerExpansion any
 
 // ClusterBindingListerExpansion allows custom methods to be added to ClusterBindingLister.
-type ClusterBindingListerExpansion interface{}
+type ClusterBindingListerExpansion any
 
 // ClusterBindingNamespaceListerExpansion allows custom methods to be added to ClusterBindingNamespaceLister.
-type ClusterBindingNamespaceListerExpansion interface{}
+type ClusterBindingNamespaceListerExpansion any

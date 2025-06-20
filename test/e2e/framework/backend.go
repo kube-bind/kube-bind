@@ -38,7 +38,7 @@ import (
 	backend "github.com/kube-bind/kube-bind/contrib/example-backend"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
 	"github.com/kube-bind/kube-bind/deploy/crd"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 func StartBackend(t *testing.T, clientConfig *rest.Config, args ...string) (net.Addr, *backend.Server) {
@@ -63,10 +63,12 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	require.NoError(t, err)
 	err = crd.Create(ctx,
 		crdClient.ApiextensionsV1().CustomResourceDefinitions(),
-		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "clusterbindings"},
-		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiserviceexports"},
-		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiservicenamespaces"},
-		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiserviceexportrequests"},
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiresourceschemas"},
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "boundapiresourceschemas"},
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "clusterbindings"},
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiserviceexports"},
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiservicenamespaces"},
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiserviceexportrequests"},
 	)
 	require.NoError(t, err)
 

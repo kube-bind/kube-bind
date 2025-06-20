@@ -13,6 +13,8 @@ spec:
     kind: BoundAPIResourceSchema
     listKind: BoundAPIResourceSchemaList
     plural: boundapiresourceschemas
+    shortNames:
+    - bas
     singular: boundapiresourceschema
   scope: Namespaced
   versions:
@@ -267,6 +269,15 @@ spec:
                       description: |-
                         schema describes the structural schema used for validation, pruning, and defaulting
                         of this version of the custom resource.
+                      properties:
+                        openAPIV3Schema:
+                          description: openAPIV3Schema is the OpenAPI v3 schema to
+                            use for validation and pruning.
+                          type: object
+                          x-kubernetes-map-type: atomic
+                          x-kubernetes-preserve-unknown-fields: true
+                      required:
+                      - openAPIV3Schema
                       type: object
                       x-kubernetes-map-type: atomic
                       x-kubernetes-preserve-unknown-fields: true
@@ -350,60 +361,95 @@ spec:
             description: BoundAPIResourceSchemaStatus defines the observed state of
               the BoundAPIResourceSchema.
             properties:
+              acceptedNames:
+                description: |-
+                  acceptedNames are the names that are actually being used to serve discovery.
+                  They may be different than the names in spec.
+                properties:
+                  categories:
+                    description: |-
+                      categories is a list of grouped resources this custom resource belongs to (e.g. 'all').
+                      This is published in API discovery documents, and used by clients to support invocations like
+                      `kubectl get all`.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  kind:
+                    description: |-
+                      kind is the serialized kind of the resource. It is normally CamelCase and singular.
+                      Custom resource instances will use this value as the `kind` attribute in API calls.
+                    type: string
+                  listKind:
+                    description: listKind is the serialized kind of the list for this
+                      resource. Defaults to "`kind`List".
+                    type: string
+                  plural:
+                    description: |-
+                      plural is the plural name of the resource to serve.
+                      The custom resources are served under `/apis/<group>/<version>/.../<plural>`.
+                      Must match the name of the CustomResourceDefinition (in the form `<names.plural>.<group>`).
+                      Must be all lowercase.
+                    type: string
+                  shortNames:
+                    description: |-
+                      shortNames are short names for the resource, exposed in API discovery documents,
+                      and used by clients to support invocations like `kubectl get <shortname>`.
+                      It must be all lowercase.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  singular:
+                    description: singular is the singular name of the resource. It
+                      must be all lowercase. Defaults to lowercased `kind`.
+                    type: string
+                required:
+                - kind
+                - plural
+                type: object
               conditions:
                 description: Conditions represent the latest available observations
                   of the object's state.
                 items:
-                  description: Condition contains details for one aspect of the current
-                    state of this API Resource.
+                  description: Condition defines an observation of a object operational
+                    state.
                   properties:
                     lastTransitionTime:
                       description: |-
-                        lastTransitionTime is the last time the condition transitioned from one status to another.
-                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                        Last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed. If that is not known, then using the time when
+                        the API field changed is acceptable.
                       format: date-time
                       type: string
                     message:
                       description: |-
-                        message is a human readable message indicating details about the transition.
-                        This may be an empty string.
-                      maxLength: 32768
+                        A human readable message indicating details about the transition.
+                        This field may be empty.
                       type: string
-                    observedGeneration:
-                      description: |-
-                        observedGeneration represents the .metadata.generation that the condition was set based upon.
-                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
-                        with respect to the current state of the instance.
-                      format: int64
-                      minimum: 0
-                      type: integer
                     reason:
                       description: |-
-                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
-                        Producers of specific condition types may define expected values and meanings for this field,
-                        and whether the values are considered a guaranteed API.
-                        The value should be a CamelCase string.
+                        The reason for the condition's last transition in CamelCase.
+                        The specific API may choose whether or not this field is considered a guaranteed API.
                         This field may not be empty.
-                      maxLength: 1024
-                      minLength: 1
-                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    severity:
+                      description: |-
+                        Severity provides an explicit classification of Reason code, so the users or machines can immediately
+                        understand the current situation and act accordingly.
+                        The Severity field MUST be set only when Status=False.
                       type: string
                     status:
-                      description: status of the condition, one of True, False, Unknown.
-                      enum:
-                      - "True"
-                      - "False"
-                      - Unknown
+                      description: Status of the condition, one of True, False, Unknown.
                       type: string
                     type:
-                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
-                      maxLength: 316
-                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      description: |-
+                        Type of condition in CamelCase or in foo.example.com/CamelCase.
+                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+                        can be useful (see .node.status.conditions), the ability to deconflict is important.
                       type: string
                   required:
                   - lastTransitionTime
-                  - message
-                  - reason
                   - status
                   - type
                   type: object
@@ -412,6 +458,17 @@ spec:
                 description: Instantiations tracks the number of instances of the
                   resource on the consumer side.
                 type: integer
+              storedVersions:
+                description: |-
+                  storedVersions lists all versions of CustomResources that were ever persisted. Tracking these
+                  versions allows a migration path for stored versions in etcd. The field is mutable
+                  so a migration controller can finish a migration to another version (ensuring
+                  no old objects are left in storage), and then remove the rest of the
+                  versions from this list.
+                  Versions may not be removed from `spec.versions` while they exist in this list.
+                items:
+                  type: string
+                type: array
             type: object
         type: object
     served: true

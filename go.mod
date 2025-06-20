@@ -3,7 +3,9 @@ module github.com/kube-bind/kube-bind
 go 1.23.4
 
 replace (
+	github.com/kube-bind/kube-bind => ./
 	github.com/kube-bind/kube-bind/cli => ./cli
+	github.com/kube-bind/kube-bind/contrib => ./contrib
 	github.com/kube-bind/kube-bind/sdk/apis => ./sdk/apis
 	github.com/kube-bind/kube-bind/sdk/client => ./sdk/client
 )
@@ -17,9 +19,9 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/headzoo/surf v1.0.1
 	github.com/kcp-dev/kcp/pkg/apis v0.11.0
-	github.com/kube-bind/kube-bind/cli v0.0.0-00010101000000-000000000000
-	github.com/kube-bind/kube-bind/sdk/apis v0.4.6
-	github.com/kube-bind/kube-bind/sdk/client v0.4.6
+	github.com/kube-bind/kube-bind/cli v0.0.0-20250515145715-d9f20e7c840d
+	github.com/kube-bind/kube-bind/sdk/apis v0.4.8
+	github.com/kube-bind/kube-bind/sdk/client v0.0.0-20250515145715-d9f20e7c840d
 	github.com/martinlindhe/base36 v1.1.1
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/spf13/cobra v1.8.1

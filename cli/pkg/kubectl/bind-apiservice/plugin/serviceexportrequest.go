@@ -29,7 +29,7 @@ import (
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/rest"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 )
 
@@ -37,8 +37,8 @@ func (b *BindAPIServiceOptions) createServiceExportRequest(
 	ctx context.Context,
 	remoteConfig *rest.Config,
 	ns string,
-	request *kubebindv1alpha1.APIServiceExportRequest,
-) (*kubebindv1alpha1.APIServiceExportRequest, error) {
+	request *kubebindv1alpha2.APIServiceExportRequest,
+) (*kubebindv1alpha2.APIServiceExportRequest, error) {
 	bindRemoteClient, err := bindclient.NewForConfig(remoteConfig)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (b *BindAPIServiceOptions) createServiceExportRequest(
 	if request.Name == "" {
 		request.GenerateName = "export-"
 	}
-	created, err := bindRemoteClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Create(ctx, request, metav1.CreateOptions{})
+	created, err := bindRemoteClient.KubeBindV1alpha2().APIServiceExportRequests(ns).Create(ctx, request, metav1.CreateOptions{})
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return nil, err
 	} else if err != nil && request.Name == "" {
@@ -56,26 +56,26 @@ func (b *BindAPIServiceOptions) createServiceExportRequest(
 	} else if err != nil {
 		request.GenerateName = request.Name + "-"
 		request.Name = ""
-		created, err = bindRemoteClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Create(ctx, request, metav1.CreateOptions{})
+		created, err = bindRemoteClient.KubeBindV1alpha2().APIServiceExportRequests(ns).Create(ctx, request, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// wait for the request to be Successful, Failed or deleted
-	var result *kubebindv1alpha1.APIServiceExportRequest
+	var result *kubebindv1alpha2.APIServiceExportRequest
 	if err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 10*time.Minute, true, func(ctx context.Context) (bool, error) {
-		request, err := bindRemoteClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Get(ctx, created.Name, metav1.GetOptions{})
+		request, err := bindRemoteClient.KubeBindV1alpha2().APIServiceExportRequests(ns).Get(ctx, created.Name, metav1.GetOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return false, err
 		} else if apierrors.IsNotFound(err) {
 			return false, fmt.Errorf("APIServiceExportRequest %s was deleted by the service provider", created.Name)
 		}
-		if request.Status.Phase == kubebindv1alpha1.APIServiceExportRequestPhaseSucceeded {
+		if request.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhaseSucceeded {
 			result = request
 			return true, nil
 		}
-		if request.Status.Phase == kubebindv1alpha1.APIServiceExportRequestPhaseFailed {
+		if request.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhaseFailed {
 			return false, fmt.Errorf("binding request failed: %s", request.Status.TerminalMessage)
 		}
 		return false, nil
@@ -86,16 +86,16 @@ func (b *BindAPIServiceOptions) createServiceExportRequest(
 	return result, nil
 }
 
-func (b *BindAPIServiceOptions) printTable(ctx context.Context, config *rest.Config, bindings []*kubebindv1alpha1.APIServiceBinding) error {
+func (b *BindAPIServiceOptions) printTable(ctx context.Context, config *rest.Config, bindings []*kubebindv1alpha2.APIServiceBinding) error {
 	printer := printers.NewTablePrinter(printers.PrintOptions{
 		WithKind: true,
-		Kind:     kubebindv1alpha1.SchemeGroupVersion.WithKind("APIServiceBinding").GroupKind(),
+		Kind:     kubebindv1alpha2.SchemeGroupVersion.WithKind("APIServiceBinding").GroupKind(),
 	})
 
 	tableConfig := rest.CopyConfig(config)
 	tableConfig.APIPath = "/apis"
 	tableConfig.ContentConfig.AcceptContentTypes = fmt.Sprintf("application/json;as=Table;v=%s;g=%s", metav1.SchemeGroupVersion.Version, metav1.GroupName)
-	tableConfig.GroupVersion = &kubebindv1alpha1.SchemeGroupVersion
+	tableConfig.GroupVersion = &kubebindv1alpha2.SchemeGroupVersion
 	scheme := runtime.NewScheme()
 	if err := metav1.AddMetaToScheme(scheme); err != nil {
 		return err

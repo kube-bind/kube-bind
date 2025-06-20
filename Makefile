@@ -17,6 +17,7 @@ SHELL := /usr/bin/env bash -e
 
 GO_INSTALL = ./hack/go-install.sh
 
+ROOT_DIR=$(abspath .)
 TOOLS_DIR=hack/tools
 TOOLS_GOBIN_DIR := $(abspath $(TOOLS_DIR))
 GOBIN_DIR=$(abspath ./bin )
@@ -151,8 +152,12 @@ $(CODE_GENERATOR):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/kcp-dev/code-generator/v2 $(CODE_GENERATOR_BIN) $(CODE_GENERATOR_VER)
 
 lint: $(GOLANGCI_LINT) $(LOGCHECK) ## Run linters
-	$(GOLANGCI_LINT) run ./...
+	$(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) -c $(ROOT_DIR)/.golangci.yaml --timeout 20m
 .PHONY: lint
+
+fix-lint: $(GOLANGCI_LINT)
+	GOLANGCI_LINT_FLAGS="--fix" $(MAKE) lint
+.PHONY: fix-lint
 
 vendor: ## Vendor the dependencies
 	go mod tidy
@@ -249,6 +254,9 @@ $(KCP):
 	curl --fail --retry 3 -L "https://github.com/kcp-dev/kcp/releases/download/$(KCP_VER)/kcp_$(KCP_VER:v%=%)_$(OS)_$(ARCH).tar.gz" | \
 	tar xz -C "$(TOOLS_DIR)" --strip-components="1" bin/kcp
 	mv $(TOOLS_DIR)/kcp $(KCP)
+
+run-kcp: $(KCP)
+	$(KCP) start
 
 .PHONY: test-e2e
 ifdef USE_GOTESTSUM
@@ -354,7 +362,7 @@ image-local:
 	@echo "Successfully built local images with tag $(REV)"
 
 .PHONY: kind-load
-kind-load: image-local ## Load locally built images into kind cluster
+kind-load:
 	@echo "Loading images into kind cluster '$(KIND_CLUSTER)'"
 	kind load docker-image $(KO_DOCKER_REPO)/konnector:$(REV) --name $(KIND_CLUSTER)
 	kind load docker-image $(KO_DOCKER_REPO)/example-backend:$(REV) --name $(KIND_CLUSTER)

@@ -39,8 +39,8 @@ import (
 	clusterscoped "github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/cluster-scoped"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -94,15 +94,15 @@ func NewController(
 		serviceNamespaceInformer: serviceNamespaceInformer,
 
 		reconciler: reconciler{
-			getServiceNamespace: func(upstreamNamespace string) (*kubebindv1alpha1.APIServiceNamespace, error) {
+			getServiceNamespace: func(upstreamNamespace string) (*kubebindv1alpha2.APIServiceNamespace, error) {
 				sns, err := serviceNamespaceInformer.Informer().GetIndexer().ByIndex(indexers.ServiceNamespaceByNamespace, upstreamNamespace)
 				if err != nil {
 					return nil, err
 				}
 				if len(sns) == 0 {
-					return nil, errors.NewNotFound(kubebindv1alpha1.SchemeGroupVersion.WithResource("APIServiceNamespace").GroupResource(), upstreamNamespace)
+					return nil, errors.NewNotFound(kubebindv1alpha2.SchemeGroupVersion.WithResource("APIServiceNamespace").GroupResource(), upstreamNamespace)
 				}
-				return sns[0].(*kubebindv1alpha1.APIServiceNamespace), nil
+				return sns[0].(*kubebindv1alpha2.APIServiceNamespace), nil
 			},
 			getConsumerObject: func(ns, name string) (*unstructured.Unstructured, error) {
 				if ns != "" {
@@ -146,13 +146,13 @@ func NewController(
 	}
 
 	if _, err := consumerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueConsumer(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueConsumer(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueConsumer(logger, obj)
 		},
 	}); err != nil {
@@ -160,13 +160,13 @@ func NewController(
 	}
 
 	if err := providerDynamicInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueProvider(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueProvider(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueProvider(logger, obj)
 		},
 	}); err != nil {
@@ -195,7 +195,7 @@ type controller struct {
 	reconciler
 }
 
-func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueProvider(logger klog.Logger, obj any) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -213,7 +213,7 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 			return
 		}
 		for _, obj := range sns {
-			sns := obj.(*kubebindv1alpha1.APIServiceNamespace)
+			sns := obj.(*kubebindv1alpha2.APIServiceNamespace)
 			if sns.Namespace == c.providerNamespace {
 				logger.V(2).Info("queueing Unstructured", "key", key)
 				c.queue.Add(key)
@@ -232,7 +232,7 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueConsumer(logger klog.Logger, obj any) {
 	downstreamKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -266,7 +266,7 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 	c.queue.Add(upstreamKey)
 }
 
-func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj any) {
 	snKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -316,13 +316,13 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 	defer logger.Info("Shutting down controller")
 
 	c.serviceNamespaceInformer.Informer().AddDynamicEventHandler(ctx, controllerName, cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceNamespace(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueServiceNamespace(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceNamespace(logger, obj)
 		},
 	})
@@ -401,7 +401,7 @@ func (c *controller) removeDownstreamFinalizer(ctx context.Context, obj *unstruc
 	finalizers := []string{}
 	found := false
 	for _, f := range obj.GetFinalizers() {
-		if f == kubebindv1alpha1.DownstreamFinalizer {
+		if f == kubebindv1alpha2.DownstreamFinalizer {
 			found = true
 			continue
 		}

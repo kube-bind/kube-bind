@@ -41,10 +41,10 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -54,7 +54,7 @@ const (
 // NewController returns a new controller for ServiceNamespaces.
 func NewController(
 	config *rest.Config,
-	scope kubebindv1alpha1.Scope,
+	scope kubebindv1alpha2.InformerScope,
 	serviceNamespaceInformer bindinformers.APIServiceNamespaceInformer,
 	clusterBindingInformer bindinformers.ClusterBindingInformer,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
@@ -124,9 +124,9 @@ func NewController(
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceNamespace, *kubebindv1alpha1.APIServiceNamespaceSpec, *kubebindv1alpha1.APIServiceNamespaceStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceNamespace] {
-				return bindClient.KubeBindV1alpha1().APIServiceNamespaces(ns)
+		commit: committer.NewCommitter[*kubebindv1alpha2.APIServiceNamespace, *kubebindv1alpha2.APIServiceNamespaceSpec, *kubebindv1alpha2.APIServiceNamespaceStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha2.APIServiceNamespace] {
+				return bindClient.KubeBindV1alpha2().APIServiceNamespaces(ns)
 			},
 		),
 	}
@@ -136,13 +136,13 @@ func NewController(
 	})
 
 	if _, err := namespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueNamespace(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueNamespace(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueNamespace(logger, obj)
 		},
 	}); err != nil {
@@ -150,13 +150,13 @@ func NewController(
 	}
 
 	if _, err := serviceNamespaceInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceNamespace(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueServiceNamespace(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceNamespace(logger, obj)
 		},
 	}); err != nil {
@@ -164,7 +164,7 @@ func NewController(
 	}
 
 	if _, err := clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueClusterBinding(logger, obj)
 		},
 	}); err != nil {
@@ -172,15 +172,15 @@ func NewController(
 	}
 
 	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceExport(logger, obj)
 		},
-		UpdateFunc: func(old, newObj interface{}) {
-			oldExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
+		UpdateFunc: func(old, newObj any) {
+			oldExport, ok := old.(*kubebindv1alpha2.APIServiceExport)
 			if !ok {
 				return
 			}
-			newExport, ok := old.(*kubebindv1alpha1.APIServiceExport)
+			newExport, ok := old.(*kubebindv1alpha2.APIServiceExport)
 			if !ok {
 				return
 			}
@@ -189,7 +189,7 @@ func NewController(
 			}
 			c.enqueueServiceExport(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceExport(logger, obj)
 		},
 	}); err != nil {
@@ -199,7 +199,7 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.APIServiceNamespaceSpec, *kubebindv1alpha1.APIServiceNamespaceStatus]
+type Resource = committer.Resource[*kubebindv1alpha2.APIServiceNamespaceSpec, *kubebindv1alpha2.APIServiceNamespaceStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // Controller reconciles ServiceNamespaces by creating a Namespace for each, and deleting it if
@@ -233,7 +233,7 @@ type Controller struct {
 	commit CommitFunc
 }
 
-func (c *Controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceNamespace(logger klog.Logger, obj any) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -244,7 +244,7 @@ func (c *Controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 	c.queue.Add(key)
 }
 
-func (c *Controller) enqueueClusterBinding(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueClusterBinding(logger klog.Logger, obj any) {
 	cbKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -272,7 +272,7 @@ func (c *Controller) enqueueClusterBinding(logger klog.Logger, obj interface{}) 
 	}
 }
 
-func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceExport(logger klog.Logger, obj any) {
 	seKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -300,7 +300,7 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	}
 }
 
-func (c *Controller) enqueueNamespace(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueNamespace(logger klog.Logger, obj any) {
 	nsKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)

@@ -35,10 +35,10 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -77,9 +77,9 @@ func NewController(
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceBinding, *kubebindv1alpha1.APIServiceBindingSpec, *kubebindv1alpha1.APIServiceBindingStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceBinding] {
-				return consumerBindClient.KubeBindV1alpha1().APIServiceBindings()
+		commit: committer.NewCommitter[*kubebindv1alpha2.APIServiceBinding, *kubebindv1alpha2.APIServiceBindingSpec, *kubebindv1alpha2.APIServiceBindingStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha2.APIServiceBinding] {
+				return consumerBindClient.KubeBindV1alpha2().APIServiceBindings()
 			},
 		),
 	}
@@ -89,13 +89,13 @@ func NewController(
 	})
 
 	if _, err := serviceBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceBinding(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueServiceBinding(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceBinding(logger, obj)
 		},
 	}); err != nil {
@@ -103,13 +103,13 @@ func NewController(
 	}
 
 	if _, err := consumerSecretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueConsumerSecret(logger, obj)
 		},
-		UpdateFunc: func(_, newObj interface{}) {
+		UpdateFunc: func(_, newObj any) {
 			c.enqueueConsumerSecret(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueConsumerSecret(logger, obj)
 		},
 	}); err != nil {
@@ -119,7 +119,7 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.APIServiceBindingSpec, *kubebindv1alpha1.APIServiceBindingStatus]
+type Resource = committer.Resource[*kubebindv1alpha2.APIServiceBindingSpec, *kubebindv1alpha2.APIServiceBindingStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // controller reconciles ServiceBindings' kubeconfig secret references. It is
@@ -138,7 +138,7 @@ type controller struct {
 	commit CommitFunc
 }
 
-func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueServiceBinding(logger klog.Logger, obj any) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -149,7 +149,7 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj interface{}) 
 	c.queue.Add(key)
 }
 
-func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj interface{}) {
+func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj any) {
 	secretKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -165,7 +165,7 @@ func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj interface{}) 
 	}
 
 	for _, obj := range bindings {
-		binding := obj.(*kubebindv1alpha1.APIServiceBinding)
+		binding := obj.(*kubebindv1alpha2.APIServiceBinding)
 		key, err := cache.MetaNamespaceKeyFunc(binding)
 		if err != nil {
 			runtime.HandleError(err)

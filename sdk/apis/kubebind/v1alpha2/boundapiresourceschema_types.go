@@ -17,14 +17,17 @@ limitations under the License.
 package v1alpha2
 
 import (
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 // BoundAPIResourceSchema
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
+// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings,shortName=bas
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type BoundAPIResourceSchema struct {
@@ -47,17 +50,13 @@ type BoundAPIResourceSchemaSpec struct {
 	APIResourceSchemaCRDSpec `json:",inline"`
 }
 
-// BoundAPIResourceSchemaConditionType is type of BoundAPIResourceSchemaCondition
-// +kubebuilder:validation:Enum=Valid;Invalid
-type BoundAPIResourceSchemaConditionType string
-
 const (
 	// BoundAPIResourceSchemaReady indicates that the API resource schema is ready.
 	// It is set to true when the API resource schema is accepted and there are no drifts detected.
-	BoundAPIResourceSchemaValid BoundAPIResourceSchemaConditionType = "Valid"
+	BoundAPIResourceSchemaValid conditionsapi.ConditionType = "Valid"
 	// BoundAPIResourceSchemaDriftDetected indicates that there is a drift between the consumer's API and the expected API.
 	// It is set to true when the API resource schema is not accepted or there are drifts detected.
-	BoundAPIResourceSchemaInvalid BoundAPIResourceSchemaConditionType = "Invalid"
+	BoundAPIResourceSchemaInvalid conditionsapi.ConditionType = "Invalid"
 )
 
 // BoundAPIResourceSchemaConditionReason is the set of reasons for specific condition type.
@@ -75,11 +74,32 @@ const (
 	BoundAPIResourceSchemaDriftDetected BoundAPIResourceSchemaConditionReason = "DriftDetected"
 )
 
+func (in *BoundAPIResourceSchema) GetConditions() conditionsapi.Conditions {
+	return in.Status.Conditions
+}
+
+func (in *BoundAPIResourceSchema) SetConditions(conditions conditionsapi.Conditions) {
+	in.Status.Conditions = conditions
+}
+
 // BoundAPIResourceSchemaStatus defines the observed state of the BoundAPIResourceSchema.
 type BoundAPIResourceSchemaStatus struct {
+	// acceptedNames are the names that are actually being used to serve discovery.
+	// They may be different than the names in spec.
+	// +optional
+	AcceptedNames apiextensionsv1.CustomResourceDefinitionNames `json:"acceptedNames"`
+
+	// storedVersions lists all versions of CustomResources that were ever persisted. Tracking these
+	// versions allows a migration path for stored versions in etcd. The field is mutable
+	// so a migration controller can finish a migration to another version (ensuring
+	// no old objects are left in storage), and then remove the rest of the
+	// versions from this list.
+	// Versions may not be removed from `spec.versions` while they exist in this list.
+	// +optional
+	StoredVersions []string `json:"storedVersions"`
 	// Conditions represent the latest available observations of the object's state.
 	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	Conditions []conditionsapi.Condition `json:"conditions,omitempty"`
 
 	// Instantiations tracks the number of instances of the resource on the consumer side.
 	// +optional

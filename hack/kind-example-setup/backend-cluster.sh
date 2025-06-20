@@ -18,13 +18,19 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-source "$(dirname "$0")/host-ip.sh"
-get_host_ip
+DEFAULT_EXAMPLE_BACKEND_IMAGE="ghcr.io/kube-bind/example-backend:v0.4.6"
+
+if [[ -z "${HOST_IP:-}" ]]; then
+  source "$(dirname "$0")/host-ip.sh"
+  get_host_ip
+fi
 
 cat << EOF_BackendClusterDefinition | kind create cluster --config=-
 apiVersion: kind.x-k8s.io/v1alpha4
 kind: Cluster
 name: backend
+networking:
+  apiServerAddress: ${HOST_IP}
 nodes:
 - role: control-plane
   extraPortMappings:
@@ -37,6 +43,22 @@ nodes:
     hostPort: 5556
     protocol: TCP
 EOF_BackendClusterDefinition
+
+if [[ -n "${EXAMPLE_BACKEND_IMAGE:-}" ]]; then
+  pushd "$(dirname "$0")/../.."
+  KIND_CLUSTER=backend make kind-load
+  popd
+
+  if [[ -z "${TAG:-}" ]]; then
+    REV=$(git rev-parse --short HEAD)
+    TAG=${REV}
+  fi
+  example_backend_image="${EXAMPLE_BACKEND_IMAGE}:${TAG}"
+  echo "Using override example backend image: ${example_backend_image}"
+else
+   example_backend_image=${DEFAULT_EXAMPLE_BACKEND_IMAGE}
+  echo "Using default example backend image: ${example_backend_image}"
+fi
 
 helm repo add jetstack https://charts.jetstack.io
 helm install \
@@ -95,8 +117,8 @@ helm install \
     dex dex/dex \
     -f -
 
-kubectl apply -f ../../deploy/crd
-kubectl apply -f ../../test/e2e/bind/fixtures/provider/crd-mangodb.yaml
+kubectl apply -f $(dirname "$0")/../../deploy/crd
+kubectl apply -f $(dirname "$0")/../../test/e2e/bind/fixtures/provider/crd-mangodb.yaml
 kubectl create namespace backend
 # This is the address that will be used when generating kubeconfigs the App cluster,
 # and so we need to be able to reach it from outside.
@@ -106,7 +128,7 @@ kubectl create clusterrolebinding backend-admin --clusterrole cluster-admin --se
 # Create a new Deployment for the MangoDB backend.
 kubectl --namespace backend \
     create deployment mangodb \
-    --image ghcr.io/kube-bind/example-backend:v0.4.6 \
+    --image ${example_backend_image} \
     --port 8080 \
     -- /ko-app/example-backend \
         --listen-address 0.0.0.0:8080 \

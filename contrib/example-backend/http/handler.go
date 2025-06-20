@@ -45,7 +45,7 @@ import (
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/template"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 var (
@@ -62,7 +62,7 @@ var noCacheHeaders = map[string]string{
 type handler struct {
 	oidc *OIDCServiceProvider
 
-	scope              kubebindv1alpha1.Scope
+	scope              kubebindv1alpha2.InformerScope
 	oidcAuthorizeURL   string
 	backendCallbackURL string
 	providerPrettyName string
@@ -80,7 +80,7 @@ func NewHandler(
 	provider *OIDCServiceProvider,
 	oidcAuthorizeURL, backendCallbackURL, providerPrettyName, testingAutoSelect string,
 	cookieSigningKey, cookieEncryptionKey []byte,
-	scope kubebindv1alpha1.Scope,
+	scope kubebindv1alpha2.InformerScope,
 	mgr *kubernetes.Manager,
 	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,
 ) (*handler, error) {
@@ -121,17 +121,17 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 		ver = "v0.0.0"
 	}
 
-	provider := &kubebindv1alpha1.BindingProvider{
+	provider := &kubebindv1alpha2.BindingProvider{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: kubebindv1alpha1.GroupVersion,
+			APIVersion: kubebindv1alpha2.GroupVersion,
 			Kind:       "BindingProvider",
 		},
 		Version:            ver,
 		ProviderPrettyName: "example-backend",
-		AuthenticationMethods: []kubebindv1alpha1.AuthenticationMethod{
+		AuthenticationMethods: []kubebindv1alpha2.AuthenticationMethod{
 			{
 				Method: "OAuth2CodeGrant",
-				OAuth2CodeGrant: &kubebindv1alpha1.OAuth2CodeGrant{
+				OAuth2CodeGrant: &kubebindv1alpha2.OAuth2CodeGrant{
 					AuthenticatedURL: oidcAuthorizeURL,
 				},
 			},
@@ -306,18 +306,26 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 	})
 	rightScopedCRDs := []*apiextensionsv1.CustomResourceDefinition{}
 	for _, crd := range crds {
-		if h.scope == kubebindv1alpha1.ClusterScope || crd.Spec.Scope == apiextensionsv1.NamespaceScoped {
+		if h.scope == kubebindv1alpha2.ClusterScope || crd.Spec.Scope == apiextensionsv1.NamespaceScoped {
 			rightScopedCRDs = append(rightScopedCRDs, crd)
 		}
 	}
 
+	apiResourceSchemas, err := h.kubeManager.ListAPIResourceSchemas(r.Context())
+	if err != nil {
+		logger.Error(err, "failed to get api resource schemas")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
 	bs := bytes.Buffer{}
 	if err := resourcesTemplate.Execute(&bs, struct {
-		SessionID string
-		CRDs      []*apiextensionsv1.CustomResourceDefinition
+		SessionID          string
+		CRDs               []*apiextensionsv1.CustomResourceDefinition
+		APIResourceSchemas []kubebindv1alpha2.APIResourceSchema
 	}{
-		SessionID: r.URL.Query().Get("s"),
-		CRDs:      rightScopedCRDs,
+		SessionID:          r.URL.Query().Get("s"),
+		CRDs:               rightScopedCRDs,
+		APIResourceSchemas: apiResourceSchemas.Items,
 	}); err != nil {
 		logger.Error(err, "failed to execute template")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -368,20 +376,20 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	request := kubebindv1alpha1.APIServiceExportRequestResponse{
+	request := kubebindv1alpha2.APIServiceExportRequestResponse{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
+			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
 			Kind:       "APIServiceExportRequest",
 		},
-		ObjectMeta: kubebindv1alpha1.NameObjectMeta{
+		ObjectMeta: kubebindv1alpha2.NameObjectMeta{
 			// this is good for one resource. If there are more (in the future),
 			// we need a better name heuristic. Note: it does not have to be unique.
 			// But pretty is better.
 			Name: resource + "." + group,
 		},
-		Spec: kubebindv1alpha1.APIServiceExportRequestSpec{
-			Resources: []kubebindv1alpha1.APIServiceExportRequestResource{
-				{GroupResource: kubebindv1alpha1.GroupResource{Group: group, Resource: resource}},
+		Spec: kubebindv1alpha2.APIServiceExportRequestSpec{
+			Resources: []kubebindv1alpha2.APIServiceExportRequestResource{
+				{GroupResource: kubebindv1alpha2.GroupResource{Group: group, Resource: resource}},
 			},
 		},
 	}
@@ -393,13 +401,13 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	response := kubebindv1alpha1.BindingResponse{
+	response := kubebindv1alpha2.BindingResponse{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: kubebindv1alpha1.SchemeGroupVersion.String(),
+			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
 			Kind:       "BindingResponse",
 		},
-		Authentication: kubebindv1alpha1.BindingResponseAuthentication{
-			OAuth2CodeGrant: &kubebindv1alpha1.BindingResponseAuthenticationOAuth2CodeGrant{
+		Authentication: kubebindv1alpha2.BindingResponseAuthentication{
+			OAuth2CodeGrant: &kubebindv1alpha2.BindingResponseAuthenticationOAuth2CodeGrant{
 				SessionID: state.SessionID,
 				ID:        idToken.Issuer + "/" + idToken.Subject,
 			},

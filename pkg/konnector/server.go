@@ -25,7 +25,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/deploy/crd"
 	healthz "github.com/kube-bind/kube-bind/pkg/konnector/healthz"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type Server struct {
@@ -39,7 +39,7 @@ func NewServer(config *Config) (*Server, error) {
 	// construct controllers
 	k, err := New(
 		config.ClientConfig,
-		config.BindInformers.KubeBind().V1alpha1().APIServiceBindings(),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceBindings(),
 		config.KubeInformers.Core().V1().Secrets(), // TODO(sttts): watch individual secrets for security and memory consumption
 		config.KubeInformers.Core().V1().Namespaces(),
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
@@ -81,7 +81,7 @@ func (s *Server) PrepareRun(ctx context.Context) (Prepared, error) {
 	// install/upgrade CRDs
 	if err := crd.Create(ctx,
 		s.Config.ApiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
-		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiservicebindings"},
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiservicebindings"},
 	); err != nil {
 		return Prepared{}, err
 	}

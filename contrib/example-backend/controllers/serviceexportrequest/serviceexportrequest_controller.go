@@ -37,10 +37,10 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha1"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
+	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
@@ -51,11 +51,12 @@ const (
 // creating corresponding APIServiceExports.
 func NewController(
 	config *rest.Config,
-	scope kubebindv1alpha1.Scope,
-	isolation kubebindv1alpha1.Isolation,
+	scope kubebindv1alpha2.InformerScope,
+	isolation kubebindv1alpha2.Isolation,
 	serviceExportRequestInformer bindinformers.APIServiceExportRequestInformer,
 	serviceExportInformer bindinformers.APIServiceExportInformer,
 	crdInformer apiextensionsinformers.CustomResourceDefinitionInformer,
+	apiResourceSchemaInformer bindinformers.APIResourceSchemaInformer,
 ) (*Controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
@@ -88,26 +89,35 @@ func NewController(
 		crdLister:  crdInformer.Lister(),
 		crdIndexer: crdInformer.Informer().GetIndexer(),
 
+		apiResourceSchemaLister:  apiResourceSchemaInformer.Lister(),
+		apiResourceSchemaIndexer: apiResourceSchemaInformer.Informer().GetIndexer(),
+
 		reconciler: reconciler{
 			informerScope:          scope,
 			clusterScopedIsolation: isolation,
 			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return crdInformer.Lister().Get(name)
 			},
-			getServiceExport: func(ns, name string) (*kubebindv1alpha1.APIServiceExport, error) {
+			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+				return apiResourceSchemaInformer.Lister().Get(name)
+			},
+			getServiceExport: func(ns, name string) (*kubebindv1alpha2.APIServiceExport, error) {
 				return serviceExportInformer.Lister().APIServiceExports(ns).Get(name)
 			},
-			createServiceExport: func(ctx context.Context, resource *kubebindv1alpha1.APIServiceExport) (*kubebindv1alpha1.APIServiceExport, error) {
-				return bindClient.KubeBindV1alpha1().APIServiceExports(resource.Namespace).Create(ctx, resource, metav1.CreateOptions{})
+			createServiceExport: func(ctx context.Context, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error) {
+				return bindClient.KubeBindV1alpha2().APIServiceExports(resource.Namespace).Create(ctx, resource, metav1.CreateOptions{})
+			},
+			createAPIResourceSchema: func(ctx context.Context, schema *kubebindv1alpha2.APIResourceSchema) (*kubebindv1alpha2.APIResourceSchema, error) {
+				return bindClient.KubeBindV1alpha2().APIResourceSchemas().Create(ctx, schema, metav1.CreateOptions{})
 			},
 			deleteServiceExportRequest: func(ctx context.Context, ns, name string) error {
-				return bindClient.KubeBindV1alpha1().APIServiceExportRequests(ns).Delete(ctx, name, metav1.DeleteOptions{})
+				return bindClient.KubeBindV1alpha2().APIServiceExportRequests(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			},
 		},
 
-		commit: committer.NewCommitter[*kubebindv1alpha1.APIServiceExportRequest, *kubebindv1alpha1.APIServiceExportRequestSpec, *kubebindv1alpha1.APIServiceExportRequestStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha1.APIServiceExportRequest] {
-				return bindClient.KubeBindV1alpha1().APIServiceExportRequests(ns)
+		commit: committer.NewCommitter[*kubebindv1alpha2.APIServiceExportRequest, *kubebindv1alpha2.APIServiceExportRequestSpec, *kubebindv1alpha2.APIServiceExportRequestStatus](
+			func(ns string) committer.Patcher[*kubebindv1alpha2.APIServiceExportRequest] {
+				return bindClient.KubeBindV1alpha2().APIServiceExportRequests(ns)
 			},
 		),
 	}
@@ -120,13 +130,13 @@ func NewController(
 	})
 
 	if _, err := serviceExportRequestInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceExportRequest(logger, obj)
 		},
-		UpdateFunc: func(old, newObj interface{}) {
+		UpdateFunc: func(old, newObj any) {
 			c.enqueueServiceExportRequest(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceExportRequest(logger, obj)
 		},
 	}); err != nil {
@@ -134,13 +144,13 @@ func NewController(
 	}
 
 	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueServiceExport(logger, obj)
 		},
-		UpdateFunc: func(old, newObj interface{}) {
+		UpdateFunc: func(old, newObj any) {
 			c.enqueueServiceExport(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueServiceExport(logger, obj)
 		},
 	}); err != nil {
@@ -148,13 +158,13 @@ func NewController(
 	}
 
 	if _, err := crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
+		AddFunc: func(obj any) {
 			c.enqueueCRD(logger, obj)
 		},
-		UpdateFunc: func(old, newObj interface{}) {
+		UpdateFunc: func(old, newObj any) {
 			c.enqueueCRD(logger, newObj)
 		},
-		DeleteFunc: func(obj interface{}) {
+		DeleteFunc: func(obj any) {
 			c.enqueueCRD(logger, obj)
 		},
 	}); err != nil {
@@ -164,7 +174,7 @@ func NewController(
 	return c, nil
 }
 
-type Resource = committer.Resource[*kubebindv1alpha1.APIServiceExportRequestSpec, *kubebindv1alpha1.APIServiceExportRequestStatus]
+type Resource = committer.Resource[*kubebindv1alpha2.APIServiceExportRequestSpec, *kubebindv1alpha2.APIServiceExportRequestStatus]
 type CommitFunc = func(context.Context, *Resource, *Resource) error
 
 // Controller to reconcile APIServiceExportRequests by creating corresponding APIServiceExports.
@@ -183,12 +193,15 @@ type Controller struct {
 	crdLister  apiextensionslisters.CustomResourceDefinitionLister
 	crdIndexer cache.Indexer
 
+	apiResourceSchemaLister  bindlisters.APIResourceSchemaLister
+	apiResourceSchemaIndexer cache.Indexer
+
 	reconciler
 
 	commit CommitFunc
 }
 
-func (c *Controller) enqueueServiceExportRequest(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceExportRequest(logger klog.Logger, obj any) {
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -199,7 +212,7 @@ func (c *Controller) enqueueServiceExportRequest(logger klog.Logger, obj interfa
 	c.queue.Add(key)
 }
 
-func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueServiceExport(logger klog.Logger, obj any) {
 	seKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -222,7 +235,7 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj interface{}) {
 	}
 }
 
-func (c *Controller) enqueueCRD(logger klog.Logger, obj interface{}) {
+func (c *Controller) enqueueCRD(logger klog.Logger, obj any) {
 	crdKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)

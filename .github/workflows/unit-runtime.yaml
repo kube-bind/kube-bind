@@ -1,0 +1,40 @@
+jobs:
+  unit:
+    runs-on: [ubuntu-latest]
+    timeout-minutes: 8
+    steps:
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          # If you thinking to upgrade - don't. https://github.com/creack/pty/pull/109
+          # We would lose windows ssh support :/ windows agent stops building on windows
+          go-version: v1.23.4
+        id: go
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Unit tests RUNTIME
+        id: coverage
+        shell: bash
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+        run: |
+          make test-runtime
+          COVERAGE=$(go tool cover -func profile.cov | grep total: | awk '{print $3}')
+          echo "\n\nCoverage will be $COVERAGE"
+          echo "::set-env name=COVERAGE::$COVERAGE"
+      - run: |
+          echo "${{env.COVERAGE}}"
+          echo $COVERAGE
+      - name: 'Comment PR'
+        if: ${{ github.ref != 'refs/heads/main' }}
+        uses: actions/github-script@v5
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `${{env.COVERAGE}}`
+            })

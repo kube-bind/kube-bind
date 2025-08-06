@@ -33,7 +33,7 @@ import (
 	"github.com/kube-bind/kube-bind/contrib/example-backend-kcp/deploy"
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend-kcp/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend-kcp/kubernetes"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type Server struct {
@@ -117,7 +117,7 @@ func NewServer(ctx context.Context, config *Config) (*Server, error) {
 		config.Options.TestingAutoSelect,
 		signingKey,
 		encryptionKey,
-		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
+		kubebindv1alpha2.Scope(config.Options.ConsumerScope),
 		s.Kubernetes,
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),
 	)
@@ -129,7 +129,7 @@ func NewServer(ctx context.Context, config *Config) (*Server, error) {
 	// construct controllers
 	s.ClusterBinding, err = clusterbinding.NewController(
 		config.ClientConfig,
-		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
+		kubebindv1alpha2.Scope(config.Options.ConsumerScope),
 		config.BindInformers.KubeBind().V1alpha1().ClusterBindings(),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
 		config.KubeInformers.Rbac().V1().ClusterRoles(),
@@ -142,7 +142,7 @@ func NewServer(ctx context.Context, config *Config) (*Server, error) {
 	}
 	s.ServiceNamespace, err = servicenamespace.NewController(
 		config.ClientConfig,
-		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
+		kubebindv1alpha2.Scope(config.Options.ConsumerScope),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceNamespaces(),
 		config.BindInformers.KubeBind().V1alpha1().ClusterBindings(),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
@@ -163,7 +163,7 @@ func NewServer(ctx context.Context, config *Config) (*Server, error) {
 	}
 	s.ServiceExportRequest, err = serviceexportrequest.NewController(
 		config.ClientConfig,
-		kubebindv1alpha1.Scope(config.Options.ConsumerScope),
+		kubebindv1alpha2.Scope(config.Options.ConsumerScope),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExportRequests(),
 		config.BindInformers.KubeBind().V1alpha1().APIServiceExports(),
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),

@@ -1,0 +1,8 @@
+# This YAML object represents a ClusterBinding resource
+
+apiVersion: kube-bind.io/v1alpha1
+kind: ClusterBinding
+metadata:
+  name: cluster
+spec:
+  providerPrettyName: "bob"

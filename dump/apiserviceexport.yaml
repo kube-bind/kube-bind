@@ -1,0 +1,39 @@
+apiVersion: kube-bind.io/v1alpha1
+kind: APIServiceExport
+metadata:
+  name: my-mangodb-export
+spec:
+  group: mangodb.com  # Replace with the actual API group of the target resource
+  names:
+    kind: MangoDB
+    plural: mangodbs
+    singular: mangodb
+  scope: Namespaced
+  informerScope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        # Use the schema from the provided CRD with any necessary modifications
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              tier:
+                type: string
+                enum:
+                - Dedicated
+                - Shared
+                default: Shared
+          status:
+            type: object
+            properties:
+              phase:
+                type: string
+        required:
+        - spec
+    subresources:
+      status: {}

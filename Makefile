@@ -125,7 +125,7 @@ require-%:
 
 build: WHAT ?= ./cmd/... ./cli/cmd/...
 build: require-jq require-go require-git verify-go-versions ## Build the project
-	mkdir -p $(GOBIN_DIR)
+	mkdir -p $(GOBIN_DIR)$(MAKE) imports
 	set -x; for W in $(WHAT); do \
 		pushd . && cd $${W%..}; \
     	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o  $(GOBIN_DIR) ./...; \

@@ -29,7 +29,6 @@ import (
 	corelisters "github.com/kcp-dev/client-go/listers/core/v1"
 	rbaclisters "github.com/kcp-dev/client-go/listers/rbac/v1"
 	"github.com/kcp-dev/logicalcluster/v3"
-
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"

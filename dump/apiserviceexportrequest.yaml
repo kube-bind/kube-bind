@@ -1,0 +1,11 @@
+apiVersion: kube-bind.io/v1alpha1
+kind: APIServiceExportRequest
+metadata:
+  name: my-api-export-request
+spec:
+  resources:
+  - resources: # List of resources to be exported
+      group: my-api-group # API group name (optional, defaults to "")
+      resource: my-api-resource # Name of the resource
+      versions: # List of API versions to be exported (optional)
+        - v1beta1

@@ -1,0 +1,4 @@
+apiVersion: kube-bind.io/v1alpha1
+kind: APIServiceNamespace
+metadata:
+  name: my-consumer-namespace 

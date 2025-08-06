@@ -3,7 +3,7 @@ module github.com/kube-bind/kube-bind/sdk/client
 go 1.23.4
 
 require (
-	github.com/kube-bind/kube-bind/sdk/apis v0.4.5
+	github.com/kube-bind/kube-bind/sdk/apis v0.0.0-20250620125133-1a40ef5c5d27
 	k8s.io/apimachinery v0.32.0
 	k8s.io/client-go v0.32.0
 )

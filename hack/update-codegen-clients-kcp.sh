@@ -26,12 +26,22 @@ pushd "${SCRIPT_ROOT}"
 BOILERPLATE_HEADER="$( pwd )/hack/boilerplate/boilerplate.generatego.txt"
 popd
 CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; go list -f '{{.Dir}}' -m k8s.io/code-generator)}
+CLUSTER_CODEGEN_PKG=${CLUSTER_CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; go list -f '{{.Dir}}' -m github.com/kcp-dev/code-generator/v3)}
 OPENAPI_PKG=${OPENAPI_PKG:-$(cd "${SCRIPT_ROOT}"; go list -f '{{.Dir}}' -m k8s.io/kube-openapi)}
+
+go install "${CODEGEN_PKG}"/cmd/applyconfiguration-gen
+go install "${CODEGEN_PKG}"/cmd/client-gen
 
 # TODO: This is hack to allow CI to pass
 chmod +x "${CODEGEN_PKG}"/generate-internal-groups.sh
 
-${KUBE_APPLYCONFIGURATION_GEN} \
+source "${CODEGEN_PKG}/kube_codegen.sh"
+source "${CLUSTER_CODEGEN_PKG}/cluster_codegen.sh"
+
+rm -rf ${SCRIPT_ROOT}/sdk/kcp/{clientset,applyconfiguration,listers,informers}
+mkdir -p ${SCRIPT_ROOT}/sdk/kcp/{clientset,applyconfiguration,listers,informers}
+
+"$GOPATH"/bin/applyconfiguration-gen \
   --go-header-file ./hack/boilerplate/boilerplate.generatego.txt \
   --output-pkg github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration \
   --output-dir "sdk/kcp/applyconfiguration" \
@@ -42,7 +52,7 @@ ${KUBE_APPLYCONFIGURATION_GEN} \
   k8s.io/apimachinery/pkg/runtime \
   k8s.io/apimachinery/pkg/version
 
-"${KUBE_CLIENT_GEN}" \
+"$GOPATH"/bin/client-gen \
   --input github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1 \
   --input github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2 \
   --input-base="" \
@@ -51,12 +61,46 @@ ${KUBE_APPLYCONFIGURATION_GEN} \
   --output-pkg github.com/kube-bind/kube-bind/sdk/kcp/clientset \
   --go-header-file ./hack/boilerplate/boilerplate.generatego.txt \
   --output-dir "sdk/kcp/clientset"
-pushd ./sdk/apis
 
-${CODE_GENERATOR} \
-  "client:outputPackagePath=github.com/kube-bind/kube-bind/sdk/kcp,apiPackagePath=github.com/kube-bind/kube-bind/sdk/apis,singleClusterClientPackagePath=github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned,singleClusterApplyConfigurationsPackagePath=github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration,headerFile=${BOILERPLATE_HEADER}" \
-  "lister:apiPackagePath=github.com/kube-bind/kube-bind/sdk/apis,headerFile=${BOILERPLATE_HEADER}" \
-  "informer:outputPackagePath=github.com/kube-bind/kube-bind/sdk/kcp,singleClusterClientPackagePath=github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned,apiPackagePath=github.com/kube-bind/kube-bind/sdk/apis,headerFile=${BOILERPLATE_HEADER}" \
-  "paths=./..." \
-  "output:dir=../kcp"
-popd
+
+# Install cluster codegen tools
+# HACK: for some reason using bash wrapper does not work due to go mod structure.
+# we need to install them directly. If you read this - feel free to fix it.
+go install github.com/kcp-dev/code-generator/v3/cmd/cluster-client-gen
+go install github.com/kcp-dev/code-generator/v3/cmd/cluster-informer-gen
+go install github.com/kcp-dev/code-generator/v3/cmd/cluster-lister-gen
+
+GOBIN=$(go env GOPATH)/bin
+
+# Generate cluster client
+${GOBIN}/cluster-client-gen \
+  -v 0 \
+  --go-header-file "${BOILERPLATE_HEADER}" \
+  --output-dir "sdk/kcp/clientset/versioned" \
+  --output-pkg github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned \
+  --input-base "" \
+  --single-cluster-versioned-clientset-pkg github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned \
+  --single-cluster-applyconfigurations-pkg github.com/kube-bind/kube-bind/sdk/kcp/applyconfiguration \
+  --input github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1 \
+  --input github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2
+
+# Generate cluster listers
+${GOBIN}/cluster-lister-gen \
+  -v 0 \
+  --go-header-file "${BOILERPLATE_HEADER}" \
+  --output-dir "sdk/kcp/listers" \
+  --output-pkg github.com/kube-bind/kube-bind/sdk/kcp/listers \
+  github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1 \
+  github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2
+
+# Generate cluster informers  
+${GOBIN}/cluster-informer-gen \
+  -v 0 \
+  --go-header-file "${BOILERPLATE_HEADER}" \
+  --output-dir "sdk/kcp/informers/externalversions" \
+  --output-pkg github.com/kube-bind/kube-bind/sdk/kcp/informers/externalversions \
+  --versioned-clientset-pkg github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned \
+  --listers-pkg github.com/kube-bind/kube-bind/sdk/kcp/listers \
+  --single-cluster-versioned-clientset-pkg github.com/kube-bind/kube-bind/sdk/kcp/clientset/versioned \
+  github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1 \
+  github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2

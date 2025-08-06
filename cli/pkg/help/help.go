@@ -25,7 +25,6 @@ import (
 	"github.com/MakeNowJust/heredoc"
 	"github.com/muesli/reflow/wordwrap"
 	"github.com/spf13/cobra"
-
 	"k8s.io/component-base/term"
 )
 

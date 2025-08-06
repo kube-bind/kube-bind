@@ -5,10 +5,7 @@ go 1.23.0
 toolchain go1.23.4
 
 require (
-	github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20240817110845-a9eb9752bfeb
-	github.com/kcp-dev/client-go v0.0.0-20240912145314-f5949d81732a
-	github.com/kcp-dev/logicalcluster/v3 v3.0.5
-	github.com/kube-bind/kube-bind/sdk v0.0.0-20241213193814-46d2a9212bc3
+	github.com/kube-bind/kube-bind/sdk/apis v0.0.0-20250620125133-1a40ef5c5d27
 	k8s.io/api v0.32.0
 	k8s.io/apiextensions-apiserver v0.32.0
 	k8s.io/apimachinery v0.32.0
@@ -19,7 +16,6 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
-	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
@@ -51,7 +47,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
-	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
+	k8s.io/utils v0.0.0-20241210054802-24370beab758 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )

@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
-
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 

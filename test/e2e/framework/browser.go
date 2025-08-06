@@ -22,7 +22,6 @@ import (
 
 	"github.com/headzoo/surf/browser"
 	"github.com/stretchr/testify/require"
-
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 

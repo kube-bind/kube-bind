@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-
 	"k8s.io/klog/v2"
 )
 

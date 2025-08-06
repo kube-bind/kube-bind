@@ -23,7 +23,6 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/google/go-cmp/cmp"
-
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"

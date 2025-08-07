@@ -135,6 +135,7 @@ build: require-jq require-go require-git verify-go-versions ## Build the project
 
 .PHONY: build-all
 build-all:
+	mkdir -p bin
 	GOOS=$(OS) GOARCH=$(ARCH) $(MAKE) build WHAT=./cmd/...
 
 install: WHAT ?= ./cmd/... ./cli/cmd/...

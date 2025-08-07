@@ -21,7 +21,12 @@ import (
 	"fmt"
 	"reflect"
 
+<<<<<<< HEAD
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+=======
+	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
+	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
+>>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -99,6 +104,7 @@ func NewAPIServiceExportRequestReconciler(
 		reconciler: reconciler{
 			informerScope:          scope,
 			clusterScopedIsolation: isolation,
+<<<<<<< HEAD
 			getCRD: func(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				var crd apiextensionsv1.CustomResourceDefinition
 				key := types.NamespacedName{Name: name}
@@ -107,6 +113,8 @@ func NewAPIServiceExportRequestReconciler(
 				}
 				return &crd, nil
 			},
+=======
+>>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
 			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
 				var schema kubebindv1alpha2.APIResourceSchema
 				key := types.NamespacedName{Name: name}
@@ -135,7 +143,60 @@ func NewAPIServiceExportRequestReconciler(
 		},
 	}
 
+<<<<<<< HEAD
 	return r, nil
+=======
+	indexers.AddIfNotPresentOrDie(serviceExportRequestInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceExportRequestByServiceExport: indexers.IndexServiceExportRequestByServiceExport,
+	})
+	indexers.AddIfNotPresentOrDie(serviceExportRequestInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceExportRequestByGroupResource: indexers.IndexServiceExportRequestByGroupResource,
+	})
+
+	if _, err := serviceExportRequestInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
+			c.enqueueServiceExportRequest(logger, obj)
+		},
+		UpdateFunc: func(old, newObj any) {
+			c.enqueueServiceExportRequest(logger, newObj)
+		},
+		DeleteFunc: func(obj any) {
+			c.enqueueServiceExportRequest(logger, obj)
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
+			c.enqueueServiceExport(logger, obj)
+		},
+		UpdateFunc: func(old, newObj any) {
+			c.enqueueServiceExport(logger, newObj)
+		},
+		DeleteFunc: func(obj any) {
+			c.enqueueServiceExport(logger, obj)
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	if _, err := crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj any) {
+			c.enqueueAPIResourceSchema(logger, obj)
+		},
+		UpdateFunc: func(old, newObj any) {
+			c.enqueueAPIResourceSchema(logger, newObj)
+		},
+		DeleteFunc: func(obj any) {
+			c.enqueueAPIResourceSchema(logger, obj)
+		},
+	}); err != nil {
+		return nil, err
+	}
+
+	return c, nil
+>>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
 }
 
 // createServiceExportRequestMapper creates a mapping function for ServiceExport changes.
@@ -149,6 +210,7 @@ func (r *APIServiceExportRequestReconciler) createServiceExportRequestMapper() h
 			return []reconcile.Request{}
 		}
 
+<<<<<<< HEAD
 		var result []reconcile.Request
 		for _, req := range requests.Items {
 			result = append(result, reconcile.Request{
@@ -160,6 +222,28 @@ func (r *APIServiceExportRequestReconciler) createServiceExportRequestMapper() h
 		}
 
 		return result
+=======
+func (c *Controller) enqueueAPIResourceSchema(logger klog.Logger, obj any) {
+	APIResourceSchemaKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	requests, err := c.serviceExportRequestIndexer.ByIndex(indexers.ServiceExportRequestByGroupResource, APIResourceSchemaKey)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	for _, obj := range requests {
+		key, err := cache.MetaNamespaceKeyFunc(obj)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
+		}
+		logger.V(2).Info("queueing APIServiceExportRequest", "key", key, "reason", "APIResourceSchema", "APIResourceSchemaKey", APIResourceSchemaKey)
+		c.queue.Add(key)
+>>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
 	}
 }
 

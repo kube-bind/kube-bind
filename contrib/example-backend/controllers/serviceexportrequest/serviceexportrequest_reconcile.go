@@ -36,7 +36,10 @@ type reconciler struct {
 	informerScope          kubebindv1alpha2.InformerScope
 	clusterScopedIsolation kubebindv1alpha2.Isolation
 
+<<<<<<< HEAD
 	getCRD                     func(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error)
+=======
+>>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
 	getAPIResourceSchema       func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
 	getServiceExport           func(ctx context.Context, ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
 	createServiceExport        func(ctx context.Context, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)
@@ -58,14 +61,11 @@ func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha2.APISer
 
 func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	logger := klog.FromContext(ctx)
-
 	if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhasePending {
-		failure := false
 		for _, res := range req.Spec.Resources {
-			// backend is created using CRD's as backup. But this is not required.
 			name := res.Resource + "." + res.Group
-
 			apiResourceSchema, err := r.getAPIResourceSchema(ctx, name)
+<<<<<<< HEAD
 			switch {
 			case apierrors.IsNotFound(err):
 				logger.V(1).Info("APIResourceSchema not found, continuing with fallback to CRD conversion to APIResourceSchema", "name", name)
@@ -73,29 +73,20 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 				if err != nil && !apierrors.IsNotFound(err) {
 					return err
 				}
+=======
+			if err != nil {
+>>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
 				if apierrors.IsNotFound(err) {
 					conditions.MarkFalse(
 						req,
 						kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
-						"CRDNotFound",
+						"APIResourceSchemaNotFound",
 						conditionsapi.ConditionSeverityError,
-						"CustomResourceDefinition %s in the service provider cluster not found",
+						"APIResourceSchema %s in the service provider cluster not found",
 						name,
 					)
-					failure = true
-					break
-				}
-				schema, err := helpers.CRDToAPIResourceSchema(crd, "")
-				if err != nil {
 					return err
 				}
-				schema.Namespace = req.Namespace
-
-				logger.V(1).Info("Creating APIResourceSchema", "name", schema.Name, "namespace", schema.Namespace)
-				if apiResourceSchema, err = r.createAPIResourceSchema(ctx, schema); err != nil {
-					return err
-				}
-			case err != nil:
 				return err
 			}
 
@@ -134,11 +125,8 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 			}
 		}
 
-		if !failure {
-			conditions.MarkTrue(req, kubebindv1alpha2.APIServiceExportRequestConditionExportsReady)
-			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseSucceeded
-			return nil
-		}
+		conditions.MarkTrue(req, kubebindv1alpha2.APIServiceExportRequestConditionExportsReady)
+		req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseSucceeded
 
 		if time.Since(req.CreationTimestamp.Time) > time.Minute {
 			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed

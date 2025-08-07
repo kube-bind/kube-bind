@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -95,9 +94,6 @@ func NewController(
 		reconciler: reconciler{
 			informerScope:          scope,
 			clusterScopedIsolation: isolation,
-			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
-				return crdInformer.Lister().Get(name)
-			},
 			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
 				return apiResourceSchemaInformer.Lister().Get(name)
 			},
@@ -159,13 +155,13 @@ func NewController(
 
 	if _, err := crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
-			c.enqueueCRD(logger, obj)
+			c.enqueueAPIResourceSchema(logger, obj)
 		},
 		UpdateFunc: func(old, newObj any) {
-			c.enqueueCRD(logger, newObj)
+			c.enqueueAPIResourceSchema(logger, newObj)
 		},
 		DeleteFunc: func(obj any) {
-			c.enqueueCRD(logger, obj)
+			c.enqueueAPIResourceSchema(logger, obj)
 		},
 	}); err != nil {
 		return nil, err
@@ -235,14 +231,14 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj any) {
 	}
 }
 
-func (c *Controller) enqueueCRD(logger klog.Logger, obj any) {
-	crdKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+func (c *Controller) enqueueAPIResourceSchema(logger klog.Logger, obj any) {
+	APIResourceSchemaKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	requests, err := c.serviceExportRequestIndexer.ByIndex(indexers.ServiceExportRequestByGroupResource, crdKey)
+	requests, err := c.serviceExportRequestIndexer.ByIndex(indexers.ServiceExportRequestByGroupResource, APIResourceSchemaKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -253,7 +249,7 @@ func (c *Controller) enqueueCRD(logger klog.Logger, obj any) {
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing APIServiceExportRequest", "key", key, "reason", "CustomResourceDefinition", "CustomResourceDefinitionKey", crdKey)
+		logger.V(2).Info("queueing APIServiceExportRequest", "key", key, "reason", "APIResourceSchema", "APIResourceSchemaKey", APIResourceSchemaKey)
 		c.queue.Add(key)
 	}
 }

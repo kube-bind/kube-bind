@@ -27,7 +27,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
-
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	bindapiserviceplugin "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-apiservice/plugin"

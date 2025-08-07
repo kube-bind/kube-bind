@@ -29,7 +29,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/mdp/qrterminal/v3"
-
 	clientgoversion "k8s.io/client-go/pkg/version"
 
 	"github.com/kube-bind/kube-bind/pkg/version"

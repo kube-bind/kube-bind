@@ -59,14 +59,13 @@ YAML_PATCH_BIN := yaml-patch
 YAML_PATCH := $(TOOLS_DIR)/$(YAML_PATCH_BIN)-$(YAML_PATCH_VER)
 export YAML_PATCH # so hack scripts can use it
 
-OPENSHIFT_GOIMPORTS_VER := c72f1dc2e3aacfa00aece3391d938c9bc734e791
-OPENSHIFT_GOIMPORTS_BIN := openshift-goimports
-OPENSHIFT_GOIMPORTS := $(TOOLS_DIR)/$(OPENSHIFT_GOIMPORTS_BIN)-$(OPENSHIFT_GOIMPORTS_VER)
-export OPENSHIFT_GOIMPORTS # so hack scripts can use it
-
 GOLANGCI_LINT_VER := v2.1.6
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_GOBIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
+
+GOIMPORTS_VER := v0.35.0
+GOIMPORTS_BIN := goimports
+GOIMPORTS := $(TOOLS_GOBIN_DIR)/$(GOIMPORTS_BIN)-$(GOIMPORTS_VER)
 
 GOTESTSUM_VER := v1.8.1
 GOTESTSUM_BIN := gotestsum
@@ -145,6 +144,9 @@ install: ## install binaries to GOBIN
 $(GOLANGCI_LINT):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 
+$(GOIMPORTS):
+	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) golang.org/x/tools/cmd/goimports $(GOIMPORTS_BIN) $(GOIMPORTS_VER)
+
 $(LOGCHECK):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) sigs.k8s.io/logtools/logcheck $(LOGCHECK_BIN) $(LOGCHECK_VER)
 
@@ -164,7 +166,7 @@ vendor: ## Vendor the dependencies
 	go mod vendor
 .PHONY: vendor
 
-tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(OPENSHIFT_GOIMPORTS) $(CODE_GENERATOR)
+tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR)
 .PHONY: tools
 
 $(CONTROLLER_GEN):
@@ -186,7 +188,8 @@ $(KUBE_APPLYCONFIGURATION_GEN):
 	GOBIN=$(GOBIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/$(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_VER)
 
 
-codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN) ## Run the codegenerators
+codegen: WHAT ?= ./sdk/kcp ./sdk/client 
+codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN)
 	go mod download
 	./hack/update-codegen.sh
 	$(MAKE) imports
@@ -209,12 +212,17 @@ verify-codegen:
 		exit 1; \
 	fi
 
-$(OPENSHIFT_GOIMPORTS):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/openshift-eng/openshift-goimports $(OPENSHIFT_GOIMPORTS_BIN) $(OPENSHIFT_GOIMPORTS_VER)
-
 .PHONY: imports
-imports: $(OPENSHIFT_GOIMPORTS)
-	$(OPENSHIFT_GOIMPORTS) -m github.com/kube-bind/kube-bind
+imports: $(GOLANGCI_LINT) $(GOIMPORTS) verify-go-versions
+	if [ -n "$(WHAT)" ]; then \
+	  $(GOLANGCI_LINT) fmt --enable gci -c $(ROOT_DIR)/.golangci.yaml $(WHAT); \
+	  $(GOIMPORTS) -local github.com/kube-bind/kube-bind -w $(WHAT); \
+	else \
+	 for MOD in . $$(git ls-files '**/go.mod' | sed 's,/go.mod,,'); do \
+		(set -x; cd $$MOD; $(GOLANGCI_LINT) fmt --enable gci -c $(ROOT_DIR)/.golangci.yaml); \
+		$(GOIMPORTS) -local github.com/kube-bind/kube-bind -w .; \
+	  done; \
+	fi
 
 $(TOOLS_DIR)/verify_boilerplate.py:
 	mkdir -p $(TOOLS_DIR)

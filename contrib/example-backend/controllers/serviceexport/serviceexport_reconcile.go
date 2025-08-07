@@ -23,7 +23,6 @@ import (
 	"slices"
 	"sort"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
@@ -35,7 +34,6 @@ import (
 )
 
 type reconciler struct {
-	getCRD               func(ctx context.Context, cache cache.Cache, name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getAPIResourceSchema func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
 	deleteServiceExport  func(ctx context.Context, namespace, name string) error
 }

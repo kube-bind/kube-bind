@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,13 +78,10 @@ func NewAPIServiceExportReconciler(
 			getCRD: func(ctx context.Context, cache cache.Cache, name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				var crd apiextensionsv1.CustomResourceDefinition
 				key := types.NamespacedName{Name: name}
-				if err := cache.Get(ctx, key, &crd); err != nil {
+				if err := cache.Get(ctx, key, &schema); err != nil {
 					return nil, err
 				}
-				return &crd, nil
-			},
-			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-				return bindClient.KubeBindV1alpha2().APIResourceSchemas().Get(ctx, name, metav1.GetOptions{})
+				return &schema, nil
 			},
 			deleteServiceExport: func(ctx context.Context, ns, name string) error {
 				return bindClient.KubeBindV1alpha2().APIServiceExports(ns).Delete(ctx, name, metav1.DeleteOptions{})
@@ -99,7 +95,6 @@ func NewAPIServiceExportReconciler(
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports/finalizers,verbs=update
-//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

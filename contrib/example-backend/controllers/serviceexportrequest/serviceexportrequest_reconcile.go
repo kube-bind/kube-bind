@@ -61,42 +61,21 @@ func (r *reconciler) ensureExports(ctx context.Context, cache cache.Cache, req *
 	logger := klog.FromContext(ctx)
 
 	if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhasePending {
-		failure := false
 		for _, res := range req.Spec.Resources {
-			// backend is created using CRD's as backup. But this is not required.
 			name := res.Resource + "." + res.Group
-
 			apiResourceSchema, err := r.getAPIResourceSchema(ctx, cache, name)
-			switch {
-			case apierrors.IsNotFound(err):
-				logger.V(1).Info("APIResourceSchema not found, continuing with fallback to CRD conversion to APIResourceSchema", "name", name)
-				crd, err := r.getCRD(ctx, cache, name)
-				if err != nil && !apierrors.IsNotFound(err) {
-					return err
-				}
+			if err != nil {
 				if apierrors.IsNotFound(err) {
 					conditions.MarkFalse(
 						req,
 						kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
-						"CRDNotFound",
+						"APIResourceSchemaNotFound",
 						conditionsapi.ConditionSeverityError,
-						"CustomResourceDefinition %s in the service provider cluster not found",
+						"APIResourceSchema %s in the service provider cluster not found",
 						name,
 					)
-					failure = true
-					break
-				}
-				schema, err := helpers.CRDToAPIResourceSchema(crd, "")
-				if err != nil {
 					return err
 				}
-				schema.Namespace = req.Namespace
-
-				logger.V(1).Info("Creating APIResourceSchema", "name", schema.Name, "namespace", schema.Namespace)
-				if apiResourceSchema, err = r.createAPIResourceSchema(ctx, schema); err != nil {
-					return err
-				}
-			case err != nil:
 				return err
 			}
 
@@ -135,11 +114,8 @@ func (r *reconciler) ensureExports(ctx context.Context, cache cache.Cache, req *
 			}
 		}
 
-		if !failure {
-			conditions.MarkTrue(req, kubebindv1alpha2.APIServiceExportRequestConditionExportsReady)
-			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseSucceeded
-			return nil
-		}
+		conditions.MarkTrue(req, kubebindv1alpha2.APIServiceExportRequestConditionExportsReady)
+		req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseSucceeded
 
 		if time.Since(req.CreationTimestamp.Time) > time.Minute {
 			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed

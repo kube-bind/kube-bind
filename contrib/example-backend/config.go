@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
+	"github.com/kcp-dev/multicluster-provider/apiexport"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
 )
 
@@ -50,6 +51,17 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	}
 	config.ClientConfig = rest.CopyConfig(config.ClientConfig)
 	config.ClientConfig = rest.AddUserAgent(config.ClientConfig, "kube-bind-backend")
+
+	switch options.Provider {
+	case "kcp":
+		provider, err := apiexport.New(config.ClientConfig, apiexport.Options{})
+		if err != nil {
+			return nil, fmt.Errorf("error setting up kcp provider: %w", err)
+		}
+		config.Provider = provider
+	default:
+		config.Provider = nil
+	}
 
 	switch options.Provider {
 	case "kcp":

@@ -40,6 +40,9 @@ import (
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 )
 
 const (
@@ -104,13 +107,13 @@ func NewClusterBindingReconciler(
 			},
 			createClusterRole: func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
 				if err := client.Create(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to create ClusterRole %q: %w", binding.Name, err)
 				}
 				return binding, nil
 			},
 			updateClusterRole: func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
 				if err := client.Update(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to update ClusterRole %q: %w", binding.Name, err)
 				}
 				return binding, nil
 			},
@@ -124,13 +127,13 @@ func NewClusterBindingReconciler(
 			},
 			createClusterRoleBinding: func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
 				if err := client.Create(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to create ClusterRoleBinding %q: %w", binding.Name, err)
 				}
 				return binding, nil
 			},
 			updateClusterRoleBinding: func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
 				if err := client.Update(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to update ClusterRoleBinding %q: %w", binding.Name, err)
 				}
 				return binding, nil
 			},
@@ -151,14 +154,14 @@ func NewClusterBindingReconciler(
 			createRoleBinding: func(ctx context.Context, client client.Client, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
 				binding.Namespace = ns
 				if err := client.Create(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to create RoleBinding %q in namespace %q: %w", binding.Name, ns, err)
 				}
 				return binding, nil
 			},
 			updateRoleBinding: func(ctx context.Context, client client.Client, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
 				binding.Namespace = ns
 				if err := client.Update(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to update RoleBinding %q in namespace %q: %w", binding.Name, ns, err)
 				}
 				return binding, nil
 			},

@@ -39,6 +39,7 @@ import (
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 )
 
 type Server struct {
@@ -167,7 +168,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		return nil, fmt.Errorf("error adding kubebind scheme: %w", err)
 	}
 
-	s.Manager, err = ctrl.NewManager(c.ClientConfig, ctrl.Options{
+	opts := ctrl.Options{
 		Controller: config.Controller{
 			SkipNameValidation: ptr.To(true), // TODO(mjudeikis): Remove this once migration is done.
 		},
@@ -175,7 +176,9 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 			BindAddress: "0",
 		},
 		Scheme: scheme,
-	})
+	}
+
+	s.Manager, err = mcmanager.New(s.Config.ClientConfig, s.Config.Provider, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up controller manager: %w", err)
 	}

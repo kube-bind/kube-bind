@@ -35,7 +35,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
@@ -224,7 +223,6 @@ func (r *APIServiceExportRequestReconciler) Reconcile(ctx context.Context, req c
 	}
 
 	// Update status if it has changed
-	spew.Dump(apiServiceExportRequest)
 	if !reflect.DeepEqual(original.Status, apiServiceExportRequest.Status) {
 		err := r.Status().Update(ctx, apiServiceExportRequest)
 		if err != nil {

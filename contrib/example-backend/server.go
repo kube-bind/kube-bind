@@ -61,7 +61,7 @@ type Controllers struct {
 	ServiceExport        *serviceexport.APIServiceExportReconciler
 	ServiceExportRequest *serviceexportrequest.APIServiceExportRequestReconciler
 
-	ServiceNamespace *servicenamespace.Controller
+	ServiceNamespace *servicenamespace.APIServiceNamespaceReconciler
 }
 
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
@@ -193,18 +193,22 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		return nil, fmt.Errorf("error setting up APIServiceExport controller with manager: %v", err)
 	}
 
-	s.ServiceNamespace, err = servicenamespace.NewController(
+	s.ServiceNamespace, err = servicenamespace.NewAPIServiceNamespaceReconciler(
+		ctx,
+		s.Manager.GetClient(),
+		s.Manager.GetScheme(),
 		c.ClientConfig,
+		s.Manager.GetCache(),
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
-		c.BindInformers.KubeBind().V1alpha2().APIServiceNamespaces(),
-		c.BindInformers.KubeBind().V1alpha2().ClusterBindings(),
-		c.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
-		c.KubeInformers.Core().V1().Namespaces(),
-		c.KubeInformers.Rbac().V1().Roles(),
-		c.KubeInformers.Rbac().V1().RoleBindings(),
+		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceNamespace Controller: %w", err)
+	}
+
+	// Register the APIServiceNamespace controller with the manager
+	if err := s.ServiceNamespace.SetupWithManager(s.Manager); err != nil {
+		return nil, fmt.Errorf("error setting up APIServiceNamespace controller with manager: %v", err)
 	}
 	s.ServiceExportRequest, err = serviceexportrequest.NewAPIServiceExportRequestReconciler(
 		ctx,
@@ -266,7 +270,6 @@ func (s *Server) Run(ctx context.Context) error {
 			log.Println("Failed to start controller manager:", err)
 		}
 	}()
-	go s.ServiceNamespace.Start(ctx, 1)
 
 	go func() {
 		<-ctx.Done()

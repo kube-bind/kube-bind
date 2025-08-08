@@ -57,11 +57,11 @@ type Server struct {
 }
 
 type Controllers struct {
-	ClusterBinding *clusterbinding.ClusterBindingReconciler
-	ServiceExport  *serviceexport.APIServiceExportReconciler
+	ClusterBinding       *clusterbinding.ClusterBindingReconciler
+	ServiceExport        *serviceexport.APIServiceExportReconciler
+	ServiceExportRequest *serviceexportrequest.APIServiceExportRequestReconciler
 
-	ServiceNamespace     *servicenamespace.Controller
-	ServiceExportRequest *serviceexportrequest.Controller
+	ServiceNamespace *servicenamespace.Controller
 }
 
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
@@ -206,17 +206,22 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceNamespace Controller: %w", err)
 	}
-	s.ServiceExportRequest, err = serviceexportrequest.NewController(
+	s.ServiceExportRequest, err = serviceexportrequest.NewAPIServiceExportRequestReconciler(
+		ctx,
+		s.Manager.GetClient(),
+		s.Manager.GetScheme(),
 		c.ClientConfig,
+		s.Manager.GetCache(),
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
-		c.BindInformers.KubeBind().V1alpha2().APIServiceExportRequests(),
-		c.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
-		c.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
-		c.BindInformers.KubeBind().V1alpha2().APIResourceSchemas(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest Controller: %w", err)
+	}
+
+	// Register the ServiceExportRequest controller with the manager
+	if err := s.ServiceExportRequest.SetupWithManager(s.Manager); err != nil {
+		return nil, fmt.Errorf("error setting up ServiceExportRequest controller with manager: %v", err)
 	}
 
 	return s, nil
@@ -262,7 +267,6 @@ func (s *Server) Run(ctx context.Context) error {
 		}
 	}()
 	go s.ServiceNamespace.Start(ctx, 1)
-	go s.ServiceExportRequest.Start(ctx, 1)
 
 	go func() {
 		<-ctx.Done()

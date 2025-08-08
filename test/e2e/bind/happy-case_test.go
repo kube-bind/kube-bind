@@ -43,14 +43,12 @@ import (
 
 func TestClusterScoped(t *testing.T) {
 	t.Parallel()
-
 	// cluster scoped resource, with cluster scoped informers
 	testHappyCase(t, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope)
 }
 
 func TestNamespacedScoped(t *testing.T) {
 	t.Parallel()
-
 	// namespaced resource, with namespace scoped informers
 	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope)
 	// namespaced resource, but with cluster scoped informers

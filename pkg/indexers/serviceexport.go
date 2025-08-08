@@ -17,6 +17,8 @@ limitations under the License.
 package indexers
 
 import (
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -31,4 +33,15 @@ func IndexServiceExportByCustomResourceDefinition(obj any) ([]string, error) {
 	}
 
 	return []string{export.Name}, nil
+}
+
+// IndexServiceExportByCustomResourceDefinitionControllerRuntime is a controller-runtime compatible indexer function
+// that indexes APIServiceExports by their CustomResourceDefinition name.
+func IndexServiceExportByCustomResourceDefinitionControllerRuntime(obj client.Object) []string {
+	export, ok := obj.(*v1alpha2.APIServiceExport)
+	if !ok {
+		return nil
+	}
+
+	return []string{export.Name}
 }

@@ -34,11 +34,9 @@ import (
 )
 
 type reconciler struct {
-	getCRD               func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
+	getCRD               func(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getAPIResourceSchema func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
 	deleteServiceExport  func(ctx context.Context, namespace, name string) error
-
-	requeue func(export *kubebindv1alpha2.APIServiceExport)
 }
 
 func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) error {

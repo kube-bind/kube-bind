@@ -17,8 +17,9 @@ limitations under the License.
 package indexers
 
 import (
-	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 const (

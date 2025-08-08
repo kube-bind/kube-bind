@@ -58,13 +58,13 @@ type Server struct {
 
 type Controllers struct {
 	ClusterBinding *clusterbinding.ClusterBindingReconciler
+	ServiceExport  *serviceexport.APIServiceExportReconciler
 
 	ServiceNamespace     *servicenamespace.Controller
-	ServiceExport        *serviceexport.Controller
 	ServiceExportRequest *serviceexportrequest.Controller
 }
 
-func NewServer(c *Config) (*Server, error) {
+func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	s := &Server{
 		Config: c,
 	}
@@ -176,6 +176,23 @@ func NewServer(c *Config) (*Server, error) {
 		return nil, fmt.Errorf("error setting up ClusterBinding controller with manager: %v", err)
 	}
 
+	// construct APIServiceExport controller with controller-runtime
+	s.ServiceExport, err = serviceexport.NewAPIServiceExportReconciler(
+		ctx,
+		s.Manager.GetClient(),
+		s.Manager.GetScheme(),
+		c.ClientConfig,
+		s.Manager.GetCache(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error setting up APIServiceExport Controller: %w", err)
+	}
+
+	// Register the APIServiceExport controller with the manager
+	if err := s.ServiceExport.SetupWithManager(s.Manager); err != nil {
+		return nil, fmt.Errorf("error setting up APIServiceExport controller with manager: %v", err)
+	}
+
 	s.ServiceNamespace, err = servicenamespace.NewController(
 		c.ClientConfig,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
@@ -188,14 +205,6 @@ func NewServer(c *Config) (*Server, error) {
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceNamespace Controller: %w", err)
-	}
-	s.ServiceExport, err = serviceexport.NewController(
-		c.ClientConfig,
-		c.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
-		c.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("error setting up APIServiceExport Controller: %w", err)
 	}
 	s.ServiceExportRequest, err = serviceexportrequest.NewController(
 		c.ClientConfig,
@@ -252,7 +261,6 @@ func (s *Server) Run(ctx context.Context) error {
 			log.Println("Failed to start controller manager:", err)
 		}
 	}()
-	go s.ServiceExport.Start(ctx, 1)
 	go s.ServiceNamespace.Start(ctx, 1)
 	go s.ServiceExportRequest.Start(ctx, 1)
 

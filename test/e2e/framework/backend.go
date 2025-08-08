@@ -93,7 +93,7 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	config, err := backend.NewConfig(completed)
 	require.NoError(t, err)
 
-	server, err := backend.NewServer(config)
+	server, err := backend.NewServer(ctx, config)
 	require.NoError(t, err)
 
 	server.OptionallyStartInformers(ctx)

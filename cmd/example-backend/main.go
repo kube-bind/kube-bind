@@ -80,7 +80,7 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	server, err := backend.NewServer(config)
+	server, err := backend.NewServer(ctx, config)
 	if err != nil {
 		return err
 	}

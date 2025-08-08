@@ -1,5 +1,5 @@
 baseImageOverrides:
-  github.com/google/ko: golang:1.23.4
+  github.com/google/ko: golang:1.24.0
 
 builds:
 - id: konnector

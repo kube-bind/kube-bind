@@ -17,6 +17,7 @@ limitations under the License.
 package backend
 
 import (
+	"fmt"
 	"time"
 
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -25,7 +26,9 @@ import (
 	kubernetesclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
+	"github.com/kcp-dev/multicluster-provider/apiexport"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions"
@@ -33,6 +36,8 @@ import (
 
 type Config struct {
 	Options *options.CompletedOptions
+
+	Provider multicluster.Provider
 
 	ClientConfig        *rest.Config
 	BindClient          *bindclient.Clientset
@@ -74,6 +79,17 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	config.KubeInformers = kubeinformers.NewSharedInformerFactory(config.KubeClient, time.Minute*30)
 	config.BindInformers = bindinformers.NewSharedInformerFactory(config.BindClient, time.Minute*30)
 	config.ApiextensionsInformers = apiextensionsinformers.NewSharedInformerFactory(config.ApiextensionsClient, time.Minute*30)
+
+	switch options.Provider {
+	case "kcp":
+		provider, err := apiexport.New(config.ClientConfig, apiexport.Options{})
+		if err != nil {
+			return nil, fmt.Errorf("error setting up kcp provider: %w", err)
+		}
+		config.Provider = provider
+	default:
+		config.Provider = nil
+	}
 
 	return config, nil
 }

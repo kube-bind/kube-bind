@@ -32,7 +32,6 @@ import (
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/clusterbinding"
@@ -43,6 +42,7 @@ import (
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 )
 
 type Server struct {
@@ -51,7 +51,7 @@ type Server struct {
 	OIDC       *examplehttp.OIDCServiceProvider
 	Kubernetes *examplekube.Manager
 	WebServer  *examplehttp.Server
-	Manager    manager.Manager
+	Manager    mcmanager.Manager
 
 	Controllers
 }
@@ -146,7 +146,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		return nil, fmt.Errorf("error adding kubebind scheme: %w", err)
 	}
 
-	s.Manager, err = ctrl.NewManager(c.ClientConfig, ctrl.Options{
+	opts := ctrl.Options{
 		Controller: config.Controller{
 			SkipNameValidation: ptr.To(true), // TODO(mjudeikis): Remove this once migration is done.
 		},
@@ -154,18 +154,18 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 			BindAddress: "0",
 		},
 		Scheme: scheme,
-	})
+	}
+
+	s.Manager, err = mcmanager.New(s.Config.ClientConfig, s.Config.Provider, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up controller manager: %w", err)
 	}
 
 	// construct controllers
 	s.ClusterBinding, err = clusterbinding.NewClusterBindingReconciler(
-		s.Manager.GetClient(),
-		s.Manager.GetScheme(),
+		s.Manager,
 		c.ClientConfig,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
-		s.Manager.GetCache(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ClusterBinding Controller: %v", err)

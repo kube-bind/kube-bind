@@ -25,18 +25,20 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mchandler "sigs.k8s.io/multicluster-runtime/pkg/handler"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 )
 
 const (
@@ -45,8 +47,7 @@ const (
 
 // ClusterBindingReconciler reconciles a ClusterBinding object.
 type ClusterBindingReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
+	manager mcmanager.Manager
 
 	scope      kubebindv1alpha2.InformerScope
 	bindClient bindclient.Interface
@@ -55,11 +56,9 @@ type ClusterBindingReconciler struct {
 
 // NewClusterBindingReconciler returns a new ClusterBindingReconciler to reconcile ClusterBindings.
 func NewClusterBindingReconciler(
-	client client.Client,
-	scheme *runtime.Scheme,
+	mgr mcmanager.Manager,
 	config *rest.Config,
 	scope kubebindv1alpha2.InformerScope,
-	cache cache.Cache,
 ) (*ClusterBindingReconciler, error) {
 	config = rest.CopyConfig(config)
 	config = rest.AddUserAgent(config, controllerName)
@@ -70,15 +69,15 @@ func NewClusterBindingReconciler(
 	}
 
 	r := &ClusterBindingReconciler{
-		Client:     client,
-		Scheme:     scheme,
 		scope:      scope,
 		bindClient: bindClient,
 		reconciler: reconciler{
 			scope: scope,
-			listServiceExports: func(ctx context.Context, ns string) ([]*kubebindv1alpha2.APIServiceExport, error) {
+			listServiceExports: func(ctx context.Context, cache cache.Cache, ns string) ([]*kubebindv1alpha2.APIServiceExport, error) {
 				var list kubebindv1alpha2.APIServiceExportList
-				if err := cache.List(ctx, &list); err != nil {
+				if err := cache.List(ctx, &list, &client.ListOptions{
+					Namespace: ns,
+				}); err != nil {
 					return nil, err
 				}
 				var exports []*kubebindv1alpha2.APIServiceExport
@@ -89,82 +88,87 @@ func NewClusterBindingReconciler(
 				}
 				return exports, nil
 			},
-			getAPIResourceSchema: func(ctx context.Context, namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-				return bindClient.KubeBindV1alpha2().APIResourceSchemas().Get(ctx, name, metav1.GetOptions{})
+			getAPIResourceSchema: func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+				result := &kubebindv1alpha2.APIResourceSchema{}
+				err = cache.Get(ctx, types.NamespacedName{Name: name}, result)
+				if err != nil {
+					return nil, fmt.Errorf("failed to get APIResourceSchema %q from cluster %q: %w", name, err)
+				}
+				return result, nil
 			},
-			getClusterRole: func(ctx context.Context, name string) (*rbacv1.ClusterRole, error) {
+			getClusterRole: func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error) {
 				var role rbacv1.ClusterRole
 				key := types.NamespacedName{Name: name}
-				if err := client.Get(ctx, key, &role); err != nil {
-					return nil, err
+				if err := cache.Get(ctx, key, &role); err != nil {
+					return nil, fmt.Errorf("failed to get ClusterRole %q from cluster %q: %w", name, err)
 				}
 				return &role, nil
 			},
-			createClusterRole: func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
+			createClusterRole: func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
 				if err := client.Create(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to create ClusterRole %q: %w", binding.Name, err)
 				}
 				return binding, nil
 			},
-			updateClusterRole: func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
+			updateClusterRole: func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
 				if err := client.Update(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to update ClusterRole %q: %w", binding.Name, err)
 				}
 				return binding, nil
 			},
-			getClusterRoleBinding: func(ctx context.Context, name string) (*rbacv1.ClusterRoleBinding, error) {
+			getClusterRoleBinding: func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error) {
 				var binding rbacv1.ClusterRoleBinding
 				key := types.NamespacedName{Name: name}
 				if err := cache.Get(ctx, key, &binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to get ClusterRoleBinding %q: %w", name, err)
 				}
 				return &binding, nil
 			},
-			createClusterRoleBinding: func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
+			createClusterRoleBinding: func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
 				if err := client.Create(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to create ClusterRoleBinding %q: %w", binding.Name, err)
 				}
 				return binding, nil
 			},
-			updateClusterRoleBinding: func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
+			updateClusterRoleBinding: func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
 				if err := client.Update(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to update ClusterRoleBinding %q: %w", binding.Name, err)
 				}
 				return binding, nil
 			},
-			deleteClusterRoleBinding: func(ctx context.Context, name string) error {
+			deleteClusterRoleBinding: func(ctx context.Context, client client.Client, name string) error {
 				binding := &rbacv1.ClusterRoleBinding{
 					ObjectMeta: metav1.ObjectMeta{Name: name},
 				}
 				return client.Delete(ctx, binding)
 			},
-			getNamespace: func(ctx context.Context, name string) (*v1.Namespace, error) {
+			getNamespace: func(ctx context.Context, cache cache.Cache, name string) (*v1.Namespace, error) {
 				var ns v1.Namespace
 				key := types.NamespacedName{Name: name}
 				if err := cache.Get(ctx, key, &ns); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to get Namespace %q: %w", name, err)
 				}
 				return &ns, nil
 			},
-			createRoleBinding: func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+			createRoleBinding: func(ctx context.Context, client client.Client, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
 				binding.Namespace = ns
 				if err := client.Create(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to create RoleBinding %q in namespace %q: %w", binding.Name, ns, err)
 				}
 				return binding, nil
 			},
-			updateRoleBinding: func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
+			updateRoleBinding: func(ctx context.Context, client client.Client, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
 				binding.Namespace = ns
 				if err := client.Update(ctx, binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to update RoleBinding %q in namespace %q: %w", binding.Name, ns, err)
 				}
 				return binding, nil
 			},
-			getRoleBinding: func(ctx context.Context, ns, name string) (*rbacv1.RoleBinding, error) {
+			getRoleBinding: func(ctx context.Context, cache cache.Cache, ns, name string) (*rbacv1.RoleBinding, error) {
 				var binding rbacv1.RoleBinding
 				key := types.NamespacedName{Namespace: ns, Name: name}
 				if err := cache.Get(ctx, key, &binding); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("failed to get RoleBinding %q in namespace %q: %w", name, ns, err)
 				}
 				return &binding, nil
 			},
@@ -201,13 +205,21 @@ func mapServiceExportToClusterBinding(ctx context.Context, obj client.Object) []
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *ClusterBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ClusterBindingReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling ClusterBinding", "namespace", req.Namespace, "name", req.Name)
 
+	cl, err := r.manager.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get client for cluster %q: %w", req.ClusterName, err)
+	}
+
+	client := cl.GetClient()
+	cache := cl.GetCache()
+
 	// Fetch the ClusterBinding instance
 	clusterBinding := &kubebindv1alpha2.ClusterBinding{}
-	if err := r.Get(ctx, req.NamespacedName, clusterBinding); err != nil {
+	if err := client.Get(ctx, req.NamespacedName, clusterBinding); err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			logger.Info("ClusterBinding not found, ignoring")
@@ -221,14 +233,14 @@ func (r *ClusterBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	original := clusterBinding.DeepCopy()
 
 	// Run the reconciliation logic
-	if err := r.reconciler.reconcile(ctx, clusterBinding); err != nil {
+	if err := r.reconciler.reconcile(ctx, client, cache, clusterBinding); err != nil {
 		logger.Error(err, "Failed to reconcile ClusterBinding")
 		return ctrl.Result{}, err
 	}
 
 	// Update status if it has changed
 	if !reflect.DeepEqual(original, clusterBinding) {
-		err := r.Update(ctx, clusterBinding)
+		err := client.Update(ctx, clusterBinding)
 		if err != nil {
 			logger.Error(err, "Failed to update ClusterBinding status")
 			return ctrl.Result{}, fmt.Errorf("failed to update ClusterBinding status: %w", err)
@@ -240,15 +252,15 @@ func (r *ClusterBindingReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ClusterBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+func (r *ClusterBindingReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+	return mcbuilder.ControllerManagedBy(mgr).
 		For(&kubebindv1alpha2.ClusterBinding{}).
 		Owns(&rbacv1.ClusterRole{}).
 		Owns(&rbacv1.ClusterRoleBinding{}).
 		Owns(&rbacv1.RoleBinding{}).
 		Watches(
 			&kubebindv1alpha2.APIServiceExport{},
-			handler.EnqueueRequestsFromMapFunc(mapServiceExportToClusterBinding),
+			mchandler.EnqueueRequestsFromMapFunc(mapServiceExportToClusterBinding),
 		).
 		Named(controllerName).
 		Complete(r)

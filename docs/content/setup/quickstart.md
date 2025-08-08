@@ -94,7 +94,8 @@ Now create the APIServiceExportRequest:
 ```shell
 $ ./bin/kubectl-bind http://127.0.0.1:8080/export --dry-run -o yaml > apiserviceexport.yaml
 # This will wait for konnector to be ready. Once this gets running - start the konnector bellow
-$ ./bin/kubectl-bind apiservice --remote-namespace kube-bind-77wsg --remote-kubeconfig .kcp/provider.kubeconfig -f apiserviceexport.yaml  --skip-konnector
+# IMPORTANT: Check namespace to be used! 
+$ ./bin/kubectl-bind apiservice --remote-namespace kube-bind-tf92m --remote-kubeconfig .kcp/provider.kubeconfig -f apiserviceexport.yaml  --skip-konnector
 # run konnector
 $ go run ./cmd/konnector/ --lease-namespace default
 ```

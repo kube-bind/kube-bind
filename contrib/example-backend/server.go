@@ -23,9 +23,17 @@ import (
 	"log"
 	"net"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/dynamic"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/config"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexport"
@@ -43,65 +51,67 @@ type Server struct {
 	OIDC       *examplehttp.OIDCServiceProvider
 	Kubernetes *examplekube.Manager
 	WebServer  *examplehttp.Server
+	Manager    manager.Manager
 
 	Controllers
 }
 
 type Controllers struct {
-	ClusterBinding       *clusterbinding.Controller
+	ClusterBinding *clusterbinding.ClusterBindingReconciler
+
 	ServiceNamespace     *servicenamespace.Controller
 	ServiceExport        *serviceexport.Controller
 	ServiceExportRequest *serviceexportrequest.Controller
 }
 
-func NewServer(config *Config) (*Server, error) {
+func NewServer(c *Config) (*Server, error) {
 	s := &Server{
-		Config: config,
+		Config: c,
 	}
 
 	var err error
-	s.WebServer, err = examplehttp.NewServer(config.Options.Serve)
+	s.WebServer, err = examplehttp.NewServer(c.Options.Serve)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
 	}
 
 	// setup oidc backend
-	callback := config.Options.OIDC.CallbackURL
+	callback := c.Options.OIDC.CallbackURL
 	if callback == "" {
 		callback = fmt.Sprintf("http://%s/callback", s.WebServer.Addr().String())
 	}
 	s.OIDC, err = examplehttp.NewOIDCServiceProvider(
-		config.Options.OIDC.IssuerClientID,
-		config.Options.OIDC.IssuerClientSecret,
+		c.Options.OIDC.IssuerClientID,
+		c.Options.OIDC.IssuerClientSecret,
 		callback,
-		config.Options.OIDC.IssuerURL,
+		c.Options.OIDC.IssuerURL,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up OIDC: %w", err)
 	}
 	s.Kubernetes, err = examplekube.NewKubernetesManager(
-		config.Options.NamespacePrefix,
-		config.Options.PrettyName,
-		config.ClientConfig,
-		config.Options.ExternalAddress,
-		config.Options.ExternalCA,
-		config.Options.TLSExternalServerName,
-		config.KubeInformers.Core().V1().Namespaces(),
-		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
+		c.Options.NamespacePrefix,
+		c.Options.PrettyName,
+		c.ClientConfig,
+		c.Options.ExternalAddress,
+		c.Options.ExternalCA,
+		c.Options.TLSExternalServerName,
+		c.KubeInformers.Core().V1().Namespaces(),
+		c.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up Kubernetes Manager: %w", err)
 	}
 
-	signingKey, err := base64.StdEncoding.DecodeString(config.Options.Cookie.SigningKey)
+	signingKey, err := base64.StdEncoding.DecodeString(c.Options.Cookie.SigningKey)
 	if err != nil {
 		return nil, fmt.Errorf("error creating signing key: %w", err)
 	}
 
 	var encryptionKey []byte
-	if config.Options.Cookie.EncryptionKey != "" {
+	if c.Options.Cookie.EncryptionKey != "" {
 		var err error
-		encryptionKey, err = base64.StdEncoding.DecodeString(config.Options.Cookie.EncryptionKey)
+		encryptionKey, err = base64.StdEncoding.DecodeString(c.Options.Cookie.EncryptionKey)
 		if err != nil {
 			return nil, fmt.Errorf("error creating encryption key: %w", err)
 		}
@@ -109,64 +119,92 @@ func NewServer(config *Config) (*Server, error) {
 
 	handler, err := examplehttp.NewHandler(
 		s.OIDC,
-		config.Options.OIDC.AuthorizeURL,
+		c.Options.OIDC.AuthorizeURL,
 		callback,
-		config.Options.PrettyName,
-		config.Options.TestingAutoSelect,
+		c.Options.PrettyName,
+		c.Options.TestingAutoSelect,
 		signingKey,
 		encryptionKey,
-		kubebindv1alpha2.InformerScope(config.Options.ConsumerScope),
+		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		s.Kubernetes,
-		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),
+		c.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions().Lister(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)
 	}
 	handler.AddRoutes(s.WebServer.Router)
 
+	// Set up controller-runtime manager
+	scheme := runtime.NewScheme()
+	if err := clientgoscheme.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("error adding client-go scheme: %w", err)
+	}
+	if err := apiextensionsv1.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("error adding apiextensions scheme: %w", err)
+	}
+	if err := kubebindv1alpha2.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("error adding kubebind scheme: %w", err)
+	}
+
+	s.Manager, err = ctrl.NewManager(c.ClientConfig, ctrl.Options{
+		Controller: config.Controller{
+			SkipNameValidation: ptr.To(true), // TODO(mjudeikis): Remove this once migration is done.
+		},
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
+		Scheme: scheme,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error setting up controller manager: %w", err)
+	}
+
 	// construct controllers
-	s.ClusterBinding, err = clusterbinding.NewController(
-		config.ClientConfig,
-		kubebindv1alpha2.InformerScope(config.Options.ConsumerScope),
-		config.BindInformers.KubeBind().V1alpha2().ClusterBindings(),
-		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
-		config.KubeInformers.Rbac().V1().ClusterRoles(),
-		config.KubeInformers.Rbac().V1().ClusterRoleBindings(),
-		config.KubeInformers.Rbac().V1().RoleBindings(),
-		config.KubeInformers.Core().V1().Namespaces(),
+	s.ClusterBinding, err = clusterbinding.NewClusterBindingReconciler(
+		s.Manager.GetClient(),
+		s.Manager.GetScheme(),
+		c.ClientConfig,
+		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
+		s.Manager.GetCache(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ClusterBinding Controller: %v", err)
 	}
+
+	// Register the ClusterBinding controller with the manager
+	if err := s.ClusterBinding.SetupWithManager(s.Manager); err != nil {
+		return nil, fmt.Errorf("error setting up ClusterBinding controller with manager: %v", err)
+	}
+
 	s.ServiceNamespace, err = servicenamespace.NewController(
-		config.ClientConfig,
-		kubebindv1alpha2.InformerScope(config.Options.ConsumerScope),
-		config.BindInformers.KubeBind().V1alpha2().APIServiceNamespaces(),
-		config.BindInformers.KubeBind().V1alpha2().ClusterBindings(),
-		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
-		config.KubeInformers.Core().V1().Namespaces(),
-		config.KubeInformers.Rbac().V1().Roles(),
-		config.KubeInformers.Rbac().V1().RoleBindings(),
+		c.ClientConfig,
+		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
+		c.BindInformers.KubeBind().V1alpha2().APIServiceNamespaces(),
+		c.BindInformers.KubeBind().V1alpha2().ClusterBindings(),
+		c.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
+		c.KubeInformers.Core().V1().Namespaces(),
+		c.KubeInformers.Rbac().V1().Roles(),
+		c.KubeInformers.Rbac().V1().RoleBindings(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceNamespace Controller: %w", err)
 	}
 	s.ServiceExport, err = serviceexport.NewController(
-		config.ClientConfig,
-		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
-		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
+		c.ClientConfig,
+		c.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
+		c.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceExport Controller: %w", err)
 	}
 	s.ServiceExportRequest, err = serviceexportrequest.NewController(
-		config.ClientConfig,
-		kubebindv1alpha2.InformerScope(config.Options.ConsumerScope),
-		kubebindv1alpha2.Isolation(config.Options.ClusterScopedIsolation),
-		config.BindInformers.KubeBind().V1alpha2().APIServiceExportRequests(),
-		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
-		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
-		config.BindInformers.KubeBind().V1alpha2().APIResourceSchemas(),
+		c.ClientConfig,
+		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
+		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
+		c.BindInformers.KubeBind().V1alpha2().APIServiceExportRequests(),
+		c.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
+		c.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
+		c.BindInformers.KubeBind().V1alpha2().APIResourceSchemas(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest Controller: %w", err)
@@ -208,10 +246,14 @@ func (s *Server) Run(ctx context.Context) error {
 		return err
 	}
 
-	// start controllers
+	// start controller-runtime manager after bootstrap completes
+	go func() {
+		if err := s.Manager.Start(ctx); err != nil {
+			log.Println("Failed to start controller manager:", err)
+		}
+	}()
 	go s.ServiceExport.Start(ctx, 1)
 	go s.ServiceNamespace.Start(ctx, 1)
-	go s.ClusterBinding.Start(ctx, 1)
 	go s.ServiceExportRequest.Start(ctx, 1)
 
 	go func() {

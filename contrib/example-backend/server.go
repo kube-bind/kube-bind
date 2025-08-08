@@ -155,6 +155,31 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	}
 	handler.AddRoutes(s.WebServer.Router)
 
+	// Set up controller-runtime manager
+	scheme := runtime.NewScheme()
+	if err := clientgoscheme.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("error adding client-go scheme: %w", err)
+	}
+	if err := apiextensionsv1.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("error adding apiextensions scheme: %w", err)
+	}
+	if err := kubebindv1alpha2.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("error adding kubebind scheme: %w", err)
+	}
+
+	s.Manager, err = ctrl.NewManager(c.ClientConfig, ctrl.Options{
+		Controller: config.Controller{
+			SkipNameValidation: ptr.To(true), // TODO(mjudeikis): Remove this once migration is done.
+		},
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
+		Scheme: scheme,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error setting up controller manager: %w", err)
+	}
+
 	// construct controllers
 	s.ClusterBinding, err = clusterbinding.NewClusterBindingReconciler(
 		s.Manager,

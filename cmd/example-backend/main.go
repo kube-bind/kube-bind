@@ -31,8 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	backend "github.com/kube-bind/kube-bind/contrib/example-backend"
-	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
+	backend "github.com/kube-bind/kube-bind/backend"
+	"github.com/kube-bind/kube-bind/backend/options"
 )
 
 func main() {

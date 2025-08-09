@@ -24,7 +24,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
+	"github.com/kube-bind/kube-bind/backend/options"
 )
 
 type Config struct {

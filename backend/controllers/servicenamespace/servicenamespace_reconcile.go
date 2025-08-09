@@ -27,7 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 
-	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
+	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 

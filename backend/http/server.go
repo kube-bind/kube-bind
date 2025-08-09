@@ -26,7 +26,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
+	"github.com/kube-bind/kube-bind/backend/options"
 )
 
 type Server struct {

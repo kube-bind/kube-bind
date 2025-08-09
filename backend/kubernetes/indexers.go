@@ -20,7 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
+	"github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 )
 
 const (

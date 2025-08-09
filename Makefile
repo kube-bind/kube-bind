@@ -85,6 +85,11 @@ KCP_VER := v0.28.0
 KCP_BIN := kcp
 KCP := $(TOOLS_GOBIN_DIR)/$(KCP_BIN)-$(KCP_VER)
 
+KCP_APIGEN_VER := v0.28.0
+KCP_APIGEN_BIN := apigen
+KCP_APIGEN_GEN := $(TOOLS_GOBIN_DIR)/$(KCP_APIGEN_BIN)-$(KCP_APIGEN_VER)
+export KCP_APIGEN_GEN # so hack scripts can use it
+
 DEX_VER := v2.41.1
 DEX_BIN := dex
 DEX := $(TOOLS_GOBIN_DIR)/$(DEX_BIN)-$(DEX_VER)
@@ -141,6 +146,9 @@ install: ## install binaries to GOBIN
 	GOOS=$(OS) GOARCH=$(ARCH) go install -ldflags="$(LDFLAGS)" $(WHAT)
 .PHONY: install
 
+$(KCP_APIGEN_GEN):
+	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/kcp-dev/kcp/sdk/cmd/apigen $(KCP_APIGEN_BIN) $(KCP_APIGEN_VER)
+
 $(GOLANGCI_LINT):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 
@@ -166,7 +174,7 @@ vendor: ## Vendor the dependencies
 	go mod vendor
 .PHONY: vendor
 
-tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR)
+tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR) $(KCP_APIGEN_GEN) 
 .PHONY: tools
 
 $(CONTROLLER_GEN):
@@ -189,7 +197,7 @@ $(KUBE_APPLYCONFIGURATION_GEN):
 
 
 codegen: WHAT ?= ./sdk/client 
-codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN)
+codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN) $(KCP_APIGEN_GEN)
 	go mod download
 	./hack/update-codegen.sh
 	$(MAKE) imports

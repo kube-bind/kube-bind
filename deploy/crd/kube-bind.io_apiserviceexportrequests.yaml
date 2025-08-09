@@ -5,6 +5,8 @@ metadata:
     controller-gen.kubebuilder.io/version: v0.17.3
   name: apiserviceexportrequests.kube-bind.io
 spec:
+  conversion:
+    strategy: None
   group: kube-bind.io
   names:
     categories:

@@ -4,7 +4,3 @@
   path: /spec/conversion
   value:
     strategy: None
-
-- op: add
-  path: /spec/versions/name=v1alpha1/schema/openAPIV3Schema/properties/status/default
-  value: {}

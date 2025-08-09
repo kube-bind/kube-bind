@@ -17,6 +17,8 @@ limitations under the License.
 package indexers
 
 import (
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -30,4 +32,14 @@ func IndexServiceNamespaceByNamespace(obj any) ([]string, error) {
 		return nil, nil
 	}
 	return []string{sn.Status.Namespace}, nil
+}
+
+// IndexServiceNamespaceByNamespaceControllerRuntime is a controller-runtime compatible indexer function
+// that indexes APIServiceNamespaces by their status namespace.
+func IndexServiceNamespaceByNamespaceControllerRuntime(obj client.Object) []string {
+	sn, ok := obj.(*kubebindv1alpha2.APIServiceNamespace)
+	if !ok || sn.Status.Namespace == "" {
+		return nil
+	}
+	return []string{sn.Status.Namespace}
 }

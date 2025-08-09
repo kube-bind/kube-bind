@@ -40,6 +40,8 @@ type Options struct {
 type ExtraOptions struct {
 	KubeConfig string
 
+	Provider string
+
 	NamespacePrefix        string
 	PrettyName             string
 	ConsumerScope          string
@@ -77,6 +79,7 @@ func NewOptions() *Options {
 		Serve:  NewServe(),
 
 		ExtraOptions: ExtraOptions{
+			Provider:               "kubernetes",
 			NamespacePrefix:        "cluster",
 			PrettyName:             "Example Backend",
 			ConsumerScope:          string(kubebindv1alpha2.NamespacedScope),
@@ -99,6 +102,8 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.ExternalAddress, "external-address", options.ExternalAddress, "The external address for the service provider cluster, including https:// and port. If not specified, service account's hosts are used.")
 	fs.StringVar(&options.ExternalCAFile, "external-ca-file", options.ExternalCAFile, "The external CA file for the service provider cluster. If not specified, service account's CA is used.")
 	fs.StringVar(&options.TLSExternalServerName, "external-server-name", options.TLSExternalServerName, "The external (TLS) server name used by consumers to talk to the service provider cluster. This can be useful to select the right certificate via SNI.")
+
+	fs.StringVar(&options.Provider, "multicluster-runtime-provider", options.Provider, "The multicluster runtime provider. If not specified, the default (single cluster) is used.")
 
 	fs.StringVar(&options.TestingAutoSelect, "testing-auto-select", options.TestingAutoSelect, "<resource>.<group> that is automatically selected on th bind screen for testing")
 	fs.MarkHidden("testing-auto-select") //nolint:errcheck
@@ -141,7 +146,6 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 		}
 		options.ExternalCA = ca
 	}
-
 	return &CompletedOptions{
 		completedOptions: &completedOptions{
 			Logs:         options.Logs,
@@ -179,6 +183,13 @@ func (options *CompletedOptions) Validate() error {
 		if err != nil {
 			return fmt.Errorf("invalid external hostname: %v", err)
 		}
+	}
+
+	switch options.Provider {
+	case "kcp", "kubernetes":
+		// all good.
+	default:
+		return fmt.Errorf("unknown multicluster-runtime provider %q", options.Provider)
 	}
 
 	return nil

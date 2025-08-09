@@ -19,16 +19,16 @@ limitations under the License.
 package v1alpha2
 
 import (
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 // APIServiceExportRequestStatusApplyConfiguration represents a declarative configuration of the APIServiceExportRequestStatus type for use
 // with apply.
 type APIServiceExportRequestStatusApplyConfiguration struct {
-	Phase           *v1alpha2.APIServiceExportRequestPhase `json:"phase,omitempty"`
-	TerminalMessage *string                                `json:"terminalMessage,omitempty"`
-	Conditions      *v1alpha1.Conditions                   `json:"conditions,omitempty"`
+	Phase           *kubebindv1alpha2.APIServiceExportRequestPhase `json:"phase,omitempty"`
+	TerminalMessage *string                                        `json:"terminalMessage,omitempty"`
+	Conditions      *v1alpha1.Conditions                           `json:"conditions,omitempty"`
 }
 
 // APIServiceExportRequestStatusApplyConfiguration constructs a declarative configuration of the APIServiceExportRequestStatus type for use with
@@ -40,7 +40,7 @@ func APIServiceExportRequestStatus() *APIServiceExportRequestStatusApplyConfigur
 // WithPhase sets the Phase field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Phase field is set to the value of the last call.
-func (b *APIServiceExportRequestStatusApplyConfiguration) WithPhase(value v1alpha2.APIServiceExportRequestPhase) *APIServiceExportRequestStatusApplyConfiguration {
+func (b *APIServiceExportRequestStatusApplyConfiguration) WithPhase(value kubebindv1alpha2.APIServiceExportRequestPhase) *APIServiceExportRequestStatusApplyConfiguration {
 	b.Phase = &value
 	return b
 }

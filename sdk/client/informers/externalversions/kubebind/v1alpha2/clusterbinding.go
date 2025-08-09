@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,17 +27,17 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 
-	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	apiskubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	versioned "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	internalinterfaces "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/internalinterfaces"
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 // ClusterBindingInformer provides access to a shared informer and lister for
 // ClusterBindings.
 type ClusterBindingInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.ClusterBindingLister
+	Lister() kubebindv1alpha2.ClusterBindingLister
 }
 
 type clusterBindingInformer struct {
@@ -72,7 +72,7 @@ func NewFilteredClusterBindingInformer(client versioned.Interface, namespace str
 				return client.KubeBindV1alpha2().ClusterBindings(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubebindv1alpha2.ClusterBinding{},
+		&apiskubebindv1alpha2.ClusterBinding{},
 		resyncPeriod,
 		indexers,
 	)
@@ -83,9 +83,9 @@ func (f *clusterBindingInformer) defaultInformer(client versioned.Interface, res
 }
 
 func (f *clusterBindingInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubebindv1alpha2.ClusterBinding{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiskubebindv1alpha2.ClusterBinding{}, f.defaultInformer)
 }
 
-func (f *clusterBindingInformer) Lister() v1alpha2.ClusterBindingLister {
-	return v1alpha2.NewClusterBindingLister(f.Informer().GetIndexer())
+func (f *clusterBindingInformer) Lister() kubebindv1alpha2.ClusterBindingLister {
+	return kubebindv1alpha2.NewClusterBindingLister(f.Informer().GetIndexer())
 }

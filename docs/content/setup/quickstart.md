@@ -64,8 +64,8 @@ kubectl apply -f deploy/examples/crd-mangodb.yaml
 
 * start the backend binary with the right flags:
 ```shell
-$ make build
-$ bin/example-backend \
+make build
+bin/backend \
   --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
   --oidc-issuer-client-id=kube-bind \
   --oidc-issuer-url=http://127.0.0.1:5556/dex \

@@ -39,7 +39,6 @@ import (
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
-	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 )
 
 type Server struct {

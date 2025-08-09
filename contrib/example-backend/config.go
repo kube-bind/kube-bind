@@ -24,7 +24,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	"github.com/kcp-dev/multicluster-provider/apiexport"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
 )
 

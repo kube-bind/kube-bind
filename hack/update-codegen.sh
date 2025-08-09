@@ -25,7 +25,6 @@ if [[ -z "${MAKELEVEL:-}" ]]; then
 fi
 
 "$(dirname "${BASH_SOURCE[0]}")/update-codegen-clients.sh"
-"$(dirname "${BASH_SOURCE[0]}")/update-codegen-clients-kcp.sh"
 
 # Update generated CRD YAML
 cd sdk/apis

@@ -19,11 +19,11 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/listers"
-	"k8s.io/client-go/tools/cache"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 // APIResourceSchemaLister helps list APIResourceSchemas.
@@ -31,19 +31,19 @@ import (
 type APIResourceSchemaLister interface {
 	// List lists all APIResourceSchemas in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.APIResourceSchema, err error)
+	List(selector labels.Selector) (ret []*kubebindv1alpha2.APIResourceSchema, err error)
 	// Get retrieves the APIResourceSchema from the index for a given name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.APIResourceSchema, error)
+	Get(name string) (*kubebindv1alpha2.APIResourceSchema, error)
 	APIResourceSchemaListerExpansion
 }
 
 // aPIResourceSchemaLister implements the APIResourceSchemaLister interface.
 type aPIResourceSchemaLister struct {
-	listers.ResourceIndexer[*v1alpha2.APIResourceSchema]
+	listers.ResourceIndexer[*kubebindv1alpha2.APIResourceSchema]
 }
 
 // NewAPIResourceSchemaLister returns a new APIResourceSchemaLister.
 func NewAPIResourceSchemaLister(indexer cache.Indexer) APIResourceSchemaLister {
-	return &aPIResourceSchemaLister{listers.New[*v1alpha2.APIResourceSchema](indexer, v1alpha2.Resource("apiresourceschema"))}
+	return &aPIResourceSchemaLister{listers.New[*kubebindv1alpha2.APIResourceSchema](indexer, kubebindv1alpha2.Resource("apiresourceschema"))}
 }

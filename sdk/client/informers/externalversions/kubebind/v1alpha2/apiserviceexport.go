@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,17 +27,17 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 
-	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	apiskubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	versioned "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	internalinterfaces "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/internalinterfaces"
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 // APIServiceExportInformer provides access to a shared informer and lister for
 // APIServiceExports.
 type APIServiceExportInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.APIServiceExportLister
+	Lister() kubebindv1alpha2.APIServiceExportLister
 }
 
 type aPIServiceExportInformer struct {
@@ -72,7 +72,7 @@ func NewFilteredAPIServiceExportInformer(client versioned.Interface, namespace s
 				return client.KubeBindV1alpha2().APIServiceExports(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubebindv1alpha2.APIServiceExport{},
+		&apiskubebindv1alpha2.APIServiceExport{},
 		resyncPeriod,
 		indexers,
 	)
@@ -83,9 +83,9 @@ func (f *aPIServiceExportInformer) defaultInformer(client versioned.Interface, r
 }
 
 func (f *aPIServiceExportInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubebindv1alpha2.APIServiceExport{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiskubebindv1alpha2.APIServiceExport{}, f.defaultInformer)
 }
 
-func (f *aPIServiceExportInformer) Lister() v1alpha2.APIServiceExportLister {
-	return v1alpha2.NewAPIServiceExportLister(f.Informer().GetIndexer())
+func (f *aPIServiceExportInformer) Lister() kubebindv1alpha2.APIServiceExportLister {
+	return kubebindv1alpha2.NewAPIServiceExportLister(f.Informer().GetIndexer())
 }

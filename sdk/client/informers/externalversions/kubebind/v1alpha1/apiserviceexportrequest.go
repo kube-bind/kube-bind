@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,17 +27,17 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	apiskubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	versioned "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	internalinterfaces "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
 )
 
 // APIServiceExportRequestInformer provides access to a shared informer and lister for
 // APIServiceExportRequests.
 type APIServiceExportRequestInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.APIServiceExportRequestLister
+	Lister() kubebindv1alpha1.APIServiceExportRequestLister
 }
 
 type aPIServiceExportRequestInformer struct {
@@ -72,7 +72,7 @@ func NewFilteredAPIServiceExportRequestInformer(client versioned.Interface, name
 				return client.KubeBindV1alpha1().APIServiceExportRequests(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubebindv1alpha1.APIServiceExportRequest{},
+		&apiskubebindv1alpha1.APIServiceExportRequest{},
 		resyncPeriod,
 		indexers,
 	)
@@ -83,9 +83,9 @@ func (f *aPIServiceExportRequestInformer) defaultInformer(client versioned.Inter
 }
 
 func (f *aPIServiceExportRequestInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubebindv1alpha1.APIServiceExportRequest{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiskubebindv1alpha1.APIServiceExportRequest{}, f.defaultInformer)
 }
 
-func (f *aPIServiceExportRequestInformer) Lister() v1alpha1.APIServiceExportRequestLister {
-	return v1alpha1.NewAPIServiceExportRequestLister(f.Informer().GetIndexer())
+func (f *aPIServiceExportRequestInformer) Lister() kubebindv1alpha1.APIServiceExportRequestLister {
+	return kubebindv1alpha1.NewAPIServiceExportRequestLister(f.Informer().GetIndexer())
 }

@@ -35,7 +35,7 @@ func ClusterSecretKeyRef() *ClusterSecretKeyRefApplyConfiguration {
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *ClusterSecretKeyRefApplyConfiguration) WithName(value string) *ClusterSecretKeyRefApplyConfiguration {
-	b.Name = &value
+	b.LocalSecretKeyRefApplyConfiguration.Name = &value
 	return b
 }
 
@@ -43,7 +43,7 @@ func (b *ClusterSecretKeyRefApplyConfiguration) WithName(value string) *ClusterS
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Key field is set to the value of the last call.
 func (b *ClusterSecretKeyRefApplyConfiguration) WithKey(value string) *ClusterSecretKeyRefApplyConfiguration {
-	b.Key = &value
+	b.LocalSecretKeyRefApplyConfiguration.Key = &value
 	return b
 }
 

@@ -19,11 +19,11 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/listers"
-	"k8s.io/client-go/tools/cache"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 // ClusterBindingLister helps list ClusterBindings.
@@ -31,7 +31,7 @@ import (
 type ClusterBindingLister interface {
 	// List lists all ClusterBindings in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.ClusterBinding, err error)
+	List(selector labels.Selector) (ret []*kubebindv1alpha2.ClusterBinding, err error)
 	// ClusterBindings returns an object that can list and get ClusterBindings.
 	ClusterBindings(namespace string) ClusterBindingNamespaceLister
 	ClusterBindingListerExpansion
@@ -39,17 +39,17 @@ type ClusterBindingLister interface {
 
 // clusterBindingLister implements the ClusterBindingLister interface.
 type clusterBindingLister struct {
-	listers.ResourceIndexer[*v1alpha2.ClusterBinding]
+	listers.ResourceIndexer[*kubebindv1alpha2.ClusterBinding]
 }
 
 // NewClusterBindingLister returns a new ClusterBindingLister.
 func NewClusterBindingLister(indexer cache.Indexer) ClusterBindingLister {
-	return &clusterBindingLister{listers.New[*v1alpha2.ClusterBinding](indexer, v1alpha2.Resource("clusterbinding"))}
+	return &clusterBindingLister{listers.New[*kubebindv1alpha2.ClusterBinding](indexer, kubebindv1alpha2.Resource("clusterbinding"))}
 }
 
 // ClusterBindings returns an object that can list and get ClusterBindings.
 func (s *clusterBindingLister) ClusterBindings(namespace string) ClusterBindingNamespaceLister {
-	return clusterBindingNamespaceLister{listers.NewNamespaced[*v1alpha2.ClusterBinding](s.ResourceIndexer, namespace)}
+	return clusterBindingNamespaceLister{listers.NewNamespaced[*kubebindv1alpha2.ClusterBinding](s.ResourceIndexer, namespace)}
 }
 
 // ClusterBindingNamespaceLister helps list and get ClusterBindings.
@@ -57,15 +57,15 @@ func (s *clusterBindingLister) ClusterBindings(namespace string) ClusterBindingN
 type ClusterBindingNamespaceLister interface {
 	// List lists all ClusterBindings in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.ClusterBinding, err error)
+	List(selector labels.Selector) (ret []*kubebindv1alpha2.ClusterBinding, err error)
 	// Get retrieves the ClusterBinding from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.ClusterBinding, error)
+	Get(name string) (*kubebindv1alpha2.ClusterBinding, error)
 	ClusterBindingNamespaceListerExpansion
 }
 
 // clusterBindingNamespaceLister implements the ClusterBindingNamespaceLister
 // interface.
 type clusterBindingNamespaceLister struct {
-	listers.ResourceIndexer[*v1alpha2.ClusterBinding]
+	listers.ResourceIndexer[*kubebindv1alpha2.ClusterBinding]
 }

@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,17 +27,17 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	apiskubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	versioned "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	internalinterfaces "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha1"
 )
 
 // APIServiceNamespaceInformer provides access to a shared informer and lister for
 // APIServiceNamespaces.
 type APIServiceNamespaceInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.APIServiceNamespaceLister
+	Lister() kubebindv1alpha1.APIServiceNamespaceLister
 }
 
 type aPIServiceNamespaceInformer struct {
@@ -72,7 +72,7 @@ func NewFilteredAPIServiceNamespaceInformer(client versioned.Interface, namespac
 				return client.KubeBindV1alpha1().APIServiceNamespaces(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&kubebindv1alpha1.APIServiceNamespace{},
+		&apiskubebindv1alpha1.APIServiceNamespace{},
 		resyncPeriod,
 		indexers,
 	)
@@ -83,9 +83,9 @@ func (f *aPIServiceNamespaceInformer) defaultInformer(client versioned.Interface
 }
 
 func (f *aPIServiceNamespaceInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubebindv1alpha1.APIServiceNamespace{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiskubebindv1alpha1.APIServiceNamespace{}, f.defaultInformer)
 }
 
-func (f *aPIServiceNamespaceInformer) Lister() v1alpha1.APIServiceNamespaceLister {
-	return v1alpha1.NewAPIServiceNamespaceLister(f.Informer().GetIndexer())
+func (f *aPIServiceNamespaceInformer) Lister() kubebindv1alpha1.APIServiceNamespaceLister {
+	return kubebindv1alpha1.NewAPIServiceNamespaceLister(f.Informer().GetIndexer())
 }

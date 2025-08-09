@@ -21,16 +21,16 @@ package v1alpha1
 import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	v1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
+	conditionsv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
 // ClusterBindingStatusApplyConfiguration represents a declarative configuration of the ClusterBindingStatus type for use
 // with apply.
 type ClusterBindingStatusApplyConfiguration struct {
-	LastHeartbeatTime *v1.Time             `json:"lastHeartbeatTime,omitempty"`
-	HeartbeatInterval *v1.Duration         `json:"heartbeatInterval,omitempty"`
-	KonnectorVersion  *string              `json:"konnectorVersion,omitempty"`
-	Conditions        *v1alpha1.Conditions `json:"conditions,omitempty"`
+	LastHeartbeatTime *v1.Time                       `json:"lastHeartbeatTime,omitempty"`
+	HeartbeatInterval *v1.Duration                   `json:"heartbeatInterval,omitempty"`
+	KonnectorVersion  *string                        `json:"konnectorVersion,omitempty"`
+	Conditions        *conditionsv1alpha1.Conditions `json:"conditions,omitempty"`
 }
 
 // ClusterBindingStatusApplyConfiguration constructs a declarative configuration of the ClusterBindingStatus type for use with
@@ -66,7 +66,7 @@ func (b *ClusterBindingStatusApplyConfiguration) WithKonnectorVersion(value stri
 // WithConditions sets the Conditions field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Conditions field is set to the value of the last call.
-func (b *ClusterBindingStatusApplyConfiguration) WithConditions(value v1alpha1.Conditions) *ClusterBindingStatusApplyConfiguration {
+func (b *ClusterBindingStatusApplyConfiguration) WithConditions(value conditionsv1alpha1.Conditions) *ClusterBindingStatusApplyConfiguration {
 	b.Conditions = &value
 	return b
 }

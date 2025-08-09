@@ -19,14 +19,14 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"context"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	scheme "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/scheme"
 )
 
@@ -38,33 +38,34 @@ type APIServiceNamespacesGetter interface {
 
 // APIServiceNamespaceInterface has methods to work with APIServiceNamespace resources.
 type APIServiceNamespaceInterface interface {
-	Create(ctx context.Context, aPIServiceNamespace *v1alpha2.APIServiceNamespace, opts v1.CreateOptions) (*v1alpha2.APIServiceNamespace, error)
-	Update(ctx context.Context, aPIServiceNamespace *v1alpha2.APIServiceNamespace, opts v1.UpdateOptions) (*v1alpha2.APIServiceNamespace, error)
+	Create(ctx context.Context, aPIServiceNamespace *kubebindv1alpha2.APIServiceNamespace, opts v1.CreateOptions) (*kubebindv1alpha2.APIServiceNamespace, error)
+	Update(ctx context.Context, aPIServiceNamespace *kubebindv1alpha2.APIServiceNamespace, opts v1.UpdateOptions) (*kubebindv1alpha2.APIServiceNamespace, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, aPIServiceNamespace *v1alpha2.APIServiceNamespace, opts v1.UpdateOptions) (*v1alpha2.APIServiceNamespace, error)
+	UpdateStatus(ctx context.Context, aPIServiceNamespace *kubebindv1alpha2.APIServiceNamespace, opts v1.UpdateOptions) (*kubebindv1alpha2.APIServiceNamespace, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha2.APIServiceNamespace, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha2.APIServiceNamespaceList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*kubebindv1alpha2.APIServiceNamespace, error)
+	List(ctx context.Context, opts v1.ListOptions) (*kubebindv1alpha2.APIServiceNamespaceList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.APIServiceNamespace, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *kubebindv1alpha2.APIServiceNamespace, err error)
 	APIServiceNamespaceExpansion
 }
 
 // aPIServiceNamespaces implements APIServiceNamespaceInterface
 type aPIServiceNamespaces struct {
-	*gentype.ClientWithList[*v1alpha2.APIServiceNamespace, *v1alpha2.APIServiceNamespaceList]
+	*gentype.ClientWithList[*kubebindv1alpha2.APIServiceNamespace, *kubebindv1alpha2.APIServiceNamespaceList]
 }
 
 // newAPIServiceNamespaces returns a APIServiceNamespaces
 func newAPIServiceNamespaces(c *KubeBindV1alpha2Client, namespace string) *aPIServiceNamespaces {
 	return &aPIServiceNamespaces{
-		gentype.NewClientWithList[*v1alpha2.APIServiceNamespace, *v1alpha2.APIServiceNamespaceList](
+		gentype.NewClientWithList[*kubebindv1alpha2.APIServiceNamespace, *kubebindv1alpha2.APIServiceNamespaceList](
 			"apiservicenamespaces",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha2.APIServiceNamespace { return &v1alpha2.APIServiceNamespace{} },
-			func() *v1alpha2.APIServiceNamespaceList { return &v1alpha2.APIServiceNamespaceList{} }),
+			func() *kubebindv1alpha2.APIServiceNamespace { return &kubebindv1alpha2.APIServiceNamespace{} },
+			func() *kubebindv1alpha2.APIServiceNamespaceList { return &kubebindv1alpha2.APIServiceNamespaceList{} },
+		),
 	}
 }

@@ -25,6 +25,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -33,21 +34,21 @@ import (
 type reconciler struct {
 	scope kubebindv1alpha2.InformerScope
 
-	getNamespace    func(name string) (*corev1.Namespace, error)
+	getNamespace    func(ctx context.Context, cache cache.Cache, name string) (*corev1.Namespace, error)
 	createNamespace func(ctx context.Context, ns *corev1.Namespace) (*corev1.Namespace, error)
 	deleteNamespace func(ctx context.Context, name string) error
 
-	getRoleBinding    func(ns, name string) (*rbacv1.RoleBinding, error)
+	getRoleBinding    func(ctx context.Context, cache cache.Cache, ns, name string) (*rbacv1.RoleBinding, error)
 	createRoleBinding func(ctx context.Context, crb *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
 	updateRoleBinding func(ctx context.Context, cr *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
 }
 
-func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha2.APIServiceNamespace) error {
+func (c *reconciler) reconcile(ctx context.Context, cache cache.Cache, sns *kubebindv1alpha2.APIServiceNamespace) error {
 	var ns *corev1.Namespace
 	nsName := sns.Namespace + "-" + sns.Name
 	if sns.Status.Namespace != "" {
 		nsName = sns.Status.Namespace
-		ns, _ = c.getNamespace(nsName) // golint:errcheck
+		ns, _ = c.getNamespace(ctx, cache, nsName) // golint:errcheck
 	}
 	if ns == nil {
 		ns = &corev1.Namespace{
@@ -64,7 +65,7 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha2.APISer
 	}
 
 	if c.scope == kubebindv1alpha2.NamespacedScope {
-		if err := c.ensureRBACRoleBinding(ctx, nsName, sns); err != nil {
+		if err := c.ensureRBACRoleBinding(ctx, cache, nsName, sns); err != nil {
 			return fmt.Errorf("failed to ensure RBAC: %w", err)
 		}
 	}
@@ -76,9 +77,9 @@ func (c *reconciler) reconcile(ctx context.Context, sns *kubebindv1alpha2.APISer
 	return nil
 }
 
-func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, ns string, sns *kubebindv1alpha2.APIServiceNamespace) error {
+func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, cache cache.Cache, ns string, sns *kubebindv1alpha2.APIServiceNamespace) error {
 	objName := "kube-binder"
-	binding, err := c.getRoleBinding(ns, objName)
+	binding, err := c.getRoleBinding(ctx, cache, ns, objName)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get role binding %s/%s: %w", ns, objName, err)
 	}

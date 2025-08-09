@@ -30,15 +30,16 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
-	mchandler "sigs.k8s.io/multicluster-runtime/pkg/handler"
-	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
-	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 )
 
 const (
@@ -69,6 +70,7 @@ func NewClusterBindingReconciler(
 	}
 
 	r := &ClusterBindingReconciler{
+		manager:    mgr,
 		scope:      scope,
 		bindClient: bindClient,
 		reconciler: reconciler{
@@ -92,7 +94,7 @@ func NewClusterBindingReconciler(
 				result := &kubebindv1alpha2.APIResourceSchema{}
 				err = cache.Get(ctx, types.NamespacedName{Name: name}, result)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get APIResourceSchema %q from cluster %q: %w", name, err)
+					return nil, fmt.Errorf("failed to get APIResourceSchema %q: %w", name, err)
 				}
 				return result, nil
 			},
@@ -100,7 +102,7 @@ func NewClusterBindingReconciler(
 				var role rbacv1.ClusterRole
 				key := types.NamespacedName{Name: name}
 				if err := cache.Get(ctx, key, &role); err != nil {
-					return nil, fmt.Errorf("failed to get ClusterRole %q from cluster %q: %w", name, err)
+					return nil, fmt.Errorf("failed to get ClusterRole %q: %w", name, err)
 				}
 				return &role, nil
 			},
@@ -178,22 +180,6 @@ func NewClusterBindingReconciler(
 	return r, nil
 }
 
-// mapServiceExportToClusterBinding maps APIServiceExport events to ClusterBinding reconcile requests.
-func mapServiceExportToClusterBinding(ctx context.Context, obj client.Object) []reconcile.Request {
-	// Extract namespace from the APIServiceExport
-	serviceExport := obj.(*kubebindv1alpha2.APIServiceExport)
-
-	// The original logic created a ClusterBinding key as "namespace/cluster"
-	return []reconcile.Request{
-		{
-			NamespacedName: types.NamespacedName{
-				Namespace: serviceExport.Namespace,
-				Name:      "cluster", // This matches the original logic: ns + "/cluster"
-			},
-		},
-	}
-}
-
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=clusterbindings,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=clusterbindings/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=clusterbindings/finalizers,verbs=update
@@ -260,8 +246,30 @@ func (r *ClusterBindingReconciler) SetupWithManager(mgr mcmanager.Manager) error
 		Owns(&rbacv1.RoleBinding{}).
 		Watches(
 			&kubebindv1alpha2.APIServiceExport{},
-			mchandler.EnqueueRequestsFromMapFunc(mapServiceExportToClusterBinding),
+			mapCRD,
 		).
 		Named(controllerName).
 		Complete(r)
+}
+
+func mapCRD(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
+		logger := log.FromContext(ctx)
+		serviceExport, ok := obj.(*kubebindv1alpha2.APIServiceExport)
+		if !ok {
+			logger.Error(fmt.Errorf("object is not an APIServiceExport"), "unexpected object type")
+			return nil
+		}
+		return []mcreconcile.Request{
+			{
+				Request: reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: serviceExport.Namespace,
+						Name:      serviceExport.Name,
+					},
+				},
+				ClusterName: clusterName,
+			},
+		}
+	})
 }

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kcp-dev/multicluster-provider/apiexport"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
 	kubeinformers "k8s.io/client-go/informers"
@@ -28,7 +29,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	"github.com/kcp-dev/multicluster-provider/apiexport"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions"

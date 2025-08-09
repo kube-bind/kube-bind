@@ -33,6 +33,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/controllers/serviceexport"
@@ -42,7 +43,6 @@ import (
 	examplehttp "github.com/kube-bind/kube-bind/contrib/example-backend/http"
 	examplekube "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
-	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 )
 
 type Server struct {
@@ -176,13 +176,11 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		return nil, fmt.Errorf("error setting up ClusterBinding controller with manager: %v", err)
 	}
 
-	// construct APIServiceExport controller with controller-runtime
+	// construct APIServiceExport controller with multicluster-runtime
 	s.ServiceExport, err = serviceexport.NewAPIServiceExportReconciler(
 		ctx,
-		s.Manager.GetClient(),
-		s.Manager.GetScheme(),
+		s.Manager,
 		c.ClientConfig,
-		s.Manager.GetCache(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceExport Controller: %w", err)
@@ -195,10 +193,8 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 
 	s.ServiceNamespace, err = servicenamespace.NewAPIServiceNamespaceReconciler(
 		ctx,
-		s.Manager.GetClient(),
-		s.Manager.GetScheme(),
+		s.Manager,
 		c.ClientConfig,
-		s.Manager.GetCache(),
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
 	)
@@ -212,10 +208,8 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	}
 	s.ServiceExportRequest, err = serviceexportrequest.NewAPIServiceExportRequestReconciler(
 		ctx,
-		s.Manager.GetClient(),
-		s.Manager.GetScheme(),
+		s.Manager,
 		c.ClientConfig,
-		s.Manager.GetCache(),
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
 	)

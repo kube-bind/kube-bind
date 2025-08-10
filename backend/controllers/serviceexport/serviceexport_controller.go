@@ -43,7 +43,7 @@ import (
 )
 
 const (
-	controllerName = "kube-bind-example-backend-serviceexport"
+	controllerName = "kube-bind-backend-serviceexport"
 )
 
 // APIServiceExportReconciler reconciles a APIServiceExport object.

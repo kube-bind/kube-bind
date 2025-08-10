@@ -46,7 +46,7 @@ import (
 )
 
 const (
-	controllerName = "kube-bind-example-backend-clusterbinding"
+	controllerName = "kube-bind-backend-clusterbinding"
 )
 
 // ClusterBindingReconciler reconciles a ClusterBinding object.

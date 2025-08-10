@@ -45,7 +45,7 @@ import (
 )
 
 const (
-	controllerName = "kube-bind-example-backend-servicenamespace"
+	controllerName = "kube-bind-backend-servicenamespace"
 )
 
 // APIServiceNamespaceReconciler reconciles a APIServiceNamespace object.

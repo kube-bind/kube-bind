@@ -41,7 +41,8 @@ type Options struct {
 type ExtraOptions struct {
 	KubeConfig string
 
-	Provider string
+	Provider  string
+	ServerURL string
 
 	NamespacePrefix        string
 	PrettyName             string
@@ -83,9 +84,10 @@ func NewOptions() *Options {
 		ExtraOptions: ExtraOptions{
 			Provider:               "kubernetes",
 			NamespacePrefix:        "cluster",
-			PrettyName:             "Example Backend",
+			PrettyName:             "Backend",
 			ConsumerScope:          string(kubebindv1alpha2.NamespacedScope),
 			ClusterScopedIsolation: string(kubebindv1alpha2.IsolationPrefixed),
+			ServerURL:              "",
 		},
 	}
 }

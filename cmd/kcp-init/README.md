@@ -45,8 +45,15 @@ bin/backend \
 ```
 
 
-6. Run `kubectl ws create sub-provider --enter`
-7. Bind the APIExport to the workspace
+6. Copy the kubeconfig to the consumer:
+```bash
+cp .kcp/admin.kubeconfig .kcp/sub-provider.kubeconfig
+export KUBECONFIG=.kcp/sub-provider.kubeconfig
+k ws use :root
+```
+
+7. Run `kubectl ws create sub-provider --enter`
+8. Bind the APIExport to the workspace
 ```bash
 kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
   --accept-permission-claim clusterroles.rbac.authorization.k8s.io \
@@ -56,7 +63,7 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim
   --accept-permission-claim secrets.core \
   --accept-permission-claim namespaces.core \
   --accept-permission-claim serviceaccounts.rbac.authorization.k8s.io \
-  --accept-permission-claim roles.rbac.authorization.k8s.io \
+  --accept-permission-claim roles.rbac.authorization.k8s.io 
 ```
 
 8. Create CRD:
@@ -73,9 +80,6 @@ export KUBECONFIG=.kcp/consumer.kubeconfig
 kubectl ws use :root
 kubectl ws create consumer --enter
 ```
-
-
-
 
 
 ## Debug

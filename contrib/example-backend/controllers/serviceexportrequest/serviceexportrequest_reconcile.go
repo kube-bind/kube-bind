@@ -36,9 +36,9 @@ type reconciler struct {
 	informerScope          kubebindv1alpha2.InformerScope
 	clusterScopedIsolation kubebindv1alpha2.Isolation
 
-	getCRD                     func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
+	getCRD                     func(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getAPIResourceSchema       func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
-	getServiceExport           func(ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
+	getServiceExport           func(ctx context.Context, ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
 	createServiceExport        func(ctx context.Context, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)
 	createAPIResourceSchema    func(ctx context.Context, schema *kubebindv1alpha2.APIResourceSchema) (*kubebindv1alpha2.APIResourceSchema, error)
 	deleteServiceExportRequest func(ctx context.Context, namespace, name string) error
@@ -69,7 +69,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 			switch {
 			case apierrors.IsNotFound(err):
 				logger.V(1).Info("APIResourceSchema not found, continuing with fallback to CRD conversion to APIResourceSchema", "name", name)
-				crd, err := r.getCRD(name)
+				crd, err := r.getCRD(ctx, name)
 				if err != nil && !apierrors.IsNotFound(err) {
 					return err
 				}
@@ -99,7 +99,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 				return err
 			}
 
-			if _, err := r.getServiceExport(req.Namespace, name); err != nil && !apierrors.IsNotFound(err) {
+			if _, err := r.getServiceExport(ctx, req.Namespace, name); err != nil && !apierrors.IsNotFound(err) {
 				return err
 			} else if err == nil {
 				continue

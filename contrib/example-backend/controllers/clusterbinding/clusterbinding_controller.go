@@ -19,52 +19,48 @@ package clusterbinding
 import (
 	"context"
 	"fmt"
-	"time"
+	"reflect"
 
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
-	kubeinformers "k8s.io/client-go/informers/core/v1"
-	rbacinformers "k8s.io/client-go/informers/rbac/v1"
-	kubeclient "k8s.io/client-go/kubernetes"
-	corelisters "k8s.io/client-go/listers/core/v1"
-	rbaclisters "k8s.io/client-go/listers/rbac/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/util/workqueue"
-	"k8s.io/klog/v2"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/kube-bind/kube-bind/pkg/committer"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
-	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 const (
 	controllerName = "kube-bind-example-backend-clusterbinding"
 )
 
-// NewController returns a new controller to reconcile ClusterBindings.
-func NewController(
+// ClusterBindingReconciler reconciles a ClusterBinding object.
+type ClusterBindingReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+
+	scope      kubebindv1alpha2.InformerScope
+	bindClient bindclient.Interface
+	reconciler reconciler
+}
+
+// NewClusterBindingReconciler returns a new ClusterBindingReconciler to reconcile ClusterBindings.
+func NewClusterBindingReconciler(
+	c client.Client,
+	scheme *runtime.Scheme,
 	config *rest.Config,
 	scope kubebindv1alpha2.InformerScope,
-	clusterBindingInformer bindinformers.ClusterBindingInformer,
-	serviceExportInformer bindinformers.APIServiceExportInformer,
-	clusterRoleInformer rbacinformers.ClusterRoleInformer,
-	clusterRoleBindingInformer rbacinformers.ClusterRoleBindingInformer,
-	roleBindingInformer rbacinformers.RoleBindingInformer,
-	namespaceInformer kubeinformers.NamespaceInformer,
-) (*Controller, error) {
-	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
-
-	logger := klog.Background().WithValues("controller", controllerName)
-
+	cache cache.Cache,
+) (*ClusterBindingReconciler, error) {
 	config = rest.CopyConfig(config)
 	config = rest.AddUserAgent(config, controllerName)
 
@@ -72,247 +68,186 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
-	kubeClient, err := kubeclient.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
 
-	c := &Controller{
-		queue: queue,
-
-		clusterBindingLister:  clusterBindingInformer.Lister(),
-		clusterBindingIndexer: clusterBindingInformer.Informer().GetIndexer(),
-
-		serviceExportLister:  serviceExportInformer.Lister(),
-		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
-
-		clusterRoleLister:  clusterRoleInformer.Lister(),
-		clusterRoleIndexer: clusterRoleInformer.Informer().GetIndexer(),
-
-		clusterRoleBindingLister:  clusterRoleBindingInformer.Lister(),
-		clusterRoleBindingIndexer: clusterRoleBindingInformer.Informer().GetIndexer(),
-
-		namespaceLister:  namespaceInformer.Lister(),
-		namespaceIndexer: namespaceInformer.Informer().GetIndexer(),
-
+	r := &ClusterBindingReconciler{
+		Client:     c,
+		Scheme:     scheme,
+		scope:      scope,
+		bindClient: bindClient,
 		reconciler: reconciler{
 			scope: scope,
-			listServiceExports: func(ns string) ([]*kubebindv1alpha2.APIServiceExport, error) {
-				return serviceExportInformer.Lister().APIServiceExports(ns).List(labels.Everything())
+			listServiceExports: func(ctx context.Context, ns string) ([]*kubebindv1alpha2.APIServiceExport, error) {
+				var list kubebindv1alpha2.APIServiceExportList
+				if err := cache.List(ctx, &list, client.InNamespace(ns)); err != nil {
+					return nil, err
+				}
+				var exports []*kubebindv1alpha2.APIServiceExport
+				for i := range list.Items {
+					exports = append(exports, &list.Items[i])
+				}
+				return exports, nil
 			},
 			getAPIResourceSchema: func(ctx context.Context, namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
 				return bindClient.KubeBindV1alpha2().APIResourceSchemas().Get(ctx, name, metav1.GetOptions{})
 			},
-			getClusterRole: func(name string) (*rbacv1.ClusterRole, error) {
-				return clusterRoleInformer.Lister().Get(name)
+			getClusterRole: func(ctx context.Context, name string) (*rbacv1.ClusterRole, error) {
+				var role rbacv1.ClusterRole
+				key := types.NamespacedName{Name: name}
+				if err := c.Get(ctx, key, &role); err != nil {
+					return nil, err
+				}
+				return &role, nil
 			},
 			createClusterRole: func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
-				return kubeClient.RbacV1().ClusterRoles().Create(ctx, binding, metav1.CreateOptions{})
+				if err := c.Create(ctx, binding); err != nil {
+					return nil, err
+				}
+				return binding, nil
 			},
 			updateClusterRole: func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error) {
-				return kubeClient.RbacV1().ClusterRoles().Update(ctx, binding, metav1.UpdateOptions{})
+				if err := c.Update(ctx, binding); err != nil {
+					return nil, err
+				}
+				return binding, nil
 			},
-			getClusterRoleBinding: func(name string) (*rbacv1.ClusterRoleBinding, error) {
-				return clusterRoleBindingInformer.Lister().Get(name)
+			getClusterRoleBinding: func(ctx context.Context, name string) (*rbacv1.ClusterRoleBinding, error) {
+				var binding rbacv1.ClusterRoleBinding
+				key := types.NamespacedName{Name: name}
+				if err := cache.Get(ctx, key, &binding); err != nil {
+					return nil, err
+				}
+				return &binding, nil
 			},
 			createClusterRoleBinding: func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
-				return kubeClient.RbacV1().ClusterRoleBindings().Create(ctx, binding, metav1.CreateOptions{})
+				if err := c.Create(ctx, binding); err != nil {
+					return nil, err
+				}
+				return binding, nil
 			},
 			updateClusterRoleBinding: func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error) {
-				return kubeClient.RbacV1().ClusterRoleBindings().Update(ctx, binding, metav1.UpdateOptions{})
+				if err := c.Update(ctx, binding); err != nil {
+					return nil, err
+				}
+				return binding, nil
 			},
 			deleteClusterRoleBinding: func(ctx context.Context, name string) error {
-				return kubeClient.RbacV1().ClusterRoleBindings().Delete(ctx, name, metav1.DeleteOptions{})
+				binding := &rbacv1.ClusterRoleBinding{
+					ObjectMeta: metav1.ObjectMeta{Name: name},
+				}
+				return c.Delete(ctx, binding)
 			},
-			getNamespace: func(name string) (*v1.Namespace, error) {
-				return namespaceInformer.Lister().Get(name)
+			getNamespace: func(ctx context.Context, name string) (*v1.Namespace, error) {
+				var ns v1.Namespace
+				key := types.NamespacedName{Name: name}
+				if err := cache.Get(ctx, key, &ns); err != nil {
+					return nil, err
+				}
+				return &ns, nil
 			},
 			createRoleBinding: func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
-				return kubeClient.RbacV1().RoleBindings(ns).Create(ctx, binding, metav1.CreateOptions{})
+				binding.Namespace = ns
+				if err := c.Create(ctx, binding); err != nil {
+					return nil, err
+				}
+				return binding, nil
 			},
 			updateRoleBinding: func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
-				return kubeClient.RbacV1().RoleBindings(ns).Update(ctx, binding, metav1.UpdateOptions{})
+				binding.Namespace = ns
+				if err := c.Update(ctx, binding); err != nil {
+					return nil, err
+				}
+				return binding, nil
 			},
-			getRoleBinding: func(ns, name string) (*rbacv1.RoleBinding, error) {
-				return roleBindingInformer.Lister().RoleBindings(ns).Get(name)
+			getRoleBinding: func(ctx context.Context, ns, name string) (*rbacv1.RoleBinding, error) {
+				var binding rbacv1.RoleBinding
+				key := types.NamespacedName{Namespace: ns, Name: name}
+				if err := cache.Get(ctx, key, &binding); err != nil {
+					return nil, err
+				}
+				return &binding, nil
 			},
 		},
+	}
 
-		commit: committer.NewCommitter[*kubebindv1alpha2.ClusterBinding, *kubebindv1alpha2.ClusterBindingSpec, *kubebindv1alpha2.ClusterBindingStatus](
-			func(ns string) committer.Patcher[*kubebindv1alpha2.ClusterBinding] {
-				return bindClient.KubeBindV1alpha2().ClusterBindings(ns)
+	return r, nil
+}
+
+// mapServiceExportToClusterBinding maps APIServiceExport events to ClusterBinding reconcile requests.
+func mapServiceExportToClusterBinding(ctx context.Context, obj client.Object) []reconcile.Request {
+	// Extract namespace from the APIServiceExport
+	serviceExport := obj.(*kubebindv1alpha2.APIServiceExport)
+
+	// The original logic created a ClusterBinding key as "namespace/cluster"
+	return []reconcile.Request{
+		{
+			NamespacedName: types.NamespacedName{
+				Namespace: serviceExport.Namespace,
+				Name:      "cluster",
 			},
-		),
-	}
-
-	if _, err := clusterBindingInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj any) {
-			c.enqueueClusterBinding(logger, obj)
 		},
-		UpdateFunc: func(old, newObj any) {
-			c.enqueueClusterBinding(logger, newObj)
-		},
-		DeleteFunc: func(obj any) {
-			c.enqueueClusterBinding(logger, obj)
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj any) {
-			c.enqueueServiceExport(logger, obj)
-		},
-		UpdateFunc: func(old, newObj any) {
-			c.enqueueServiceExport(logger, newObj)
-		},
-		DeleteFunc: func(obj any) {
-			c.enqueueServiceExport(logger, obj)
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	return c, nil
-}
-
-type Resource = committer.Resource[*kubebindv1alpha2.ClusterBindingSpec, *kubebindv1alpha2.ClusterBindingStatus]
-type CommitFunc = func(context.Context, *Resource, *Resource) error
-
-// Controller reconciles ClusterBinding conditions.
-type Controller struct {
-	queue workqueue.TypedRateLimitingInterface[string]
-
-	clusterBindingLister  bindlisters.ClusterBindingLister
-	clusterBindingIndexer cache.Indexer
-
-	serviceExportLister  bindlisters.APIServiceExportLister
-	serviceExportIndexer cache.Indexer
-
-	clusterRoleLister  rbaclisters.ClusterRoleLister
-	clusterRoleIndexer cache.Indexer
-
-	clusterRoleBindingLister  rbaclisters.ClusterRoleBindingLister
-	clusterRoleBindingIndexer cache.Indexer
-
-	namespaceLister  corelisters.NamespaceLister
-	namespaceIndexer cache.Indexer
-
-	reconciler
-
-	commit CommitFunc
-}
-
-func (c *Controller) enqueueClusterBinding(logger klog.Logger, obj any) {
-	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-
-	logger.V(2).Info("queueing ClusterBinding", "key", key)
-	c.queue.Add(key)
-}
-
-func (c *Controller) enqueueServiceExport(logger klog.Logger, obj any) {
-	seKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-	ns, _, err := cache.SplitMetaNamespaceKey(seKey)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-
-	key := ns + "/cluster"
-	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "APIServiceExport", "ServiceExportKey", seKey)
-	c.queue.Add(key)
-}
-
-// Start starts the controller, which stops when ctx.Done() is closed.
-func (c *Controller) Start(ctx context.Context, numThreads int) {
-	defer runtime.HandleCrash()
-	defer c.queue.ShutDown()
-
-	logger := klog.FromContext(ctx).WithValues("controller", controllerName)
-
-	logger.Info("Starting controller")
-	defer logger.Info("Shutting down controller")
-
-	for i := 0; i < numThreads; i++ {
-		go wait.UntilWithContext(ctx, c.startWorker, time.Second)
-	}
-
-	<-ctx.Done()
-}
-
-func (c *Controller) startWorker(ctx context.Context) {
-	defer runtime.HandleCrash()
-
-	for c.processNextWorkItem(ctx) {
 	}
 }
 
-func (c *Controller) processNextWorkItem(ctx context.Context) bool {
-	// Wait until there is a new item in the working queue
-	key, quit := c.queue.Get()
-	if quit {
-		return false
+//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=clusterbindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=clusterbindings/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=clusterbindings/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports,verbs=get;list;watch
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch
+
+// Reconcile is part of the main kubernetes reconciliation loop which aims to
+// move the current state of the cluster closer to the desired state.
+func (r *ClusterBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	logger.Info("Reconciling ClusterBinding", "namespace", req.Namespace, "name", req.Name)
+
+	// Fetch the ClusterBinding instance
+	clusterBinding := &kubebindv1alpha2.ClusterBinding{}
+	if err := r.Get(ctx, req.NamespacedName, clusterBinding); err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, could have been deleted after reconcile request.
+			logger.Info("ClusterBinding not found, ignoring")
+			return ctrl.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		return ctrl.Result{}, fmt.Errorf("failed to get ClusterBinding: %w", err)
 	}
 
-	logger := klog.FromContext(ctx).WithValues("key", key)
-	ctx = klog.NewContext(ctx, logger)
-	logger.V(2).Info("processing key")
+	// Create a copy to modify
+	original := clusterBinding.DeepCopy()
 
-	// No matter what, tell the queue we're done with this key, to unblock
-	// other workers.
-	defer c.queue.Done(key)
-
-	if err := c.process(ctx, key); err != nil {
-		runtime.HandleError(fmt.Errorf("%q controller failed to sync %q, err: %w", controllerName, key, err))
-		c.queue.AddRateLimited(key)
-		return true
+	// Run the reconciliation logic
+	if err := r.reconciler.reconcile(ctx, clusterBinding); err != nil {
+		logger.Error(err, "Failed to reconcile ClusterBinding")
+		return ctrl.Result{}, err
 	}
-	c.queue.Forget(key)
-	return true
+
+	// Update status if it has changed
+	if !reflect.DeepEqual(original, clusterBinding) {
+		err := r.Update(ctx, clusterBinding)
+		if err != nil {
+			logger.Error(err, "Failed to update ClusterBinding status")
+			return ctrl.Result{}, fmt.Errorf("failed to update ClusterBinding status: %w", err)
+		}
+		logger.Info("ClusterBinding status updated")
+	}
+
+	return ctrl.Result{}, nil
 }
 
-func (c *Controller) process(ctx context.Context, key string) error {
-	logger := klog.FromContext(ctx)
-
-	ns, name, err := cache.SplitMetaNamespaceKey(key)
-	if err != nil {
-		runtime.HandleError(err)
-		return nil // we cannot do anything
-	}
-
-	obj, err := c.clusterBindingLister.ClusterBindings(ns).Get(name)
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	} else if errors.IsNotFound(err) {
-		logger.V(2).Info("ClusterBinding not found, ignoring")
-		return nil // nothing we can do
-	}
-
-	old := obj
-	obj = obj.DeepCopy()
-
-	var errs []error
-	if err := c.reconcile(ctx, obj); err != nil {
-		errs = append(errs, err)
-	}
-
-	// Regardless of whether reconcile returned an error or not, always try to patch status if needed. Return the
-	// reconciliation error at the end.
-
-	// If the object being reconciled changed as a result, update it.
-	oldResource := &Resource{ObjectMeta: old.ObjectMeta, Spec: &old.Spec, Status: &old.Status}
-	newResource := &Resource{ObjectMeta: obj.ObjectMeta, Spec: &obj.Spec, Status: &obj.Status}
-	if err := c.commit(ctx, oldResource, newResource); err != nil {
-		errs = append(errs, err)
-	}
-
-	return utilerrors.NewAggregate(errs)
+// SetupWithManager sets up the controller with the Manager.
+func (r *ClusterBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&kubebindv1alpha2.ClusterBinding{}).
+		Owns(&rbacv1.ClusterRole{}).
+		Owns(&rbacv1.ClusterRoleBinding{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Watches(
+			&kubebindv1alpha2.APIServiceExport{},
+			handler.EnqueueRequestsFromMapFunc(mapServiceExportToClusterBinding),
+		).
+		Named(controllerName).
+		Complete(r)
 }

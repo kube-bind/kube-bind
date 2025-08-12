@@ -23,14 +23,15 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	IdentityAnnotationKey = "example-backend.kube-bind.io/identity"
 )
 
-func CreateNamespace(ctx context.Context, client kubernetes.Interface, generateName, id string) (*corev1.Namespace, error) {
+func CreateNamespace(ctx context.Context, client client.Client, generateName, id string) (*corev1.Namespace, error) {
 	if !strings.HasSuffix(generateName, "-") {
 		generateName += "-"
 	}
@@ -43,18 +44,18 @@ func CreateNamespace(ctx context.Context, client kubernetes.Interface, generateN
 		},
 	}
 
-	ns, err := client.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
+	err := client.Create(ctx, namespace)
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return nil, err
 	} else if errors.IsAlreadyExists(err) {
-		ns, err := client.CoreV1().Namespaces().Get(ctx, namespace.Name, metav1.GetOptions{})
+		err := client.Get(ctx, types.NamespacedName{Name: namespace.Name}, namespace)
 		if err != nil {
 			return nil, err
 		}
-		if ns.Annotations[IdentityAnnotationKey] != id {
-			return nil, errors.NewAlreadyExists(corev1.Resource("namespace"), ns.Name)
+		if namespace.Annotations[IdentityAnnotationKey] != id {
+			return nil, errors.NewAlreadyExists(corev1.Resource("namespace"), namespace.Name)
 		}
 	}
 
-	return ns, err
+	return namespace, nil
 }

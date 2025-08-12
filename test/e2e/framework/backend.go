@@ -87,6 +87,8 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	options.OIDC.IssuerClientID = "kube-bind-" + port
 	createDexClient(t, addr)
 
+	options.TestingSkipNameValidation = true
+
 	completed, err := options.Complete()
 	require.NoError(t, err)
 
@@ -96,7 +98,6 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	server, err := backend.NewServer(ctx, config)
 	require.NoError(t, err)
 
-	server.OptionallyStartInformers(ctx)
 	err = server.Run(ctx)
 	require.NoError(t, err)
 	t.Logf("backend listening on %s", addr)

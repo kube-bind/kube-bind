@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,17 +27,17 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 
-	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	apiskubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	versioned "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	internalinterfaces "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/internalinterfaces"
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 // APIResourceSchemaInformer provides access to a shared informer and lister for
 // APIResourceSchemas.
 type APIResourceSchemaInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.APIResourceSchemaLister
+	Lister() kubebindv1alpha2.APIResourceSchemaLister
 }
 
 type aPIResourceSchemaInformer struct {
@@ -71,7 +71,7 @@ func NewFilteredAPIResourceSchemaInformer(client versioned.Interface, resyncPeri
 				return client.KubeBindV1alpha2().APIResourceSchemas().Watch(context.TODO(), options)
 			},
 		},
-		&kubebindv1alpha2.APIResourceSchema{},
+		&apiskubebindv1alpha2.APIResourceSchema{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +82,9 @@ func (f *aPIResourceSchemaInformer) defaultInformer(client versioned.Interface, 
 }
 
 func (f *aPIResourceSchemaInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubebindv1alpha2.APIResourceSchema{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiskubebindv1alpha2.APIResourceSchema{}, f.defaultInformer)
 }
 
-func (f *aPIResourceSchemaInformer) Lister() v1alpha2.APIResourceSchemaLister {
-	return v1alpha2.NewAPIResourceSchemaLister(f.Informer().GetIndexer())
+func (f *aPIResourceSchemaInformer) Lister() kubebindv1alpha2.APIResourceSchemaLister {
+	return kubebindv1alpha2.NewAPIResourceSchemaLister(f.Informer().GetIndexer())
 }

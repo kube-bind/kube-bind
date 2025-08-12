@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 
@@ -40,6 +41,8 @@ type Options struct {
 type ExtraOptions struct {
 	KubeConfig string
 
+	Provider string
+
 	NamespacePrefix        string
 	PrettyName             string
 	ConsumerScope          string
@@ -49,7 +52,8 @@ type ExtraOptions struct {
 	ExternalCA             []byte
 	TLSExternalServerName  string
 
-	TestingAutoSelect string
+	TestingAutoSelect         string
+	TestingSkipNameValidation bool
 }
 
 type completedOptions struct {
@@ -77,12 +81,19 @@ func NewOptions() *Options {
 		Serve:  NewServe(),
 
 		ExtraOptions: ExtraOptions{
+			Provider:               "kubernetes",
 			NamespacePrefix:        "cluster",
 			PrettyName:             "Example Backend",
 			ConsumerScope:          string(kubebindv1alpha2.NamespacedScope),
 			ClusterScopedIsolation: string(kubebindv1alpha2.IsolationPrefixed),
 		},
 	}
+}
+
+var providerAliases = map[string]string{
+	"kcp":        "kcp",
+	"kubernetes": "kubernetes",
+	"":           "kubernetes",
 }
 
 func (options *Options) AddFlags(fs *pflag.FlagSet) {
@@ -99,6 +110,10 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.ExternalAddress, "external-address", options.ExternalAddress, "The external address for the service provider cluster, including https:// and port. If not specified, service account's hosts are used.")
 	fs.StringVar(&options.ExternalCAFile, "external-ca-file", options.ExternalCAFile, "The external CA file for the service provider cluster. If not specified, service account's CA is used.")
 	fs.StringVar(&options.TLSExternalServerName, "external-server-name", options.TLSExternalServerName, "The external (TLS) server name used by consumers to talk to the service provider cluster. This can be useful to select the right certificate via SNI.")
+
+	fs.StringVar(&options.Provider, "multicluster-runtime-provider", options.Provider,
+		fmt.Sprintf("The multicluster runtime provider. Possible values are: %v", sets.List(sets.Set[string](sets.StringKeySet(providerAliases)))),
+	)
 
 	fs.StringVar(&options.TestingAutoSelect, "testing-auto-select", options.TestingAutoSelect, "<resource>.<group> that is automatically selected on th bind screen for testing")
 	fs.MarkHidden("testing-auto-select") //nolint:errcheck
@@ -141,7 +156,6 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 		}
 		options.ExternalCA = ca
 	}
-
 	return &CompletedOptions{
 		completedOptions: &completedOptions{
 			Logs:         options.Logs,
@@ -180,6 +194,12 @@ func (options *CompletedOptions) Validate() error {
 			return fmt.Errorf("invalid external hostname: %v", err)
 		}
 	}
+
+	provider := providerAliases[options.Provider]
+	if provider == "" {
+		return fmt.Errorf("unknown provider %q, must be one of %v", options.Provider, sets.List(sets.Set[string](sets.StringKeySet(providerAliases))))
+	}
+	options.Provider = provider
 
 	return nil
 }

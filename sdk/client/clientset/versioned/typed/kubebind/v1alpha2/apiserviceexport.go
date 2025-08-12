@@ -19,14 +19,14 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"context"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	scheme "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/scheme"
 )
 
@@ -38,33 +38,34 @@ type APIServiceExportsGetter interface {
 
 // APIServiceExportInterface has methods to work with APIServiceExport resources.
 type APIServiceExportInterface interface {
-	Create(ctx context.Context, aPIServiceExport *v1alpha2.APIServiceExport, opts v1.CreateOptions) (*v1alpha2.APIServiceExport, error)
-	Update(ctx context.Context, aPIServiceExport *v1alpha2.APIServiceExport, opts v1.UpdateOptions) (*v1alpha2.APIServiceExport, error)
+	Create(ctx context.Context, aPIServiceExport *kubebindv1alpha2.APIServiceExport, opts v1.CreateOptions) (*kubebindv1alpha2.APIServiceExport, error)
+	Update(ctx context.Context, aPIServiceExport *kubebindv1alpha2.APIServiceExport, opts v1.UpdateOptions) (*kubebindv1alpha2.APIServiceExport, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, aPIServiceExport *v1alpha2.APIServiceExport, opts v1.UpdateOptions) (*v1alpha2.APIServiceExport, error)
+	UpdateStatus(ctx context.Context, aPIServiceExport *kubebindv1alpha2.APIServiceExport, opts v1.UpdateOptions) (*kubebindv1alpha2.APIServiceExport, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha2.APIServiceExport, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha2.APIServiceExportList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*kubebindv1alpha2.APIServiceExport, error)
+	List(ctx context.Context, opts v1.ListOptions) (*kubebindv1alpha2.APIServiceExportList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.APIServiceExport, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *kubebindv1alpha2.APIServiceExport, err error)
 	APIServiceExportExpansion
 }
 
 // aPIServiceExports implements APIServiceExportInterface
 type aPIServiceExports struct {
-	*gentype.ClientWithList[*v1alpha2.APIServiceExport, *v1alpha2.APIServiceExportList]
+	*gentype.ClientWithList[*kubebindv1alpha2.APIServiceExport, *kubebindv1alpha2.APIServiceExportList]
 }
 
 // newAPIServiceExports returns a APIServiceExports
 func newAPIServiceExports(c *KubeBindV1alpha2Client, namespace string) *aPIServiceExports {
 	return &aPIServiceExports{
-		gentype.NewClientWithList[*v1alpha2.APIServiceExport, *v1alpha2.APIServiceExportList](
+		gentype.NewClientWithList[*kubebindv1alpha2.APIServiceExport, *kubebindv1alpha2.APIServiceExportList](
 			"apiserviceexports",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha2.APIServiceExport { return &v1alpha2.APIServiceExport{} },
-			func() *v1alpha2.APIServiceExportList { return &v1alpha2.APIServiceExportList{} }),
+			func() *kubebindv1alpha2.APIServiceExport { return &kubebindv1alpha2.APIServiceExport{} },
+			func() *kubebindv1alpha2.APIServiceExportList { return &kubebindv1alpha2.APIServiceExportList{} },
+		),
 	}
 }

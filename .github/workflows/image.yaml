@@ -17,7 +17,7 @@ jobs:
     - uses: actions/checkout@v3
     - uses: actions/setup-go@v3
       with:
-        go-version: v1.23.4
+        go-version: v1.24.0
         check-latest: true
     # We need this to remove local tags that are not semver so goreleaser doesn't get confused.
     - name: Delete non-semver tags

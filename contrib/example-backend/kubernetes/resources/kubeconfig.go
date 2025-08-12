@@ -25,17 +25,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func GenerateKubeconfig(ctx context.Context,
-	client kubernetes.Interface,
+	client client.Client,
 	clusterConfig *rest.Config,
 	externalAddress string,
 	externalCA []byte,
@@ -59,10 +60,10 @@ func GenerateKubeconfig(ctx context.Context,
 		}
 	}
 
-	var saSecret *corev1.Secret
+	var saSecret corev1.Secret
 	logger.V(2).Info("Waiting for service account secret to be updated with a token", "name", saSecretName)
 	if err := wait.PollUntilContextTimeout(ctx, 500*time.Millisecond, 10*time.Second, true, func(ctx context.Context) (done bool, err error) {
-		saSecret, err = client.CoreV1().Secrets(ns).Get(ctx, saSecretName, v1.GetOptions{})
+		err = client.Get(ctx, types.NamespacedName{Namespace: ns, Name: saSecretName}, &saSecret)
 		if err != nil && !errors.IsNotFound(err) {
 			return false, err
 		} else if errors.IsNotFound(err) {
@@ -112,24 +113,24 @@ func GenerateKubeconfig(ctx context.Context,
 	}
 
 	logger.V(1).Info("Creating kubeconfig secret", "name", kubeconfigSecretName)
-	if secret, err := client.CoreV1().Secrets(ns).Create(ctx, kubeconfigSecret, v1.CreateOptions{}); err != nil && !errors.IsAlreadyExists(err) {
+	if err := client.Create(ctx, kubeconfigSecret); err != nil && !errors.IsAlreadyExists(err) {
 		return nil, err
 	} else if err == nil {
-		return secret, nil
+		return kubeconfigSecret, nil
 	}
 
-	var updated *corev1.Secret
+	var existing corev1.Secret
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		existing, err := client.CoreV1().Secrets(ns).Get(ctx, kubeconfigSecret.Name, v1.GetOptions{})
+		err := client.Get(ctx, types.NamespacedName{Namespace: ns, Name: kubeconfigSecret.Name}, &existing)
 		if err != nil {
 			return err
 		}
 		existing.Data = kubeconfigSecret.Data
 		logger.V(1).Info("Updating kubeconfig secret", "name", kubeconfigSecretName)
-		updated, err = client.CoreV1().Secrets(ns).Update(ctx, existing, v1.UpdateOptions{})
+		err = client.Update(ctx, &existing)
 		return err
 	}); err != nil {
 		return nil, err
 	}
-	return updated, nil
+	return &existing, nil
 }

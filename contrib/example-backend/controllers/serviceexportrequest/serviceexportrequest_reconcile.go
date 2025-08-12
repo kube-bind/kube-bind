@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
@@ -36,18 +37,18 @@ type reconciler struct {
 	informerScope          kubebindv1alpha2.InformerScope
 	clusterScopedIsolation kubebindv1alpha2.Isolation
 
-	getCRD                     func(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	getAPIResourceSchema       func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
-	getServiceExport           func(ctx context.Context, ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
+	getCRD                     func(ctx context.Context, cache cache.Cache, name string) (*apiextensionsv1.CustomResourceDefinition, error)
+	getAPIResourceSchema       func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error)
+	getServiceExport           func(ctx context.Context, cache cache.Cache, ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
 	createServiceExport        func(ctx context.Context, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)
 	createAPIResourceSchema    func(ctx context.Context, schema *kubebindv1alpha2.APIResourceSchema) (*kubebindv1alpha2.APIResourceSchema, error)
 	deleteServiceExportRequest func(ctx context.Context, namespace, name string) error
 }
 
-func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha2.APIServiceExportRequest) error {
+func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	var errs []error
 
-	if err := r.ensureExports(ctx, req); err != nil {
+	if err := r.ensureExports(ctx, cache, req); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -56,7 +57,7 @@ func (r *reconciler) reconcile(ctx context.Context, req *kubebindv1alpha2.APISer
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.APIServiceExportRequest) error {
+func (r *reconciler) ensureExports(ctx context.Context, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	logger := klog.FromContext(ctx)
 
 	if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhasePending {
@@ -65,11 +66,11 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 			// backend is created using CRD's as backup. But this is not required.
 			name := res.Resource + "." + res.Group
 
-			apiResourceSchema, err := r.getAPIResourceSchema(ctx, name)
+			apiResourceSchema, err := r.getAPIResourceSchema(ctx, cache, name)
 			switch {
 			case apierrors.IsNotFound(err):
 				logger.V(1).Info("APIResourceSchema not found, continuing with fallback to CRD conversion to APIResourceSchema", "name", name)
-				crd, err := r.getCRD(ctx, name)
+				crd, err := r.getCRD(ctx, cache, name)
 				if err != nil && !apierrors.IsNotFound(err) {
 					return err
 				}
@@ -99,7 +100,7 @@ func (r *reconciler) ensureExports(ctx context.Context, req *kubebindv1alpha2.AP
 				return err
 			}
 
-			if _, err := r.getServiceExport(ctx, req.Namespace, name); err != nil && !apierrors.IsNotFound(err) {
+			if _, err := r.getServiceExport(ctx, cache, req.Namespace, name); err != nil && !apierrors.IsNotFound(err) {
 				return err
 			} else if err == nil {
 				continue

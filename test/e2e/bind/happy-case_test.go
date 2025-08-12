@@ -109,7 +109,7 @@ spec:
 				iostreams, _, bufOut, _ := genericclioptions.NewTestIOStreams()
 				authURLDryRunCh := make(chan string, 1)
 				go simulateBrowser(t, authURLDryRunCh, serviceGVR.Resource)
-				framework.Bind(t, iostreams, authURLDryRunCh, nil, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector", "--dry-run")
+				framework.Bind(t, iostreams, authURLDryRunCh, nil, fmt.Sprintf("http://%s/exports", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector", "--dry-run")
 				_, err := yaml.YAMLToJSON(bufOut.Bytes())
 				require.NoError(t, err)
 			},
@@ -121,7 +121,7 @@ spec:
 				authURLCh := make(chan string, 1)
 				go simulateBrowser(t, authURLCh, serviceGVR.Resource)
 				invocations := make(chan framework.SubCommandInvocation, 1)
-				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
+				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/exports", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
 				inv := <-invocations
 				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
 				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
@@ -347,7 +347,7 @@ spec:
 				authURLCh := make(chan string, 1)
 				go simulateBrowser(t, authURLCh, serviceGVR.Resource)
 				invocations := make(chan framework.SubCommandInvocation, 1)
-				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/export", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
+				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/exports", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
 				inv := <-invocations
 				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
 				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
@@ -369,14 +369,14 @@ func simulateBrowser(t *testing.T, authURLCh chan string, resource string) {
 	require.NoError(t, err)
 
 	t.Logf("Waiting for browser to be at /resources")
-	framework.BrowerEventuallyAtPath(t, browser, "/resources")
+	framework.BrowserEventuallyAtPath(t, browser, "/resources")
 
 	t.Logf("Clicking %s", resource)
 	err = browser.Click("a." + resource)
 	require.NoError(t, err)
 
 	t.Logf("Waiting for browser to be forwarded to client")
-	framework.BrowerEventuallyAtPath(t, browser, "/callback")
+	framework.BrowserEventuallyAtPath(t, browser, "/callback")
 }
 
 func toUnstructured(t *testing.T, manifest string) *unstructured.Unstructured {

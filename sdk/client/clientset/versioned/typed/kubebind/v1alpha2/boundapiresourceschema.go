@@ -19,14 +19,14 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"context"
+	context "context"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
 
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	scheme "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/scheme"
 )
 
@@ -38,33 +38,36 @@ type BoundAPIResourceSchemasGetter interface {
 
 // BoundAPIResourceSchemaInterface has methods to work with BoundAPIResourceSchema resources.
 type BoundAPIResourceSchemaInterface interface {
-	Create(ctx context.Context, boundAPIResourceSchema *v1alpha2.BoundAPIResourceSchema, opts v1.CreateOptions) (*v1alpha2.BoundAPIResourceSchema, error)
-	Update(ctx context.Context, boundAPIResourceSchema *v1alpha2.BoundAPIResourceSchema, opts v1.UpdateOptions) (*v1alpha2.BoundAPIResourceSchema, error)
+	Create(ctx context.Context, boundAPIResourceSchema *kubebindv1alpha2.BoundAPIResourceSchema, opts v1.CreateOptions) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
+	Update(ctx context.Context, boundAPIResourceSchema *kubebindv1alpha2.BoundAPIResourceSchema, opts v1.UpdateOptions) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, boundAPIResourceSchema *v1alpha2.BoundAPIResourceSchema, opts v1.UpdateOptions) (*v1alpha2.BoundAPIResourceSchema, error)
+	UpdateStatus(ctx context.Context, boundAPIResourceSchema *kubebindv1alpha2.BoundAPIResourceSchema, opts v1.UpdateOptions) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1alpha2.BoundAPIResourceSchema, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1alpha2.BoundAPIResourceSchemaList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
+	List(ctx context.Context, opts v1.ListOptions) (*kubebindv1alpha2.BoundAPIResourceSchemaList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha2.BoundAPIResourceSchema, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *kubebindv1alpha2.BoundAPIResourceSchema, err error)
 	BoundAPIResourceSchemaExpansion
 }
 
 // boundAPIResourceSchemas implements BoundAPIResourceSchemaInterface
 type boundAPIResourceSchemas struct {
-	*gentype.ClientWithList[*v1alpha2.BoundAPIResourceSchema, *v1alpha2.BoundAPIResourceSchemaList]
+	*gentype.ClientWithList[*kubebindv1alpha2.BoundAPIResourceSchema, *kubebindv1alpha2.BoundAPIResourceSchemaList]
 }
 
 // newBoundAPIResourceSchemas returns a BoundAPIResourceSchemas
 func newBoundAPIResourceSchemas(c *KubeBindV1alpha2Client, namespace string) *boundAPIResourceSchemas {
 	return &boundAPIResourceSchemas{
-		gentype.NewClientWithList[*v1alpha2.BoundAPIResourceSchema, *v1alpha2.BoundAPIResourceSchemaList](
+		gentype.NewClientWithList[*kubebindv1alpha2.BoundAPIResourceSchema, *kubebindv1alpha2.BoundAPIResourceSchemaList](
 			"boundapiresourceschemas",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1alpha2.BoundAPIResourceSchema { return &v1alpha2.BoundAPIResourceSchema{} },
-			func() *v1alpha2.BoundAPIResourceSchemaList { return &v1alpha2.BoundAPIResourceSchemaList{} }),
+			func() *kubebindv1alpha2.BoundAPIResourceSchema { return &kubebindv1alpha2.BoundAPIResourceSchema{} },
+			func() *kubebindv1alpha2.BoundAPIResourceSchemaList {
+				return &kubebindv1alpha2.BoundAPIResourceSchemaList{}
+			},
+		),
 	}
 }

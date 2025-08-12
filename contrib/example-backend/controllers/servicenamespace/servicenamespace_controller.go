@@ -25,16 +25,19 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	kubernetesclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -47,8 +50,7 @@ const (
 
 // APIServiceNamespaceReconciler reconciles a APIServiceNamespace object.
 type APIServiceNamespaceReconciler struct {
-	client.Client
-	Scheme *runtime.Scheme
+	manager mcmanager.Manager
 
 	bindClient             bindclient.Interface
 	kubeClient             kubernetesclient.Interface
@@ -60,10 +62,8 @@ type APIServiceNamespaceReconciler struct {
 // NewAPIServiceNamespaceReconciler returns a new APIServiceNamespaceReconciler to reconcile APIServiceNamespaces.
 func NewAPIServiceNamespaceReconciler(
 	ctx context.Context,
-	c client.Client,
-	scheme *runtime.Scheme,
+	mgr mcmanager.Manager,
 	config *rest.Config,
-	cache cache.Cache,
 	scope kubebindv1alpha2.InformerScope,
 	isolation kubebindv1alpha2.Isolation,
 ) (*APIServiceNamespaceReconciler, error) {
@@ -80,14 +80,13 @@ func NewAPIServiceNamespaceReconciler(
 	}
 
 	// Set up field indexers for APIServiceNamespaces
-	if err := cache.IndexField(ctx, &kubebindv1alpha2.APIServiceNamespace{}, indexers.ServiceNamespaceByNamespace,
+	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceNamespace{}, indexers.ServiceNamespaceByNamespace,
 		indexers.IndexServiceNamespaceByNamespaceControllerRuntime); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceNamespaceByNamespace indexer: %w", err)
 	}
 
 	r := &APIServiceNamespaceReconciler{
-		Client:                 c,
-		Scheme:                 scheme,
+		manager:                mgr,
 		bindClient:             bindClient,
 		kubeClient:             kubeClient,
 		informerScope:          scope,
@@ -95,7 +94,7 @@ func NewAPIServiceNamespaceReconciler(
 		reconciler: reconciler{
 			scope: scope,
 
-			getNamespace: func(name string) (*corev1.Namespace, error) {
+			getNamespace: func(ctx context.Context, cache cache.Cache, name string) (*corev1.Namespace, error) {
 				var ns corev1.Namespace
 				key := types.NamespacedName{Name: name}
 				if err := cache.Get(ctx, key, &ns); err != nil {
@@ -110,7 +109,7 @@ func NewAPIServiceNamespaceReconciler(
 				return kubeClient.CoreV1().Namespaces().Delete(ctx, name, metav1.DeleteOptions{})
 			},
 
-			getRoleBinding: func(ns, name string) (*rbacv1.RoleBinding, error) {
+			getRoleBinding: func(ctx context.Context, cache cache.Cache, ns, name string) (*rbacv1.RoleBinding, error) {
 				var rb rbacv1.RoleBinding
 				key := types.NamespacedName{Namespace: ns, Name: name}
 				if err := cache.Get(ctx, key, &rb); err != nil {
@@ -130,79 +129,93 @@ func NewAPIServiceNamespaceReconciler(
 	return r, nil
 }
 
-// createNamespaceMapper creates a mapping function for Namespace changes.
-func (r *APIServiceNamespaceReconciler) createNamespaceMapper() handler.MapFunc {
-	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+// getNamespaceMapper creates a mapping function for Namespace changes.
+func getNamespaceMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		namespace := obj.(*corev1.Namespace)
 		nsKey := namespace.Name
 
+		c := cl.GetClient()
+
 		var serviceNamespaces kubebindv1alpha2.APIServiceNamespaceList
-		if err := r.List(ctx, &serviceNamespaces, client.MatchingFields{indexers.ServiceNamespaceByNamespace: nsKey}); err != nil {
-			return []reconcile.Request{}
+		if err := c.List(ctx, &serviceNamespaces, client.MatchingFields{indexers.ServiceNamespaceByNamespace: nsKey}); err != nil {
+			return []mcreconcile.Request{}
 		}
 
-		var result []reconcile.Request
+		var result []mcreconcile.Request
 		for _, sns := range serviceNamespaces.Items {
-			result = append(result, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: sns.Namespace,
-					Name:      sns.Name,
+			result = append(result, mcreconcile.Request{
+				Request: reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: sns.Namespace,
+						Name:      sns.Name,
+					},
 				},
+				ClusterName: clusterName,
 			})
 		}
-
 		return result
-	}
+	})
 }
 
 // createClusterBindingMapper creates a mapping function for ClusterBinding changes.
-func (r *APIServiceNamespaceReconciler) createClusterBindingMapper() handler.MapFunc {
-	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+func getClusterBindingMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		clusterBinding := obj.(*kubebindv1alpha2.ClusterBinding)
 		ns := clusterBinding.Namespace
 
+		c := cl.GetClient()
+
 		var serviceNamespaces kubebindv1alpha2.APIServiceNamespaceList
-		if err := r.List(ctx, &serviceNamespaces, client.InNamespace(ns)); err != nil {
-			return []reconcile.Request{}
+		if err := c.List(ctx, &serviceNamespaces, client.InNamespace(ns)); err != nil {
+			return []mcreconcile.Request{}
 		}
 
-		var result []reconcile.Request
+		var result []mcreconcile.Request
 		for _, sns := range serviceNamespaces.Items {
-			result = append(result, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: sns.Namespace,
-					Name:      sns.Name,
+			result = append(result, mcreconcile.Request{
+				Request: reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: sns.Namespace,
+						Name:      sns.Name,
+					},
 				},
+				ClusterName: clusterName,
 			})
 		}
 
 		return result
-	}
+	})
 }
 
-// createServiceExportMapper creates a mapping function for APIServiceExport changes.
-func (r *APIServiceNamespaceReconciler) createServiceExportMapper() handler.MapFunc {
-	return func(ctx context.Context, obj client.Object) []reconcile.Request {
+// getServiceExportMapper creates a mapping function for APIServiceExport changes.
+func getServiceExportMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		serviceExport := obj.(*kubebindv1alpha2.APIServiceExport)
 		ns := serviceExport.Namespace
 
+		c := cl.GetClient()
+
 		var serviceNamespaces kubebindv1alpha2.APIServiceNamespaceList
-		if err := r.List(ctx, &serviceNamespaces, client.InNamespace(ns)); err != nil {
-			return []reconcile.Request{}
+		if err := c.List(ctx, &serviceNamespaces, client.InNamespace(ns)); err != nil {
+			return []mcreconcile.Request{}
 		}
 
-		var result []reconcile.Request
+		var result []mcreconcile.Request
 		for _, sns := range serviceNamespaces.Items {
-			result = append(result, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: sns.Namespace,
-					Name:      sns.Name,
+			result = append(result, mcreconcile.Request{
+				Request: reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Namespace: sns.Namespace,
+						Name:      sns.Name,
+					},
 				},
+				ClusterName: clusterName,
 			})
 		}
 
 		return result
-	}
+	})
 }
 
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiservicenamespaces,verbs=get;list;watch;create;update;patch;delete
@@ -215,13 +228,21 @@ func (r *APIServiceNamespaceReconciler) createServiceExportMapper() handler.MapF
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-func (r *APIServiceNamespaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *APIServiceNamespaceReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-	logger.Info("Reconciling APIServiceNamespace", "namespace", req.Namespace, "name", req.Name)
+	logger.Info("Reconciling APIServiceNamespace", "cluster", req.ClusterName, "namespace", req.Namespace, "name", req.Name)
+
+	cl, err := r.manager.GetCluster(ctx, req.ClusterName)
+	if err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to get client for cluster %q: %w", req.ClusterName, err)
+	}
+
+	client := cl.GetClient()
+	cache := cl.GetCache()
 
 	// Fetch the APIServiceNamespace instance
 	apiServiceNamespace := &kubebindv1alpha2.APIServiceNamespace{}
-	if err := r.Get(ctx, req.NamespacedName, apiServiceNamespace); err != nil {
+	if err := client.Get(ctx, req.NamespacedName, apiServiceNamespace); err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Handle deletion logic here
@@ -240,14 +261,14 @@ func (r *APIServiceNamespaceReconciler) Reconcile(ctx context.Context, req ctrl.
 	original := apiServiceNamespace.DeepCopy()
 
 	// Run the reconciliation logic
-	if err := r.reconciler.reconcile(ctx, apiServiceNamespace); err != nil {
+	if err := r.reconciler.reconcile(ctx, cache, apiServiceNamespace); err != nil {
 		logger.Error(err, "Failed to reconcile APIServiceNamespace")
 		return ctrl.Result{}, err
 	}
 
 	// Update status if it has changed
 	if !reflect.DeepEqual(original.Status, apiServiceNamespace.Status) {
-		err := r.Status().Update(ctx, apiServiceNamespace)
+		err := client.Status().Update(ctx, apiServiceNamespace)
 		if err != nil {
 			logger.Error(err, "Failed to update APIServiceNamespace status")
 			return ctrl.Result{}, fmt.Errorf("failed to update APIServiceNamespace status: %w", err)
@@ -259,20 +280,20 @@ func (r *APIServiceNamespaceReconciler) Reconcile(ctx context.Context, req ctrl.
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *APIServiceNamespaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+func (r *APIServiceNamespaceReconciler) SetupWithManager(mgr mcmanager.Manager) error {
+	return mcbuilder.ControllerManagedBy(mgr).
 		For(&kubebindv1alpha2.APIServiceNamespace{}).
 		Watches(
 			&corev1.Namespace{},
-			handler.EnqueueRequestsFromMapFunc(r.createNamespaceMapper()),
+			getNamespaceMapper,
 		).
 		Watches(
 			&kubebindv1alpha2.ClusterBinding{},
-			handler.EnqueueRequestsFromMapFunc(r.createClusterBindingMapper()),
+			getClusterBindingMapper,
 		).
 		Watches(
 			&kubebindv1alpha2.APIServiceExport{},
-			handler.EnqueueRequestsFromMapFunc(r.createServiceExportMapper()),
+			getServiceExportMapper,
 		).
 		Named(controllerName).
 		Complete(r)

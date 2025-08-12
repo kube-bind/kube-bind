@@ -18,21 +18,25 @@ package resources
 
 import (
 	"context"
+	"slices"
 
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubeclient "k8s.io/client-go/kubernetes"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns, name string) (*corev1.ServiceAccount, error) {
+func CreateServiceAccount(ctx context.Context, client client.Client, ns, name string) (*corev1.ServiceAccount, error) {
 	logger := klog.FromContext(ctx)
 
-	sa, err := client.CoreV1().ServiceAccounts(ns).Get(ctx, name, metav1.GetOptions{})
+	var sa corev1.ServiceAccount
+	err := client.Get(ctx, types.NamespacedName{Namespace: ns, Name: name}, &sa)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			sa = &corev1.ServiceAccount{
+			sa = corev1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      name,
 					Namespace: ns,
@@ -40,9 +44,140 @@ func CreateServiceAccount(ctx context.Context, client kubeclient.Interface, ns, 
 			}
 
 			logger.Info("Creating service account", "name", sa.Name)
-			return client.CoreV1().ServiceAccounts(ns).Create(ctx, sa, metav1.CreateOptions{})
+			err = client.Create(ctx, &sa)
+			return &sa, err
 		}
 	}
 
-	return sa, err
+	return &sa, err
+}
+
+// EnsureBinderClusterRole ensures that the binder cluster role is present in the cluster. This runs multiple times on bind.
+func EnsureBinderClusterRole(ctx context.Context, client client.Client) error {
+	logger := klog.FromContext(ctx)
+
+	// Define the ClusterRole rules based on the YAML specification
+	clusterRole := &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "kube-binder",
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"kube-bind.io"},
+				Resources: []string{"apiserviceexportrequests"},
+				Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{"namespaces"},
+				Verbs:     []string{"get"},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{"secrets"},
+				Verbs:     []string{"get", "watch", "list"},
+			},
+			{
+				APIGroups: []string{"kube-bind.io"},
+				Resources: []string{"clusterbindings"},
+				Verbs:     []string{"get", "watch", "list"},
+			},
+			{
+				APIGroups: []string{"kube-bind.io"},
+				Resources: []string{"clusterbindings/status"},
+				Verbs:     []string{"get", "patch", "update"},
+			},
+			{
+				APIGroups: []string{"kube-bind.io"},
+				Resources: []string{"apiserviceexports"},
+				Verbs:     []string{"get", "watch", "list"},
+			},
+			{
+				APIGroups: []string{"kube-bind.io"},
+				Resources: []string{"apiserviceexports/status"},
+				Verbs:     []string{"get", "patch", "update"},
+			},
+			{
+				APIGroups: []string{"kube-bind.io"},
+				Resources: []string{"apiservicenamespaces"},
+				Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
+			},
+			{
+				APIGroups: []string{"kube-bind.io"},
+				Resources: []string{"apiresourceschemas"},
+				Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
+			},
+			{
+				APIGroups: []string{"kube-bind.io"},
+				Resources: []string{"apiresourceschemas/status"},
+				Verbs:     []string{"get", "patch", "update"},
+			},
+			{
+				APIGroups: []string{"kube-bind.io"},
+				Resources: []string{"boundapiresourceschemas"},
+				Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
+			},
+			{
+				APIGroups: []string{"kube-bind.io"},
+				Resources: []string{"boundapiresourceschemas/status"},
+				Verbs:     []string{"get", "patch", "update"},
+			},
+		},
+	}
+
+	// Try to get existing ClusterRole
+	var existing rbacv1.ClusterRole
+	err := client.Get(ctx, types.NamespacedName{Name: "kube-binder"}, &existing)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Create new ClusterRole
+			logger.Info("Creating kube-binder ClusterRole")
+			return client.Create(ctx, clusterRole)
+		}
+		return err
+	}
+
+	// Update existing ClusterRole if rules have changed
+	if !rulesEqual(existing.Rules, clusterRole.Rules) {
+		logger.Info("Updating kube-binder ClusterRole")
+		existing.Rules = clusterRole.Rules
+		return client.Update(ctx, &existing)
+	}
+
+	logger.V(2).Info("kube-binder ClusterRole already exists and is up to date")
+	return nil
+}
+
+// rulesEqual compares two PolicyRule slices for equality.
+func rulesEqual(a, b []rbacv1.PolicyRule) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		if !policyRuleEqual(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// policyRuleEqual compares two PolicyRule structs for equality.
+func policyRuleEqual(a, b rbacv1.PolicyRule) bool {
+	if !slices.Equal(a.APIGroups, b.APIGroups) {
+		return false
+	}
+	if !slices.Equal(a.Resources, b.Resources) {
+		return false
+	}
+	if !slices.Equal(a.Verbs, b.Verbs) {
+		return false
+	}
+	if !slices.Equal(a.ResourceNames, b.ResourceNames) {
+		return false
+	}
+	if !slices.Equal(a.NonResourceURLs, b.NonResourceURLs) {
+		return false
+	}
+	return true
 }

@@ -28,6 +28,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kuberesources "github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -38,37 +40,37 @@ import (
 type reconciler struct {
 	scope kubebindv1alpha2.InformerScope
 
-	listServiceExports   func(ctx context.Context, ns string) ([]*kubebindv1alpha2.APIServiceExport, error)
-	getAPIResourceSchema func(ctx context.Context, namespace, name string) (*kubebindv1alpha2.APIResourceSchema, error)
-	getClusterRole       func(ctx context.Context, name string) (*rbacv1.ClusterRole, error)
-	createClusterRole    func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error)
-	updateClusterRole    func(ctx context.Context, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error)
+	listServiceExports   func(ctx context.Context, cache cache.Cache, ns string) ([]*kubebindv1alpha2.APIServiceExport, error)
+	getAPIResourceSchema func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error)
+	getClusterRole       func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error)
+	createClusterRole    func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error)
+	updateClusterRole    func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) (*rbacv1.ClusterRole, error)
 
-	getClusterRoleBinding    func(ctx context.Context, name string) (*rbacv1.ClusterRoleBinding, error)
-	createClusterRoleBinding func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
-	updateClusterRoleBinding func(ctx context.Context, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
-	deleteClusterRoleBinding func(ctx context.Context, name string) error
+	getClusterRoleBinding    func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error)
+	createClusterRoleBinding func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
+	updateClusterRoleBinding func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRoleBinding) (*rbacv1.ClusterRoleBinding, error)
+	deleteClusterRoleBinding func(ctx context.Context, client client.Client, name string) error
 
-	getRoleBinding    func(ctx context.Context, ns, name string) (*rbacv1.RoleBinding, error)
-	createRoleBinding func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
-	updateRoleBinding func(ctx context.Context, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+	getRoleBinding    func(ctx context.Context, cache cache.Cache, ns, name string) (*rbacv1.RoleBinding, error)
+	createRoleBinding func(ctx context.Context, client client.Client, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+	updateRoleBinding func(ctx context.Context, client client.Client, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
 
-	getNamespace func(ctx context.Context, name string) (*corev1.Namespace, error)
+	getNamespace func(ctx context.Context, cache cache.Cache, name string) (*corev1.Namespace, error)
 }
 
-func (r *reconciler) reconcile(ctx context.Context, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
+func (r *reconciler) reconcile(ctx context.Context, client client.Client, cache cache.Cache, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
 	var errs []error
 
 	if err := r.ensureClusterBindingConditions(ctx, clusterBinding); err != nil {
 		errs = append(errs, err)
 	}
-	if err := r.ensureRBACRoleBinding(ctx, clusterBinding); err != nil {
+	if err := r.ensureRBACRoleBinding(ctx, client, cache, clusterBinding); err != nil {
 		errs = append(errs, err)
 	}
-	if err := r.ensureRBACClusterRole(ctx, clusterBinding); err != nil {
+	if err := r.ensureRBACClusterRole(ctx, client, cache, clusterBinding); err != nil {
 		errs = append(errs, err)
 	}
-	if err := r.ensureRBACClusterRoleBinding(ctx, clusterBinding); err != nil {
+	if err := r.ensureRBACClusterRoleBinding(ctx, client, cache, clusterBinding); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -117,19 +119,19 @@ func (r *reconciler) ensureClusterBindingConditions(_ context.Context, clusterBi
 	return nil
 }
 
-func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
+func (r *reconciler) ensureRBACClusterRole(ctx context.Context, client client.Client, cache cache.Cache, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
 	name := "kube-binder-" + clusterBinding.Namespace
-	role, err := r.getClusterRole(ctx, name)
+	role, err := r.getClusterRole(ctx, cache, name)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get ClusterRole %s: %w", name, err)
 	}
 
-	ns, err := r.getNamespace(ctx, clusterBinding.Namespace)
+	ns, err := r.getNamespace(ctx, cache, clusterBinding.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to get Namespace %s: %w", clusterBinding.Namespace, err)
 	}
 
-	exports, err := r.listServiceExports(ctx, clusterBinding.Namespace)
+	exports, err := r.listServiceExports(ctx, cache, clusterBinding.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to list APIServiceExports: %w", err)
 	}
@@ -149,7 +151,7 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *
 	}
 	for _, export := range exports {
 		for _, res := range export.Spec.Resources {
-			schema, err := r.getAPIResourceSchema(ctx, clusterBinding.Namespace, res.Name)
+			schema, err := r.getAPIResourceSchema(ctx, cache, res.Name)
 			if err != nil {
 				return fmt.Errorf("failed to get APIResourceSchema %w", err)
 			}
@@ -170,13 +172,13 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *
 	}
 
 	if role == nil {
-		if _, err := r.createClusterRole(ctx, expected); err != nil {
+		if _, err := r.createClusterRole(ctx, client, expected); err != nil {
 			return fmt.Errorf("failed to create ClusterRole %s: %w", expected.Name, err)
 		}
 	} else if !reflect.DeepEqual(role.Rules, expected.Rules) {
 		role = role.DeepCopy()
 		role.Rules = expected.Rules
-		if _, err := r.updateClusterRole(ctx, role); err != nil {
+		if _, err := r.updateClusterRole(ctx, client, role); err != nil {
 			return fmt.Errorf("failed to create ClusterRole %s: %w", role.Name, err)
 		}
 	}
@@ -184,20 +186,20 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, clusterBinding *
 	return nil
 }
 
-func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
+func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, client client.Client, cache cache.Cache, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
 	name := "kube-binder-" + clusterBinding.Namespace
-	binding, err := r.getClusterRoleBinding(ctx, name)
+	binding, err := r.getClusterRoleBinding(ctx, cache, name)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get ClusterRoleBinding %s: %w", name, err)
 	}
 
 	if r.scope != kubebindv1alpha2.ClusterScope {
-		if err := r.deleteClusterRoleBinding(ctx, name); err != nil && !errors.IsNotFound(err) {
+		if err := r.deleteClusterRoleBinding(ctx, client, name); err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", name, err)
 		}
 	}
 
-	ns, err := r.getNamespace(ctx, clusterBinding.Namespace)
+	ns, err := r.getNamespace(ctx, cache, clusterBinding.Namespace)
 	if err != nil {
 		return fmt.Errorf("failed to get Namespace %s: %w", clusterBinding.Namespace, err)
 	}
@@ -230,14 +232,14 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBi
 	}
 
 	if binding == nil {
-		if _, err := r.createClusterRoleBinding(ctx, expected); err != nil {
+		if _, err := r.createClusterRoleBinding(ctx, client, expected); err != nil {
 			return fmt.Errorf("failed to create ClusterRoleBinding %s: %w", expected.Name, err)
 		}
 	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) {
 		binding = binding.DeepCopy()
 		binding.Subjects = expected.Subjects
 		// roleRef is immutable
-		if _, err := r.updateClusterRoleBinding(ctx, binding); err != nil {
+		if _, err := r.updateClusterRoleBinding(ctx, client, binding); err != nil {
 			return fmt.Errorf("failed to create ClusterRoleBinding %s: %w", expected.Namespace, err)
 		}
 	}
@@ -245,8 +247,8 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, clusterBi
 	return nil
 }
 
-func (r *reconciler) ensureRBACRoleBinding(ctx context.Context, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
-	binding, err := r.getRoleBinding(ctx, clusterBinding.Namespace, "kube-binder")
+func (r *reconciler) ensureRBACRoleBinding(ctx context.Context, client client.Client, cache cache.Cache, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
+	binding, err := r.getRoleBinding(ctx, cache, clusterBinding.Namespace, "kube-binder")
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get RoleBinding \"kube-binder\": %w", err)
 	}
@@ -270,14 +272,14 @@ func (r *reconciler) ensureRBACRoleBinding(ctx context.Context, clusterBinding *
 	}
 
 	if binding == nil {
-		if _, err := r.createRoleBinding(ctx, clusterBinding.Namespace, expected); err != nil {
+		if _, err := r.createRoleBinding(ctx, client, clusterBinding.Namespace, expected); err != nil {
 			return fmt.Errorf("failed to create RoleBinding %s: %w", expected.Name, err)
 		}
 	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) {
 		binding = binding.DeepCopy()
 		binding.Subjects = expected.Subjects
 		// roleRef is immutable
-		if _, err := r.updateRoleBinding(ctx, clusterBinding.Namespace, binding); err != nil {
+		if _, err := r.updateRoleBinding(ctx, client, clusterBinding.Namespace, binding); err != nil {
 			return fmt.Errorf("failed to create RoleBinding %s: %w", expected.Namespace, err)
 		}
 	}

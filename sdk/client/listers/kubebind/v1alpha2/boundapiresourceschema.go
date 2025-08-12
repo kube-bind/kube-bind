@@ -19,11 +19,11 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/listers"
-	"k8s.io/client-go/tools/cache"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 // BoundAPIResourceSchemaLister helps list BoundAPIResourceSchemas.
@@ -31,7 +31,7 @@ import (
 type BoundAPIResourceSchemaLister interface {
 	// List lists all BoundAPIResourceSchemas in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.BoundAPIResourceSchema, err error)
+	List(selector labels.Selector) (ret []*kubebindv1alpha2.BoundAPIResourceSchema, err error)
 	// BoundAPIResourceSchemas returns an object that can list and get BoundAPIResourceSchemas.
 	BoundAPIResourceSchemas(namespace string) BoundAPIResourceSchemaNamespaceLister
 	BoundAPIResourceSchemaListerExpansion
@@ -39,17 +39,17 @@ type BoundAPIResourceSchemaLister interface {
 
 // boundAPIResourceSchemaLister implements the BoundAPIResourceSchemaLister interface.
 type boundAPIResourceSchemaLister struct {
-	listers.ResourceIndexer[*v1alpha2.BoundAPIResourceSchema]
+	listers.ResourceIndexer[*kubebindv1alpha2.BoundAPIResourceSchema]
 }
 
 // NewBoundAPIResourceSchemaLister returns a new BoundAPIResourceSchemaLister.
 func NewBoundAPIResourceSchemaLister(indexer cache.Indexer) BoundAPIResourceSchemaLister {
-	return &boundAPIResourceSchemaLister{listers.New[*v1alpha2.BoundAPIResourceSchema](indexer, v1alpha2.Resource("boundapiresourceschema"))}
+	return &boundAPIResourceSchemaLister{listers.New[*kubebindv1alpha2.BoundAPIResourceSchema](indexer, kubebindv1alpha2.Resource("boundapiresourceschema"))}
 }
 
 // BoundAPIResourceSchemas returns an object that can list and get BoundAPIResourceSchemas.
 func (s *boundAPIResourceSchemaLister) BoundAPIResourceSchemas(namespace string) BoundAPIResourceSchemaNamespaceLister {
-	return boundAPIResourceSchemaNamespaceLister{listers.NewNamespaced[*v1alpha2.BoundAPIResourceSchema](s.ResourceIndexer, namespace)}
+	return boundAPIResourceSchemaNamespaceLister{listers.NewNamespaced[*kubebindv1alpha2.BoundAPIResourceSchema](s.ResourceIndexer, namespace)}
 }
 
 // BoundAPIResourceSchemaNamespaceLister helps list and get BoundAPIResourceSchemas.
@@ -57,15 +57,15 @@ func (s *boundAPIResourceSchemaLister) BoundAPIResourceSchemas(namespace string)
 type BoundAPIResourceSchemaNamespaceLister interface {
 	// List lists all BoundAPIResourceSchemas in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha2.BoundAPIResourceSchema, err error)
+	List(selector labels.Selector) (ret []*kubebindv1alpha2.BoundAPIResourceSchema, err error)
 	// Get retrieves the BoundAPIResourceSchema from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha2.BoundAPIResourceSchema, error)
+	Get(name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
 	BoundAPIResourceSchemaNamespaceListerExpansion
 }
 
 // boundAPIResourceSchemaNamespaceLister implements the BoundAPIResourceSchemaNamespaceLister
 // interface.
 type boundAPIResourceSchemaNamespaceLister struct {
-	listers.ResourceIndexer[*v1alpha2.BoundAPIResourceSchema]
+	listers.ResourceIndexer[*kubebindv1alpha2.BoundAPIResourceSchema]
 }

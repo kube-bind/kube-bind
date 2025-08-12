@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	kubebindhelpers "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
@@ -34,12 +35,12 @@ import (
 )
 
 type reconciler struct {
-	getCRD               func(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error)
+	getCRD               func(ctx context.Context, cache cache.Cache, name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getAPIResourceSchema func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
 	deleteServiceExport  func(ctx context.Context, namespace, name string) error
 }
 
-func (r *reconciler) reconcile(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) error {
+func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, export *kubebindv1alpha2.APIServiceExport) error {
 	var errs []error
 
 	if specChanged, err := r.ensureSchema(ctx, export); err != nil {

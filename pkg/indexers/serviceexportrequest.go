@@ -17,6 +17,8 @@ limitations under the License.
 package indexers
 
 import (
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -26,25 +28,53 @@ const (
 )
 
 func IndexServiceExportRequestByGroupResource(obj any) ([]string, error) {
-	sbr, ok := obj.(*kubebindv1alpha2.APIServiceExportRequest)
+	apiServiceExportRequest, ok := obj.(*kubebindv1alpha2.APIServiceExportRequest)
 	if !ok {
 		return nil, nil
 	}
 	keys := []string{}
-	for _, gr := range sbr.Spec.Resources {
+	for _, gr := range apiServiceExportRequest.Spec.Resources {
 		keys = append(keys, gr.Resource+"."+gr.Group)
 	}
 	return keys, nil
 }
 
+// IndexServiceExportRequestByGroupResourceControllerRuntime is a controller-runtime compatible indexer function
+// that indexes APIServiceExportRequests by their Group.Resource name.
+func IndexServiceExportRequestByGroupResourceControllerRuntime(obj client.Object) []string {
+	apiServiceExportRequest, ok := obj.(*kubebindv1alpha2.APIServiceExportRequest)
+	if !ok {
+		return nil
+	}
+	keys := []string{}
+	for _, gr := range apiServiceExportRequest.Spec.Resources {
+		keys = append(keys, gr.Resource+"."+gr.Group)
+	}
+	return keys
+}
+
 func IndexServiceExportRequestByServiceExport(obj any) ([]string, error) {
-	sbr, ok := obj.(*kubebindv1alpha2.APIServiceExportRequest)
+	apiServiceExportRequest, ok := obj.(*kubebindv1alpha2.APIServiceExportRequest)
 	if !ok {
 		return nil, nil
 	}
 	keys := []string{}
-	for _, gr := range sbr.Spec.Resources {
-		keys = append(keys, sbr.Namespace+"/"+gr.Resource+"."+gr.Group)
+	for _, gr := range apiServiceExportRequest.Spec.Resources {
+		keys = append(keys, apiServiceExportRequest.Namespace+"/"+gr.Resource+"."+gr.Group)
 	}
 	return keys, nil
+}
+
+// IndexServiceExportRequestByServiceExportControllerRuntime is a controller-runtime compatible indexer function
+// that indexes APIServiceExportRequests by their related ServiceExport name.
+func IndexServiceExportRequestByServiceExportControllerRuntime(obj client.Object) []string {
+	apiServiceExportRequest, ok := obj.(*kubebindv1alpha2.APIServiceExportRequest)
+	if !ok {
+		return nil
+	}
+	keys := []string{}
+	for _, gr := range apiServiceExportRequest.Spec.Resources {
+		keys = append(keys, apiServiceExportRequest.Namespace+"/"+gr.Resource+"."+gr.Group)
+	}
+	return keys
 }

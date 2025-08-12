@@ -18,7 +18,8 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"os"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -26,6 +27,9 @@ import (
 	logsv1 "k8s.io/component-base/logs/api/v1"
 	"k8s.io/component-base/version"
 	"k8s.io/klog/v2"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	backend "github.com/kube-bind/kube-bind/contrib/example-backend"
 	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
@@ -36,7 +40,8 @@ func main() {
 	klog.Flush()
 
 	if err != nil {
-		log.Fatalf("Error: %v", err)
+		fmt.Printf("Error running example backend: %v\n", err)
+		os.Exit(1)
 	}
 }
 
@@ -49,6 +54,11 @@ func run(ctx context.Context) error {
 	if err := logsv1.ValidateAndApply(options.Logs, nil); err != nil {
 		return err
 	}
+
+	// Set up controller-runtime logger early to avoid warnings
+	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
+	log.SetLogger(klog.NewKlogr())
+
 	ver := version.Get().GitVersion
 	if i := strings.Index(ver, "bind-"); i != -1 {
 		ver = ver[i+5:] // example: v1.25.2+kubectl-bind-v0.0.7-52-g8fee0baeaff3aa
@@ -70,7 +80,7 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	server, err := backend.NewServer(config)
+	server, err := backend.NewServer(ctx, config)
 	if err != nil {
 		return err
 	}
@@ -78,7 +88,7 @@ func run(ctx context.Context) error {
 	if err := server.Run(ctx); err != nil {
 		return err
 	}
-	log.Printf("Listening on %s\n", server.Addr())
+	logger.Info("Listening\n", "address", server.Addr())
 
 	<-ctx.Done()
 

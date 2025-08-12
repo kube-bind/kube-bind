@@ -79,12 +79,12 @@ func NewAPIServiceExportRequestReconciler(
 
 	// Set up field indexers for APIServiceExportRequests
 	if err := cache.IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByServiceExport,
-		indexers.IndexServiceExportRequestByServiceExportControllerRuntime); err != nil {
+		indexers.IndexServiceExportRequestByServiceExport); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceExportRequestByServiceExport indexer: %w", err)
 	}
 
 	if err := cache.IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByGroupResource,
-		indexers.IndexServiceExportRequestByGroupResourceControllerRuntime); err != nil {
+		indexers.IndexServiceExportRequestByGroupResource); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceExportRequestByGroupResource indexer: %w", err)
 	}
 

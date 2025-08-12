@@ -67,10 +67,10 @@ func NewAPIServiceExportReconciler(
 		return nil, err
 	}
 
-	// Set up field indexer for APIServiceExports by CustomResourceDefinition name.
-	if err := cache.IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByCustomResourceDefinition,
-		indexers.IndexServiceExportByCustomResourceDefinitionControllerRuntime); err != nil {
-		return nil, fmt.Errorf("failed to setup ServiceExportByCustomResourceDefinition indexer: %w", err)
+	// Set up field indexer for APIServiceExports by APIResourceSchema name.
+	if err := cache.IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByAPIResourceSchema,
+		indexers.IndexServiceExportByAPIResourceSchema); err != nil {
+		return nil, fmt.Errorf("failed to setup ServiceExportByAPIResourceSchema indexer: %w", err)
 	}
 
 	r := &APIServiceExportReconciler{

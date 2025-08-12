@@ -174,6 +174,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	if err := s.ClusterBinding.SetupWithManager(s.Manager); err != nil {
 		return nil, fmt.Errorf("error setting up ClusterBinding controller with manager: %w", err)
 	}
+<<<<<<< HEAD
 
 	// construct APIServiceExport controller with controller-runtime
 	s.ServiceExport, err = serviceexport.NewAPIServiceExportReconciler(
@@ -182,10 +183,17 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		s.Manager.GetScheme(),
 		c.ClientConfig,
 		s.Manager.GetCache(),
+=======
+	s.ServiceExport, err = serviceexport.NewController(
+		config.ClientConfig,
+		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
+		config.BindInformers.KubeBind().V1alpha2().APIResourceSchemas(),
+>>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceExport Controller: %w", err)
 	}
+<<<<<<< HEAD
 
 	// Register the APIServiceExport controller with the manager
 	if err := s.ServiceExport.SetupWithManager(s.Manager); err != nil {
@@ -217,6 +225,15 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		s.Manager.GetCache(),
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
+=======
+	s.ServiceExportRequest, err = serviceexportrequest.NewController(
+		config.ClientConfig,
+		kubebindv1alpha2.InformerScope(config.Options.ConsumerScope),
+		kubebindv1alpha2.Isolation(config.Options.ClusterScopedIsolation),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceExportRequests(),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceExports(),
+		config.BindInformers.KubeBind().V1alpha2().APIResourceSchemas(),
+>>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest Controller: %w", err)

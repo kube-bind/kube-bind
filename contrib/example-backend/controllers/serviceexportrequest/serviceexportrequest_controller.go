@@ -22,11 +22,14 @@ import (
 	"reflect"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 =======
 	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
 	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 >>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
+=======
+>>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -70,7 +73,18 @@ func NewAPIServiceExportRequestReconciler(
 	cache cache.Cache,
 	scope kubebindv1alpha2.InformerScope,
 	isolation kubebindv1alpha2.Isolation,
+<<<<<<< HEAD
 ) (*APIServiceExportRequestReconciler, error) {
+=======
+	serviceExportRequestInformer bindinformers.APIServiceExportRequestInformer,
+	serviceExportInformer bindinformers.APIServiceExportInformer,
+	apiResourceSchemaInformer bindinformers.APIResourceSchemaInformer,
+) (*Controller, error) {
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
+
+	logger := klog.Background().WithValues("controller", controllerName)
+
+>>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 	config = rest.CopyConfig(config)
 	config = rest.AddUserAgent(config, controllerName)
 
@@ -89,10 +103,24 @@ func NewAPIServiceExportRequestReconciler(
 		return nil, fmt.Errorf("failed to setup ServiceExportRequestByServiceExport indexer: %w", err)
 	}
 
+<<<<<<< HEAD
 	if err := cache.IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByGroupResource,
 		indexers.IndexServiceExportRequestByGroupResourceControllerRuntime); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceExportRequestByGroupResource indexer: %w", err)
 	}
+=======
+		bindClient: bindClient,
+		kubeClient: kubeClient,
+
+		serviceExportLister:  serviceExportInformer.Lister(),
+		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
+
+		serviceExportRequestLister:  serviceExportRequestInformer.Lister(),
+		serviceExportRequestIndexer: serviceExportRequestInformer.Informer().GetIndexer(),
+
+		apiResourceSchemaLister:  apiResourceSchemaInformer.Lister(),
+		apiResourceSchemaIndexer: apiResourceSchemaInformer.Informer().GetIndexer(),
+>>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 
 	r := &APIServiceExportRequestReconciler{
 		Client:                 c,
@@ -181,7 +209,7 @@ func NewAPIServiceExportRequestReconciler(
 		return nil, err
 	}
 
-	if _, err := crdInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err := apiResourceSchemaInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
 			c.enqueueAPIResourceSchema(logger, obj)
 		},
@@ -205,9 +233,61 @@ func (r *APIServiceExportRequestReconciler) createServiceExportRequestMapper() h
 		serviceExport := obj.(*kubebindv1alpha2.APIServiceExport)
 		seKey := serviceExport.Namespace + "/" + serviceExport.Name
 
+<<<<<<< HEAD
 		var requests kubebindv1alpha2.APIServiceExportRequestList
 		if err := r.List(ctx, &requests, client.MatchingFields{indexers.ServiceExportRequestByServiceExport: seKey}); err != nil {
 			return []reconcile.Request{}
+=======
+// Controller to reconcile APIServiceExportRequests by creating corresponding APIServiceExports.
+type Controller struct {
+	queue workqueue.TypedRateLimitingInterface[string]
+
+	bindClient bindclient.Interface
+	kubeClient kubernetesclient.Interface
+
+	serviceExportRequestLister  bindlisters.APIServiceExportRequestLister
+	serviceExportRequestIndexer cache.Indexer
+
+	serviceExportLister  bindlisters.APIServiceExportLister
+	serviceExportIndexer cache.Indexer
+
+	apiResourceSchemaLister  bindlisters.APIResourceSchemaLister
+	apiResourceSchemaIndexer cache.Indexer
+
+	reconciler
+
+	commit CommitFunc
+}
+
+func (c *Controller) enqueueServiceExportRequest(logger klog.Logger, obj any) {
+	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	logger.V(2).Info("queueing APIServiceExportRequest", "key", key)
+	c.queue.Add(key)
+}
+
+func (c *Controller) enqueueServiceExport(logger klog.Logger, obj any) {
+	seKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	requests, err := c.serviceExportRequestIndexer.ByIndex(indexers.ServiceExportRequestByServiceExport, seKey)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+	for _, obj := range requests {
+		key, err := cache.MetaNamespaceKeyFunc(obj)
+		if err != nil {
+			runtime.HandleError(err)
+			continue
+>>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 		}
 
 <<<<<<< HEAD
@@ -224,13 +304,13 @@ func (r *APIServiceExportRequestReconciler) createServiceExportRequestMapper() h
 		return result
 =======
 func (c *Controller) enqueueAPIResourceSchema(logger klog.Logger, obj any) {
-	APIResourceSchemaKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	apiResourceSchemaKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	requests, err := c.serviceExportRequestIndexer.ByIndex(indexers.ServiceExportRequestByGroupResource, APIResourceSchemaKey)
+	requests, err := c.serviceExportRequestIndexer.ByIndex(indexers.ServiceExportRequestByGroupResource, apiResourceSchemaKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -241,7 +321,7 @@ func (c *Controller) enqueueAPIResourceSchema(logger klog.Logger, obj any) {
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing APIServiceExportRequest", "key", key, "reason", "APIResourceSchema", "APIResourceSchemaKey", APIResourceSchemaKey)
+		logger.V(2).Info("queueing APIServiceExportRequest", "key", key, "reason", "APIResourceSchema", "APIResourceSchemaKey", apiResourceSchemaKey)
 		c.queue.Add(key)
 >>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
 	}

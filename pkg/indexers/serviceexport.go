@@ -36,7 +36,6 @@ func IndexServiceExportByCustomResourceDefinition(obj any) ([]string, error) {
 	return []string{export.Name}, nil
 }
 
-<<<<<<< HEAD
 // IndexServiceExportByCustomResourceDefinitionControllerRuntime is a controller-runtime compatible indexer function
 // that indexes APIServiceExports by their CustomResourceDefinition name.
 func IndexServiceExportByCustomResourceDefinitionControllerRuntime(obj client.Object) []string {
@@ -51,7 +50,7 @@ func IndexServiceExportByCustomResourceDefinitionControllerRuntime(obj client.Ob
 	}
 
 	return names
-=======
+}
 func IndexServiceExportByAPIResourceSchema(obj any) ([]string, error) {
 	export, ok := obj.(*v1alpha2.APIServiceExport)
 	if !ok {
@@ -59,5 +58,4 @@ func IndexServiceExportByAPIResourceSchema(obj any) ([]string, error) {
 	}
 
 	return []string{export.Name}, nil
->>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 }

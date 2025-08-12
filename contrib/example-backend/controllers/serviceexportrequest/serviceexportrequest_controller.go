@@ -21,15 +21,6 @@ import (
 	"fmt"
 	"reflect"
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-=======
-	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions/apiextensions/v1"
-	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
->>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
-=======
->>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -73,18 +64,7 @@ func NewAPIServiceExportRequestReconciler(
 	cache cache.Cache,
 	scope kubebindv1alpha2.InformerScope,
 	isolation kubebindv1alpha2.Isolation,
-<<<<<<< HEAD
 ) (*APIServiceExportRequestReconciler, error) {
-=======
-	serviceExportRequestInformer bindinformers.APIServiceExportRequestInformer,
-	serviceExportInformer bindinformers.APIServiceExportInformer,
-	apiResourceSchemaInformer bindinformers.APIResourceSchemaInformer,
-) (*Controller, error) {
-	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
-
-	logger := klog.Background().WithValues("controller", controllerName)
-
->>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 	config = rest.CopyConfig(config)
 	config = rest.AddUserAgent(config, controllerName)
 
@@ -103,24 +83,10 @@ func NewAPIServiceExportRequestReconciler(
 		return nil, fmt.Errorf("failed to setup ServiceExportRequestByServiceExport indexer: %w", err)
 	}
 
-<<<<<<< HEAD
 	if err := cache.IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByGroupResource,
 		indexers.IndexServiceExportRequestByGroupResourceControllerRuntime); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceExportRequestByGroupResource indexer: %w", err)
 	}
-=======
-		bindClient: bindClient,
-		kubeClient: kubeClient,
-
-		serviceExportLister:  serviceExportInformer.Lister(),
-		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
-
-		serviceExportRequestLister:  serviceExportRequestInformer.Lister(),
-		serviceExportRequestIndexer: serviceExportRequestInformer.Informer().GetIndexer(),
-
-		apiResourceSchemaLister:  apiResourceSchemaInformer.Lister(),
-		apiResourceSchemaIndexer: apiResourceSchemaInformer.Informer().GetIndexer(),
->>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 
 	r := &APIServiceExportRequestReconciler{
 		Client:                 c,
@@ -132,17 +98,6 @@ func NewAPIServiceExportRequestReconciler(
 		reconciler: reconciler{
 			informerScope:          scope,
 			clusterScopedIsolation: isolation,
-<<<<<<< HEAD
-			getCRD: func(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error) {
-				var crd apiextensionsv1.CustomResourceDefinition
-				key := types.NamespacedName{Name: name}
-				if err := cache.Get(ctx, key, &crd); err != nil {
-					return nil, err
-				}
-				return &crd, nil
-			},
-=======
->>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
 			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
 				var schema kubebindv1alpha2.APIResourceSchema
 				key := types.NamespacedName{Name: name}
@@ -171,60 +126,7 @@ func NewAPIServiceExportRequestReconciler(
 		},
 	}
 
-<<<<<<< HEAD
 	return r, nil
-=======
-	indexers.AddIfNotPresentOrDie(serviceExportRequestInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceExportRequestByServiceExport: indexers.IndexServiceExportRequestByServiceExport,
-	})
-	indexers.AddIfNotPresentOrDie(serviceExportRequestInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceExportRequestByGroupResource: indexers.IndexServiceExportRequestByGroupResource,
-	})
-
-	if _, err := serviceExportRequestInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj any) {
-			c.enqueueServiceExportRequest(logger, obj)
-		},
-		UpdateFunc: func(old, newObj any) {
-			c.enqueueServiceExportRequest(logger, newObj)
-		},
-		DeleteFunc: func(obj any) {
-			c.enqueueServiceExportRequest(logger, obj)
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj any) {
-			c.enqueueServiceExport(logger, obj)
-		},
-		UpdateFunc: func(old, newObj any) {
-			c.enqueueServiceExport(logger, newObj)
-		},
-		DeleteFunc: func(obj any) {
-			c.enqueueServiceExport(logger, obj)
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	if _, err := apiResourceSchemaInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj any) {
-			c.enqueueAPIResourceSchema(logger, obj)
-		},
-		UpdateFunc: func(old, newObj any) {
-			c.enqueueAPIResourceSchema(logger, newObj)
-		},
-		DeleteFunc: func(obj any) {
-			c.enqueueAPIResourceSchema(logger, obj)
-		},
-	}); err != nil {
-		return nil, err
-	}
-
-	return c, nil
->>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
 }
 
 // createServiceExportRequestMapper creates a mapping function for ServiceExport changes.
@@ -233,64 +135,11 @@ func (r *APIServiceExportRequestReconciler) createServiceExportRequestMapper() h
 		serviceExport := obj.(*kubebindv1alpha2.APIServiceExport)
 		seKey := serviceExport.Namespace + "/" + serviceExport.Name
 
-<<<<<<< HEAD
 		var requests kubebindv1alpha2.APIServiceExportRequestList
 		if err := r.List(ctx, &requests, client.MatchingFields{indexers.ServiceExportRequestByServiceExport: seKey}); err != nil {
 			return []reconcile.Request{}
-=======
-// Controller to reconcile APIServiceExportRequests by creating corresponding APIServiceExports.
-type Controller struct {
-	queue workqueue.TypedRateLimitingInterface[string]
-
-	bindClient bindclient.Interface
-	kubeClient kubernetesclient.Interface
-
-	serviceExportRequestLister  bindlisters.APIServiceExportRequestLister
-	serviceExportRequestIndexer cache.Indexer
-
-	serviceExportLister  bindlisters.APIServiceExportLister
-	serviceExportIndexer cache.Indexer
-
-	apiResourceSchemaLister  bindlisters.APIResourceSchemaLister
-	apiResourceSchemaIndexer cache.Indexer
-
-	reconciler
-
-	commit CommitFunc
-}
-
-func (c *Controller) enqueueServiceExportRequest(logger klog.Logger, obj any) {
-	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-
-	logger.V(2).Info("queueing APIServiceExportRequest", "key", key)
-	c.queue.Add(key)
-}
-
-func (c *Controller) enqueueServiceExport(logger klog.Logger, obj any) {
-	seKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-
-	requests, err := c.serviceExportRequestIndexer.ByIndex(indexers.ServiceExportRequestByServiceExport, seKey)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-	for _, obj := range requests {
-		key, err := cache.MetaNamespaceKeyFunc(obj)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
->>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 		}
 
-<<<<<<< HEAD
 		var result []reconcile.Request
 		for _, req := range requests.Items {
 			result = append(result, reconcile.Request{
@@ -302,39 +151,17 @@ func (c *Controller) enqueueServiceExport(logger klog.Logger, obj any) {
 		}
 
 		return result
-=======
-func (c *Controller) enqueueAPIResourceSchema(logger klog.Logger, obj any) {
-	apiResourceSchemaKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-
-	requests, err := c.serviceExportRequestIndexer.ByIndex(indexers.ServiceExportRequestByGroupResource, apiResourceSchemaKey)
-	if err != nil {
-		runtime.HandleError(err)
-		return
-	}
-	for _, obj := range requests {
-		key, err := cache.MetaNamespaceKeyFunc(obj)
-		if err != nil {
-			runtime.HandleError(err)
-			continue
-		}
-		logger.V(2).Info("queueing APIServiceExportRequest", "key", key, "reason", "APIResourceSchema", "APIResourceSchemaKey", apiResourceSchemaKey)
-		c.queue.Add(key)
->>>>>>> 8bae629 (Decouple CRD and APIResourceSchema in service export request reconciler)
 	}
 }
 
-// createCRDMapper creates a mapping function for CRD changes.
-func (r *APIServiceExportRequestReconciler) createCRDMapper() handler.MapFunc {
+// createAPIResourceSchemaMapper creates a mapping function for APIResourceSchema changes.
+func (r *APIServiceExportRequestReconciler) createAPIResourceSchemaMapper() handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
-		crd := obj.(*apiextensionsv1.CustomResourceDefinition)
-		crdKey := crd.Name // CRDs are cluster-scoped
+		schema := obj.(*kubebindv1alpha2.APIResourceSchema)
+		schemaKey := schema.Name
 
 		var requests kubebindv1alpha2.APIServiceExportRequestList
-		if err := r.List(ctx, &requests, client.MatchingFields{indexers.ServiceExportRequestByGroupResource: crdKey}); err != nil {
+		if err := r.List(ctx, &requests, client.MatchingFields{indexers.ServiceExportRequestByGroupResource: schemaKey}); err != nil {
 			return []reconcile.Request{}
 		}
 
@@ -357,7 +184,6 @@ func (r *APIServiceExportRequestReconciler) createCRDMapper() handler.MapFunc {
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexportrequests/finalizers,verbs=update
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiresourceschemas,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -408,8 +234,8 @@ func (r *APIServiceExportRequestReconciler) SetupWithManager(mgr ctrl.Manager) e
 			handler.EnqueueRequestsFromMapFunc(r.createServiceExportRequestMapper()),
 		).
 		Watches(
-			&apiextensionsv1.CustomResourceDefinition{},
-			handler.EnqueueRequestsFromMapFunc(r.createCRDMapper()),
+			&kubebindv1alpha2.APIResourceSchema{},
+			handler.EnqueueRequestsFromMapFunc(r.createAPIResourceSchemaMapper()),
 		).
 		Named(controllerName).
 		Complete(r)

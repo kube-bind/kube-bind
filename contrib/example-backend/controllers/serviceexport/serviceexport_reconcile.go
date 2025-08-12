@@ -33,10 +33,6 @@ import (
 )
 
 type reconciler struct {
-<<<<<<< HEAD
-	getCRD               func(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error)
-=======
->>>>>>> bcd22d9 (Exchange CRDInformers with APIResourceSchemaInformers)
 	getAPIResourceSchema func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
 	deleteServiceExport  func(ctx context.Context, namespace, name string) error
 }

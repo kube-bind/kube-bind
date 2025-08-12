@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -49,6 +50,8 @@ type CRD2APIResourceSchemaOptions struct {
 
 	// GenerateInCluster indicates whether to generate the APIResourceSchema in-cluster.
 	GenerateInCluster bool
+	// File containing the CRD to convert to APIResourceSchema.
+	File string
 	// OutputDir is the directory where the APIResourceSchemas will be written.
 	OutputDir string
 }
@@ -67,6 +70,7 @@ func (b *CRD2APIResourceSchemaOptions) AddCmdFlags(cmd *cobra.Command) {
 	b.Print.AddFlags(cmd)
 
 	cmd.Flags().BoolVar(&b.GenerateInCluster, "generate-in-cluster", b.GenerateInCluster, "Generate the APIResourceSchema in-cluster.")
+	cmd.Flags().StringVar(&b.File, "file", b.File, "File with CRD to convert to APIResourceSchema")
 	cmd.Flags().StringVar(&b.OutputDir, "output-dir", b.OutputDir, "Directory where APIResourceSchemas will be written.")
 }
 
@@ -97,32 +101,36 @@ func (b *CRD2APIResourceSchemaOptions) Run(ctx context.Context) error {
 		b.OutputDir = "."
 	}
 
-	crdGVR := apiextensionsv1.SchemeGroupVersion.WithResource("customresourcedefinitions")
-	crdList, err := client.Resource(crdGVR).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return fmt.Errorf("failed to list CRDs: %w", err)
+	var crdList []*apiextensionsv1.CustomResourceDefinition
+	if b.File != "" {
+		fileList, err := b.readCRDsFromFile()
+		if err != nil {
+			return fmt.Errorf("failed to read CRDs from file: %w", err)
+		}
+		crdList = fileList
+	} else {
+		clusterList, err := b.listCRDsFromCluster(ctx, client)
+		if err != nil {
+			return fmt.Errorf("failed to list CRDs from cluster: %w", err)
+		}
+		crdList = clusterList
 	}
 
-	for _, crd := range crdList.Items {
-		crdObj := &apiextensionsv1.CustomResourceDefinition{}
-		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), crdObj); err != nil {
-			return fmt.Errorf("failed to convert CRD: %w", err)
-		}
-
+	for _, crdObj := range crdList {
 		if crdObj.Spec.Group == "kube-bind.io" {
-			fmt.Fprintf(b.Options.ErrOut, "Skipping CRD %s: belongs to group kube-bind.io\n", crdObj.Name)
+			fmt.Fprintf(b.Options.ErrOut, "skipping CRD %s: belongs to group kube-bind.io\n", crdObj.Name)
 			continue
 		}
 
 		prefix := fmt.Sprintf("v%s-%s", time.Now().Format("060102"), string(version.Get().GitCommit))
 		apiResourceSchema, err := helpers.CRDToAPIResourceSchema(crdObj, prefix)
 		if err != nil {
-			fmt.Fprintf(b.Options.ErrOut, "Failed to convert CRD %s to APIResourceSchema: %v\n", crdObj.Name, err)
+			fmt.Fprintf(b.Options.ErrOut, "failed to convert CRD %s to APIResourceSchema: %v\n", crdObj.Name, err)
 			continue
 		}
 
 		if apiResourceSchema == nil {
-			fmt.Fprintf(b.Options.ErrOut, "Skipping CRD %s: no schema found\n", crdObj.Name)
+			fmt.Fprintf(b.Options.ErrOut, "skipping CRD %s: no schema found\n", crdObj.Name)
 			continue
 		}
 
@@ -183,6 +191,67 @@ func writeObjectToYAML(outputDir string, apiResourceSchema *kubebindv1alpha2.API
 		return fmt.Errorf("failed to write APIResourceSchema to file %s: %w", outputPath, err)
 	}
 
-	fmt.Fprintf(logger, "Wrote APIResourceSchema %s to %s\n", apiResourceSchema.Name, outputPath)
+	fmt.Fprintf(logger, "wrote APIResourceSchema %s to %s\n", apiResourceSchema.Name, outputPath)
 	return nil
+}
+
+func (b *CRD2APIResourceSchemaOptions) readCRDsFromFile() ([]*apiextensionsv1.CustomResourceDefinition, error) {
+	data, err := os.ReadFile(b.File)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file %s: %w", b.File, err)
+	}
+
+	scheme := runtime.NewScheme()
+	if err := apiextensionsv1.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("failed to register apiextensions v1 scheme: %w", err)
+	}
+
+	decoder := serializer.NewCodecFactory(scheme).UniversalDeserializer()
+	var crdList []*apiextensionsv1.CustomResourceDefinition
+
+	objects := strings.Split(string(data), "---")
+	for i, obj := range objects {
+		obj = strings.TrimSpace(obj)
+		if obj == "" {
+			continue
+		}
+
+		decodedObj, gvk, err := decoder.Decode([]byte(obj), nil, nil)
+		if err != nil {
+			fmt.Fprintf(b.Options.ErrOut, "warning: failed to decode object %d: %v\n", i+1, err)
+			continue
+		}
+
+		if crd, ok := decodedObj.(*apiextensionsv1.CustomResourceDefinition); ok {
+			crdList = append(crdList, crd)
+			fmt.Fprintf(b.Options.Out, "found CRD: %s\n", crd.Name)
+		} else {
+			return nil, fmt.Errorf("error: non-CRD object of type %s", gvk.String())
+		}
+	}
+
+	if len(crdList) == 0 {
+		return nil, fmt.Errorf("no CustomResourceDefinition objects found in file %s", b.File)
+	}
+
+	return crdList, nil
+}
+
+func (b *CRD2APIResourceSchemaOptions) listCRDsFromCluster(ctx context.Context, client dynamic.Interface) ([]*apiextensionsv1.CustomResourceDefinition, error) {
+	crdGVR := apiextensionsv1.SchemeGroupVersion.WithResource("customresourcedefinitions")
+	crdList, err := client.Resource(crdGVR).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list CRDs: %w", err)
+	}
+
+	var result []*apiextensionsv1.CustomResourceDefinition
+	for _, crd := range crdList.Items {
+		crdObj := &apiextensionsv1.CustomResourceDefinition{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), crdObj); err != nil {
+			return nil, fmt.Errorf("failed to convert CRD: %w", err)
+		}
+		result = append(result, crdObj)
+	}
+
+	return result, nil
 }

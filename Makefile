@@ -277,7 +277,7 @@ endif
 test-e2e: TEST_ARGS ?=
 test-e2e: WORK_DIR ?= .
 test-e2e: WHAT ?= ./test/e2e...
-test-e2e: $(KCP) $(DEX) build-all
+test-e2e: $(KCP) $(DEX) build
 	mkdir .kcp
 	$(DEX) serve hack/dex-config-dev.yaml 2>&1 & DEX_PID=$$!; \
 	$(KCP) start &>.kcp/kcp.log & KCP_PID=$$!; \

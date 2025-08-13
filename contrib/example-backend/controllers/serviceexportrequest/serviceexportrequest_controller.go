@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"reflect"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -80,12 +79,12 @@ func NewAPIServiceExportRequestReconciler(
 
 	// Set up field indexers for APIServiceExportRequests
 	if err := cache.IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByServiceExport,
-		indexers.IndexServiceExportRequestByServiceExportControllerRuntime); err != nil {
+		indexers.IndexServiceExportRequestByServiceExport); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceExportRequestByServiceExport indexer: %w", err)
 	}
 
 	if err := cache.IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByGroupResource,
-		indexers.IndexServiceExportRequestByGroupResourceControllerRuntime); err != nil {
+		indexers.IndexServiceExportRequestByGroupResource); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceExportRequestByGroupResource indexer: %w", err)
 	}
 
@@ -99,14 +98,6 @@ func NewAPIServiceExportRequestReconciler(
 		reconciler: reconciler{
 			informerScope:          scope,
 			clusterScopedIsolation: isolation,
-			getCRD: func(ctx context.Context, name string) (*apiextensionsv1.CustomResourceDefinition, error) {
-				var crd apiextensionsv1.CustomResourceDefinition
-				key := types.NamespacedName{Name: name}
-				if err := cache.Get(ctx, key, &crd); err != nil {
-					return nil, err
-				}
-				return &crd, nil
-			},
 			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
 				var schema kubebindv1alpha2.APIResourceSchema
 				key := types.NamespacedName{Name: name}
@@ -163,14 +154,14 @@ func (r *APIServiceExportRequestReconciler) createServiceExportRequestMapper() h
 	}
 }
 
-// createCRDMapper creates a mapping function for CRD changes.
-func (r *APIServiceExportRequestReconciler) createCRDMapper() handler.MapFunc {
+// createAPIResourceSchemaMapper creates a mapping function for APIResourceSchema changes.
+func (r *APIServiceExportRequestReconciler) createAPIResourceSchemaMapper() handler.MapFunc {
 	return func(ctx context.Context, obj client.Object) []reconcile.Request {
-		crd := obj.(*apiextensionsv1.CustomResourceDefinition)
-		crdKey := crd.Name // CRDs are cluster-scoped
+		schema := obj.(*kubebindv1alpha2.APIResourceSchema)
+		schemaKey := schema.Name
 
 		var requests kubebindv1alpha2.APIServiceExportRequestList
-		if err := r.List(ctx, &requests, client.MatchingFields{indexers.ServiceExportRequestByGroupResource: crdKey}); err != nil {
+		if err := r.List(ctx, &requests, client.MatchingFields{indexers.ServiceExportRequestByGroupResource: schemaKey}); err != nil {
 			return []reconcile.Request{}
 		}
 
@@ -193,7 +184,6 @@ func (r *APIServiceExportRequestReconciler) createCRDMapper() handler.MapFunc {
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexportrequests/finalizers,verbs=update
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiresourceschemas,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -244,8 +234,8 @@ func (r *APIServiceExportRequestReconciler) SetupWithManager(mgr ctrl.Manager) e
 			handler.EnqueueRequestsFromMapFunc(r.createServiceExportRequestMapper()),
 		).
 		Watches(
-			&apiextensionsv1.CustomResourceDefinition{},
-			handler.EnqueueRequestsFromMapFunc(r.createCRDMapper()),
+			&kubebindv1alpha2.APIResourceSchema{},
+			handler.EnqueueRequestsFromMapFunc(r.createAPIResourceSchemaMapper()),
 		).
 		Named(controllerName).
 		Complete(r)

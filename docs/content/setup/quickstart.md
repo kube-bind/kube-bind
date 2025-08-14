@@ -98,7 +98,7 @@ $ kubectl ws create consumer --enter
 Now create the APIServiceExportRequest:
 
 ```shell
-$ ./bin/kubectl-bind http://127.0.0.1:8080/export --dry-run -o yaml > apiserviceexport.yaml
+$ ./bin/kubectl-bind http://127.0.0.1:8080/clusters/-/exports --dry-run -o yaml > apiserviceexport.yaml
 # This will wait for konnector to be ready. Once this gets running - start the konnector bellow
 # IMPORTANT: Check namespace to be used! 
 $ ./bin/kubectl-bind apiservice --remote-kubeconfig .kcp/provider.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace <namespace>

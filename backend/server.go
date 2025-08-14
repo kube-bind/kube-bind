@@ -21,16 +21,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	"os"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/config"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
 	"github.com/kube-bind/kube-bind/backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexport"
@@ -47,7 +40,6 @@ type Server struct {
 	OIDC       *examplehttp.OIDCServiceProvider
 	Kubernetes *examplekube.Manager
 	WebServer  *examplehttp.Server
-	Manager    mcmanager.Manager
 
 	Controllers
 }
@@ -71,33 +63,6 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
 	}
 
-	// Set up controller-runtime manager
-	scheme := runtime.NewScheme()
-	if err := clientgoscheme.AddToScheme(scheme); err != nil {
-		return nil, fmt.Errorf("error adding client-go scheme: %w", err)
-	}
-	if err := apiextensionsv1.AddToScheme(scheme); err != nil {
-		return nil, fmt.Errorf("error adding apiextensions scheme: %w", err)
-	}
-	if err := kubebindv1alpha2.AddToScheme(scheme); err != nil {
-		return nil, fmt.Errorf("error adding kubebind scheme: %w", err)
-	}
-
-	opts := ctrl.Options{
-		Controller: config.Controller{
-			SkipNameValidation: ptr.To(c.Options.ExtraOptions.TestingSkipNameValidation),
-		},
-		Metrics: metricsserver.Options{
-			BindAddress: "0",
-		},
-		Scheme: scheme,
-	}
-
-	s.Manager, err = mcmanager.New(s.Config.ClientConfig, s.Config.Provider, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error setting up controller manager: %w", err)
-	}
-
 	// setup oidc backend
 	callback := c.Options.OIDC.CallbackURL
 	if callback == "" {
@@ -119,7 +84,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		c.Options.ExternalAddress,
 		c.Options.ExternalCA,
 		c.Options.TLSExternalServerName,
-		s.Manager,
+		s.Config.Manager,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up Kubernetes Manager: %w", err)
@@ -157,7 +122,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 
 	// construct controllers
 	s.ClusterBinding, err = clusterbinding.NewClusterBindingReconciler(
-		s.Manager,
+		s.Config.Manager,
 		c.ClientConfig,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 	)
@@ -166,14 +131,14 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	}
 
 	// Register the ClusterBinding controller with the manager
-	if err := s.ClusterBinding.SetupWithManager(s.Manager); err != nil {
+	if err := s.ClusterBinding.SetupWithManager(s.Config.Manager); err != nil {
 		return nil, fmt.Errorf("error setting up ClusterBinding controller with manager: %w", err)
 	}
 
 	// construct APIServiceExport controller with multicluster-runtime
 	s.ServiceExport, err = serviceexport.NewAPIServiceExportReconciler(
 		ctx,
-		s.Manager,
+		s.Config.Manager,
 		c.ClientConfig,
 	)
 	if err != nil {
@@ -181,13 +146,13 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	}
 
 	// Register the APIServiceExport controller with the manager
-	if err := s.ServiceExport.SetupWithManager(s.Manager); err != nil {
+	if err := s.ServiceExport.SetupWithManager(s.Config.Manager); err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceExport controller with manager: %w", err)
 	}
 
 	s.ServiceNamespace, err = servicenamespace.NewAPIServiceNamespaceReconciler(
 		ctx,
-		s.Manager,
+		s.Config.Manager,
 		c.ClientConfig,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
@@ -197,12 +162,12 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	}
 
 	// Register the APIServiceNamespace controller with the manager
-	if err := s.ServiceNamespace.SetupWithManager(s.Manager); err != nil {
+	if err := s.ServiceNamespace.SetupWithManager(s.Config.Manager); err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceNamespace controller with manager: %w", err)
 	}
 	s.ServiceExportRequest, err = serviceexportrequest.NewAPIServiceExportRequestReconciler(
 		ctx,
-		s.Manager,
+		s.Config.Manager,
 		c.ClientConfig,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
@@ -212,7 +177,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	}
 
 	// Register the ServiceExportRequest controller with the manager
-	if err := s.ServiceExportRequest.SetupWithManager(s.Manager); err != nil {
+	if err := s.ServiceExportRequest.SetupWithManager(s.Config.Manager); err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest controller with manager: %w", err)
 	}
 
@@ -226,9 +191,19 @@ func (s *Server) Addr() net.Addr {
 func (s *Server) Run(ctx context.Context) error {
 	logger := klog.FromContext(ctx)
 
+	if s.Config.Provider != nil {
+		logger.Info("Starting provider")
+		go func() {
+			if err := s.Config.Provider.Run(ctx); err != nil {
+				logger.Error(err, "unable to run provider")
+				os.Exit(1)
+			}
+		}()
+	}
+
 	// start controller-runtime manager after bootstrap completes
 	go func() {
-		if err := s.Manager.Start(ctx); err != nil {
+		if err := s.Config.Manager.Start(ctx); err != nil {
 			logger.Error(err, "Failed to start controller manager")
 		}
 	}()

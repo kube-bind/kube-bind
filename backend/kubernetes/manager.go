@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
+	"github.com/davecgh/go-spew/spew"
 	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
@@ -148,7 +149,14 @@ func (m *Manager) ListAPIResourceSchemas(ctx context.Context, cluster string) (*
 	if err != nil {
 		return nil, err
 	}
-	c := cl.GetClient()
+	c := cl.GetCache()
+
+	crdList := corev1.NamespaceList{}
+	err = c.List(ctx, &crdList)
+	if err != nil {
+		return nil, err
+	}
+	spew.Dump(crdList)
 
 	var schemas kubebindv1alpha2.APIResourceSchemaList
 	err = c.List(ctx, &schemas)

@@ -82,6 +82,11 @@ kubectl ws create consumer --enter
 ```
 
 
+10. Bind the thing:
+
+```bash
+
+
 ## Debug
 
 ```bash

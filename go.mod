@@ -12,6 +12,7 @@ replace (
 
 require (
 	github.com/coreos/go-oidc v2.3.0+incompatible
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/dexidp/dex/api/v2 v2.1.0
 	github.com/evanphx/json-patch v5.6.0+incompatible
 	github.com/google/go-cmp v0.7.0
@@ -37,16 +38,16 @@ require (
 	golang.org/x/oauth2 v0.29.0
 	google.golang.org/grpc v1.69.2
 	gopkg.in/headzoo/surf.v1 v1.0.1
-	k8s.io/api v0.33.0
+	k8s.io/api v0.33.3
 	k8s.io/apiextensions-apiserver v0.33.0
-	k8s.io/apimachinery v0.33.0
+	k8s.io/apimachinery v0.33.3
 	k8s.io/apiserver v0.33.0
 	k8s.io/cli-runtime v0.32.0
-	k8s.io/client-go v0.33.0
+	k8s.io/client-go v0.33.3
 	k8s.io/code-generator v0.33.0
 	k8s.io/component-base v0.33.0
 	k8s.io/klog/v2 v2.130.1
-	k8s.io/utils v0.0.0-20241210054802-24370beab758
+	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/controller-tools v0.16.1
 	sigs.k8s.io/multicluster-runtime v0.21.0-alpha.8
@@ -62,7 +63,6 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.0 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
-	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bombsimon/logrusr/v3 v3.1.0 // indirect
@@ -70,7 +70,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/evanphx/json-patch/v5 v5.9.11 // indirect
 	github.com/fatih/color v1.18.0 // indirect
@@ -91,7 +90,6 @@ require (
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/cel-go v0.23.2 // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
-	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
@@ -167,8 +165,8 @@ require (
 	rsc.io/qr v0.2.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
-	sigs.k8s.io/kustomize/api v0.18.0 // indirect
-	sigs.k8s.io/kustomize/kyaml v0.18.1 // indirect
+	sigs.k8s.io/kustomize/api v0.19.0 // indirect
+	sigs.k8s.io/kustomize/kyaml v0.19.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
 )
@@ -176,14 +174,17 @@ require (
 // Matches multicluster-runtime v0.21.0-alpha.8
 replace (
 	github.com/google/cel-go => github.com/google/cel-go v0.22.0
-	k8s.io/api => k8s.io/api v0.32.3
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.32.3
-	k8s.io/apimachinery => k8s.io/apimachinery v0.32.3
-	k8s.io/apiserver => k8s.io/apiserver v0.32.3
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.32.3
-	k8s.io/client-go => k8s.io/client-go v0.32.3
-	k8s.io/code-generator => k8s.io/code-generator v0.32.3
-	k8s.io/component-base => k8s.io/component-base v0.32.3
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.20.4
-	sigs.k8s.io/multicluster-runtime => sigs.k8s.io/multicluster-runtime v0.20.4-alpha.7
+	github.com/kcp-dev/apimachinery/v2 => github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250728122101-adbf20db3e51
+	github.com/kcp-dev/multicluster-provider => github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250814083022-d66fba010f3c
+	k8s.io/api => k8s.io/api v0.33.0
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.33.0
+	k8s.io/apimachinery => k8s.io/apimachinery v0.33.0
+	k8s.io/apiserver => k8s.io/apiserver v0.33.0
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.33.0
+	k8s.io/client-go => k8s.io/client-go v0.33.0
+	k8s.io/code-generator => k8s.io/code-generator v0.33.0
+	k8s.io/component-base => k8s.io/component-base v0.33.0
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.21.0
+	//sigs.k8s.io/multicluster-runtime => sigs.k8s.io/multicluster-runtime v0.20.4-alpha.7
+	sigs.k8s.io/multicluster-runtime => github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250813161451-c3c267a55f0e
 )

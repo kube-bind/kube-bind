@@ -25,16 +25,26 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/utils/ptr"
+	ctrl "sigs.k8s.io/controller-runtime"
+	ctrlconfig "sigs.k8s.io/controller-runtime/pkg/config"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
+	apisv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha1"
+	apisv1alpha2 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha2"
+	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+
 	"github.com/kube-bind/kube-bind/backend/options"
-	kubebindscheme "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/scheme"
 )
 
 type Config struct {
 	Options *options.CompletedOptions
 
 	Provider multicluster.Provider
+	Manager  mcmanager.Manager
 	Scheme   *runtime.Scheme
 
 	ClientConfig *rest.Config
@@ -60,17 +70,6 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 		config.ClientConfig.Host = options.ServerURL
 	}
 
-	switch options.Provider {
-	case "kcp":
-		provider, err := apiexport.New(config.ClientConfig, apiexport.Options{})
-		if err != nil {
-			return nil, fmt.Errorf("error setting up kcp provider: %w", err)
-		}
-		config.Provider = provider
-	default:
-		config.Provider = nil
-	}
-
 	// Set up controller-runtime manager
 	scheme := runtime.NewScheme()
 	if err := clientgoscheme.AddToScheme(scheme); err != nil {
@@ -79,23 +78,53 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	if err := apiextensionsv1.AddToScheme(scheme); err != nil {
 		return nil, fmt.Errorf("error adding apiextensions scheme: %w", err)
 	}
-	if err := kubebindscheme.AddToScheme(scheme); err != nil {
+	if err := kubebindv1alpha1.AddToScheme(scheme); err != nil {
 		return nil, fmt.Errorf("error adding kubebind scheme: %w", err)
 	}
+	if err := kubebindv1alpha2.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("error adding kubebind scheme: %w", err)
+	}
+
 	config.Scheme = scheme
 
+	var provider *apiexport.Provider // This bit sucks that we can't use multicluster.Provider here. We need SetupWithManager.
 	switch options.Provider {
 	case "kcp":
-		provider, err := apiexport.New(config.ClientConfig, apiexport.Options{
+		if err := apisv1alpha1.AddToScheme(scheme); err != nil {
+			return nil, fmt.Errorf("error adding apis scheme: %w", err)
+		}
+		if err := apisv1alpha2.AddToScheme(scheme); err != nil {
+			return nil, fmt.Errorf("error adding apis scheme: %w", err)
+		}
+		provider, err = apiexport.New(config.ClientConfig, apiexport.Options{
 			Scheme: scheme,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("error setting up kcp provider: %w", err)
 		}
-		config.Provider = provider
-	default:
-		config.Provider = nil
 	}
+
+	opts := ctrl.Options{
+		Controller: ctrlconfig.Controller{
+			SkipNameValidation: ptr.To(true), // TODO(mjudeikis): Debug why this makes tests fail.
+		},
+		Metrics: metricsserver.Options{
+			BindAddress: "0",
+		},
+		Scheme: scheme,
+	}
+
+	manager, err := mcmanager.New(config.ClientConfig, provider, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error setting up controller manager: %w", err)
+	}
+
+	if provider != nil {
+		provider.SetupWithManager(manager)
+	}
+
+	config.Provider = provider
+	config.Manager = manager
 
 	return config, nil
 }

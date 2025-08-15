@@ -148,17 +148,15 @@ func NewClusterBindingReconciler(
 				}
 				return &ns, nil
 			},
-			createRoleBinding: func(ctx context.Context, client client.Client, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
-				binding.Namespace = ns
+			createRoleBinding: func(ctx context.Context, client client.Client, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
 				if err := client.Create(ctx, binding); err != nil {
-					return nil, fmt.Errorf("failed to create RoleBinding %q in namespace %q: %w", binding.Name, ns, err)
+					return nil, fmt.Errorf("failed to create RoleBinding %q in namespace %q: %w", binding.Name, binding.Namespace, err)
 				}
 				return binding, nil
 			},
-			updateRoleBinding: func(ctx context.Context, client client.Client, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
-				binding.Namespace = ns
+			updateRoleBinding: func(ctx context.Context, client client.Client, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error) {
 				if err := client.Update(ctx, binding); err != nil {
-					return nil, fmt.Errorf("failed to update RoleBinding %q in namespace %q: %w", binding.Name, ns, err)
+					return nil, fmt.Errorf("failed to update RoleBinding %q in namespace %q: %w", binding.Name, binding.Namespace, err)
 				}
 				return binding, nil
 			},

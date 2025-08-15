@@ -48,8 +48,7 @@ type Controllers struct {
 	ClusterBinding       *clusterbinding.ClusterBindingReconciler
 	ServiceExport        *serviceexport.APIServiceExportReconciler
 	ServiceExportRequest *serviceexportrequest.APIServiceExportRequestReconciler
-
-	ServiceNamespace *servicenamespace.APIServiceNamespaceReconciler
+	ServiceNamespace     *servicenamespace.APIServiceNamespaceReconciler
 }
 
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
@@ -81,7 +80,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		ctx,
 		c.Options.NamespacePrefix,
 		c.Options.PrettyName,
-		c.Options.ExternalAddress,
+		c.ExternalAddressGenerator,
 		c.Options.ExternalCA,
 		c.Options.TLSExternalServerName,
 		s.Config.Manager,

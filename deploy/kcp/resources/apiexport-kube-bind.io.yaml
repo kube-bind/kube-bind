@@ -4,6 +4,39 @@ metadata:
   creationTimestamp: null
   name: kube-bind.io
 spec:
+  permissionClaims:
+  - group: rbac.authorization.k8s.io
+    resource: clusterrolebindings
+    verbs:
+    - '*'
+  - group: rbac.authorization.k8s.io
+    resource: clusterroles
+    verbs:
+    - '*'
+  - group: rbac.authorization.k8s.io
+    resource: roles
+    verbs:
+    - '*'
+  - group: rbac.authorization.k8s.io
+    resource: rolebindings
+    verbs:
+    - '*'
+  - resource: serviceaccounts
+    verbs:
+    - '*'
+  - resource: configmaps
+    verbs:
+    - '*'
+  - resource: secrets
+    verbs:
+    - '*'
+  - resource: namespaces
+    verbs:
+    - '*'
+  - group: apiextensions.k8s.io
+    resource: customresourcedefinitions
+    verbs:
+    - '*'
   resources:
   - group: kube-bind.io
     name: apiconversions
@@ -45,37 +78,4 @@ spec:
     schema: v250809-5ed76a1.clusterbindings.kube-bind.io
     storage:
       crd: {}
-  permissionClaims:
-  - verbs: 
-    - "*"
-    group: rbac.authorization.k8s.io
-    resource: clusterrolebindings
-  - verbs: 
-    - "*"
-    group: rbac.authorization.k8s.io
-    resource: clusterroles
-  - verbs: 
-    - "*"
-    group: rbac.authorization.k8s.io
-    resource: roles
-  - verbs: 
-    - "*"
-    group: rbac.authorization.k8s.io
-    resource: rolebindings
-  - verbs: 
-    - "*"
-    resource: serviceaccounts
-  - verbs: 
-    - "*"
-    resource: configmaps
-  - verbs: 
-    - "*"
-    resource: secrets
-  - verbs:
-    - "*"
-    resource: namespaces
-  - verbs: 
-    - "*"
-    group: apiextensions.k8s.io
-    resource: customresourcedefinitions
 status: {}

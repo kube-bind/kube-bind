@@ -17,8 +17,13 @@ limitations under the License.
 package backend
 
 import (
+	"context"
 	"fmt"
+	"net/url"
+	"strings"
 
+	apisv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha1"
+	apisv1alpha2 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha2"
 	"github.com/kcp-dev/multicluster-provider/apiexport"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,20 +37,19 @@ import (
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	apisv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha1"
-	apisv1alpha2 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha2"
+	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
+	"github.com/kube-bind/kube-bind/backend/options"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
-
-	"github.com/kube-bind/kube-bind/backend/options"
 )
 
 type Config struct {
 	Options *options.CompletedOptions
 
-	Provider multicluster.Provider
-	Manager  mcmanager.Manager
-	Scheme   *runtime.Scheme
+	Provider                 multicluster.Provider
+	ExternalAddressGenerator kuberesources.ExternalAddreesGeneratorFunc
+	Manager                  mcmanager.Manager
+	Scheme                   *runtime.Scheme
 
 	ClientConfig *rest.Config
 }
@@ -102,6 +106,32 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error setting up kcp provider: %w", err)
 		}
+
+		config.ExternalAddressGenerator = func(ctx context.Context, clusterConfig *rest.Config) (string, error) {
+			// In kcp case, we are talking via apiexport so clientconfig will be pointing to
+			// https://192.168.2.166:6443/services/apiexport/2sssrgg8ivlpw0cy/kube-bind.io/clusters/2p0rtkf7b697s6mj
+			// We need to extract host and /clusters/... part
+			u, err := url.Parse(clusterConfig.Host)
+			if err != nil {
+				return "", err
+			}
+
+			// Extract cluster ID from the path
+			// Path format: /services/apiexport/{export-id}/kube-bind.io/clusters/{cluster-id}
+			pathParts := strings.Split(strings.Trim(u.Path, "/"), "/")
+			if len(pathParts) < 5 || pathParts[4] != "clusters" {
+				return "", fmt.Errorf("invalid apiexport URL format")
+			}
+
+			clusterID := pathParts[5]
+
+			// Construct new URL with cluster path
+			u.Path = "/clusters/" + clusterID
+
+			return u.String(), nil
+		}
+	default:
+		config.ExternalAddressGenerator = kuberesources.DefaultExternalAddreesGenerator
 	}
 
 	opts := ctrl.Options{

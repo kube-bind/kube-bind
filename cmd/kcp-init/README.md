@@ -63,7 +63,8 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim
   --accept-permission-claim secrets.core \
   --accept-permission-claim namespaces.core \
   --accept-permission-claim serviceaccounts.rbac.authorization.k8s.io \
-  --accept-permission-claim roles.rbac.authorization.k8s.io 
+  --accept-permission-claim roles.rbac.authorization.k8s.io \
+  --accept-permission-claim rolebindings.rbac.authorization.k8s.io
 ```
 
 8. Create CRD:
@@ -71,6 +72,13 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim
 kubectl apply -f deploy/examples/crd-mangodb.yaml
 ```
 
+9. Get LogicalCluster:
+
+```bash
+kubectl get logicalcluster
+NAME      PHASE   URL                                                    AGE
+cluster   Ready   https://192.168.2.166:6443/clusters/2p0rtkf7b697s6mj 
+```
 
 9. No we gonna imitate consumer:
 
@@ -82,10 +90,21 @@ kubectl ws create consumer --enter
 ```
 
 
+
+
+
 10. Bind the thing:
 
 ```bash
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/2p0rtkf7b697s6mj/exports --dry-run -o yaml > apiserviceexport.yaml
 
+# we need dedicated secret for that
+kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
+
+export KUBECONFIG=.kcp/consumer.kubeconfig
+$ go run ./cmd/konnector/ --lease-namespace default
 
 ## Debug
 
@@ -94,5 +113,5 @@ cp .kcp/admin.kubeconfig .kcp/debug.kubeconfig
 export KUBECONFIG=.kcp/debug.kubeconfig
 k ws use :root:kube-bind
 
-k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*"     api-resources   
+k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" api-resources   
 k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*"  get crd

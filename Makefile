@@ -268,7 +268,7 @@ $(KCP):
 	mv $(TOOLS_DIR)/kcp $(KCP)
 
 run-kcp: $(KCP)
-	$(KCP) start
+	$(KCP) start -v=8
 
 .PHONY: test-e2e
 ifdef USE_GOTESTSUM

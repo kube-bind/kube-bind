@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
-	"github.com/davecgh/go-spew/spew"
 	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
@@ -38,9 +37,9 @@ type Manager struct {
 	namespacePrefix    string
 	providerPrettyName string
 
-	externalAddress       string
-	externalCA            []byte
-	externalTLSServerName string
+	externalAddressGenerator kuberesources.ExternalAddreesGeneratorFunc
+	externalCA               []byte
+	externalTLSServerName    string
 
 	manager mcmanager.Manager
 }
@@ -48,7 +47,7 @@ type Manager struct {
 func NewKubernetesManager(
 	ctx context.Context,
 	namespacePrefix, providerPrettyName string,
-	externalAddress string,
+	externalAddressGenerator kuberesources.ExternalAddreesGeneratorFunc,
 	externalCA []byte,
 	externalTLSServerName string,
 	manager mcmanager.Manager,
@@ -57,9 +56,9 @@ func NewKubernetesManager(
 		namespacePrefix:    namespacePrefix,
 		providerPrettyName: providerPrettyName,
 
-		externalAddress:       externalAddress,
-		externalCA:            externalCA,
-		externalTLSServerName: externalTLSServerName,
+		externalAddressGenerator: externalAddressGenerator,
+		externalCA:               externalCA,
+		externalTLSServerName:    externalTLSServerName,
 
 		manager: manager,
 	}
@@ -78,7 +77,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, cluster, resour
 
 	cl, err := m.manager.GetCluster(ctx, cluster)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get cluster %q: %w", cluster, err)
 	}
 	c := cl.GetClient()
 
@@ -86,7 +85,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, cluster, resour
 	var nss corev1.NamespaceList
 	err = c.List(ctx, &nss, client.MatchingFields{NamespacesByIdentity: identity})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list namespaces: %w", err)
 	}
 	if len(nss.Items) > 1 {
 		logger.Error(fmt.Errorf("found multiple namespaces for identity %q", identity), "found multiple namespaces for identity")
@@ -98,7 +97,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, cluster, resour
 	} else {
 		nsObj, err := kuberesources.CreateNamespace(ctx, c, m.namespacePrefix, identity)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create namespace: %w", err)
 		}
 		logger.Info("Created namespace", "namespace", nsObj.Name)
 		ns = nsObj.Name
@@ -113,10 +112,10 @@ func (m *Manager) HandleResources(ctx context.Context, identity, cluster, resour
 	switch {
 	case errors.IsNotFound(err):
 		if err := kuberesources.CreateClusterBinding(ctx, c, ns, "kubeconfig", m.providerPrettyName); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create cluster binding: %w", err)
 		}
 	case err != nil:
-		return nil, err
+		return nil, fmt.Errorf("failed to get cluster binding: %w", err)
 	default:
 		logger.V(3).Info("Found existing ClusterBinding")
 		kubeconfigSecretName = cb.Spec.KubeconfigSecretRef.Name // reuse old name
@@ -124,21 +123,21 @@ func (m *Manager) HandleResources(ctx context.Context, identity, cluster, resour
 
 	sa, err := kuberesources.CreateServiceAccount(ctx, c, ns, kuberesources.ServiceAccountName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create service account: %w", err)
 	}
 
 	if err := kuberesources.EnsureBinderClusterRole(ctx, c); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to ensure binder cluster role: %w", err)
 	}
 
 	saSecret, err := kuberesources.CreateSASecret(ctx, c, ns, sa.Name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create service account secret: %w", err)
 	}
 
-	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, c, cl.GetConfig(), m.externalAddress, m.externalCA, m.externalTLSServerName, saSecret.Name, ns, kubeconfigSecretName)
+	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, c, cl.GetConfig(), m.externalAddressGenerator, m.externalCA, m.externalTLSServerName, saSecret.Name, ns, kubeconfigSecretName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate kubeconfig: %w", err)
 	}
 
 	return kfgSecret.Data["kubeconfig"], nil
@@ -150,13 +149,6 @@ func (m *Manager) ListAPIResourceSchemas(ctx context.Context, cluster string) (*
 		return nil, err
 	}
 	c := cl.GetCache()
-
-	crdList := corev1.NamespaceList{}
-	err = c.List(ctx, &crdList)
-	if err != nil {
-		return nil, err
-	}
-	spew.Dump(crdList)
 
 	var schemas kubebindv1alpha2.APIResourceSchemaList
 	err = c.List(ctx, &schemas)

@@ -52,8 +52,8 @@ type reconciler struct {
 	deleteClusterRoleBinding func(ctx context.Context, client client.Client, name string) error
 
 	getRoleBinding    func(ctx context.Context, cache cache.Cache, ns, name string) (*rbacv1.RoleBinding, error)
-	createRoleBinding func(ctx context.Context, client client.Client, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
-	updateRoleBinding func(ctx context.Context, client client.Client, ns string, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+	createRoleBinding func(ctx context.Context, client client.Client, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
+	updateRoleBinding func(ctx context.Context, client client.Client, binding *rbacv1.RoleBinding) (*rbacv1.RoleBinding, error)
 
 	getNamespace func(ctx context.Context, cache cache.Cache, name string) (*corev1.Namespace, error)
 }
@@ -272,14 +272,15 @@ func (r *reconciler) ensureRBACRoleBinding(ctx context.Context, client client.Cl
 	}
 
 	if binding == nil {
-		if _, err := r.createRoleBinding(ctx, client, clusterBinding.Namespace, expected); err != nil {
+		expected.Namespace = clusterBinding.Namespace
+		if _, err := r.createRoleBinding(ctx, client, expected); err != nil {
 			return fmt.Errorf("failed to create RoleBinding %s: %w", expected.Name, err)
 		}
 	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) {
 		binding = binding.DeepCopy()
 		binding.Subjects = expected.Subjects
 		// roleRef is immutable
-		if _, err := r.updateRoleBinding(ctx, client, clusterBinding.Namespace, binding); err != nil {
+		if _, err := r.updateRoleBinding(ctx, client, binding); err != nil {
 			return fmt.Errorf("failed to create RoleBinding %s: %w", expected.Namespace, err)
 		}
 	}

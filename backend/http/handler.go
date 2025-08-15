@@ -38,7 +38,6 @@ import (
 	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/kube-bind/kube-bind/backend/cookie"
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
 	"github.com/kube-bind/kube-bind/backend/kubernetes/resources"
@@ -320,8 +319,6 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 	labelSelector := labels.Set{
 		resources.ExportedCRDsLabel: "true",
 	}
-
-	spew.Dump(cluster)
 
 	crds, err := h.kubeManager.ListCustomResourceDefinitions(r.Context(), cluster, labelSelector.AsSelector())
 	if err != nil {

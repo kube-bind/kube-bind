@@ -39,7 +39,6 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
-	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 )
 
 const (
@@ -50,7 +49,6 @@ const (
 type APIServiceExportReconciler struct {
 	manager mcmanager.Manager
 
-	bindClient bindclient.Interface
 	reconciler reconciler
 }
 
@@ -63,18 +61,13 @@ func NewAPIServiceExportReconciler(
 	config = rest.CopyConfig(config)
 	config = rest.AddUserAgent(config, controllerName)
 
-	bindClient, err := bindclient.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByCustomResourceDefinition,
 		indexers.IndexServiceExportByCustomResourceDefinitionControllerRuntime); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceExportByCustomResourceDefinition indexer: %w", err)
 	}
 
 	r := &APIServiceExportReconciler{
-		manager:    mgr,
-		bindClient: bindClient,
+		manager: mgr,
 		reconciler: reconciler{
 			getCRD: func(ctx context.Context, cache cache.Cache, name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				var crd apiextensionsv1.CustomResourceDefinition
@@ -84,11 +77,21 @@ func NewAPIServiceExportReconciler(
 				}
 				return &crd, nil
 			},
-			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-				return bindClient.KubeBindV1alpha2().APIResourceSchemas().Get(ctx, name, metav1.GetOptions{})
+			getAPIResourceSchema: func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+				var schema kubebindv1alpha2.APIResourceSchema
+				key := types.NamespacedName{Name: name}
+				if err := cache.Get(ctx, key, &schema); err != nil {
+					return nil, err
+				}
+				return &schema, nil
 			},
-			deleteServiceExport: func(ctx context.Context, ns, name string) error {
-				return bindClient.KubeBindV1alpha2().APIServiceExports(ns).Delete(ctx, name, metav1.DeleteOptions{})
+			deleteServiceExport: func(ctx context.Context, cl client.Client, ns, name string) error {
+				return cl.Delete(ctx, &kubebindv1alpha2.APIServiceExport{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: ns,
+						Name:      name,
+					},
+				})
 			},
 		},
 	}

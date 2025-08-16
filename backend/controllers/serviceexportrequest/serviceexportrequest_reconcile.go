@@ -26,6 +26,7 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
@@ -40,15 +41,15 @@ type reconciler struct {
 	getCRD                     func(ctx context.Context, cache cache.Cache, name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getAPIResourceSchema       func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error)
 	getServiceExport           func(ctx context.Context, cache cache.Cache, ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
-	createServiceExport        func(ctx context.Context, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)
-	createAPIResourceSchema    func(ctx context.Context, schema *kubebindv1alpha2.APIResourceSchema) (*kubebindv1alpha2.APIResourceSchema, error)
-	deleteServiceExportRequest func(ctx context.Context, namespace, name string) error
+	createServiceExport        func(ctx context.Context, cl client.Client, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)
+	createAPIResourceSchema    func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.APIResourceSchema) (*kubebindv1alpha2.APIResourceSchema, error)
+	deleteServiceExportRequest func(ctx context.Context, cl client.Client, namespace, name string) error
 }
 
-func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	var errs []error
 
-	if err := r.ensureExports(ctx, cache, req); err != nil {
+	if err := r.ensureExports(ctx, cl, cache, req); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -57,7 +58,7 @@ func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, req *kube
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureExports(ctx context.Context, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	logger := klog.FromContext(ctx)
 
 	if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhasePending {
@@ -93,7 +94,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cache cache.Cache, req *
 				schema.Namespace = req.Namespace
 
 				logger.V(1).Info("Creating APIResourceSchema", "name", schema.Name, "namespace", schema.Namespace)
-				if apiResourceSchema, err = r.createAPIResourceSchema(ctx, schema); err != nil {
+				if apiResourceSchema, err = r.createAPIResourceSchema(ctx, cl, schema); err != nil {
 					return err
 				}
 			case err != nil:
@@ -130,7 +131,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cache cache.Cache, req *
 			}
 
 			logger.V(1).Info("Creating APIServiceExport", "name", export.Name, "namespace", export.Namespace)
-			if _, err = r.createServiceExport(ctx, export); err != nil {
+			if _, err = r.createServiceExport(ctx, cl, export); err != nil {
 				return err
 			}
 		}
@@ -151,7 +152,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cache cache.Cache, req *
 
 	if time.Since(req.CreationTimestamp.Time) > 10*time.Minute {
 		logger.Info("Deleting service binding request %s/%s", req.Namespace, req.Name, "reason", "timeout", "age", time.Since(req.CreationTimestamp.Time))
-		return r.deleteServiceExportRequest(ctx, req.Namespace, req.Name)
+		return r.deleteServiceExportRequest(ctx, cl, req.Namespace, req.Name)
 	}
 
 	return nil

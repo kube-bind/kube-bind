@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	kubernetesclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -40,7 +39,6 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
-	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 )
 
 const (
@@ -51,8 +49,6 @@ const (
 type APIServiceExportRequestReconciler struct {
 	manager mcmanager.Manager
 
-	bindClient             bindclient.Interface
-	kubeClient             kubernetesclient.Interface
 	informerScope          kubebindv1alpha2.InformerScope
 	clusterScopedIsolation kubebindv1alpha2.Isolation
 	reconciler             reconciler
@@ -69,15 +65,6 @@ func NewAPIServiceExportRequestReconciler(
 	config = rest.CopyConfig(config)
 	config = rest.AddUserAgent(config, controllerName)
 
-	bindClient, err := bindclient.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-	kubeClient, err := kubernetesclient.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
 	// Set up field indexers for APIServiceExportRequests
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByServiceExport,
 		indexers.IndexServiceExportRequestByServiceExportControllerRuntime); err != nil {
@@ -91,8 +78,6 @@ func NewAPIServiceExportRequestReconciler(
 
 	r := &APIServiceExportRequestReconciler{
 		manager:                mgr,
-		bindClient:             bindClient,
-		kubeClient:             kubeClient,
 		informerScope:          scope,
 		clusterScopedIsolation: isolation,
 		reconciler: reconciler{
@@ -122,14 +107,25 @@ func NewAPIServiceExportRequestReconciler(
 				}
 				return &export, nil
 			},
-			createServiceExport: func(ctx context.Context, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error) {
-				return bindClient.KubeBindV1alpha2().APIServiceExports(resource.Namespace).Create(ctx, resource, metav1.CreateOptions{})
+			createServiceExport: func(ctx context.Context, cl client.Client, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error) {
+				if err := cl.Create(ctx, resource); err != nil {
+					return nil, err
+				}
+				return resource, nil
 			},
-			createAPIResourceSchema: func(ctx context.Context, schema *kubebindv1alpha2.APIResourceSchema) (*kubebindv1alpha2.APIResourceSchema, error) {
-				return bindClient.KubeBindV1alpha2().APIResourceSchemas().Create(ctx, schema, metav1.CreateOptions{})
+			createAPIResourceSchema: func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.APIResourceSchema) (*kubebindv1alpha2.APIResourceSchema, error) {
+				if err := cl.Create(ctx, schema); err != nil {
+					return nil, err
+				}
+				return schema, nil
 			},
-			deleteServiceExportRequest: func(ctx context.Context, ns, name string) error {
-				return bindClient.KubeBindV1alpha2().APIServiceExportRequests(ns).Delete(ctx, name, metav1.DeleteOptions{})
+			deleteServiceExportRequest: func(ctx context.Context, cl client.Client, ns, name string) error {
+				return cl.Delete(ctx, &kubebindv1alpha2.APIServiceExportRequest{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: ns,
+						Name:      name,
+					},
+				})
 			},
 		},
 	}
@@ -234,7 +230,7 @@ func (r *APIServiceExportRequestReconciler) Reconcile(ctx context.Context, req m
 	original := apiServiceExportRequest.DeepCopy()
 
 	// Run the reconciliation logic
-	if err := r.reconciler.reconcile(ctx, cache, apiServiceExportRequest); err != nil {
+	if err := r.reconciler.reconcile(ctx, client, cache, apiServiceExportRequest); err != nil {
 		logger.Error(err, "Failed to reconcile APIServiceExportRequest")
 		return ctrl.Result{}, err
 	}

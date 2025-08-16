@@ -18,6 +18,7 @@ package kubernetes
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/kubernetes/resources"
 )
@@ -26,15 +27,15 @@ const (
 	NamespacesByIdentity = "namespacesByIdentity"
 )
 
-func IndexNamespacesByIdentity(obj any) ([]string, error) {
+func IndexNamespacesByIdentity(obj client.Object) []string {
 	ns, ok := obj.(*corev1.Namespace)
 	if !ok {
-		return nil, nil
+		return nil
 	}
 
 	if id, found := ns.Annotations[resources.IdentityAnnotationKey]; found {
-		return []string{id}, nil
+		return []string{id}
 	}
 
-	return nil, nil
+	return nil
 }

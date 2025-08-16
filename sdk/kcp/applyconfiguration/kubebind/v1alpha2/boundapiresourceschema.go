@@ -49,7 +49,7 @@ func BoundAPIResourceSchema(name, namespace string) *BoundAPIResourceSchemaApply
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the Kind field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithKind(value string) *BoundAPIResourceSchemaApplyConfiguration {
-	b.Kind = &value
+	b.TypeMetaApplyConfiguration.Kind = &value
 	return b
 }
 
@@ -57,7 +57,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithKind(value string) *Bound
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the APIVersion field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithAPIVersion(value string) *BoundAPIResourceSchemaApplyConfiguration {
-	b.APIVersion = &value
+	b.TypeMetaApplyConfiguration.APIVersion = &value
 	return b
 }
 
@@ -66,7 +66,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithAPIVersion(value string) 
 // If called multiple times, the Name field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithName(value string) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.Name = &value
+	b.ObjectMetaApplyConfiguration.Name = &value
 	return b
 }
 
@@ -75,7 +75,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithName(value string) *Bound
 // If called multiple times, the GenerateName field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithGenerateName(value string) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.GenerateName = &value
+	b.ObjectMetaApplyConfiguration.GenerateName = &value
 	return b
 }
 
@@ -84,7 +84,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithGenerateName(value string
 // If called multiple times, the Namespace field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithNamespace(value string) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.Namespace = &value
+	b.ObjectMetaApplyConfiguration.Namespace = &value
 	return b
 }
 
@@ -93,7 +93,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithNamespace(value string) *
 // If called multiple times, the UID field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithUID(value types.UID) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.UID = &value
+	b.ObjectMetaApplyConfiguration.UID = &value
 	return b
 }
 
@@ -102,7 +102,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithUID(value types.UID) *Bou
 // If called multiple times, the ResourceVersion field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithResourceVersion(value string) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.ResourceVersion = &value
+	b.ObjectMetaApplyConfiguration.ResourceVersion = &value
 	return b
 }
 
@@ -111,7 +111,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithResourceVersion(value str
 // If called multiple times, the Generation field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithGeneration(value int64) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.Generation = &value
+	b.ObjectMetaApplyConfiguration.Generation = &value
 	return b
 }
 
@@ -120,7 +120,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithGeneration(value int64) *
 // If called multiple times, the CreationTimestamp field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithCreationTimestamp(value metav1.Time) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.CreationTimestamp = &value
+	b.ObjectMetaApplyConfiguration.CreationTimestamp = &value
 	return b
 }
 
@@ -129,7 +129,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithCreationTimestamp(value m
 // If called multiple times, the DeletionTimestamp field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithDeletionTimestamp(value metav1.Time) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.DeletionTimestamp = &value
+	b.ObjectMetaApplyConfiguration.DeletionTimestamp = &value
 	return b
 }
 
@@ -138,7 +138,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithDeletionTimestamp(value m
 // If called multiple times, the DeletionGracePeriodSeconds field is set to the value of the last call.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithDeletionGracePeriodSeconds(value int64) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	b.DeletionGracePeriodSeconds = &value
+	b.ObjectMetaApplyConfiguration.DeletionGracePeriodSeconds = &value
 	return b
 }
 
@@ -148,11 +148,11 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithDeletionGracePeriodSecond
 // overwriting an existing map entries in Labels field with the same key.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithLabels(entries map[string]string) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.Labels == nil && len(entries) > 0 {
-		b.Labels = make(map[string]string, len(entries))
+	if b.ObjectMetaApplyConfiguration.Labels == nil && len(entries) > 0 {
+		b.ObjectMetaApplyConfiguration.Labels = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.Labels[k] = v
+		b.ObjectMetaApplyConfiguration.Labels[k] = v
 	}
 	return b
 }
@@ -163,11 +163,11 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithLabels(entries map[string
 // overwriting an existing map entries in Annotations field with the same key.
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithAnnotations(entries map[string]string) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
-	if b.Annotations == nil && len(entries) > 0 {
-		b.Annotations = make(map[string]string, len(entries))
+	if b.ObjectMetaApplyConfiguration.Annotations == nil && len(entries) > 0 {
+		b.ObjectMetaApplyConfiguration.Annotations = make(map[string]string, len(entries))
 	}
 	for k, v := range entries {
-		b.Annotations[k] = v
+		b.ObjectMetaApplyConfiguration.Annotations[k] = v
 	}
 	return b
 }
@@ -181,7 +181,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithOwnerReferences(values ..
 		if values[i] == nil {
 			panic("nil value passed to WithOwnerReferences")
 		}
-		b.OwnerReferences = append(b.OwnerReferences, *values[i])
+		b.ObjectMetaApplyConfiguration.OwnerReferences = append(b.ObjectMetaApplyConfiguration.OwnerReferences, *values[i])
 	}
 	return b
 }
@@ -192,7 +192,7 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithOwnerReferences(values ..
 func (b *BoundAPIResourceSchemaApplyConfiguration) WithFinalizers(values ...string) *BoundAPIResourceSchemaApplyConfiguration {
 	b.ensureObjectMetaApplyConfigurationExists()
 	for i := range values {
-		b.Finalizers = append(b.Finalizers, values[i])
+		b.ObjectMetaApplyConfiguration.Finalizers = append(b.ObjectMetaApplyConfiguration.Finalizers, values[i])
 	}
 	return b
 }
@@ -222,5 +222,5 @@ func (b *BoundAPIResourceSchemaApplyConfiguration) WithStatus(value *BoundAPIRes
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *BoundAPIResourceSchemaApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
-	return b.Name
+	return b.ObjectMetaApplyConfiguration.Name
 }

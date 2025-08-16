@@ -26,7 +26,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const listenAddr = ":8080"
+const listenAddr = ":8090"
 
 type Server struct {
 	Router  *mux.Router

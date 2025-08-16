@@ -19,7 +19,7 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"context"
+	context "context"
 	time "time"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,17 +27,17 @@ import (
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 
-	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	apiskubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	versioned "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	internalinterfaces "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/internalinterfaces"
-	v1alpha2 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
 // APIServiceBindingInformer provides access to a shared informer and lister for
 // APIServiceBindings.
 type APIServiceBindingInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha2.APIServiceBindingLister
+	Lister() kubebindv1alpha2.APIServiceBindingLister
 }
 
 type aPIServiceBindingInformer struct {
@@ -71,7 +71,7 @@ func NewFilteredAPIServiceBindingInformer(client versioned.Interface, resyncPeri
 				return client.KubeBindV1alpha2().APIServiceBindings().Watch(context.TODO(), options)
 			},
 		},
-		&kubebindv1alpha2.APIServiceBinding{},
+		&apiskubebindv1alpha2.APIServiceBinding{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +82,9 @@ func (f *aPIServiceBindingInformer) defaultInformer(client versioned.Interface, 
 }
 
 func (f *aPIServiceBindingInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&kubebindv1alpha2.APIServiceBinding{}, f.defaultInformer)
+	return f.factory.InformerFor(&apiskubebindv1alpha2.APIServiceBinding{}, f.defaultInformer)
 }
 
-func (f *aPIServiceBindingInformer) Lister() v1alpha2.APIServiceBindingLister {
-	return v1alpha2.NewAPIServiceBindingLister(f.Informer().GetIndexer())
+func (f *aPIServiceBindingInformer) Lister() kubebindv1alpha2.APIServiceBindingLister {
+	return kubebindv1alpha2.NewAPIServiceBindingLister(f.Informer().GetIndexer())
 }

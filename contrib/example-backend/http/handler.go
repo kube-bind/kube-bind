@@ -32,7 +32,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextensionslisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -70,9 +69,8 @@ type handler struct {
 	cookieEncryptionKey []byte
 	cookieSigningKey    []byte
 
-	client              *http.Client
-	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister
-	kubeManager         *kubernetes.Manager
+	client      *http.Client
+	kubeManager *kubernetes.Manager
 }
 
 func NewHandler(
@@ -81,7 +79,6 @@ func NewHandler(
 	cookieSigningKey, cookieEncryptionKey []byte,
 	scope kubebindv1alpha2.InformerScope,
 	mgr *kubernetes.Manager,
-	apiextensionsLister apiextensionslisters.CustomResourceDefinitionLister,
 ) (*handler, error) {
 	return &handler{
 		oidc:                provider,
@@ -92,26 +89,41 @@ func NewHandler(
 		scope:               scope,
 		client:              http.DefaultClient,
 		kubeManager:         mgr,
-		apiextensionsLister: apiextensionsLister,
 		cookieSigningKey:    cookieSigningKey,
 		cookieEncryptionKey: cookieEncryptionKey,
 	}, nil
 }
 
 func (h *handler) AddRoutes(mux *mux.Router) {
-	mux.HandleFunc("/export", h.handleServiceExport).Methods("GET")
+	// Server contains double routes for when backend is multi-cluster aware or single cluster.
+	// When called multi-cluster aware route in single cluster mode, it will ignore cluster parameter.
+	mux.HandleFunc("/clusters/{cluster}/exports", h.handleServiceExport).Methods("GET")
+	mux.HandleFunc("/exports", h.handleServiceExport).Methods("GET")
+
+	mux.HandleFunc("/clusters/{cluster}/resources", h.handleResources).Methods("GET")
 	mux.HandleFunc("/resources", h.handleResources).Methods("GET")
+
+	mux.HandleFunc("/clusters/{cluster}/bind", h.handleBind).Methods("GET")
 	mux.HandleFunc("/bind", h.handleBind).Methods("GET")
+
+	mux.HandleFunc("/clusters/{cluster}/authorize", h.handleAuthorize).Methods("GET")
 	mux.HandleFunc("/authorize", h.handleAuthorize).Methods("GET")
+
 	mux.HandleFunc("/callback", h.handleCallback).Methods("GET")
 }
 
 func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
+	cluster := mux.Vars(r)["cluster"]
+	singleClusterScoped := cluster == ""
 
 	oidcAuthorizeURL := h.oidcAuthorizeURL
 	if oidcAuthorizeURL == "" {
-		oidcAuthorizeURL = fmt.Sprintf("http://%s/authorize", r.Host)
+		if singleClusterScoped {
+			oidcAuthorizeURL = fmt.Sprintf("http://%s/authorize", r.Host)
+		} else {
+			oidcAuthorizeURL = fmt.Sprintf("http://%s/clusters/%s/authorize", r.Host, cluster)
+		}
 	}
 
 	ver, err := bindversion.BinaryVersion(componentbaseversion.Get().GitVersion)
@@ -159,16 +171,18 @@ func prepareNoCache(w http.ResponseWriter) {
 func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
 
+	cluster := mux.Vars(r)["cluster"]
+
 	scopes := []string{"openid", "profile", "email", "offline_access"}
 	code := &AuthCode{
 		RedirectURL: r.URL.Query().Get("u"),
 		SessionID:   r.URL.Query().Get("s"),
-		ClusterID:   r.URL.Query().Get("c"),
+		ClusterID:   cluster,
 	}
 	if p := r.URL.Query().Get("p"); p != "" && code.RedirectURL == "" {
 		code.RedirectURL = fmt.Sprintf("http://localhost:%s/callback", p)
 	}
-	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {
+	if code.RedirectURL == "" || code.SessionID == "" {
 		logger.Error(errors.New("missing redirect url or session id or cluster id"), "failed to authorize")
 		http.Error(w, "missing redirect_url or session_id", http.StatusBadRequest)
 		return
@@ -277,7 +291,11 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, cookie.MakeCookie(r, cookieName, encoded, time.Duration(1)*time.Hour))
-	http.Redirect(w, r, "/resources?s="+authCode.SessionID, http.StatusFound)
+	if authCode.ClusterID == "" {
+		http.Redirect(w, r, "/resources?s="+authCode.SessionID, http.StatusFound)
+	} else {
+		http.Redirect(w, r, "/clusters/"+authCode.ClusterID+"/resources?s="+authCode.SessionID, http.StatusFound)
+	}
 }
 
 func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
@@ -285,32 +303,39 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 
 	prepareNoCache(w)
 
+	cluster := mux.Vars(r)["cluster"]
+	singleClusterScoped := cluster == ""
+
 	if h.testingAutoSelect != "" {
 		parts := strings.SplitN(h.testingAutoSelect, ".", 2)
-		http.Redirect(w, r, "/resources/"+parts[0]+"/"+parts[1], http.StatusFound)
+		if singleClusterScoped {
+			http.Redirect(w, r, "/resources/"+parts[0]+"/"+parts[1], http.StatusFound)
+		} else {
+			http.Redirect(w, r, "/clusters/"+cluster+"/resources/"+parts[0]+"/"+parts[1], http.StatusFound)
+		}
 		return
 	}
 
 	labelSelector := labels.Set{
 		resources.ExportedCRDsLabel: "true",
 	}
-	crds, err := h.apiextensionsLister.List(labelSelector.AsSelector())
+	crds, err := h.kubeManager.ListCustomResourceDefinitions(r.Context(), cluster, labelSelector.AsSelector())
 	if err != nil {
 		logger.Error(err, "failed to list crds")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	sort.SliceStable(crds, func(i, j int) bool {
-		return crds[i].Name < crds[j].Name
+	sort.SliceStable(crds.Items, func(i, j int) bool {
+		return crds.Items[i].Name < crds.Items[j].Name
 	})
 	rightScopedCRDs := []*apiextensionsv1.CustomResourceDefinition{}
-	for _, crd := range crds {
+	for _, crd := range crds.Items {
 		if h.scope == kubebindv1alpha2.ClusterScope || crd.Spec.Scope == apiextensionsv1.NamespaceScoped {
-			rightScopedCRDs = append(rightScopedCRDs, crd)
+			rightScopedCRDs = append(rightScopedCRDs, &crd)
 		}
 	}
 
-	apiResourceSchemas, err := h.kubeManager.ListAPIResourceSchemas(r.Context())
+	apiResourceSchemas, err := h.kubeManager.ListAPIResourceSchemas(r.Context(), cluster)
 	if err != nil {
 		logger.Error(err, "failed to get api resource schemas")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -319,10 +344,12 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 	bs := bytes.Buffer{}
 	if err := resourcesTemplate.Execute(&bs, struct {
 		SessionID          string
+		Cluster            string
 		CRDs               []*apiextensionsv1.CustomResourceDefinition
 		APIResourceSchemas []kubebindv1alpha2.APIResourceSchema
 	}{
 		SessionID:          r.URL.Query().Get("s"),
+		Cluster:            cluster,
 		CRDs:               rightScopedCRDs,
 		APIResourceSchemas: apiResourceSchemas.Items,
 	}); err != nil {
@@ -368,7 +395,9 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	group := r.URL.Query().Get("group")
 	resource := r.URL.Query().Get("resource")
-	kfg, err := h.kubeManager.HandleResources(r.Context(), idToken.Subject+"#"+state.ClusterID, resource, group)
+	cluster := mux.Vars(r)["cluster"]
+
+	kfg, err := h.kubeManager.HandleResources(r.Context(), idToken.Subject+"#"+state.ClusterID, cluster, resource, group)
 	if err != nil {
 		logger.Error(err, "failed to handle resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -414,6 +443,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		Kubeconfig: kfg,
 		Requests:   []runtime.RawExtension{{Raw: requestBytes}},
 	}
+
 	payload, err := json.Marshal(&response)
 	if err != nil {
 		logger.Error(err, "failed to marshal auth response")

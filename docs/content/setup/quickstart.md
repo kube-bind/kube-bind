@@ -49,13 +49,19 @@ and that you have at least one k8s cluster. Take a look at the backend option in
 Create copy of kcp kubeconfig and create provider cluster:
 
 ```shell
-$ cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
-$ export KUBECONFIG=.kcp/provider.kubeconfig
-$ kubectl ws create provider --enter
+cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
+export KUBECONFIG=.kcp/provider.kubeconfig
+kubectl ws create provider --enter
 ```
 
 * apply the CRDs: `kubectl apply -f deploy/crd`
 * In order to populate binding list on website, we need a CRD with label `kube-bind.io/exported: true`. Apply example APIResourceSchema for the CRD: `kubectl apply -f deploy/examples/crd-mangodb.yaml`
+
+```shell
+kubectl apply -f deploy/crd
+kubectl apply -f deploy/examples/crd-mangodb.yaml
+```
+
 * start the backend binary with the right flags:
 ```shell
 $ make build
@@ -95,7 +101,7 @@ Now create the APIServiceExportRequest:
 $ ./bin/kubectl-bind http://127.0.0.1:8080/export --dry-run -o yaml > apiserviceexport.yaml
 # This will wait for konnector to be ready. Once this gets running - start the konnector bellow
 # IMPORTANT: Check namespace to be used! 
-$ ./bin/kubectl-bind apiservice --remote-namespace kube-bind-tf92m --remote-kubeconfig .kcp/provider.kubeconfig -f apiserviceexport.yaml  --skip-konnector
+$ ./bin/kubectl-bind apiservice --remote-kubeconfig .kcp/provider.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace <namespace>
 # run konnector
 $ go run ./cmd/konnector/ --lease-namespace default
 ```

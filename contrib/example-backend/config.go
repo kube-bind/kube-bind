@@ -17,31 +17,22 @@ limitations under the License.
 package backend
 
 import (
-	"time"
+	"fmt"
 
-	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apiextensionsinformers "k8s.io/apiextensions-apiserver/pkg/client/informers/externalversions"
-	kubeinformers "k8s.io/client-go/informers"
-	kubernetesclient "k8s.io/client-go/kubernetes"
+	"github.com/kcp-dev/multicluster-provider/apiexport"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
 	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
-	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
-	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions"
 )
 
 type Config struct {
 	Options *options.CompletedOptions
 
-	ClientConfig        *rest.Config
-	BindClient          *bindclient.Clientset
-	KubeClient          *kubernetesclient.Clientset
-	ApiextensionsClient *apiextensionsclient.Clientset
+	Provider multicluster.Provider
 
-	KubeInformers          kubeinformers.SharedInformerFactory
-	BindInformers          bindinformers.SharedInformerFactory
-	ApiextensionsInformers apiextensionsinformers.SharedInformerFactory
+	ClientConfig *rest.Config
 }
 
 func NewConfig(options *options.CompletedOptions) (*Config, error) {
@@ -58,22 +49,18 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 		return nil, err
 	}
 	config.ClientConfig = rest.CopyConfig(config.ClientConfig)
-	config.ClientConfig = rest.AddUserAgent(config.ClientConfig, "kube-bind-example-backend")
+	config.ClientConfig = rest.AddUserAgent(config.ClientConfig, "kube-bind-backend")
 
-	if config.BindClient, err = bindclient.NewForConfig(config.ClientConfig); err != nil {
-		return nil, err
+	switch options.Provider {
+	case "kcp":
+		provider, err := apiexport.New(config.ClientConfig, apiexport.Options{})
+		if err != nil {
+			return nil, fmt.Errorf("error setting up kcp provider: %w", err)
+		}
+		config.Provider = provider
+	default:
+		config.Provider = nil
 	}
-	if config.KubeClient, err = kubernetesclient.NewForConfig(config.ClientConfig); err != nil {
-		return nil, err
-	}
-	if config.ApiextensionsClient, err = apiextensionsclient.NewForConfig(config.ClientConfig); err != nil {
-		return nil, err
-	}
-
-	// construct informer factories
-	config.KubeInformers = kubeinformers.NewSharedInformerFactory(config.KubeClient, time.Minute*30)
-	config.BindInformers = bindinformers.NewSharedInformerFactory(config.BindClient, time.Minute*30)
-	config.ApiextensionsInformers = apiextensionsinformers.NewSharedInformerFactory(config.ApiextensionsClient, time.Minute*30)
 
 	return config, nil
 }

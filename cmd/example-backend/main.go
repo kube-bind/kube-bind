@@ -84,11 +84,11 @@ func run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	server.OptionallyStartInformers(ctx)
+
 	if err := server.Run(ctx); err != nil {
 		return err
 	}
-	logger.Info("Listening\n", "address", server.Addr())
+	logger.Info("Listening", "address", server.Addr())
 
 	<-ctx.Done()
 

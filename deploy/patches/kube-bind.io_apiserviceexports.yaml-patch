@@ -1,0 +1,6 @@
+# conversion for core resources does not happen via webhooks, but is short-circuited to the
+# schema's Convert functions directly, but the CRD still needs to define a conversion.
+- op: add
+  path: /spec/conversion
+  value:
+    strategy: None

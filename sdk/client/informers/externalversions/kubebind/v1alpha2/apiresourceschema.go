@@ -62,13 +62,25 @@ func NewFilteredAPIResourceSchemaInformer(client versioned.Interface, resyncPeri
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha2().APIResourceSchemas().List(context.TODO(), options)
+				return client.KubeBindV1alpha2().APIResourceSchemas().List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha2().APIResourceSchemas().Watch(context.TODO(), options)
+				return client.KubeBindV1alpha2().APIResourceSchemas().Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.KubeBindV1alpha2().APIResourceSchemas().List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.KubeBindV1alpha2().APIResourceSchemas().Watch(ctx, options)
 			},
 		},
 		&apiskubebindv1alpha2.APIResourceSchema{},

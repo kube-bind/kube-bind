@@ -1,0 +1,2 @@
+* remove SDK generation in favor of ctrl runtime client
+* remove duplicate controller in manager

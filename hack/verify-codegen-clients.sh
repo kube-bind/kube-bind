@@ -22,7 +22,6 @@ set -o nounset
 set -o pipefail
 
 "$( dirname "${BASH_SOURCE[0]}")/update-codegen-clients.sh"
-"$( dirname "${BASH_SOURCE[0]}")/update-codegen-clients-kcp.sh"
 if ! git diff --quiet --exit-code -- sdk/; then
 	cat << EOF
 ERROR: This check enforces that the client code is generated correctly.

@@ -37,7 +37,6 @@ type reconciler struct {
 	informerScope          kubebindv1alpha2.InformerScope
 	clusterScopedIsolation kubebindv1alpha2.Isolation
 
-	getCRD                     func(ctx context.Context, cache cache.Cache, name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getAPIResourceSchema       func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error)
 	getServiceExport           func(ctx context.Context, cache cache.Cache, ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
 	createServiceExport        func(ctx context.Context, resource *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)

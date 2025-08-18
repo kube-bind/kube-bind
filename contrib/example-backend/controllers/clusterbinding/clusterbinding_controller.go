@@ -242,14 +242,14 @@ func (r *ClusterBindingReconciler) SetupWithManager(mgr mcmanager.Manager) error
 		Owns(&rbacv1.RoleBinding{}).
 		Watches(
 			&kubebindv1alpha2.APIServiceExport{},
-			mapCRD,
+			mapAPIResourceSchema,
 		).
 		Named(controllerName).
 		Complete(r)
 }
 
-func mapCRD(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
-	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
+func mapAPIResourceSchema(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		serviceExport, ok := obj.(*kubebindv1alpha2.APIServiceExport)
 		if !ok {
 			return nil

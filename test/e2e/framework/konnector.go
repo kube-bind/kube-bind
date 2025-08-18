@@ -29,7 +29,6 @@ import (
 	"github.com/kube-bind/kube-bind/deploy/crd"
 	"github.com/kube-bind/kube-bind/pkg/konnector"
 	"github.com/kube-bind/kube-bind/pkg/konnector/options"
-	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -42,7 +41,6 @@ func StartKonnector(t *testing.T, clientConfig *rest.Config, args ...string) *ko
 	err = crd.Create(ctx,
 		crdClient.ApiextensionsV1().CustomResourceDefinitions(),
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiservicebindings"},
-		metav1.GroupResource{Group: kubebindv1alpha1.GroupName, Resource: "apiservicebindings"},
 	)
 	require.NoError(t, err)
 

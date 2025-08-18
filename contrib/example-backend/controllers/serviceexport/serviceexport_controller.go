@@ -66,17 +66,18 @@ func NewAPIServiceExportReconciler(
 	if err != nil {
 		return nil, err
 	}
-	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByCustomResourceDefinition,
-		indexers.IndexServiceExportByCustomResourceDefinitionControllerRuntime); err != nil {
-		return nil, fmt.Errorf("failed to setup ServiceExportByCustomResourceDefinition indexer: %w", err)
+
+	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByAPIResourceSchema,
+		indexers.IndexServiceExportByAPIResourceSchema); err != nil {
+		return nil, fmt.Errorf("failed to setup ServiceExportByAPIResourceSchema indexer: %w", err)
 	}
 
 	r := &APIServiceExportReconciler{
 		manager:    mgr,
 		bindClient: bindClient,
 		reconciler: reconciler{
-			getCRD: func(ctx context.Context, cache cache.Cache, name string) (*apiextensionsv1.CustomResourceDefinition, error) {
-				var crd apiextensionsv1.CustomResourceDefinition
+			getAPIResourceSchema: func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
+				var schema kubebindv1alpha2.APIResourceSchema
 				key := types.NamespacedName{Name: name}
 				if err := cache.Get(ctx, key, &schema); err != nil {
 					return nil, err
@@ -143,15 +144,15 @@ func (r *APIServiceExportReconciler) Reconcile(ctx context.Context, req mcreconc
 	return ctrl.Result{}, nil
 }
 
-// getCRDMapper returns a mapper function that uses the manager to find related APIServiceExports.
-func getCRDMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
-	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
-		crd := obj.(*apiextensionsv1.CustomResourceDefinition)
-		crdKey := crd.Name
+// getAPIResourceSchemaMapper returns a mapper function that uses the manager to find related APIServiceExports.
+func getAPIResourceSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []mcreconcile.Request {
+		apiResourceSchema := obj.(*kubebindv1alpha2.APIResourceSchema)
+		apiResourceSchemaKey := apiResourceSchema.Name
 		c := cl.GetClient()
 
 		var exports kubebindv1alpha2.APIServiceExportList
-		if err := c.List(ctx, &exports, client.MatchingFields{indexers.ServiceExportByCustomResourceDefinition: crdKey}); err != nil {
+		if err := c.List(ctx, &exports, client.MatchingFields{indexers.ServiceExportByAPIResourceSchema: apiResourceSchemaKey}); err != nil {
 			return []mcreconcile.Request{}
 		}
 
@@ -174,8 +175,8 @@ func (r *APIServiceExportReconciler) SetupWithManager(mgr mcmanager.Manager) err
 	return mcbuilder.ControllerManagedBy(mgr).
 		For(&kubebindv1alpha2.APIServiceExport{}).
 		Watches(
-			&apiextensionsv1.CustomResourceDefinition{},
-			getCRDMapper,
+			&kubebindv1alpha2.APIResourceSchema{},
+			getAPIResourceSchemaMapper,
 		).
 		Named(controllerName).
 		Complete(r)

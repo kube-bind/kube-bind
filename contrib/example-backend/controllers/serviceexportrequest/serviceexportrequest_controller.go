@@ -79,12 +79,12 @@ func NewAPIServiceExportRequestReconciler(
 
 	// Set up field indexers for APIServiceExportRequests
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByServiceExport,
-		indexers.IndexServiceExportRequestByServiceExportControllerRuntime); err != nil {
+		indexers.IndexServiceExportRequestByServiceExport); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceExportRequestByServiceExport indexer: %w", err)
 	}
 
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByGroupResource,
-		indexers.IndexServiceExportRequestByGroupResourceControllerRuntime); err != nil {
+		indexers.IndexServiceExportRequestByGroupResource); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceExportRequestByGroupResource indexer: %w", err)
 	}
 
@@ -97,14 +97,6 @@ func NewAPIServiceExportRequestReconciler(
 		reconciler: reconciler{
 			informerScope:          scope,
 			clusterScopedIsolation: isolation,
-			getCRD: func(ctx context.Context, cache cache.Cache, name string) (*apiextensionsv1.CustomResourceDefinition, error) {
-				var crd apiextensionsv1.CustomResourceDefinition
-				key := types.NamespacedName{Name: name}
-				if err := cache.Get(ctx, key, &crd); err != nil {
-					return nil, err
-				}
-				return &crd, nil
-			},
 			getAPIResourceSchema: func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
 				var schema kubebindv1alpha2.APIResourceSchema
 				key := types.NamespacedName{Name: name}
@@ -137,9 +129,8 @@ func NewAPIServiceExportRequestReconciler(
 }
 
 // getServiceExportRequestMapper creates a mapping function for ServiceExport changes.
-
 func getServiceExportRequestMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
-	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
+	return handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		serviceExport := obj.(*kubebindv1alpha2.APIServiceExport)
 		seKey := serviceExport.Namespace + "/" + serviceExport.Name
 
@@ -167,16 +158,15 @@ func getServiceExportRequestMapper(clusterName string, cl cluster.Cluster) handl
 	})
 }
 
-// getCRDMapper creates a mapping function for CRD changes.
-func getCRDMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
-	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
-		crd := obj.(*apiextensionsv1.CustomResourceDefinition)
-		crdKey := crd.Name // CRDs are cluster-scoped
-
+// getAPIResourceSchemaMapper creates a mapping function for APIResourceSchema changes.
+func getAPIResourceSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []mcreconcile.Request {
+		apiResourceSchema := obj.(*kubebindv1alpha2.APIResourceSchema)
+		apiResourceSchemaKey := apiResourceSchema.Name
 		c := cl.GetClient()
 
 		var requests kubebindv1alpha2.APIServiceExportRequestList
-		if err := c.List(ctx, &requests, client.MatchingFields{indexers.ServiceExportRequestByGroupResource: crdKey}); err != nil {
+		if err := c.List(ctx, &requests, client.MatchingFields{indexers.ServiceExportRequestByGroupResource: apiResourceSchemaKey}); err != nil {
 			return []mcreconcile.Request{}
 		}
 
@@ -259,8 +249,8 @@ func (r *APIServiceExportRequestReconciler) SetupWithManager(mgr mcmanager.Manag
 			getServiceExportRequestMapper,
 		).
 		Watches(
-			&apiextensionsv1.CustomResourceDefinition{},
-			getCRDMapper,
+			&kubebindv1alpha2.APIResourceSchema{},
+			getAPIResourceSchemaMapper,
 		).
 		Named(controllerName).
 		Complete(r)

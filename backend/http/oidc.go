@@ -42,8 +42,8 @@ type OIDCServiceProvider struct {
 	provider *oidc.Provider
 }
 
-func NewOIDCServiceProvider(clientID, clientSecret, redirectURI, issuerURL string) (*OIDCServiceProvider, error) {
-	provider, err := oidc.NewProvider(context.TODO(), issuerURL)
+func NewOIDCServiceProvider(ctx context.Context, clientID, clientSecret, redirectURI, issuerURL string) (*OIDCServiceProvider, error) {
+	provider, err := oidc.NewProvider(ctx, issuerURL)
 	if err != nil {
 		return nil, err
 	}

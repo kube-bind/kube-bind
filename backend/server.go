@@ -71,6 +71,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		callback = fmt.Sprintf("http://%s/callback", s.WebServer.Addr().String())
 	}
 	s.OIDC, err = http.NewOIDCServiceProvider(
+		ctx,
 		c.Options.OIDC.IssuerClientID,
 		c.Options.OIDC.IssuerClientSecret,
 		callback,

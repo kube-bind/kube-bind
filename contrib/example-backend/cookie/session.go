@@ -23,7 +23,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/pierrec/lz4"
+	"github.com/pierrec/lz4/v4"
 	"github.com/vmihailenco/msgpack/v4"
 )
 
@@ -69,9 +69,11 @@ func Decode(data string) (*SessionState, error) {
 func lz4Compress(payload []byte) ([]byte, error) {
 	buf := new(bytes.Buffer)
 	zw := lz4.NewWriter(nil)
-	zw.Header = lz4.Header{
-		BlockMaxSize:     65536,
-		CompressionLevel: 0,
+	if err := zw.Apply(
+		lz4.BlockSizeOption(65536),
+		lz4.CompressionLevelOption(0),
+	); err != nil {
+		return nil, fmt.Errorf("error applying lz4 options: %w", err)
 	}
 	zw.Reset(buf)
 

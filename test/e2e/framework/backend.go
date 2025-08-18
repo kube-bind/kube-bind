@@ -34,8 +34,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
-	backend "github.com/kube-bind/kube-bind/contrib/example-backend"
-	"github.com/kube-bind/kube-bind/contrib/example-backend/options"
+	backend "github.com/kube-bind/kube-bind/backend"
+	"github.com/kube-bind/kube-bind/backend/options"
 	"github.com/kube-bind/kube-bind/deploy/crd"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
@@ -87,7 +87,7 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	options.OIDC.IssuerClientID = "kube-bind-" + port
 	createDexClient(t, addr)
 
-	options.TestingSkipNameValidation = true
+	options.ExtraOptions.TestingSkipNameValidation = true
 
 	completed, err := options.Complete()
 	require.NoError(t, err)

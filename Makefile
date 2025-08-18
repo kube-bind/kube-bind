@@ -122,7 +122,7 @@ ldflags:
 require-%:
 	@if ! command -v $* 1> /dev/null 2>&1; then echo "$* not found in \$$PATH"; exit 1; fi
 
-build: WHAT ?= ./cmd/... ./cli/cmd/...
+build: WHAT ?= ./cmd/... ./cli/cmd/... ./kcp/cmd/kcp-init/...
 build: require-jq require-go require-git verify-go-versions ## Build the project
 	mkdir -p $(GOBIN_DIR)
 	set -x; for W in $(WHAT); do \
@@ -132,14 +132,11 @@ build: require-jq require-go require-git verify-go-versions ## Build the project
     done
 .PHONY: build
 
-.PHONY: build-all
-build-all:
-	GOOS=$(OS) GOARCH=$(ARCH) $(MAKE) build WHAT=./cmd/...
-
 install: WHAT ?= ./cmd/... ./cli/cmd/...
 install: ## install binaries to GOBIN
 	GOOS=$(OS) GOARCH=$(ARCH) go install -ldflags="$(LDFLAGS)" $(WHAT)
 .PHONY: install
+
 
 $(GOLANGCI_LINT):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
@@ -166,7 +163,7 @@ vendor: ## Vendor the dependencies
 	go mod vendor
 .PHONY: vendor
 
-tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR)
+tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR) 
 .PHONY: tools
 
 $(CONTROLLER_GEN):
@@ -188,7 +185,7 @@ $(KUBE_APPLYCONFIGURATION_GEN):
 	GOBIN=$(GOBIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/$(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_VER)
 
 
-codegen: WHAT ?= ./sdk/kcp ./sdk/client 
+codegen: WHAT ?= ./sdk/client 
 codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN)
 	go mod download
 	./hack/update-codegen.sh
@@ -273,7 +270,7 @@ endif
 test-e2e: TEST_ARGS ?=
 test-e2e: WORK_DIR ?= .
 test-e2e: WHAT ?= ./test/e2e...
-test-e2e: $(KCP) $(DEX) build-all
+test-e2e: $(KCP) $(DEX) build
 	mkdir .kcp
 	$(DEX) serve hack/dex-config-dev.yaml 2>&1 & DEX_PID=$$!; \
 	$(KCP) start &>.kcp/kcp.log & KCP_PID=$$!; \
@@ -288,7 +285,7 @@ endif
 test: WHAT ?= ./...
 # We will need to move into the sub package, of pkg/apis to run those tests.
 test:  ## run unit tests
-	$(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $$(go list "$(WHAT)" | grep -v ./test/e2e/)
+	$(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $$(go list "$(WHAT)" | grep -v ./test/e2e/ | grep -v ./kcp)
 	cd sdk/apis && $(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $(WHAT)
 
 .PHONY: verify-imports

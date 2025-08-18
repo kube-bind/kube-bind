@@ -63,7 +63,7 @@ func testHappyCase(t *testing.T, resourceScope apiextensionsv1.ResourceScope, in
 	providerConfig, providerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithGenerateName("test-happy-case-provider"))
 
 	t.Logf("Starting backend with random port")
-	addr, _ := framework.StartBackend(t, providerConfig, "--kubeconfig="+providerKubeconfig, "--listen-port=0", "--consumer-scope="+string(informerScope))
+	addr, _ := framework.StartBackend(t, providerConfig, "--kubeconfig="+providerKubeconfig, "--listen-address=:0", "--consumer-scope="+string(informerScope))
 
 	t.Logf("Creating APIResourceSchemas on provider side")
 	providerfixtures.Bootstrap(t, framework.DiscoveryClient(t, providerConfig), framework.DynamicClient(t, providerConfig), nil)

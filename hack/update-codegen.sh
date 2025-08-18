@@ -25,7 +25,7 @@ if [[ -z "${MAKELEVEL:-}" ]]; then
 fi
 
 "$(dirname "${BASH_SOURCE[0]}")/update-codegen-clients.sh"
-"$(dirname "${BASH_SOURCE[0]}")/update-codegen-clients-kcp.sh"
+REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 # Update generated CRD YAML
 cd sdk/apis
@@ -45,3 +45,6 @@ for CRD in *.yaml; do
         mv "${CRD}.patched" "${CRD}"
     fi
 done
+
+cd ../../kcp
+make codegen

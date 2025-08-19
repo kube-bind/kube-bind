@@ -13,7 +13,7 @@
   <body>
     <h2>CRD</h2>
     <div class="card-deck text-center">
-      {{$sid := .SessionID}}{{range .CRDs}}
+      {{range .CRDs}}
       <div class="card box-shadow" style="width:18rem; min-width:18rem; max-width:18rem; margin-bottom: 2rem;">
         <div class="card-header"><h4>{{.Spec.Names.Singular}}</h4></div>
         <ul class="list-group list-group-flush">
@@ -21,14 +21,14 @@
           <li class="list-group-item">Scope: {{.Spec.Scope}}</li>
         </ul>
         <div class="card-body">
-          <a href="{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?s={{$sid}}&resource={{.Spec.Names.Plural}}&group={{.Spec.Group}}" class="btn btn-lg btn-block btn-primary {{.Spec.Names.Plural}}">Bind</a>
+          <a href="{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?resource={{.Spec.Names.Plural}}&group={{.Spec.Group}}" class="btn btn-lg btn-block btn-primary {{.Spec.Names.Plural}}">Bind</a>
         </div>
       </div>
       {{end}}
     </div>
     <h2>APIResourceSchema</h2>
     <div class="card-deck text-center">
-      {{$sid := .SessionID}}{{range .APIResourceSchemas}}
+      {{range .APIResourceSchemas}}
       <div class="card box-shadow" style="width:18rem; min-width:18rem; max-width:18rem; margin-bottom: 2rem;">
         <div class="card-header"><h4>{{.Spec.Names.Singular}}</h4></div>
         <ul class="list-group list-group-flush">
@@ -36,7 +36,7 @@
           <li class="list-group-item">Scope: {{.Spec.Scope}}</li>
         </ul>
          <div class="card-body">
-          <a href="{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?s={{$sid}}&resource={{.Spec.Names.Plural}}&group={{.Spec.Group}}" class="btn btn-lg btn-block btn-primary {{.Spec.Names.Plural}}">Bind</a>
+          <a href="{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?resource={{.Spec.Names.Plural}}&group={{.Spec.Group}}" class="btn btn-lg btn-block btn-primary {{.Spec.Names.Plural}}">Bind</a>
         </div>
       </div>
      {{end}}

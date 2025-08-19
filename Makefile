@@ -185,7 +185,7 @@ $(KUBE_APPLYCONFIGURATION_GEN):
 	GOBIN=$(GOBIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/$(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_VER)
 
 
-codegen: WHAT ?= ./sdk/client 
+codegen: WHAT ?= ./sdk/client
 codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN)
 	go mod download
 	./hack/update-codegen.sh
@@ -245,8 +245,7 @@ E2E_PARALLELISM ?= 1
 dex:
 		git clone https://github.com/dexidp/dex.git
 dex/bin/dex: dex
-		cd dex
-		make
+		(cd dex; make)
 
 $(DEX):
 	mkdir -p $(TOOLS_DIR)

@@ -12,7 +12,7 @@ replace (
 
 require (
 	github.com/coreos/go-oidc v2.3.0+incompatible
-	github.com/dexidp/dex/api/v2 v2.1.0
+	github.com/dexidp/dex/api/v2 v2.3.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/google/go-cmp v0.7.0
 	github.com/gorilla/mux v1.8.0
@@ -31,7 +31,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/vmihailenco/msgpack/v4 v4.3.12
 	golang.org/x/oauth2 v0.29.0
-	google.golang.org/grpc v1.69.2
+	google.golang.org/grpc v1.70.0
 	gopkg.in/headzoo/surf.v1 v1.0.1
 	k8s.io/api v0.33.3
 	k8s.io/apiextensions-apiserver v0.33.0

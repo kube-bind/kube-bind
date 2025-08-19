@@ -85,7 +85,7 @@ KCP_VER := v0.28.0
 KCP_BIN := kcp
 KCP := $(TOOLS_GOBIN_DIR)/$(KCP_BIN)-$(KCP_VER)
 
-DEX_VER := v2.41.1
+DEX_VER := v2.43.1
 DEX_BIN := dex
 DEX := $(TOOLS_GOBIN_DIR)/$(DEX_BIN)-$(DEX_VER)
 
@@ -163,7 +163,7 @@ vendor: ## Vendor the dependencies
 	go mod vendor
 .PHONY: vendor
 
-tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR) 
+tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR)
 .PHONY: tools
 
 $(CONTROLLER_GEN):

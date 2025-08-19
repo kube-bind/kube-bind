@@ -64,8 +64,8 @@ kubectl apply -f deploy/examples/crd-mangodb.yaml
 
 * start the backend binary with the right flags:
 ```shell
-$ make build
-$ bin/example-backend \
+make build
+bin/backend \
   --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
   --oidc-issuer-client-id=kube-bind \
   --oidc-issuer-url=http://127.0.0.1:5556/dex \
@@ -98,7 +98,7 @@ $ kubectl ws create consumer --enter
 Now create the APIServiceExportRequest:
 
 ```shell
-$ ./bin/kubectl-bind http://127.0.0.1:8080/export --dry-run -o yaml > apiserviceexport.yaml
+$ ./bin/kubectl-bind http://127.0.0.1:8080/exports --dry-run -o yaml > apiserviceexport.yaml
 # This will wait for konnector to be ready. Once this gets running - start the konnector bellow
 # IMPORTANT: Check namespace to be used! 
 $ ./bin/kubectl-bind apiservice --remote-kubeconfig .kcp/provider.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace <namespace>

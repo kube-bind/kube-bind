@@ -1,0 +1,81 @@
+apiVersion: apis.kcp.io/v1alpha2
+kind: APIExport
+metadata:
+  creationTimestamp: null
+  name: kube-bind.io
+spec:
+  permissionClaims:
+  - group: rbac.authorization.k8s.io
+    resource: clusterrolebindings
+    verbs:
+    - '*'
+  - group: rbac.authorization.k8s.io
+    resource: clusterroles
+    verbs:
+    - '*'
+  - group: rbac.authorization.k8s.io
+    resource: roles
+    verbs:
+    - '*'
+  - group: rbac.authorization.k8s.io
+    resource: rolebindings
+    verbs:
+    - '*'
+  - resource: serviceaccounts
+    verbs:
+    - '*'
+  - resource: configmaps
+    verbs:
+    - '*'
+  - resource: secrets
+    verbs:
+    - '*'
+  - resource: namespaces
+    verbs:
+    - '*'
+  - group: apiextensions.k8s.io
+    resource: customresourcedefinitions
+    verbs:
+    - '*'
+  resources:
+  - group: kube-bind.io
+    name: apiconversions
+    schema: v250809-5ed76a1.apiconversions.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
+    name: apiresourceschemas
+    schema: v250809-5ed76a1.apiresourceschemas.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
+    name: apiservicebindings
+    schema: v250809-5ed76a1.apiservicebindings.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
+    name: apiserviceexportrequests
+    schema: v250809-5ed76a1.apiserviceexportrequests.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
+    name: apiserviceexports
+    schema: v250809-5ed76a1.apiserviceexports.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
+    name: apiservicenamespaces
+    schema: v250809-5ed76a1.apiservicenamespaces.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
+    name: boundapiresourceschemas
+    schema: v250809-5ed76a1.boundapiresourceschemas.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
+    name: clusterbindings
+    schema: v250809-5ed76a1.clusterbindings.kube-bind.io
+    storage:
+      crd: {}
+status: {}

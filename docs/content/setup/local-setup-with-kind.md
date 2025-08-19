@@ -27,7 +27,7 @@ To install `kubectl-bind` plugin, please download the archive for your platform 
 > sudo sysctl fs.inotify.max_user_instances=512
 > ```
 >
-> See https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files for more details.
+> See the [kind documentation](https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files) for more details.
 
 ## Provider cluster
 

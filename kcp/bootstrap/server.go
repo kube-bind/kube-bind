@@ -40,7 +40,7 @@ func NewServer(ctx context.Context, config *Config) (*Server, error) {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	fakeBatteries := sets.New("")
+	fakeBatteries := sets.New[string]()
 	logger := klog.FromContext(ctx)
 
 	if err := bootstrapconfig.Bootstrap(

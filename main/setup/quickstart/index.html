@@ -1756,8 +1756,8 @@ and that you have at least one k8s cluster. Take a look at the backend option in
 </code></pre></div>
 <ul>
 <li>start the backend binary with the right flags:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>make<span class="w"> </span>build
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>$<span class="w"> </span>bin/example-backend<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>make<span class="w"> </span>build
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>bin/backend<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--oidc-issuer-client-secret<span class="o">=</span>ZXhhbXBsZS1hcHAtc2VjcmV0<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">  </span>--oidc-issuer-client-id<span class="o">=</span>kube-bind<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">  </span>--oidc-issuer-url<span class="o">=</span>http://127.0.0.1:5556/dex<span class="w"> </span><span class="se">\</span>
@@ -1781,7 +1781,7 @@ The <code>--cookie-encryption-key</code> option is optional and supports byte le
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>$<span class="w"> </span>kubectl<span class="w"> </span>ws<span class="w"> </span>create<span class="w"> </span>consumer<span class="w"> </span>--enter
 </code></pre></div>
 <p>Now create the APIServiceExportRequest:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>./bin/kubectl-bind<span class="w"> </span>http://127.0.0.1:8080/export<span class="w"> </span>--dry-run<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>apiserviceexport.yaml
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>./bin/kubectl-bind<span class="w"> </span>http://127.0.0.1:8080/exports<span class="w"> </span>--dry-run<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>apiserviceexport.yaml
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># This will wait for konnector to be ready. Once this gets running - start the konnector bellow</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># IMPORTANT: Check namespace to be used! </span>
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>$<span class="w"> </span>./bin/kubectl-bind<span class="w"> </span>apiservice<span class="w"> </span>--remote-kubeconfig<span class="w"> </span>.kcp/provider.kubeconfig<span class="w"> </span>-f<span class="w"> </span>apiserviceexport.yaml<span class="w">  </span>--skip-konnector<span class="w"> </span>--remote-namespace<span class="w"> </span>&lt;namespace&gt;

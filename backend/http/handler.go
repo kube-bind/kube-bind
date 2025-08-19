@@ -31,6 +31,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
+	"golang.org/x/oauth2"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -38,9 +39,9 @@ import (
 	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
-	"github.com/kube-bind/kube-bind/backend/cookie"
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
 	"github.com/kube-bind/kube-bind/backend/kubernetes/resources"
+	"github.com/kube-bind/kube-bind/backend/session"
 	"github.com/kube-bind/kube-bind/backend/template"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -168,8 +169,20 @@ func prepareNoCache(w http.ResponseWriter) {
 	}
 }
 
+func getLogger(r *http.Request) klog.Logger {
+	return klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
+}
+
+func generateCookieName(clusterID string) string {
+	if clusterID == "" {
+		return "kube-bind"
+	}
+
+	return fmt.Sprintf("kube-bind-%s", clusterID)
+}
+
 func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
-	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
+	logger := getLogger(r)
 
 	cluster := mux.Vars(r)["cluster"]
 
@@ -200,33 +213,22 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
-func parseJWT(p string) ([]byte, error) {
-	parts := strings.Split(p, ".")
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("oidc: malformed jwt, expected 3 parts got %d", len(parts))
-	}
-	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return nil, fmt.Errorf("oidc: malformed jwt payload: %v", err)
-	}
-	return payload, nil
-}
-
 // handleCallback handle the authorization redirect callback from OAuth2 auth flow.
 func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
-	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
+	logger := getLogger(r)
 
 	if errMsg := r.Form.Get("error"); errMsg != "" {
-		logger.Info("failed to authorize", "error", errMsg)
+		logger.Error(errors.New(errMsg), "failed to authorize")
 		http.Error(w, errMsg+": "+r.Form.Get("error_description"), http.StatusBadRequest)
 		return
 	}
+
 	code := r.Form.Get("code")
 	if code == "" {
 		code = r.URL.Query().Get("code")
 	}
 	if code == "" {
-		logger.Info("no code in request", "error", "missing code")
+		logger.Error(errors.New("missing code"), "no code in request")
 		http.Error(w, fmt.Sprintf("no code in request: %q", r.Form), http.StatusBadRequest)
 		return
 	}
@@ -237,13 +239,13 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	decoded, err := base64.StdEncoding.DecodeString(state)
 	if err != nil {
-		logger.Info("failed to decode state", "error", err)
+		logger.Error(err, "failed to decode state")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	authCode := &AuthCode{}
 	if err := json.Unmarshal(decoded, authCode); err != nil {
-		logger.Info("faile to unmarshal authCode", "error", err)
+		logger.Error(err, "failed to unmarshal authCode")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -252,54 +254,82 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	token, err := h.oidc.OIDCProviderConfig(nil).Exchange(r.Context(), code)
 	if err != nil {
-		logger.Info("failed to exchange token", "error", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-	jwtStr, ok := token.Extra("id_token").(string)
-	if !ok {
-		logger.Info("failed to get id_token from token", "error", err)
+		logger.Error(err, "failed to exchange token")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	jwt, err := parseJWT(jwtStr)
+	cookieName := generateCookieName(authCode.ClusterID)
+	sessionState, err := createSessionState(authCode, token)
 	if err != nil {
-		logger.Info("failed to parse jwt", "error", err)
+		logger.Error(err, "failed to create session sessionState")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	sessionCookie := cookie.SessionState{
-		CreatedAt:    time.Now(),
-		ExpiresOn:    token.Expiry,
-		AccessToken:  token.AccessToken,
-		IDToken:      string(jwt),
-		RefreshToken: token.RefreshToken,
-		RedirectURL:  authCode.RedirectURL,
-		SessionID:    authCode.SessionID,
-		ClusterID:    authCode.ClusterID,
-	}
-
-	cookieName := "kube-bind-" + authCode.SessionID
 	s := securecookie.New(h.cookieSigningKey, h.cookieEncryptionKey)
-	encoded, err := s.Encode(cookieName, sessionCookie)
+	encoded, err := s.Encode(cookieName, sessionState)
 	if err != nil {
-		logger.Info("failed to encode secure session cookie", "error", err)
+		logger.Error(err, "failed to encode secure session cookie")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	http.SetCookie(w, cookie.MakeCookie(r, cookieName, encoded, time.Duration(1)*time.Hour))
+	// setting to false so it works over http://localhost
+	secure := false
+
+	http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
 	if authCode.ClusterID == "" {
-		http.Redirect(w, r, "/resources?s="+authCode.SessionID, http.StatusFound)
+		http.Redirect(w, r, "/resources", http.StatusFound)
 	} else {
-		http.Redirect(w, r, "/clusters/"+authCode.ClusterID+"/resources?s="+authCode.SessionID, http.StatusFound)
+		http.Redirect(w, r, "/clusters/"+authCode.ClusterID+"/resources", http.StatusFound)
 	}
 }
 
+func unwrapJWT(p string) ([]byte, error) {
+	parts := strings.Split(p, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("OIDC: malformed JWT, expected 3 parts, got %d", len(parts))
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("OIDC: malformed JWT payload: %w", err)
+	}
+	return payload, nil
+}
+
+func createSessionState(authCode *AuthCode, token *oauth2.Token) (*session.State, error) {
+	jwtStr, ok := token.Extra("id_token").(string)
+	if !ok {
+		return nil, errors.New("no id_token value found in token")
+	}
+
+	jwt, err := unwrapJWT(jwtStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unpack ID token: %w", err)
+	}
+
+	var idToken struct {
+		Subject string `json:"sub"`
+		Issuer  string `json:"iss"`
+	}
+	if err := json.Unmarshal(jwt, &idToken); err != nil {
+		return nil, fmt.Errorf("failed to parse ID token: %w", err)
+	}
+
+	return &session.State{
+		Token: session.TokenInfo{
+			Subject: idToken.Subject,
+			Issuer:  idToken.Issuer,
+		},
+		SessionID:   authCode.SessionID,
+		ClusterID:   authCode.ClusterID,
+		RedirectURL: authCode.RedirectURL,
+	}, nil
+}
+
 func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
-	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
+	logger := getLogger(r)
 
 	prepareNoCache(w)
 
@@ -344,12 +374,10 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 	}
 	bs := bytes.Buffer{}
 	if err := resourcesTemplate.Execute(&bs, struct {
-		SessionID          string
 		Cluster            string
 		CRDs               []*apiextensionsv1.CustomResourceDefinition
 		APIResourceSchemas []kubebindv1alpha2.APIResourceSchema
 	}{
-		SessionID:          r.URL.Query().Get("s"),
 		Cluster:            cluster,
 		CRDs:               rightScopedCRDs,
 		APIResourceSchemas: apiResourceSchemas.Items,
@@ -359,24 +387,27 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Write(bs.Bytes()) //nolint:errcheck
 }
 
 func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
-	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
+	logger := getLogger(r)
+	group := r.URL.Query().Get("group")
+	resource := r.URL.Query().Get("resource")
+	cluster := mux.Vars(r)["cluster"]
 
 	prepareNoCache(w)
 
-	cookieName := "kube-bind-" + r.URL.Query().Get("s")
+	cookieName := generateCookieName(cluster)
 	ck, err := r.Cookie(cookieName)
 	if err != nil {
 		logger.Error(err, "failed to get session cookie")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		http.Error(w, "no session cookie found", http.StatusBadRequest)
 		return
 	}
 
-	state := cookie.SessionState{}
+	state := session.State{}
 	s := securecookie.New(h.cookieSigningKey, h.cookieEncryptionKey)
 	if err := s.Decode(cookieName, ck.Value, &state); err != nil {
 		logger.Error(err, "failed to decode session cookie")
@@ -384,21 +415,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var idToken struct {
-		Subject string `json:"sub"`
-		Issuer  string `json:"iss"`
-	}
-	if err := json.Unmarshal([]byte(state.IDToken), &idToken); err != nil {
-		logger.Error(err, "failed to unmarshal id token")
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
-
-	group := r.URL.Query().Get("group")
-	resource := r.URL.Query().Get("resource")
-	cluster := mux.Vars(r)["cluster"]
-
-	kfg, err := h.kubeManager.HandleResources(r.Context(), idToken.Subject+"#"+state.ClusterID, cluster, resource, group)
+	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, cluster, resource, group)
 	if err != nil {
 		logger.Error(err, "failed to handle resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -430,6 +447,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+
 	response := kubebindv1alpha2.BindingResponse{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
@@ -438,7 +456,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		Authentication: kubebindv1alpha2.BindingResponseAuthentication{
 			OAuth2CodeGrant: &kubebindv1alpha2.BindingResponseAuthenticationOAuth2CodeGrant{
 				SessionID: state.SessionID,
-				ID:        idToken.Issuer + "/" + idToken.Subject,
+				ID:        state.Token.Issuer + "/" + state.Token.Subject,
 			},
 		},
 		Kubeconfig: kfg,
@@ -447,7 +465,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	payload, err := json.Marshal(&response)
 	if err != nil {
-		logger.Error(err, "failed to marshal auth response")
+		logger.Error(err, "failed to marshal binding response")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
@@ -456,7 +474,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	parsedAuthURL, err := url.Parse(state.RedirectURL)
 	if err != nil {
-		logger.Error(err, "failed to parse redirect url")
+		logger.Error(err, "failed to parse redirect URL")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}

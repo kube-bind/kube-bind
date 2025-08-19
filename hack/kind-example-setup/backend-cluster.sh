@@ -38,7 +38,7 @@ nodes:
   - containerPort: 30080
     hostPort: 8080
     protocol: TCP
-  # DEX endpoint
+  # dex endpoint
   - containerPort: 30556
     hostPort: 5556
     protocol: TCP

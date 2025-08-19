@@ -39,6 +39,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type (
@@ -51,6 +53,7 @@ var (
 
 func init() {
 	utilruntime.Must(tenancyv1alpha1.AddToScheme(kcpScheme))
+	utilruntime.Must(kubebindv1alpha2.AddToScheme(kcpScheme))
 }
 
 func WithName(s string, formatArgs ...any) ClusterWorkspaceOption {

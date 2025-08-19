@@ -23,7 +23,6 @@ import (
 	"slices"
 	"sort"
 
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
@@ -35,15 +34,14 @@ import (
 )
 
 type reconciler struct {
-	getCRD               func(ctx context.Context, cache cache.Cache, name string) (*apiextensionsv1.CustomResourceDefinition, error)
-	getAPIResourceSchema func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
+	getAPIResourceSchema func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error)
 	deleteServiceExport  func(ctx context.Context, namespace, name string) error
 }
 
 func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, export *kubebindv1alpha2.APIServiceExport) error {
 	var errs []error
 
-	if specChanged, err := r.ensureSchema(ctx, export); err != nil {
+	if specChanged, err := r.ensureSchema(ctx, cache, export); err != nil {
 		errs = append(errs, err)
 	} else if specChanged {
 		// TODO: This should be separate controller for apiresourceschemas.
@@ -55,7 +53,7 @@ func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, export *k
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (specChanged bool, err error) {
+func (r *reconciler) ensureSchema(ctx context.Context, cache cache.Cache, export *kubebindv1alpha2.APIServiceExport) (specChanged bool, err error) {
 	logger := klog.FromContext(ctx)
 	leafHashes := make([]string, 0, len(export.Spec.Resources))
 	for _, resourceRef := range export.Spec.Resources {
@@ -64,7 +62,7 @@ func (r *reconciler) ensureSchema(ctx context.Context, export *kubebindv1alpha2.
 			continue
 		}
 
-		schema, err := r.getAPIResourceSchema(ctx, resourceRef.Name)
+		schema, err := r.getAPIResourceSchema(ctx, cache, resourceRef.Name)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				continue

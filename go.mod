@@ -49,8 +49,6 @@ require (
 	sigs.k8s.io/yaml v1.4.0
 )
 
-replace cloud.google.com/go => cloud.google.com/go v0.100.2
-
 require (
 	cel.dev/expr v0.19.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect

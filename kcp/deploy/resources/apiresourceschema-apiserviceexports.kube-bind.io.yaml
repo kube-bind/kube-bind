@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250809-5ed76a1.apiserviceexports.kube-bind.io
+  name: v250820-3baf1a4.apiserviceexports.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -464,13 +464,23 @@ spec:
           description: spec specifies the resource.
           properties:
             clusterScopedIsolation:
+              allOf:
+              - enum:
+                - Prefixed
+                - Namespaced
+                - None
+                - Cluster
+              - enum:
+                - Prefixed
+                - Namespaced
+                - None
+                - Cluster
               description: |-
-                ClusterScopedIsolation specifies how cluster scoped service objects are isolated between multiple consumers on the provider side.
-                It can be "Prefixed", "Namespaced", or "None".
-              enum:
-              - Prefixed
-              - Namespaced
-              - None
+                ClusterScopedIsolation defines how objects are isolated at the provider side.
+                If any of the spec.resources are cluster-scoped, they will automatically be cluster-scoped.
+                In future releases, if policies are implemented, APIServiceExportObject are used
+                (policy.provider.sync = object) to abstract objects coming from the consumer side -
+                isolation can be increased, even for cluster-scoped CRDs.
               type: string
             informerScope:
               description: |-
@@ -487,6 +497,53 @@ spec:
               x-kubernetes-validations:
               - message: informerScope is immutable
                 rule: self == oldSelf
+            permissionClaims:
+              items:
+                description: |-
+                  PermissionClaim defines a permission that the consumer cluster requests from the provider.
+                  This is compatible with KCP's PermissionClaim structure.
+                properties:
+                  group:
+                    default: ""
+                    description: |-
+                      group is the name of an API group.
+                      For core groups this is the empty string '""'.
+                    pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
+                    type: string
+                  identityHash:
+                    default: ""
+                    description: |-
+                      This is the identity for a given APIExport that the APIResourceSchema belongs to.
+                      The hash can be found on APIExport and APIResourceSchema's status.
+                      It will be empty for core types.
+                      Note that one must look this up for a particular KCP instance.
+                    type: string
+                  resource:
+                    description: |-
+                      resource is the name of the resource.
+                      Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+                      not provided by an service binding export.
+                    pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                    type: string
+                  verbs:
+                    description: |-
+                      verbs is a list of supported API operation types (this includes
+                      but is not limited to get, list, watch, create, update, patch,
+                      delete, deletecollection, and proxy).
+                    items:
+                      type: string
+                    minItems: 1
+                    type: array
+                    x-kubernetes-list-type: set
+                required:
+                - resource
+                - verbs
+                type: object
+              type: array
+              x-kubernetes-list-map-keys:
+              - group
+              - resource
+              x-kubernetes-list-type: map
             resources:
               description: resources specifies the API resources to export
               items:

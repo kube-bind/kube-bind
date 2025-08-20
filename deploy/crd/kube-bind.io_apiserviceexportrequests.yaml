@@ -221,6 +221,53 @@ spec:
                 x-kubernetes-validations:
                 - message: parameters are immutable
                   rule: self == oldSelf
+              permissionClaims:
+                items:
+                  description: |-
+                    PermissionClaim defines a permission that the consumer cluster requests from the provider.
+                    This is compatible with KCP's PermissionClaim structure.
+                  properties:
+                    group:
+                      default: ""
+                      description: |-
+                        group is the name of an API group.
+                        For core groups this is the empty string '""'.
+                      pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
+                      type: string
+                    identityHash:
+                      default: ""
+                      description: |-
+                        This is the identity for a given APIExport that the APIResourceSchema belongs to.
+                        The hash can be found on APIExport and APIResourceSchema's status.
+                        It will be empty for core types.
+                        Note that one must look this up for a particular KCP instance.
+                      type: string
+                    resource:
+                      description: |-
+                        resource is the name of the resource.
+                        Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+                        not provided by an service binding export.
+                      pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                      type: string
+                    verbs:
+                      description: |-
+                        verbs is a list of supported API operation types (this includes
+                        but is not limited to get, list, watch, create, update, patch,
+                        delete, deletecollection, and proxy).
+                      items:
+                        type: string
+                      minItems: 1
+                      type: array
+                      x-kubernetes-list-type: set
+                  required:
+                  - resource
+                  - verbs
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - group
+                - resource
+                x-kubernetes-list-type: map
               resources:
                 description: resources is a list of resources that should be exported.
                 items:

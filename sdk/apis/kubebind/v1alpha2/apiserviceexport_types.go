@@ -90,9 +90,25 @@ type APIServiceExportSpec struct {
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="informerScope is immutable"
 	InformerScope InformerScope `json:"informerScope"`
 
-	// ClusterScopedIsolation specifies how cluster scoped service objects are isolated between multiple consumers on the provider side.
-	// It can be "Prefixed", "Namespaced", or "None".
+	// ClusterScopedIsolation defines how objects are isolated at the provider side.
+	// If any of the spec.resources are cluster-scoped, they will automatically be cluster-scoped.
+	// In future releases, if policies are implemented, APIServiceExportObject are used
+	// (policy.provider.sync = object) to abstract objects coming from the consumer side -
+	// isolation can be increased, even for cluster-scoped CRDs.
+	// +optional
+	// +kubebuilder:validation:Enum=Prefixed;Namespaced;None;Cluster
 	ClusterScopedIsolation Isolation `json:"clusterScopedIsolation,omitempty"`
+
+	// permissionClaims defines non-resource (non-crd) based resource and their permission claims.
+	// The contract implies that the consumer must give access to specified resources.
+	// To limit the scope on which resource access is granted, resourceSelector[].reference is used
+	// to identify the object from spec.resources and path inside their object, where object names can be derived from.
+
+	// +optional
+	// +listType=map
+	// +listMapKey=group
+	// +listMapKey=resource
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 // APIResourceSchemaReference is a list of references to APIResourceSchemas.
@@ -111,7 +127,7 @@ type APIResourceSchemaReference struct {
 
 // Isolation is an enum defining the different ways to isolate cluster scoped objects
 //
-// +kubebuilder:validation:Enum=Prefixed;Namespaced;None
+// +kubebuilder:validation:Enum=Prefixed;Namespaced;None;Cluster
 type Isolation string
 
 const (
@@ -123,7 +139,34 @@ const (
 
 	// Used for the case of a dedicated provider where isolation is not necessary.
 	IsolationNone Isolation = "None"
+
+	// Cluster-wide isolation for cluster-scoped resources.
+	IsolationCluster Isolation = "Cluster"
 )
+
+// PermissionClaim defines a permission that the consumer cluster requests from the provider.
+// This is compatible with KCP's PermissionClaim structure.
+type PermissionClaim struct {
+	GroupResource `json:",inline"`
+
+	// verbs is a list of supported API operation types (this includes
+	// but is not limited to get, list, watch, create, update, patch,
+	// delete, deletecollection, and proxy).
+	//
+	// +required
+	// +listType=set
+	// +kubebuilder:validation:MinItems=1
+	Verbs []string `json:"verbs"`
+
+	// This is the identity for a given APIExport that the APIResourceSchema belongs to.
+	// The hash can be found on APIExport and APIResourceSchema's status.
+	// It will be empty for core types.
+	// Note that one must look this up for a particular KCP instance.
+	//
+	// +kubebuilder:default=""
+	// +optional
+	IdentityHash string `json:"identityHash,omitempty"`
+}
 
 // APIServiceExportStatus stores status information about a APIServiceExport. It
 // reflects the status of the CRD of the consumer cluster.

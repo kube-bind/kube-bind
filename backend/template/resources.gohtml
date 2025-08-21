@@ -11,35 +11,19 @@
     <title>Resources - CRD</title>
   </head>
   <body>
-    <h2>CRD</h2>
+    <h2>Exports</h2>
     <div class="card-deck text-center">
-      {{range .CRDs}}
+      {{range .Schemas}}
       <div class="card box-shadow" style="width:18rem; min-width:18rem; max-width:18rem; margin-bottom: 2rem;">
-        <div class="card-header"><h4>{{.Spec.Names.Singular}}</h4></div>
+        <div class="card-header"><h4>{{.Name}}</h4></div>
         <ul class="list-group list-group-flush">
-          <li class="list-group-item">Group: {{.Spec.Group}}</li>
-          <li class="list-group-item">Scope: {{.Spec.Scope}}</li>
+          <li class="list-group-item">Scope: {{.Scope}}</li>
         </ul>
         <div class="card-body">
-          <a href="{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?resource={{.Spec.Names.Plural}}&group={{.Spec.Group}}" class="btn btn-lg btn-block btn-primary {{.Spec.Names.Plural}}">Bind</a>
+           <a href="{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?resource={{.Resource}}&group={{.Group}}&version={{.Version}}&kind={{.Kind}}&name={{.Name}}" class="btn btn-lg btn-block btn-primary {{.Resource}}">Bind</a>
         </div>
       </div>
       {{end}}
-    </div>
-    <h2>APIResourceSchema</h2>
-    <div class="card-deck text-center">
-      {{range .APIResourceSchemas}}
-      <div class="card box-shadow" style="width:18rem; min-width:18rem; max-width:18rem; margin-bottom: 2rem;">
-        <div class="card-header"><h4>{{.Spec.Names.Singular}}</h4></div>
-        <ul class="list-group list-group-flush">
-          <li class="list-group-item">Group: {{.Spec.Group}}</li>
-          <li class="list-group-item">Scope: {{.Spec.Scope}}</li>
-        </ul>
-         <div class="card-body">
-          <a href="{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?resource={{.Spec.Names.Plural}}&group={{.Spec.Group}}" class="btn btn-lg btn-block btn-primary {{.Spec.Names.Plural}}">Bind</a>
-        </div>
-      </div>
-     {{end}}
     </div>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>

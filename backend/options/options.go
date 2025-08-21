@@ -53,6 +53,11 @@ type ExtraOptions struct {
 	ExternalCAFile         string
 	ExternalCA             []byte
 	TLSExternalServerName  string
+	// Defines the source of the schema for the bind screen.
+	// Options are:
+	// CustomResourceDefinition.v1.apiextensions.k8s.io
+	// APIResourceSchema.v1alpha2.kube-bind.io
+	SchemaSource string
 
 	TestingAutoSelect         string
 	TestingSkipNameValidation bool
@@ -89,6 +94,7 @@ func NewOptions() *Options {
 			ConsumerScope:          string(kubebindv1alpha2.NamespacedScope),
 			ClusterScopedIsolation: string(kubebindv1alpha2.IsolationPrefixed),
 			ServerURL:              "",
+			SchemaSource:           CustomResourceDefinitionSource.String(),
 		},
 	}
 }
@@ -97,6 +103,23 @@ var providerAliases = map[string]string{
 	"kcp":        "kcp",
 	"kubernetes": "kubernetes",
 	"":           "kubernetes",
+}
+
+type SchemaSource string
+
+func (s SchemaSource) String() string {
+	return string(s)
+}
+
+var (
+	APIResourceSchemaSource        = SchemaSource("APIResourceSchema.v1alpha2.kube-bind.io")
+	CustomResourceDefinitionSource = SchemaSource("CustomResourceDefinition.v1.apiextensions.k8s.io")
+)
+
+var schemaSourceAliases = map[string]string{
+	CustomResourceDefinitionSource.String(): CustomResourceDefinitionSource.String(),
+	"apiresourceschema":                     APIResourceSchemaSource.String(),
+	"customresourcedefinition":              CustomResourceDefinitionSource.String(),
 }
 
 func (options *Options) AddFlags(fs *pflag.FlagSet) {
@@ -116,6 +139,16 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&options.Provider, "multicluster-runtime-provider", options.Provider,
 		fmt.Sprintf("The multicluster runtime provider. Possible values are: %v", sets.List(sets.Set[string](sets.StringKeySet(providerAliases)))),
+	)
+
+	values := make([]string, 0, len(schemaSourceAliases))
+	for _, v := range schemaSourceAliases {
+		values = append(values, v)
+	}
+
+	fs.StringVar(&options.SchemaSource, "schema-source", options.SchemaSource,
+		fmt.Sprintf("Defines the source of the schema in Kind.Version.Group format for the bind screen. Defaults to CustomResourceDefinition.v1.apiextensions.k8s.io. Possible values are: %v",
+			values),
 	)
 
 	fs.StringVar(&options.ServerURL, "server-url", options.ServerURL, "The URL of the backend server. If not specified, it will be derived from the kubeconfig or service account's hosts.")
@@ -205,6 +238,12 @@ func (options *CompletedOptions) Validate() error {
 		return fmt.Errorf("unknown provider %q, must be one of %v", options.Provider, sets.List(sets.Set[string](sets.StringKeySet(providerAliases))))
 	}
 	options.Provider = provider
+
+	schemaSource := schemaSourceAliases[options.SchemaSource]
+	if schemaSource == "" {
+		return fmt.Errorf("unknown schema source %q, must be one of %v", options.SchemaSource, sets.List(sets.Set[string](sets.StringKeySet(schemaSourceAliases))))
+	}
+	options.SchemaSource = schemaSource
 
 	return nil
 }

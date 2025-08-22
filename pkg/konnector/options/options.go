@@ -38,6 +38,8 @@ type ExtraOptions struct {
 	LeaseLockName      string
 	LeaseLockNamespace string
 	LeaseLockIdentity  string
+
+	ServerAddr string
 }
 
 type completedOptions struct {
@@ -78,6 +80,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.KubeConfigPath, "kubeconfig", options.KubeConfigPath, "Kubeconfig file for the local cluster.")
 	fs.StringVar(&options.LeaseLockName, "lease-name", options.LeaseLockName, "Name of lease lock")
 	fs.StringVar(&options.LeaseLockNamespace, "lease-namespace", options.LeaseLockNamespace, "Name of lease lock namespace")
+	fs.StringVar(&options.ServerAddr, "server-address", options.ServerAddr, "Address for server")
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {

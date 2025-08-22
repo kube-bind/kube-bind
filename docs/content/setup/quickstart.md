@@ -60,6 +60,7 @@ kubectl ws create provider --enter
 ```shell
 kubectl apply -f deploy/crd
 kubectl apply -f deploy/examples/crd-mangodb.yaml
+kubectl apply -f deploy/examples/crd-foo.yaml
 ```
 
 * start the backend binary with the right flags:
@@ -73,7 +74,8 @@ bin/backend \
   --pretty-name="BigCorp.com" \
   --namespace-prefix="kube-bind-" \
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
-  --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y=
+  --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
+  --consumer-scope=cluster
 ```
 
 where `ZXhhbXBsZS1hcHAtc2VjcmV0` matches the value of the dex config file.
@@ -91,17 +93,25 @@ The `--cookie-encryption-key` option is optional and supports byte lengths of 16
 Now create consumer cluster:
 
 ```shell
-$ export KUBECONFIG=.kcp/admin.kubeconfig
-$ kubectl ws create consumer --enter
+export KUBECONFIG=.kcp/admin.kubeconfig
+kubectl ws create consumer --enter
 ```
 
 Now create the APIServiceExportRequest:
 
 ```shell
-$ ./bin/kubectl-bind http://127.0.0.1:8080/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/exports --dry-run -o yaml > apiserviceexport.yaml
 # This will wait for konnector to be ready. Once this gets running - start the konnector bellow
 # IMPORTANT: Check namespace to be used! 
-$ ./bin/kubectl-bind apiservice --remote-kubeconfig .kcp/provider.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace <namespace>
-# run konnector
-$ go run ./cmd/konnector/ --lease-namespace default
+./bin/kubectl-bind apiservice --remote-kubeconfig .kcp/provider.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace <namespace>
+# run konnector in different terminal
+export KUBECONFIG=.kcp/admin.kubeconfig
+go run ./cmd/konnector/ --lease-namespace default
+```
+
+
+Create mangoDB object:
+
+```bash
+kubectl create -f deploy/examples/mangodb.yaml
 ```

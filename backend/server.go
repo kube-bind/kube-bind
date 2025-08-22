@@ -32,17 +32,17 @@ import (
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexport"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexportrequest"
 	"github.com/kube-bind/kube-bind/backend/controllers/servicenamespace"
-	examplehttp "github.com/kube-bind/kube-bind/backend/http"
-	examplekube "github.com/kube-bind/kube-bind/backend/kubernetes"
+	http "github.com/kube-bind/kube-bind/backend/http"
+	kube "github.com/kube-bind/kube-bind/backend/kubernetes"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type Server struct {
 	Config *Config
 
-	OIDC       *examplehttp.OIDCServiceProvider
-	Kubernetes *examplekube.Manager
-	WebServer  *examplehttp.Server
+	OIDC       *http.OIDCServiceProvider
+	Kubernetes *kube.Manager
+	WebServer  *http.Server
 
 	Controllers
 }
@@ -60,7 +60,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	}
 
 	var err error
-	s.WebServer, err = examplehttp.NewServer(c.Options.Serve)
+	s.WebServer, err = http.NewServer(c.Options.Serve)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
 	}
@@ -70,7 +70,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	if callback == "" {
 		callback = fmt.Sprintf("http://%s/callback", s.WebServer.Addr().String())
 	}
-	s.OIDC, err = examplehttp.NewOIDCServiceProvider(
+	s.OIDC, err = http.NewOIDCServiceProvider(
 		c.Options.OIDC.IssuerClientID,
 		c.Options.OIDC.IssuerClientSecret,
 		callback,
@@ -79,11 +79,12 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up OIDC: %w", err)
 	}
-	s.Kubernetes, err = examplekube.NewKubernetesManager(
+	s.Kubernetes, err = kube.NewKubernetesManager(
 		ctx,
 		c.Options.NamespacePrefix,
 		c.Options.PrettyName,
 		c.ExternalAddressGenerator,
+		kubebindv1alpha2.InformerScope(c.Options.ExtraOptions.ConsumerScope),
 		c.Options.ExternalCA,
 		c.Options.TLSExternalServerName,
 		s.Config.Manager,
@@ -106,7 +107,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		}
 	}
 
-	handler, err := examplehttp.NewHandler(
+	handler, err := http.NewHandler(
 		s.OIDC,
 		c.Options.OIDC.AuthorizeURL,
 		callback,
@@ -114,6 +115,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		c.Options.TestingAutoSelect,
 		signingKey,
 		encryptionKey,
+		c.Options.SchemaSource,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		s.Kubernetes,
 	)
@@ -126,7 +128,6 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		SkipNameValidation: ptr.To(c.Options.TestingSkipNameValidation),
 	}
 
-	// construct controllers
 	s.ClusterBinding, err = clusterbinding.NewClusterBindingReconciler(
 		ctx,
 		s.Config.Manager,

@@ -1,0 +1,7 @@
+apiVersion: bar.io/v1alpha1
+kind: Foo
+metadata:
+  name: test
+spec:
+  deploymentName: test-foo
+  replicas: 2

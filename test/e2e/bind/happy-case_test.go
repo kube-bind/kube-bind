@@ -76,6 +76,7 @@ func testHappyCase(t *testing.T, resourceScope apiextensionsv1.ResourceScope, in
 	if resourceScope == apiextensionsv1.ClusterScoped {
 		serviceGVR = schema.GroupVersionResource{Group: "bar.io", Version: "v1alpha1", Resource: "foos"}
 	}
+
 	consumerClient := framework.DynamicClient(t, consumerConfig).Resource(serviceGVR)
 	providerClient := framework.DynamicClient(t, providerConfig).Resource(serviceGVR)
 

@@ -72,24 +72,26 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	require.NoError(t, err)
 
 	fs := pflag.NewFlagSet("example-backend", pflag.ContinueOnError)
-	options := options.NewOptions()
-	options.AddFlags(fs)
+	opts := options.NewOptions()
+	opts.AddFlags(fs)
 	err = fs.Parse(args)
 	require.NoError(t, err)
 
 	// use a random port via an explicit listener. Then add a kube-bind-<port> client to dex
 	// with the callback URL set to the listener's address.
-	options.Serve.Listener, err = net.Listen("tcp", "localhost:0")
+	opts.Serve.Listener, err = net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
-	addr := options.Serve.Listener.Addr()
+	addr := opts.Serve.Listener.Addr()
 	_, port, err := net.SplitHostPort(addr.String())
 	require.NoError(t, err)
-	options.OIDC.IssuerClientID = "kube-bind-" + port
+
+	opts.OIDC.IssuerClientID = "kube-bind-" + port
 	createDexClient(t, addr)
 
-	options.ExtraOptions.TestingSkipNameValidation = true
+	opts.ExtraOptions.TestingSkipNameValidation = true
+	opts.ExtraOptions.SchemaSource = options.CustomResourceDefinitionSource.String()
 
-	completed, err := options.Complete()
+	completed, err := opts.Complete()
 	require.NoError(t, err)
 
 	config, err := backend.NewConfig(completed)

@@ -26,9 +26,10 @@ import (
 // AuthCode is sent and received by to/from the OIDC provider. It's the state
 // we can use to map the OIDC provider's response to the request from the client.
 type AuthCode struct {
-	RedirectURL string `json:"redirectURL"`
-	SessionID   string `json:"sid"`
-	ClusterID   string `json:"cid"`
+	RedirectURL       string `json:"redirectURL"`
+	SessionID         string `json:"sid"`
+	ClusterID         string `json:"cid"`
+	ProviderClusterID string `json:"pcid"`
 }
 
 type OIDCServiceProvider struct {

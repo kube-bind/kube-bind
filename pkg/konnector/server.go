@@ -24,7 +24,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/deploy/crd"
-	healthz "github.com/kube-bind/kube-bind/pkg/konnector/healthz"
+	server "github.com/kube-bind/kube-bind/pkg/konnector/server"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -32,7 +32,7 @@ type Server struct {
 	Config     *Config
 	Controller *Controller
 
-	webServer *healthz.Server
+	webServer *server.Server
 }
 
 func NewServer(config *Config) (*Server, error) {
@@ -53,10 +53,9 @@ func NewServer(config *Config) (*Server, error) {
 		Controller: k,
 	}
 
-	s.webServer, err = healthz.NewServer()
-	if err != nil {
-		return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
-	}
+	s.webServer = server.NewServer(server.Config{
+		ServerAddr: config.ServerAddr,
+	})
 
 	return s, nil
 }
@@ -65,7 +64,7 @@ func (s *Server) StartHealthCheck(ctx context.Context) {
 	s.webServer.Start(ctx)
 }
 
-func (s *Server) AddCheck(check healthz.HealthChecker) {
+func (s *Server) AddCheck(check server.HealthChecker) {
 	s.webServer.Checker.AddCheck(check)
 }
 

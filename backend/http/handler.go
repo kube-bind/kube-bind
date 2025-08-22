@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"golang.org/x/oauth2"
@@ -190,20 +191,26 @@ func generateCookieName(clusterID string) string {
 func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	logger := getLogger(r)
 
-	cluster := mux.Vars(r)["cluster"]
+	providerCluster := mux.Vars(r)["cluster"]
+
+	callbackPort := r.URL.Query().Get("p")
+
+	spew.Dump(callbackPort)
 
 	scopes := []string{"openid", "profile", "email", "offline_access"}
 	code := &AuthCode{
-		RedirectURL: r.URL.Query().Get("u"),
-		SessionID:   r.URL.Query().Get("s"),
-		ClusterID:   cluster,
+		RedirectURL:       r.URL.Query().Get("u"),
+		SessionID:         r.URL.Query().Get("s"),
+		ClusterID:         r.URL.Query().Get("c"),
+		ProviderClusterID: providerCluster, // used in multicluster-runtime providers
 	}
-	if p := r.URL.Query().Get("p"); p != "" && code.RedirectURL == "" {
-		code.RedirectURL = fmt.Sprintf("http://localhost:%s/callback", p)
+	if callbackPort != "" && code.RedirectURL == "" {
+		code.RedirectURL = fmt.Sprintf("http://localhost:%s/callback", callbackPort)
+		spew.Dump(code.RedirectURL)
 	}
-	if code.RedirectURL == "" || code.SessionID == "" {
+	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {
 		logger.Error(errors.New("missing redirect url or session id or cluster id"), "failed to authorize")
-		http.Error(w, "missing redirect_url or session_id", http.StatusBadRequest)
+		http.Error(w, "missing redirect_url or session_id or cluster_id", http.StatusBadRequest)
 		return
 	}
 
@@ -216,6 +223,7 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 
 	encoded := base64.URLEncoding.EncodeToString(dataCode)
 	authURL := h.oidc.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
+	spew.Dump(authURL)
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
@@ -285,10 +293,10 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	secure := false
 
 	http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
-	if authCode.ClusterID == "" {
+	if authCode.ProviderClusterID == "" {
 		http.Redirect(w, r, "/resources", http.StatusFound)
 	} else {
-		http.Redirect(w, r, "/clusters/"+authCode.ClusterID+"/resources", http.StatusFound)
+		http.Redirect(w, r, "/clusters/"+authCode.ProviderClusterID+"/resources", http.StatusFound)
 	}
 }
 
@@ -341,6 +349,9 @@ type UISchema struct {
 	Kind     string
 	Scope    string // "Namespaced" or "Cluster"
 	Resource string
+
+	// SessionID
+	SessionID string
 }
 
 func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
@@ -348,20 +359,21 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 
 	prepareNoCache(w)
 
-	cluster := mux.Vars(r)["cluster"]
-	singleClusterScoped := cluster == ""
+	providerCluster := mux.Vars(r)["cluster"]
+	sessionID := r.URL.Query().Get("s")
+	singleClusterScoped := providerCluster == ""
 
 	if h.testingAutoSelect != "" {
 		parts := strings.SplitN(h.testingAutoSelect, ".", 2)
 		if singleClusterScoped {
 			http.Redirect(w, r, "/resources/"+parts[0]+"/"+parts[1], http.StatusFound)
 		} else {
-			http.Redirect(w, r, "/clusters/"+cluster+"/resources/"+parts[0]+"/"+parts[1], http.StatusFound)
+			http.Redirect(w, r, "/clusters/"+providerCluster+"/resources/"+parts[0]+"/"+parts[1], http.StatusFound)
 		}
 		return
 	}
 
-	apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), cluster)
+	apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
 	if err != nil {
 		logger.Error(err, "failed to get dynamic resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -402,7 +414,8 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 				Version: version.(string),
 				Group:   group.(string),
 				// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
-				Resource: resource.(string),
+				Resource:  resource.(string),
+				SessionID: sessionID,
 			})
 		}
 	}
@@ -412,7 +425,7 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		Cluster string
 		Schemas []UISchema
 	}{
-		Cluster: cluster,
+		Cluster: providerCluster,
 		Schemas: result,
 	}); err != nil {
 		logger.Error(err, "failed to execute template")
@@ -430,11 +443,11 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	group := r.URL.Query().Get("group")
 	resource := r.URL.Query().Get("resource")
 	version := r.URL.Query().Get("version")
-	cluster := mux.Vars(r)["cluster"]
+	providerCluster := mux.Vars(r)["cluster"]
 
 	prepareNoCache(w)
 
-	cookieName := generateCookieName(cluster)
+	cookieName := "kube-bind-" + r.URL.Query().Get("s")
 	ck, err := r.Cookie(cookieName)
 	if err != nil {
 		logger.Error(err, "failed to get session cookie")
@@ -452,7 +465,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	// There is an intent to bind. We need to create APIResourceSchema if one does not exists.
 	{
-		apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), cluster)
+		apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
 		if err != nil {
 			logger.Error(err, "failed to get dynamic resources")
 			http.Error(w, "internal error", http.StatusInternalServerError)
@@ -473,7 +486,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// create apiResourceSchema if not exists
-		err = h.kubeManager.CreateAPIResourceSchema(r.Context(), cluster, name, schema)
+		err = h.kubeManager.CreateAPIResourceSchema(r.Context(), providerCluster, name, schema)
 		if err != nil && !apierrors.IsAlreadyExists(err) {
 			logger.Error(err, "failed to create APIResourceSchema")
 			http.Error(w, "internal error", http.StatusInternalServerError)
@@ -481,7 +494,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, cluster)
+	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, providerCluster)
 	if err != nil {
 		logger.Error(err, "failed to handle resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)

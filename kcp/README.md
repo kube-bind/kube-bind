@@ -26,8 +26,8 @@ It will do the following:
 1. Start kcp
 2. Bootstrap kcp:
 ```bash
-cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
-export KUBECONFIG=.kcp/provider.kubeconfig
+cp .kcp/admin.kubeconfig .kcp/backend.kubeconfig
+export KUBECONFIG=.kcp/backend.kubeconfig
 ./bin/kcp-init --kcp-kubeconfig $KUBECONFIG
 ```
 3. Run the backend:
@@ -48,14 +48,14 @@ bin/backend \
 ```
 
 
-4. Copy the kubeconfig to the consumer:
+4. Copy the kubeconfig to the provider:
 ```bash
-cp .kcp/admin.kubeconfig .kcp/sub-provider.kubeconfig
-export KUBECONFIG=.kcp/sub-provider.kubeconfig
+cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
+export KUBECONFIG=.kcp/provider.kubeconfig
 k ws use :root
 ```
 
-5. Run `kubectl ws create sub-provider --enter`
+5. Run `kubectl ws create provider --enter`
 6. Bind the APIExport to the workspace
 ```bash
 kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
@@ -94,15 +94,39 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/2xh2v3gzjhn4tmve/exports --dry-run -o yaml > apiserviceexport.yaml
+o authenticate, visit in your brow
 
-# we need dedicated secret for that
 kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
 ./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
 
 export KUBECONFIG=.kcp/consumer.kubeconfig
 go run ./cmd/konnector/ --lease-namespace default
+
+
+11. (Optional) Add second consumer to test
+
+```bash
+cp .kcp/admin.kubeconfig .kcp/consumer2.kubeconfig
+export KUBECONFIG=.kcp/consumer2.kubeconfig
+kubectl ws use :root
+kubectl ws create consumer2 --enter
+
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/2ofdfzkfzhpiqouw/exports --dry-run -o yaml > apiserviceexport2.yaml
+kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote2.kubeconfig
+
+./bin/kubectl-bind apiservice --remote-kubeconfig remote2.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
+
+
+export KUBECONFIG=.kcp/consumer2.kubeconfig
+go run ./cmd/konnector/ --lease-namespace default --server-address :8091
+```
+
+Create objects:
+```
+kubectl create -f deploy/examples/mangodb.yaml
+```
+
 
 ## Debug
 

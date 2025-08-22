@@ -40,10 +40,14 @@ type Config struct {
 	KubeInformers          kubeinformers.SharedInformerFactory
 	BindInformers          bindinformers.SharedInformerFactory
 	ApiextensionsInformers apiextensionsinformers.SharedInformerFactory
+
+	ServerAddr string
 }
 
 func NewConfig(options *options.CompletedOptions) (*Config, error) {
-	config := &Config{}
+	config := &Config{
+		ServerAddr: options.ServerAddr,
+	}
 
 	// create clients
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()

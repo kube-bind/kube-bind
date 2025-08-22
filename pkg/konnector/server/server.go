@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package healthz
+package server
 
 import (
 	"context"
@@ -31,15 +31,27 @@ const listenAddr = ":8090"
 type Server struct {
 	Router  *mux.Router
 	Checker checker
+
+	ServerAddr string
 }
 
-func NewServer() (*Server, error) {
+type Config struct {
+	ServerAddr string
+}
+
+func NewServer(cfg Config) *Server {
 	server := &Server{
-		Router:  mux.NewRouter(),
-		Checker: checker{},
+		Router:     mux.NewRouter(),
+		Checker:    checker{},
+		ServerAddr: cfg.ServerAddr,
+	}
+	server.Router.Handle("/healthz", server.Checker)
+
+	if server.ServerAddr == "" {
+		server.ServerAddr = listenAddr
 	}
 
-	return server, nil
+	return server
 }
 
 func (s *Server) Start(ctx context.Context) {
@@ -50,7 +62,7 @@ func (s *Server) Start(ctx context.Context) {
 	}
 	go func() {
 		//nolint:gosec
-		listener, err := net.Listen("tcp", listenAddr)
+		listener, err := net.Listen("tcp", s.ServerAddr)
 		if err != nil {
 			panic(err)
 		}

@@ -61,7 +61,6 @@ func (s *Server) Start(ctx context.Context) {
 		ReadHeaderTimeout: 1 * time.Minute,
 	}
 	go func() {
-		//nolint:gosec
 		listener, err := net.Listen("tcp", s.ServerAddr)
 		if err != nil {
 			panic(err)

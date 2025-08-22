@@ -30,7 +30,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"golang.org/x/oauth2"
@@ -195,8 +194,6 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 
 	callbackPort := r.URL.Query().Get("p")
 
-	spew.Dump(callbackPort)
-
 	scopes := []string{"openid", "profile", "email", "offline_access"}
 	code := &AuthCode{
 		RedirectURL:       r.URL.Query().Get("u"),
@@ -206,8 +203,8 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	}
 	if callbackPort != "" && code.RedirectURL == "" {
 		code.RedirectURL = fmt.Sprintf("http://localhost:%s/callback", callbackPort)
-		spew.Dump(code.RedirectURL)
 	}
+
 	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {
 		logger.Error(errors.New("missing redirect url or session id or cluster id"), "failed to authorize")
 		http.Error(w, "missing redirect_url or session_id or cluster_id", http.StatusBadRequest)
@@ -223,7 +220,6 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 
 	encoded := base64.URLEncoding.EncodeToString(dataCode)
 	authURL := h.oidc.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
-	spew.Dump(authURL)
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
@@ -294,9 +290,9 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
 	if authCode.ProviderClusterID == "" {
-		http.Redirect(w, r, "/resources", http.StatusFound)
+		http.Redirect(w, r, "/resources?s="+cookieName, http.StatusFound)
 	} else {
-		http.Redirect(w, r, "/clusters/"+authCode.ProviderClusterID+"/resources", http.StatusFound)
+		http.Redirect(w, r, "/clusters/"+authCode.ProviderClusterID+"/resources?s="+cookieName, http.StatusFound)
 	}
 }
 
@@ -447,8 +443,8 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 
 	prepareNoCache(w)
 
-	cookieName := "kube-bind-" + r.URL.Query().Get("s")
-	ck, err := r.Cookie(cookieName)
+	cookieName := r.URL.Query().Get("s")
+	ck, err := r.Cookie(r.URL.Query().Get("s"))
 	if err != nil {
 		logger.Error(err, "failed to get session cookie")
 		http.Error(w, "no session cookie found", http.StatusBadRequest)

@@ -72,7 +72,7 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim
 
 7. Create CRD:
 ```bash
-kubectl apply -f deploy/examples/crd-mongodb.yaml
+kubectl apply -f deploy/examples/crd-mangodb.yaml
 ```
 
 8. Get LogicalCluster:
@@ -94,8 +94,10 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-o authenticate, visit in your brow
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/2vgrh380y0cq38du/exports --dry-run -o yaml > apiserviceexport.yaml
 
+# Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
+# name by running `kubectl get secret -n kube-bind` 
 kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
 ./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
@@ -112,7 +114,7 @@ export KUBECONFIG=.kcp/consumer2.kubeconfig
 kubectl ws use :root
 kubectl ws create consumer2 --enter
 
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/2ofdfzkfzhpiqouw/exports --dry-run -o yaml > apiserviceexport2.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/2vgrh380y0cq38du/exports --dry-run -o yaml > apiserviceexport2.yaml
 kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote2.kubeconfig
 
 ./bin/kubectl-bind apiservice --remote-kubeconfig remote2.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4

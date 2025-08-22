@@ -31,7 +31,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	corev1 "k8s.io/api/core/v1"
@@ -185,7 +184,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	if err != nil {
 		return err
 	}
-	spew.Dump(auth.Endpoint())
+
 	sessionID := SessionID()
 	if err := b.authenticate(provider, auth.Endpoint(), sessionID, ClusterID(ns), urlCh); err != nil {
 		return err

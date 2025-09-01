@@ -207,7 +207,7 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 
 	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {
 		logger.Error(errors.New("missing redirect url or session id or cluster id"), "failed to authorize")
-		http.Error(w, "missing redirect_url or session_id or cluster_id", http.StatusBadRequest)
+		http.Error(w, "missing redirect_url, session_id or cluster_id", http.StatusBadRequest)
 		return
 	}
 
@@ -580,7 +580,7 @@ func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string)
 	}
 
 	parts := strings.SplitN(h.schemaSource, ".", 3)
-	if len(parts) != 3 {
+	if len(parts) != 3 { // We check this in validation, but just in case.
 		return nil, fmt.Errorf("invalid schema source: %q", h.schemaSource)
 	}
 

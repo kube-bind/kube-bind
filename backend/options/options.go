@@ -244,6 +244,10 @@ func (options *CompletedOptions) Validate() error {
 		return fmt.Errorf("unknown schema source %q, must be one of %v", options.SchemaSource, sets.List(sets.Set[string](sets.StringKeySet(schemaSourceAliases))))
 	}
 	options.SchemaSource = schemaSource
+	parts := strings.SplitN(options.SchemaSource, ".", 3)
+	if len(parts) != 3 { // We check this in validation, but just in case.
+		return fmt.Errorf("invalid schema source: %q", options.SchemaSource)
+	}
 
 	return nil
 }

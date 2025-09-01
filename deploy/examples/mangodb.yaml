@@ -1,12 +1,9 @@
 apiVersion: mangodb.com/v1alpha1
 kind: MangoDB
-
 metadata:
   name: my-first-mangodb-instance
   namespace: default
-
 spec:
   tier: Dedicated
-
 status:
   phase: Pending

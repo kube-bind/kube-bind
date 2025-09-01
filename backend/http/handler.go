@@ -18,6 +18,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -32,10 +33,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"golang.org/x/oauth2"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
@@ -66,6 +69,7 @@ type handler struct {
 	backendCallbackURL string
 	providerPrettyName string
 	testingAutoSelect  string
+	schemaSource       string
 
 	cookieEncryptionKey []byte
 	cookieSigningKey    []byte
@@ -78,6 +82,7 @@ func NewHandler(
 	provider *OIDCServiceProvider,
 	oidcAuthorizeURL, backendCallbackURL, providerPrettyName, testingAutoSelect string,
 	cookieSigningKey, cookieEncryptionKey []byte,
+	schemaSource string,
 	scope kubebindv1alpha2.InformerScope,
 	mgr *kubernetes.Manager,
 ) (*handler, error) {
@@ -87,6 +92,7 @@ func NewHandler(
 		backendCallbackURL:  backendCallbackURL,
 		providerPrettyName:  providerPrettyName,
 		testingAutoSelect:   testingAutoSelect,
+		schemaSource:        schemaSource,
 		scope:               scope,
 		client:              http.DefaultClient,
 		kubeManager:         mgr,
@@ -184,20 +190,24 @@ func generateCookieName(clusterID string) string {
 func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 	logger := getLogger(r)
 
-	cluster := mux.Vars(r)["cluster"]
+	providerCluster := mux.Vars(r)["cluster"]
+
+	callbackPort := r.URL.Query().Get("p")
 
 	scopes := []string{"openid", "profile", "email", "offline_access"}
 	code := &AuthCode{
-		RedirectURL: r.URL.Query().Get("u"),
-		SessionID:   r.URL.Query().Get("s"),
-		ClusterID:   cluster,
+		RedirectURL:       r.URL.Query().Get("u"),
+		SessionID:         r.URL.Query().Get("s"),
+		ClusterID:         r.URL.Query().Get("c"),
+		ProviderClusterID: providerCluster, // used in multicluster-runtime providers
 	}
-	if p := r.URL.Query().Get("p"); p != "" && code.RedirectURL == "" {
-		code.RedirectURL = fmt.Sprintf("http://localhost:%s/callback", p)
+	if callbackPort != "" && code.RedirectURL == "" {
+		code.RedirectURL = fmt.Sprintf("http://localhost:%s/callback", callbackPort)
 	}
-	if code.RedirectURL == "" || code.SessionID == "" {
+
+	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {
 		logger.Error(errors.New("missing redirect url or session id or cluster id"), "failed to authorize")
-		http.Error(w, "missing redirect_url or session_id", http.StatusBadRequest)
+		http.Error(w, "missing redirect_url, session_id or cluster_id", http.StatusBadRequest)
 		return
 	}
 
@@ -279,10 +289,10 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	secure := false
 
 	http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
-	if authCode.ClusterID == "" {
-		http.Redirect(w, r, "/resources", http.StatusFound)
+	if authCode.ProviderClusterID == "" {
+		http.Redirect(w, r, "/resources?s="+cookieName, http.StatusFound)
 	} else {
-		http.Redirect(w, r, "/clusters/"+authCode.ClusterID+"/resources", http.StatusFound)
+		http.Redirect(w, r, "/clusters/"+authCode.ProviderClusterID+"/resources?s="+cookieName, http.StatusFound)
 	}
 }
 
@@ -328,59 +338,91 @@ func createSessionState(authCode *AuthCode, token *oauth2.Token) (*session.State
 	}, nil
 }
 
+type UISchema struct {
+	Name     string
+	Version  string
+	Group    string
+	Kind     string
+	Scope    string // "Namespaced" or "Cluster"
+	Resource string
+
+	// SessionID
+	SessionID string
+}
+
 func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 	logger := getLogger(r)
 
 	prepareNoCache(w)
 
-	cluster := mux.Vars(r)["cluster"]
-	singleClusterScoped := cluster == ""
+	providerCluster := mux.Vars(r)["cluster"]
+	sessionID := r.URL.Query().Get("s")
+	singleClusterScoped := providerCluster == ""
 
 	if h.testingAutoSelect != "" {
 		parts := strings.SplitN(h.testingAutoSelect, ".", 2)
 		if singleClusterScoped {
 			http.Redirect(w, r, "/resources/"+parts[0]+"/"+parts[1], http.StatusFound)
 		} else {
-			http.Redirect(w, r, "/clusters/"+cluster+"/resources/"+parts[0]+"/"+parts[1], http.StatusFound)
+			http.Redirect(w, r, "/clusters/"+providerCluster+"/resources/"+parts[0]+"/"+parts[1], http.StatusFound)
 		}
 		return
 	}
 
-	labelSelector := labels.Set{
-		resources.ExportedCRDsLabel: "true",
-	}
-
-	crds, err := h.kubeManager.ListCustomResourceDefinitions(r.Context(), cluster, labelSelector.AsSelector())
+	apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
 	if err != nil {
-		logger.Error(err, "failed to list crds")
+		logger.Error(err, "failed to get dynamic resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	sort.SliceStable(crds.Items, func(i, j int) bool {
-		return crds.Items[i].Name < crds.Items[j].Name
-	})
-	rightScopedCRDs := []*apiextensionsv1.CustomResourceDefinition{}
-	for _, crd := range crds.Items {
-		if h.scope == kubebindv1alpha2.ClusterScope || crd.Spec.Scope == apiextensionsv1.NamespaceScoped {
-			rightScopedCRDs = append(rightScopedCRDs, &crd)
+
+	var result []UISchema
+	for _, item := range apiResourceSchemas.Items {
+		scope := item.UnstructuredContent()["spec"].(map[string]interface{})["scope"]
+		if scope == nil {
+			scope = "-"
+		}
+
+		group := item.UnstructuredContent()["spec"].(map[string]interface{})["group"]
+		if group == nil {
+			group = "-"
+		}
+		resource := item.UnstructuredContent()["spec"].(map[string]interface{})["names"].(map[string]interface{})["plural"]
+		if resource == nil {
+			resource = "-"
+		}
+
+		kind := item.UnstructuredContent()["spec"].(map[string]interface{})["names"].(map[string]interface{})["kind"]
+		if kind == nil {
+			kind = "-"
+		}
+
+		versions := item.UnstructuredContent()["spec"].(map[string]interface{})["versions"]
+		if versions == nil {
+			versions = []interface{}{""}
+		}
+		for _, v := range versions.([]interface{}) {
+			version := v.(map[string]interface{})["name"]
+			result = append(result, UISchema{
+				Name:    item.GetName(),
+				Kind:    kind.(string),
+				Scope:   scope.(string),
+				Version: version.(string),
+				Group:   group.(string),
+				// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
+				Resource:  resource.(string),
+				SessionID: sessionID,
+			})
 		}
 	}
 
-	apiResourceSchemas, err := h.kubeManager.ListAPIResourceSchemas(r.Context(), cluster)
-	if err != nil {
-		logger.Error(err, "failed to get api resource schemas")
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
-	}
 	bs := bytes.Buffer{}
 	if err := resourcesTemplate.Execute(&bs, struct {
-		Cluster            string
-		CRDs               []*apiextensionsv1.CustomResourceDefinition
-		APIResourceSchemas []kubebindv1alpha2.APIResourceSchema
+		Cluster string
+		Schemas []UISchema
 	}{
-		Cluster:            cluster,
-		CRDs:               rightScopedCRDs,
-		APIResourceSchemas: apiResourceSchemas.Items,
+		Cluster: providerCluster,
+		Schemas: result,
 	}); err != nil {
 		logger.Error(err, "failed to execute template")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -393,14 +435,16 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	logger := getLogger(r)
+	name := r.URL.Query().Get("name")
 	group := r.URL.Query().Get("group")
 	resource := r.URL.Query().Get("resource")
-	cluster := mux.Vars(r)["cluster"]
+	version := r.URL.Query().Get("version")
+	providerCluster := mux.Vars(r)["cluster"]
 
 	prepareNoCache(w)
 
-	cookieName := generateCookieName(cluster)
-	ck, err := r.Cookie(cookieName)
+	cookieName := r.URL.Query().Get("s")
+	ck, err := r.Cookie(r.URL.Query().Get("s"))
 	if err != nil {
 		logger.Error(err, "failed to get session cookie")
 		http.Error(w, "no session cookie found", http.StatusBadRequest)
@@ -415,7 +459,38 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, cluster, resource, group)
+	// There is an intent to bind. We need to create APIResourceSchema if one does not exists.
+	{
+		apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
+		if err != nil {
+			logger.Error(err, "failed to get dynamic resources")
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		schema := &unstructured.Unstructured{}
+		for _, item := range apiResourceSchemas.Items {
+			if item.GetName() == name {
+				schema = &item
+				break
+			}
+		}
+		if schema == nil || schema.GetName() != name {
+			logger.Error(nil, "no APIResourceSchema found", "name", name, "group", group, "resource", resource, "version", version)
+			http.Error(w, fmt.Sprintf("no APIResourceSchema found for %s.%s.%s/%s", group, resource, version, name), http.StatusNotFound)
+			return
+		}
+
+		// create apiResourceSchema if not exists
+		err = h.kubeManager.CreateAPIResourceSchema(r.Context(), providerCluster, name, schema)
+		if err != nil && !apierrors.IsAlreadyExists(err) {
+			logger.Error(err, "failed to create APIResourceSchema")
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, providerCluster)
 	if err != nil {
 		logger.Error(err, "failed to handle resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -435,7 +510,10 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		},
 		Spec: kubebindv1alpha2.APIServiceExportRequestSpec{
 			Resources: []kubebindv1alpha2.APIServiceExportRequestResource{
-				{GroupResource: kubebindv1alpha2.GroupResource{Group: group, Resource: resource}},
+				{
+					GroupResource: kubebindv1alpha2.GroupResource{Group: group, Resource: resource},
+					Versions:      []string{version},
+				},
 			},
 		},
 	}
@@ -494,4 +572,29 @@ func mustRead(f func(name string) ([]byte, error), name string) string {
 		panic(err)
 	}
 	return string(bs)
+}
+
+func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string) (*unstructured.UnstructuredList, error) {
+	labelSelector := labels.Set{
+		resources.ExportedCRDsLabel: "true",
+	}
+
+	parts := strings.SplitN(h.schemaSource, ".", 3)
+	if len(parts) != 3 { // We check this in validation, but just in case.
+		return nil, fmt.Errorf("invalid schema source: %q", h.schemaSource)
+	}
+
+	gvk := schema.GroupVersionKind{
+		Kind:    parts[0],
+		Version: parts[1],
+		Group:   parts[2],
+	}
+	apiResourceSchemas, err := h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
+	if err != nil {
+		return nil, fmt.Errorf("failed to list crds: %w", err)
+	}
+	sort.SliceStable(apiResourceSchemas.Items, func(i, j int) bool {
+		return apiResourceSchemas.Items[i].GetName() < apiResourceSchemas.Items[j].GetName()
+	})
+	return apiResourceSchemas, nil
 }

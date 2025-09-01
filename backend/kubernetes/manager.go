@@ -19,11 +19,15 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,6 +40,7 @@ import (
 type Manager struct {
 	namespacePrefix    string
 	providerPrettyName string
+	scope              kubebindv1alpha2.InformerScope
 
 	externalAddressGenerator kuberesources.ExternalAddreesGeneratorFunc
 	externalCA               []byte
@@ -48,6 +53,7 @@ func NewKubernetesManager(
 	ctx context.Context,
 	namespacePrefix, providerPrettyName string,
 	externalAddressGenerator kuberesources.ExternalAddreesGeneratorFunc,
+	scope kubebindv1alpha2.InformerScope,
 	externalCA []byte,
 	externalTLSServerName string,
 	manager mcmanager.Manager,
@@ -55,6 +61,7 @@ func NewKubernetesManager(
 	m := &Manager{
 		namespacePrefix:    namespacePrefix,
 		providerPrettyName: providerPrettyName,
+		scope:              scope,
 
 		externalAddressGenerator: externalAddressGenerator,
 		externalCA:               externalCA,
@@ -71,8 +78,8 @@ func NewKubernetesManager(
 	return m, nil
 }
 
-func (m *Manager) HandleResources(ctx context.Context, identity, cluster, resource, group string) ([]byte, error) {
-	logger := klog.FromContext(ctx).WithValues("identity", identity, "resource", resource, "group", group)
+func (m *Manager) HandleResources(ctx context.Context, identity, cluster string) ([]byte, error) {
+	logger := klog.FromContext(ctx).WithValues("identity", identity)
 	ctx = klog.NewContext(ctx, logger)
 
 	cl, err := m.manager.GetCluster(ctx, cluster)
@@ -172,4 +179,52 @@ func (m *Manager) ListCustomResourceDefinitions(ctx context.Context, cluster str
 	}
 
 	return &crds, nil
+}
+
+func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk schema.GroupVersionKind, selector labels.Selector) (*unstructured.UnstructuredList, error) {
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	c := cl.GetClient()
+
+	// Ensure we have the List kind
+	listGVK := gvk
+	if !strings.HasSuffix(listGVK.Kind, "List") {
+		listGVK.Kind += "List"
+	}
+
+	list := &unstructured.UnstructuredList{}
+	list.SetGroupVersionKind(listGVK)
+
+	listOpts := []client.ListOption{}
+	if selector != nil {
+		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: selector})
+	}
+
+	if err := c.List(ctx, list, listOpts...); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func (m *Manager) CreateAPIResourceSchema(ctx context.Context, cluster string, name string, u *unstructured.Unstructured) error {
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	c := cl.GetClient()
+
+	apiResourceSchema := &kubebindv1alpha2.APIResourceSchema{}
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), apiResourceSchema)
+	if err != nil {
+		return err
+	}
+
+	apiResourceSchema.ResourceVersion = ""
+	apiResourceSchema.Name = name
+	apiResourceSchema.Spec.InformerScope = m.scope
+
+	return c.Create(ctx, apiResourceSchema)
 }

@@ -378,31 +378,57 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 
 	var result []UISchema
 	for _, item := range apiResourceSchemas.Items {
-		scope := item.UnstructuredContent()["spec"].(map[string]interface{})["scope"]
+		spec, err := ConvertInterfaceToMapStringInterface(item.UnstructuredContent()["spec"])
+		if err != nil || spec == nil {
+			logger.Error(err, "failed to get data from unstructured content")
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		scope := spec["scope"]
 		if scope == nil {
 			scope = "-"
 		}
 
-		group := item.UnstructuredContent()["spec"].(map[string]interface{})["group"]
+		group := spec["group"]
 		if group == nil {
 			group = "-"
 		}
-		resource := item.UnstructuredContent()["spec"].(map[string]interface{})["names"].(map[string]interface{})["plural"]
-		if resource == nil {
+		names, ok := spec["names"]
+		if !ok {
+			logger.Error(err, "failed to get names from unstructured content")
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		namesMap, err := ConvertInterfaceToMapStringInterface(names)
+		if namesMap == nil || err != nil {
+			logger.Error(err, "failed to convert names to map[string]interface{}")
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		resource := namesMap["plural"]
+		if resource == nil || err != nil {
 			resource = "-"
 		}
 
-		kind := item.UnstructuredContent()["spec"].(map[string]interface{})["names"].(map[string]interface{})["kind"]
-		if kind == nil {
+		kind := namesMap["kind"]
+		if kind == nil || err != nil {
 			kind = "-"
 		}
 
-		versions := item.UnstructuredContent()["spec"].(map[string]interface{})["versions"]
-		if versions == nil {
+		versions := spec["versions"]
+		if versions == nil || err != nil {
 			versions = []interface{}{""}
 		}
 		for _, v := range versions.([]interface{}) {
-			version := v.(map[string]interface{})["name"]
+			vMap, err := ConvertInterfaceToMapStringInterface(v)
+			if vMap == nil || err != nil {
+				logger.Error(err, "failed to convert version to map[string]interface{}")
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+
+			version := vMap["name"]
 			result = append(result, UISchema{
 				Name:    item.GetName(),
 				Kind:    kind.(string),
@@ -597,4 +623,13 @@ func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string)
 		return apiResourceSchemas.Items[i].GetName() < apiResourceSchemas.Items[j].GetName()
 	})
 	return apiResourceSchemas, nil
+}
+
+func ConvertInterfaceToMapStringInterface(content interface{}) (map[string]interface{}, error) {
+	contentMap, ok := content.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("cannot convert to a map")
+	}
+
+	return contentMap, nil
 }

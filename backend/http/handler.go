@@ -412,12 +412,12 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		}
 
 		kind := namesMap["kind"]
-		if kind == nil || err != nil {
+		if kind == nil {
 			kind = "-"
 		}
 
 		versions := spec["versions"]
-		if versions == nil || err != nil {
+		if versions == nil {
 			versions = []interface{}{""}
 		}
 		for _, v := range versions.([]interface{}) {

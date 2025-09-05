@@ -133,7 +133,7 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, mapper meta.RESTMap
 					return err
 				}
 
-				// TODO: See if we need to update it.
+				// TODO(mjudeikis): https://github.com/kube-bind/kube-bind/issues/297
 				if obj != nil {
 					continue
 				}

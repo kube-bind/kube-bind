@@ -1,9 +1,9 @@
-# kcp 
+# kcp
 
-kcp folder contains isolated set of tooling to bootstrap the kube-bind to allow it to work with kcp instance. 
+kcp folder contains isolated set of tooling to bootstrap the kube-bind to allow it to work with kcp instance.
 It is split into separate package to avoid vendoring pollution.
 
-kcp requires initial setup to be run before it can be used. 
+kcp requires initial setup to be run before it can be used.
 This includes setting up workspace/provider and setting up all the APIResourceSchemas and APIExports.
 
 It was its own GO module to avoid kcp dependencies in the main kube-bind module.
@@ -23,18 +23,19 @@ It will do the following:
 
 # How to run
 
-1. Start kcp
-2. Bootstrap kcp:
+1. Start dex
+2. Start kcp
+3. Bootstrap kcp:
 ```bash
 cp .kcp/admin.kubeconfig .kcp/backend.kubeconfig
 export KUBECONFIG=.kcp/backend.kubeconfig
 ./bin/kcp-init --kcp-kubeconfig $KUBECONFIG
 ```
-3. Run the backend:
+4. Run the backend:
 ```
 k ws use :root:kube-bind
 
-bin/backend \
+./bin/backend \
   --multicluster-runtime-provider kcp \
   --server-url=$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}") \
   --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
@@ -49,7 +50,7 @@ bin/backend \
 ```
 
 
-4. Copy the kubeconfig to the provider and create provider workspace:
+5. Copy the kubeconfig to the provider and create provider workspace:
 ```bash
 cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
 export KUBECONFIG=.kcp/provider.kubeconfig
@@ -57,7 +58,7 @@ k ws use :root
 kubectl ws create provider --enter
 ```
 
-5. Bind the APIExport to the workspace
+6. Bind the APIExport to the provider workspace
 ```bash
 kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
   --accept-permission-claim clusterroles.rbac.authorization.k8s.io \
@@ -68,13 +69,14 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim
   --accept-permission-claim namespaces.core \
   --accept-permission-claim roles.rbac.authorization.k8s.io \
   --accept-permission-claim rolebindings.rbac.authorization.k8s.io \
-  --accept-permission-claim apiresourceschemas.apis.kcp.io 
+  --accept-permission-claim apiresourceschemas.apis.kcp.io
 ```
 
-7. Create CRD:
+7. Create CRD in provider:
 ```bash
-kubectl create -f kcp/deploy/examples/apiexport.yaml  
-kubectl create -f kcp/deploy/examples/apiresourceschema.yaml
+kubectl create -f kcp/deploy/examples/apiexport.yaml
+kubectl create -f kcp/deploy/examples/apiresourceschema-cowboys.yaml
+kubectl create -f kcp/deploy/examples/apiresourceschema-sheriffs.yaml
 # recursive bind
 kubectl kcp bind apiexport root:provider:cowboys-stable
 ```
@@ -84,7 +86,7 @@ kubectl kcp bind apiexport root:provider:cowboys-stable
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/2xh2v3gzjhn4tmve 
+# cluster   Ready   https://192.168.2.166:6443/clusters/2xh2v3gzjhn4tmve
 ```
 
 9. Now we gonna initiate consumer:
@@ -101,7 +103,7 @@ kubectl ws create consumer --enter
 ./bin/kubectl-bind http://127.0.0.1:8080/clusters/2vgrh380y0cq38du/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
-# name by running `kubectl get secret -n kube-bind` 
+# name by running `kubectl get secret -n kube-bind`
 kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
 ./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
@@ -137,9 +139,9 @@ kubectl apply -f kcp/deploy/examples/cowboy.yaml
 ## Debug
 
 ```bash
-cp .kcp/admin.kubeconfig .kcp/debug.kubeconfig   
+cp .kcp/admin.kubeconfig .kcp/debug.kubeconfig
 export KUBECONFIG=.kcp/debug.kubeconfig
 k ws use :root:kube-bind
 
-k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" api-resources   
+k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" api-resources
 k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*"  get crd

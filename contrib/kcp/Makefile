@@ -15,12 +15,10 @@
 # We need bash for some conditional logic below.
 SHELL := /usr/bin/env bash -e
 
-GO_INSTALL = ../hack/go-install.sh
-
-ROOT_DIR=$(abspath ..)
-TOOLS_DIR=../hack/tools
-TOOLS_GOBIN_DIR := $(abspath $(TOOLS_DIR))
-GOBIN_DIR=$(abspath ../bin )
+ROOT_DIR=$(abspath ../..)
+GO_INSTALL = $(ROOT_DIR)/hack/go-install.sh
+TOOLS_GOBIN_DIR = $(ROOT_DIR)/hack/tools
+GOBIN_DIR = $(ROOT_DIR)/bin
 PATH := $(GOBIN_DIR):$(TOOLS_GOBIN_DIR):$(PATH)
 TMPDIR := $(shell mktemp -d)
 
@@ -47,7 +45,6 @@ require-%:
 # KCP tool installation targets
 $(KCP_APIGEN_GEN):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/kcp-dev/kcp/sdk/cmd/apigen $(KCP_APIGEN_BIN) $(KCP_APIGEN_VER)
-
 
 # KCP runtime targets
 run-kcp: $(KCP) ## Start KCP server

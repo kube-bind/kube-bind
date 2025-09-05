@@ -46,5 +46,5 @@ for CRD in *.yaml; do
     fi
 done
 
-cd ../../kcp
+cd ../../contrib/kcp
 make codegen

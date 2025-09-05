@@ -2,16 +2,16 @@ module github.com/kube-bind/kube-bind/kcp
 
 go 1.24.0
 
-replace github.com/kube-bind/kube-bind => ../
+replace github.com/kube-bind/kube-bind => ../../
 
-replace github.com/kube-bind/kube-bind/sdk => ../sdk
+replace github.com/kube-bind/kube-bind/sdk => ../../sdk
 
-replace github.com/kube-bind/kube-bind/cli => ../cli
+replace github.com/kube-bind/kube-bind/cli => ../../cli
 
 require (
 	github.com/kcp-dev/client-go v0.0.0-20250728134101-0355faa9361b
-	github.com/kcp-dev/kcp v0.28.0
-	github.com/kcp-dev/kcp/sdk v0.28.0
+	github.com/kcp-dev/kcp v0.28.1
+	github.com/kcp-dev/kcp/sdk v0.28.1
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5
 	github.com/spf13/pflag v1.0.7
 	k8s.io/apiextensions-apiserver v0.33.3
@@ -95,7 +95,7 @@ require (
 	golang.org/x/time v0.11.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250106144421-5f5ef82da422 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250106144421-5f5ef82da422 // indirect
-	google.golang.org/grpc v1.69.2 // indirect
+	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect

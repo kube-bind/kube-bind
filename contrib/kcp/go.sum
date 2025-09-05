@@ -89,10 +89,10 @@ github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250728122101-adbf20db3e51 h1:l38RD
 github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250728122101-adbf20db3e51/go.mod h1:rF1jfvUfPjFXs+HV/LN1BtPzAz1bfjJOwVa+hAVfroQ=
 github.com/kcp-dev/client-go v0.0.0-20250728134101-0355faa9361b h1:2LGrXvY9sc4l5yjKIbMZ86GEou7NyrHhA4qBPaeFfxs=
 github.com/kcp-dev/client-go v0.0.0-20250728134101-0355faa9361b/go.mod h1:QdO8AaGAZPr/rIZ1iVanCM3tUOiiuX897GWv7WTByLE=
-github.com/kcp-dev/kcp v0.28.0 h1:J3oaOPqc4A2Q+wZveL0iVElAuOLivFmKTCpaKVx8iXA=
-github.com/kcp-dev/kcp v0.28.0/go.mod h1:q28Fx8sU/KA8kz8HGwtaqA7Iom8oR90ydoPK39jMaxo=
-github.com/kcp-dev/kcp/sdk v0.28.0 h1:AOgGrgpqhrplbXMSbcvjFwCqwg4UlysTwIFZ0LvFxlk=
-github.com/kcp-dev/kcp/sdk v0.28.0/go.mod h1:8oZpWxkoMu2TDpx5DgdIGDigByKHKkeqVMA4GiWneoI=
+github.com/kcp-dev/kcp v0.28.1 h1:T7Ky7u9hvprkGrBnKuw0QZoP8O6TCbXqJz2Kwt6Tx+o=
+github.com/kcp-dev/kcp v0.28.1/go.mod h1:q28Fx8sU/KA8kz8HGwtaqA7Iom8oR90ydoPK39jMaxo=
+github.com/kcp-dev/kcp/sdk v0.28.1 h1:bTtuHVjFRjbwFEqXTPxc1J1JP2Hc3mTYqQ2xfJsi16M=
+github.com/kcp-dev/kcp/sdk v0.28.1/go.mod h1:8oZpWxkoMu2TDpx5DgdIGDigByKHKkeqVMA4GiWneoI=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20250816165010-ffe1d7c8649b h1:CyQuxPfhWg8KdwfmY5aE6KABsh/QhkDXTH2msezxCFY=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20250816165010-ffe1d7c8649b/go.mod h1:uiagPCm7MlCfQpIm2xwPTRf8727wbCZCMgHI9uHcMpg=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/apiextensions-apiserver v0.0.0-20250816165010-ffe1d7c8649b h1:5SZfhKCAqq6lu+tOOf33CDGhSty9guXc90CAfQXk3bw=
@@ -210,8 +210,8 @@ go.opentelemetry.io/otel/metric v1.33.0 h1:r+JOocAyeRVXD8lZpjdQjzMadVZp2M4WmQ+5W
 go.opentelemetry.io/otel/metric v1.33.0/go.mod h1:L9+Fyctbp6HFTddIxClbQkjtubW6O9QS3Ann/M82u6M=
 go.opentelemetry.io/otel/sdk v1.33.0 h1:iax7M131HuAm9QkZotNHEfstof92xM+N8sr3uHXc2IM=
 go.opentelemetry.io/otel/sdk v1.33.0/go.mod h1:A1Q5oi7/9XaMlIWzPSxLRWOI8nG3FnzHJNbiENQuihM=
-go.opentelemetry.io/otel/sdk/metric v1.31.0 h1:i9hxxLJF/9kkvfHppyLL55aW7iIJz4JjxTeYusH7zMc=
-go.opentelemetry.io/otel/sdk/metric v1.31.0/go.mod h1:CRInTMVvNhUKgSAMbKyTMxqOBC0zgyxzW55lZzX43Y8=
+go.opentelemetry.io/otel/sdk/metric v1.32.0 h1:rZvFnvmvawYb0alrYkjraqJq0Z4ZUJAiyYCU9snn1CU=
+go.opentelemetry.io/otel/sdk/metric v1.32.0/go.mod h1:PWeZlq0zt9YkYAp3gjKZ0eicRYvOh1Gd+X99x6GHpCQ=
 go.opentelemetry.io/otel/trace v1.33.0 h1:cCJuF7LRjUFso9LPnEAHJDB2pqzp+hbO8eu1qqW2d/s=
 go.opentelemetry.io/otel/trace v1.33.0/go.mod h1:uIcdVUZMpTAmz0tI1z04GoVSezK37CbGV4fr1f2nBck=
 go.opentelemetry.io/proto/otlp v1.5.0 h1:xJvq7gMzB31/d406fB8U5CBdyQGw4P399D1aQWU/3i4=
@@ -273,8 +273,8 @@ google.golang.org/genproto/googleapis/api v0.0.0-20250106144421-5f5ef82da422 h1:
 google.golang.org/genproto/googleapis/api v0.0.0-20250106144421-5f5ef82da422/go.mod h1:b6h1vNKhxaSoEI+5jc3PJUCustfli/mRab7295pY7rw=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20250106144421-5f5ef82da422 h1:3UsHvIr4Wc2aW4brOaSCmcxh9ksica6fHEr8P1XhkYw=
 google.golang.org/genproto/googleapis/rpc v0.0.0-20250106144421-5f5ef82da422/go.mod h1:3ENsm/5D1mzDyhpzeRi1NR784I0BcofWBoSc5QqqMK4=
-google.golang.org/grpc v1.69.2 h1:U3S9QEtbXC0bYNvRtcoklF3xGtLViumSYxWykJS+7AU=
-google.golang.org/grpc v1.69.2/go.mod h1:vyjdE6jLBI76dgpDojsFGNaHlxdjXN9ghpnd2o7JGZ4=
+google.golang.org/grpc v1.70.0 h1:pWFv03aZoHzlRKHWicjsZytKAiYCtNS0dHbXnIdq7jQ=
+google.golang.org/grpc v1.70.0/go.mod h1:ofIJqVKDXx/JiXrwr2IG4/zwdH9txy3IlF40RmcJSQw=
 google.golang.org/protobuf v1.36.5 h1:tPhr+woSbjfYvY6/GPufUoYizxw1cF/yFoxJ2fmpwlM=
 google.golang.org/protobuf v1.36.5/go.mod h1:9fA7Ob0pmnwhb644+1+CVWFRbNajQ6iRojtC/QF5bRE=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

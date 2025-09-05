@@ -123,7 +123,7 @@ ldflags:
 require-%:
 	@if ! command -v $* 1> /dev/null 2>&1; then echo "$* not found in \$$PATH"; exit 1; fi
 
-build: WHAT ?= ./cmd/... ./cli/cmd/... ./kcp/cmd/kcp-init/...
+build: WHAT ?= ./cmd/... ./cli/cmd/... ./contrib/kcp/cmd/kcp-init/...
 build: require-jq require-go require-git verify-go-versions ## Build the project
 	mkdir -p $(GOBIN_DIR)
 	set -x; for W in $(WHAT); do \

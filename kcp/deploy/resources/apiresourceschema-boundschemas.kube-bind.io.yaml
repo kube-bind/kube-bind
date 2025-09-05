@@ -2,20 +2,18 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250809-5ed76a1.boundapiresourceschemas.kube-bind.io
+  name: v250902-878858c.boundschemas.kube-bind.io
 spec:
-  conversion:
-    strategy: None
   group: kube-bind.io
   names:
     categories:
     - kube-bindings
-    kind: BoundAPIResourceSchema
-    listKind: BoundAPIResourceSchemaList
-    plural: boundapiresourceschemas
+    kind: BoundSchema
+    listKind: BoundSchemaList
+    plural: boundschemas
     shortNames:
     - bas
-    singular: boundapiresourceschema
+    singular: boundschema
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -44,8 +42,7 @@ spec:
         metadata:
           type: object
         spec:
-          description: BoundAPIResourceSchemaSpec defines the desired state of the
-            BoundAPIResourceSchema.
+          description: BoundSchemaSpec defines the desired state of the BoundSchema.
           properties:
             conversion:
               description: conversion defines conversion settings for the defined
@@ -268,15 +265,6 @@ spec:
                     description: |-
                       schema describes the structural schema used for validation, pruning, and defaulting
                       of this version of the custom resource.
-                    properties:
-                      openAPIV3Schema:
-                        description: openAPIV3Schema is the OpenAPI v3 schema to use
-                          for validation and pruning.
-                        type: object
-                        x-kubernetes-map-type: atomic
-                        x-kubernetes-preserve-unknown-fields: true
-                    required:
-                    - openAPIV3Schema
                     type: object
                     x-kubernetes-map-type: atomic
                     x-kubernetes-preserve-unknown-fields: true
@@ -357,8 +345,7 @@ spec:
           - versions
           type: object
         status:
-          description: BoundAPIResourceSchemaStatus defines the observed state of
-            the BoundAPIResourceSchema.
+          description: BoundSchemaStatus defines the observed state of the BoundSchema.
           properties:
             acceptedNames:
               description: |-

@@ -18,10 +18,6 @@ package serviceexport
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"slices"
-	"sort"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -30,13 +26,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
-	kubebindhelpers "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 )
 
 type reconciler struct {
-	getAPIResourceSchema func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error)
-	deleteServiceExport  func(ctx context.Context, client client.Client, namespace, name string) error
+	getBoundSchema      func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.BoundSchema, error)
+	deleteServiceExport func(ctx context.Context, client client.Client, namespace, name string) error
 }
 
 func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, export *kubebindv1alpha2.APIServiceExport) error {
@@ -56,14 +52,11 @@ func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, export *k
 
 func (r *reconciler) ensureSchema(ctx context.Context, cache cache.Cache, export *kubebindv1alpha2.APIServiceExport) (specChanged bool, err error) {
 	logger := klog.FromContext(ctx)
-	leafHashes := make([]string, 0, len(export.Spec.Resources))
-	for _, resourceRef := range export.Spec.Resources {
-		if resourceRef.Type != "APIResourceSchema" {
-			logger.V(1).Info("Skipping unsupported resource type", "type", resourceRef.Type)
-			continue
-		}
+	schemas := make([]*kubebindv1alpha2.BoundSchema, 0, len(export.Spec.Resources))
 
-		schema, err := r.getAPIResourceSchema(ctx, cache, resourceRef.Name)
+	for _, res := range export.Spec.Resources {
+		name := res.Resource + "." + res.Group
+		schema, err := r.getBoundSchema(ctx, cache, name)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				continue
@@ -71,34 +64,22 @@ func (r *reconciler) ensureSchema(ctx context.Context, cache cache.Cache, export
 			return false, err
 		}
 
-		hash := kubebindhelpers.APIResourceSchemaCRDSpecHash(&schema.Spec.APIResourceSchemaCRDSpec)
-		leafHashes = append(leafHashes, hash)
+		schemas = append(schemas, schema)
 	}
 
-	hashOfHashes := hashOfHashes(leafHashes)
+	hash := helpers.BoundSchemasSpecHash(schemas)
 
-	if export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] != hashOfHashes {
+	if export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] != hash {
 		// both exist, update APIServiceExport
-		logger.V(1).Info("Updating APIServiceExport. Hash mismatch", "hash", hashOfHashes, "expected", export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey])
+		logger.V(1).Info("Updating APIServiceExport. Hash mismatch", "hash", hash, "expected", export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey])
 		if export.Annotations == nil {
 			export.Annotations = map[string]string{}
 		}
-		export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hashOfHashes
+		export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hash
 		return true, nil
 	}
 
 	conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionProviderInSync)
 
 	return false, nil
-}
-
-func hashOfHashes(hashes []string) string {
-	hexHashes := slices.Clone(hashes)
-	sort.Strings(hexHashes)
-
-	rootHasher := sha256.New()
-	for _, h := range hexHashes {
-		rootHasher.Write([]byte(h))
-	}
-	return hex.EncodeToString(rootHasher.Sum(nil))
 }

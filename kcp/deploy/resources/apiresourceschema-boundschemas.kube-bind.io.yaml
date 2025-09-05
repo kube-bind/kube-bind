@@ -2,8 +2,10 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250902-878858c.boundschemas.kube-bind.io
+  name: v250905-71082b5.boundschemas.kube-bind.io
 spec:
+  conversion:
+    strategy: None
   group: kube-bind.io
   names:
     categories:

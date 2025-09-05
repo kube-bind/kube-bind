@@ -40,11 +40,11 @@ import (
 type reconciler struct {
 	scope kubebindv1alpha2.InformerScope
 
-	listServiceExports   func(ctx context.Context, cache cache.Cache, ns string) ([]*kubebindv1alpha2.APIServiceExport, error)
-	getAPIResourceSchema func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error)
-	getClusterRole       func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error)
-	createClusterRole    func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) error
-	updateClusterRole    func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) error
+	listServiceExports func(ctx context.Context, cache cache.Cache, ns string) ([]*kubebindv1alpha2.APIServiceExport, error)
+	getBoundSchema     func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
+	getClusterRole     func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error)
+	createClusterRole  func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) error
+	updateClusterRole  func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) error
 
 	getClusterRoleBinding    func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error)
 	createClusterRoleBinding func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRoleBinding) error
@@ -151,21 +151,22 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, client client.Cl
 	}
 	for _, export := range exports {
 		for _, res := range export.Spec.Resources {
-			schema, err := r.getAPIResourceSchema(ctx, cache, res.Name)
+			name := res.Resource + "." + res.Group
+			schema, err := r.getBoundSchema(ctx, cache, clusterBinding.Namespace, name)
 			if err != nil {
-				return fmt.Errorf("failed to get APIResourceSchema %w", err)
+				return fmt.Errorf("failed to get BoundSchema %w", err)
 			}
 
 			expected.Rules = append(expected.Rules,
 				rbacv1.PolicyRule{
-					APIGroups: []string{schema.Spec.APIResourceSchemaCRDSpec.Group},
-					Resources: []string{schema.Spec.APIResourceSchemaCRDSpec.Names.Plural},
+					APIGroups: []string{schema.Spec.Group},
+					Resources: []string{schema.Spec.Names.Plural},
 					Verbs:     []string{"get", "list", "watch", "update", "patch", "delete", "create"},
 				},
 				rbacv1.PolicyRule{
 					APIGroups: []string{kubebindv1alpha2.GroupName},
-					Resources: []string{"apiresourceschemas"},
-					Verbs:     []string{"get", "list", "watch"},
+					Resources: []string{"boundschemas"},
+					Verbs:     []string{"get", "list", "watch", "update", "patch"},
 				},
 			)
 		}

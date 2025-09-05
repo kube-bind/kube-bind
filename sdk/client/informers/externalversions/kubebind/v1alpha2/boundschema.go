@@ -33,70 +33,71 @@ import (
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
-// APIResourceSchemaInformer provides access to a shared informer and lister for
-// APIResourceSchemas.
-type APIResourceSchemaInformer interface {
+// BoundSchemaInformer provides access to a shared informer and lister for
+// BoundSchemas.
+type BoundSchemaInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() kubebindv1alpha2.APIResourceSchemaLister
+	Lister() kubebindv1alpha2.BoundSchemaLister
 }
 
-type aPIResourceSchemaInformer struct {
+type boundSchemaInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
+	namespace        string
 }
 
-// NewAPIResourceSchemaInformer constructs a new informer for APIResourceSchema type.
+// NewBoundSchemaInformer constructs a new informer for BoundSchema type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewAPIResourceSchemaInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredAPIResourceSchemaInformer(client, resyncPeriod, indexers, nil)
+func NewBoundSchemaInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredBoundSchemaInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredAPIResourceSchemaInformer constructs a new informer for APIResourceSchema type.
+// NewFilteredBoundSchemaInformer constructs a new informer for BoundSchema type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredAPIResourceSchemaInformer(client versioned.Interface, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredBoundSchemaInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha2().APIResourceSchemas().List(context.Background(), options)
+				return client.KubeBindV1alpha2().BoundSchemas(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha2().APIResourceSchemas().Watch(context.Background(), options)
+				return client.KubeBindV1alpha2().BoundSchemas(namespace).Watch(context.Background(), options)
 			},
 			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha2().APIResourceSchemas().List(ctx, options)
+				return client.KubeBindV1alpha2().BoundSchemas(namespace).List(ctx, options)
 			},
 			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.KubeBindV1alpha2().APIResourceSchemas().Watch(ctx, options)
+				return client.KubeBindV1alpha2().BoundSchemas(namespace).Watch(ctx, options)
 			},
 		},
-		&apiskubebindv1alpha2.APIResourceSchema{},
+		&apiskubebindv1alpha2.BoundSchema{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *aPIResourceSchemaInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredAPIResourceSchemaInformer(client, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *boundSchemaInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredBoundSchemaInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *aPIResourceSchemaInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&apiskubebindv1alpha2.APIResourceSchema{}, f.defaultInformer)
+func (f *boundSchemaInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&apiskubebindv1alpha2.BoundSchema{}, f.defaultInformer)
 }
 
-func (f *aPIResourceSchemaInformer) Lister() kubebindv1alpha2.APIResourceSchemaLister {
-	return kubebindv1alpha2.NewAPIResourceSchemaLister(f.Informer().GetIndexer())
+func (f *boundSchemaInformer) Lister() kubebindv1alpha2.BoundSchemaLister {
+	return kubebindv1alpha2.NewBoundSchemaLister(f.Informer().GetIndexer())
 }

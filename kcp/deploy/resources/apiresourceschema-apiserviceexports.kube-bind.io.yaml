@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250809-5ed76a1.apiserviceexports.kube-bind.io
+  name: v250902-878858c.apiserviceexports.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -488,26 +488,38 @@ spec:
               - message: informerScope is immutable
                 rule: self == oldSelf
             resources:
-              description: resources specifies the API resources to export
+              description: resources is a list of resources that should be exported.
               items:
-                description: APIResourceSchemaReference is a list of references to
-                  APIResourceSchemas.
                 properties:
-                  name:
-                    description: Name is the name of the resource to export
-                    type: string
-                  type:
+                  group:
+                    default: ""
                     description: |-
-                      Type of the resource to export
-                      Currently only APIResourceSchema is supported
-                    enum:
-                    - APIResourceSchema
+                      group is the name of an API group.
+                      For core groups this is the empty string '""'.
+                    pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
                     type: string
+                  resource:
+                    description: |-
+                      resource is the name of the resource.
+                      Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+                      not provided by an service binding export.
+                    pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                    type: string
+                  versions:
+                    description: |-
+                      versions is a list of versions that should be exported. If this is empty
+                      a sensible default is chosen by the service provider.
+                    items:
+                      type: string
+                    type: array
                 required:
-                - name
-                - type
+                - resource
                 type: object
+              minItems: 1
               type: array
+              x-kubernetes-validations:
+              - message: resources are immutable
+                rule: self == oldSelf
           required:
           - informerScope
           - resources

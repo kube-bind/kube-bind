@@ -62,12 +62,11 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	require.NoError(t, err)
 	err = crd.Create(ctx,
 		crdClient.ApiextensionsV1().CustomResourceDefinitions(),
-		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiresourceschemas"},
-		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "boundapiresourceschemas"},
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "clusterbindings"},
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiserviceexports"},
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiservicenamespaces"},
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiserviceexportrequests"},
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "boundschemas"},
 	)
 	require.NoError(t, err)
 

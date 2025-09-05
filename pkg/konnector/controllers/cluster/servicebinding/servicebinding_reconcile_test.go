@@ -34,8 +34,7 @@ func TestEnsureCRDs(t *testing.T) {
 		name             string
 		bindingName      string
 		getCRD           func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
-		boundSchema      *kubebindv1alpha2.BoundAPIResourceSchema
-		schema           *kubebindv1alpha2.APIResourceSchema
+		boundSchema      *kubebindv1alpha2.BoundSchema
 		serviceExport    *kubebindv1alpha2.APIServiceExport
 		expectConditions conditionsapi.Conditions
 		wantErr          bool
@@ -46,10 +45,9 @@ func TestEnsureCRDs(t *testing.T) {
 			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
 				return nil, errors.NewNotFound(apiextensionsv1.SchemeGroupVersion.WithResource("customresourcedefinitions").GroupResource(), name)
 			},
-			schema:      newAPIResourceSchema("test-schema", "default", "example.com", "tests"),
-			boundSchema: newBoundAPIResourceSchema("test-schema", "default", "example.com", "tests"),
-			serviceExport: newServiceExportWithResources("test-binding", "default", []kubebindv1alpha2.APIResourceSchemaReference{
-				{Name: "test-schema", Type: "APIResourceSchema"},
+			boundSchema: newBoundSchema("tests.example.com", "default", "example.com", "tests"),
+			serviceExport: newServiceExportWithResources("test-binding", "default", []kubebindv1alpha2.APIServiceExportRequestResource{
+				{GroupResource: kubebindv1alpha2.GroupResource{Group: "example.com", Resource: "tests"}},
 			}),
 			expectConditions: conditionsapi.Conditions{
 				conditionsapi.Condition{Type: "Connected", Status: "True"},
@@ -60,10 +58,9 @@ func TestEnsureCRDs(t *testing.T) {
 			name:        "fail-when-external-crd-present",
 			bindingName: "test-binding",
 			getCRD:      newGetCRD("tests.example.com", newCRD("tests.example.com")),
-			schema:      newAPIResourceSchema("test-schema", "default", "example.com", "tests"),
-			boundSchema: newBoundAPIResourceSchema("test-schema", "default", "example.com", "tests"),
-			serviceExport: newServiceExportWithResources("test-binding", "default", []kubebindv1alpha2.APIResourceSchemaReference{
-				{Name: "test-schema", Type: "APIResourceSchema"},
+			boundSchema: newBoundSchema("tests.example.com", "default", "example.com", "tests"),
+			serviceExport: newServiceExportWithResources("test-binding", "default", []kubebindv1alpha2.APIServiceExportRequestResource{
+				{GroupResource: kubebindv1alpha2.GroupResource{Group: "example.com", Resource: "tests"}},
 			}),
 			expectConditions: conditionsapi.Conditions{
 				conditionsapi.Condition{
@@ -82,17 +79,11 @@ func TestEnsureCRDs(t *testing.T) {
 			r := &reconciler{
 				getCRD:           tt.getCRD,
 				getServiceExport: newGetServiceExport(tt.serviceExport.Name, tt.serviceExport),
-				getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-					if name == tt.schema.Name {
-						return tt.schema, nil
-					}
-					return nil, errors.NewNotFound(kubebindv1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas").GroupResource(), name)
-				},
-				getBoundAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
-					if name == tt.schema.Name {
+				getBoundSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.BoundSchema, error) {
+					if name == tt.boundSchema.Name {
 						return tt.boundSchema, nil
 					}
-					return nil, errors.NewNotFound(kubebindv1alpha2.SchemeGroupVersion.WithResource("boundapiresourceschemas").GroupResource(), name)
+					return nil, errors.NewNotFound(kubebindv1alpha2.SchemeGroupVersion.WithResource("boundschemas").GroupResource(), name)
 				},
 				createCRD: func(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) (*apiextensionsv1.CustomResourceDefinition, error) {
 					return crd.DeepCopy(), nil
@@ -116,48 +107,34 @@ func TestEnsureCRDs(t *testing.T) {
 		})
 	}
 }
-func newBoundAPIResourceSchema(name, namespace string, group, plural string) *kubebindv1alpha2.BoundAPIResourceSchema {
-	return &kubebindv1alpha2.BoundAPIResourceSchema{
+func newBoundSchema(name, namespace string, group, plural string) *kubebindv1alpha2.BoundSchema {
+	return &kubebindv1alpha2.BoundSchema{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
-		Spec: kubebindv1alpha2.BoundAPIResourceSchemaSpec{
-			APIResourceSchemaCRDSpec: kubebindv1alpha2.APIResourceSchemaCRDSpec{
+		Spec: kubebindv1alpha2.BoundSchemaSpec{
+			InformerScope: kubebindv1alpha2.NamespacedScope,
+			APICRDSpec: kubebindv1alpha2.APICRDSpec{
 				Group: group,
 				Names: apiextensionsv1.CustomResourceDefinitionNames{
 					Plural: plural,
 				},
+				Scope: apiextensionsv1.NamespaceScoped,
 			},
 		},
 	}
 }
 
-func newAPIResourceSchema(name, namespace, group, plural string) *kubebindv1alpha2.APIResourceSchema {
-	return &kubebindv1alpha2.APIResourceSchema{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-		},
-		Spec: kubebindv1alpha2.APIResourceSchemaSpec{
-			APIResourceSchemaCRDSpec: kubebindv1alpha2.APIResourceSchemaCRDSpec{
-				Group: group,
-				Names: apiextensionsv1.CustomResourceDefinitionNames{
-					Plural: plural,
-				},
-			},
-		},
-	}
-}
-
-func newServiceExportWithResources(name, namespace string, resources []kubebindv1alpha2.APIResourceSchemaReference) *kubebindv1alpha2.APIServiceExport {
+func newServiceExportWithResources(name, namespace string, resources []kubebindv1alpha2.APIServiceExportRequestResource) *kubebindv1alpha2.APIServiceExport {
 	return &kubebindv1alpha2.APIServiceExport{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 		},
 		Spec: kubebindv1alpha2.APIServiceExportSpec{
-			Resources: resources,
+			Resources:     resources,
+			InformerScope: kubebindv1alpha2.NamespacedScope,
 		},
 	}
 }

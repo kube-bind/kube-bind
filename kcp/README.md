@@ -44,19 +44,20 @@ bin/backend \
   --pretty-name="BigCorp.com" \
   --namespace-prefix="kube-bind-" \
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
-  --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y=
+  --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
+  --schema-source apiresourceschemas
 ```
 
 
-4. Copy the kubeconfig to the provider:
+4. Copy the kubeconfig to the provider and create provider workspace:
 ```bash
 cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
 export KUBECONFIG=.kcp/provider.kubeconfig
 k ws use :root
+kubectl ws create provider --enter
 ```
 
-5. Run `kubectl ws create provider --enter`
-6. Bind the APIExport to the workspace
+5. Bind the APIExport to the workspace
 ```bash
 kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
   --accept-permission-claim clusterroles.rbac.authorization.k8s.io \
@@ -65,14 +66,17 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim
   --accept-permission-claim configmaps.core \
   --accept-permission-claim secrets.core \
   --accept-permission-claim namespaces.core \
-  --accept-permission-claim serviceaccounts.rbac.authorization.k8s.io \
   --accept-permission-claim roles.rbac.authorization.k8s.io \
-  --accept-permission-claim rolebindings.rbac.authorization.k8s.io
+  --accept-permission-claim rolebindings.rbac.authorization.k8s.io \
+  --accept-permission-claim apiresourceschemas.apis.kcp.io 
 ```
 
 7. Create CRD:
 ```bash
-kubectl apply -f deploy/examples/crd-mangodb.yaml
+kubectl create -f kcp/deploy/examples/apiexport.yaml  
+kubectl create -f kcp/deploy/examples/apiresourceschema.yaml
+# recursive bind
+kubectl kcp bind apiexport root:provider:cowboys-stable
 ```
 
 8. Get LogicalCluster:
@@ -126,7 +130,7 @@ go run ./cmd/konnector/ --lease-namespace default --server-address :8091
 
 Create objects:
 ```
-kubectl create -f deploy/examples/mangodb.yaml
+kubectl apply -f kcp/deploy/examples/cowboy.yaml
 ```
 
 

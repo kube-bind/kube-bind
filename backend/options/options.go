@@ -56,7 +56,7 @@ type ExtraOptions struct {
 	// Defines the source of the schema for the bind screen.
 	// Options are:
 	// CustomResourceDefinition.v1.apiextensions.k8s.io
-	// APIResourceSchema.v1alpha2.kube-bind.io
+	// APIResourceSchema.v1alpha2.apis.kcp.io
 	SchemaSource string
 
 	TestingAutoSelect         string
@@ -112,14 +112,16 @@ func (s SchemaSource) String() string {
 }
 
 var (
-	APIResourceSchemaSource        = SchemaSource("APIResourceSchema.v1alpha2.kube-bind.io")
+	KCPAPIResourceSchemaSource     = SchemaSource("APIResourceSchema.v1alpha1.apis.kcp.io")
 	CustomResourceDefinitionSource = SchemaSource("CustomResourceDefinition.v1.apiextensions.k8s.io")
 )
 
+// TODO(mjudeikis): https://github.com/kube-bind/kube-bind/issues/298
+// We should relax these once we happy they work with any schema.
 var schemaSourceAliases = map[string]string{
-	CustomResourceDefinitionSource.String(): CustomResourceDefinitionSource.String(),
-	"apiresourceschema":                     APIResourceSchemaSource.String(),
-	"customresourcedefinition":              CustomResourceDefinitionSource.String(),
+	CustomResourceDefinitionSource.String(): CustomResourceDefinitionSource.String(), // mostrly for e2e tests
+	"customresourcedefinitions":             CustomResourceDefinitionSource.String(),
+	"apiresourceschemas":                    KCPAPIResourceSchemaSource.String(),
 }
 
 func (options *Options) AddFlags(fs *pflag.FlagSet) {

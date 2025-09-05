@@ -25,26 +25,26 @@ import (
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha2"
 )
 
-// fakeAPIResourceSchemas implements APIResourceSchemaInterface
-type fakeAPIResourceSchemas struct {
-	*gentype.FakeClientWithList[*v1alpha2.APIResourceSchema, *v1alpha2.APIResourceSchemaList]
+// fakeBoundSchemas implements BoundSchemaInterface
+type fakeBoundSchemas struct {
+	*gentype.FakeClientWithList[*v1alpha2.BoundSchema, *v1alpha2.BoundSchemaList]
 	Fake *FakeKubeBindV1alpha2
 }
 
-func newFakeAPIResourceSchemas(fake *FakeKubeBindV1alpha2) kubebindv1alpha2.APIResourceSchemaInterface {
-	return &fakeAPIResourceSchemas{
-		gentype.NewFakeClientWithList[*v1alpha2.APIResourceSchema, *v1alpha2.APIResourceSchemaList](
+func newFakeBoundSchemas(fake *FakeKubeBindV1alpha2, namespace string) kubebindv1alpha2.BoundSchemaInterface {
+	return &fakeBoundSchemas{
+		gentype.NewFakeClientWithList[*v1alpha2.BoundSchema, *v1alpha2.BoundSchemaList](
 			fake.Fake,
-			"",
-			v1alpha2.SchemeGroupVersion.WithResource("apiresourceschemas"),
-			v1alpha2.SchemeGroupVersion.WithKind("APIResourceSchema"),
-			func() *v1alpha2.APIResourceSchema { return &v1alpha2.APIResourceSchema{} },
-			func() *v1alpha2.APIResourceSchemaList { return &v1alpha2.APIResourceSchemaList{} },
-			func(dst, src *v1alpha2.APIResourceSchemaList) { dst.ListMeta = src.ListMeta },
-			func(list *v1alpha2.APIResourceSchemaList) []*v1alpha2.APIResourceSchema {
+			namespace,
+			v1alpha2.SchemeGroupVersion.WithResource("boundschemas"),
+			v1alpha2.SchemeGroupVersion.WithKind("BoundSchema"),
+			func() *v1alpha2.BoundSchema { return &v1alpha2.BoundSchema{} },
+			func() *v1alpha2.BoundSchemaList { return &v1alpha2.BoundSchemaList{} },
+			func(dst, src *v1alpha2.BoundSchemaList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha2.BoundSchemaList) []*v1alpha2.BoundSchema {
 				return gentype.ToPointerSlice(list.Items)
 			},
-			func(list *v1alpha2.APIResourceSchemaList, items []*v1alpha2.APIResourceSchema) {
+			func(list *v1alpha2.BoundSchemaList, items []*v1alpha2.BoundSchema) {
 				list.Items = gentype.FromPointerSlice(items)
 			},
 		),

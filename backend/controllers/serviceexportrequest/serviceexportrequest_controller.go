@@ -61,6 +61,7 @@ func NewAPIServiceExportRequestReconciler(
 	opts controller.TypedOptions[mcreconcile.Request],
 	scope kubebindv1alpha2.InformerScope,
 	isolation kubebindv1alpha2.Isolation,
+	schemaSource string,
 ) (*APIServiceExportRequestReconciler, error) {
 	// Set up field indexers for APIServiceExportRequests
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByServiceExport,
@@ -81,9 +82,10 @@ func NewAPIServiceExportRequestReconciler(
 		reconciler: reconciler{
 			informerScope:          scope,
 			clusterScopedIsolation: isolation,
-			getAPIResourceSchema: func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-				var schema kubebindv1alpha2.APIResourceSchema
-				key := types.NamespacedName{Name: name}
+			schemaSource:           schemaSource,
+			getBoundSchema: func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error) {
+				var schema kubebindv1alpha2.BoundSchema
+				key := types.NamespacedName{Namespace: namespace, Name: name}
 				if err := cache.Get(ctx, key, &schema); err != nil {
 					return nil, err
 				}
@@ -100,11 +102,8 @@ func NewAPIServiceExportRequestReconciler(
 			createServiceExport: func(ctx context.Context, cl client.Client, resource *kubebindv1alpha2.APIServiceExport) error {
 				return cl.Create(ctx, resource)
 			},
-			createAPIResourceSchema: func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.APIResourceSchema) (*kubebindv1alpha2.APIResourceSchema, error) {
-				if err := cl.Create(ctx, schema); err != nil {
-					return nil, err
-				}
-				return schema, nil
+			createBoundSchema: func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error {
+				return cl.Create(ctx, schema)
 			},
 			deleteServiceExportRequest: func(ctx context.Context, cl client.Client, ns, name string) error {
 				return cl.Delete(ctx, &kubebindv1alpha2.APIServiceExportRequest{
@@ -150,15 +149,15 @@ func getServiceExportRequestMapper(clusterName string, cl cluster.Cluster) handl
 	})
 }
 
-// getAPIResourceSchemaMapper creates a mapping function for APIResourceSchema changes.
-func getAPIResourceSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
+// getBoundSchemaMapper creates a mapping function for BoundSchema changes.
+func getBoundSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
 	return handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []mcreconcile.Request {
-		apiResourceSchema := obj.(*kubebindv1alpha2.APIResourceSchema)
-		apiResourceSchemaKey := apiResourceSchema.Name
+		boundSchema := obj.(*kubebindv1alpha2.BoundSchema)
+		boundSchemaKey := boundSchema.Name
 		c := cl.GetClient()
 
 		var requests kubebindv1alpha2.APIServiceExportRequestList
-		if err := c.List(ctx, &requests, client.MatchingFields{indexers.ServiceExportRequestByGroupResource: apiResourceSchemaKey}); err != nil {
+		if err := c.List(ctx, &requests, client.MatchingFields{indexers.ServiceExportRequestByGroupResource: boundSchemaKey}); err != nil {
 			return []mcreconcile.Request{}
 		}
 
@@ -197,6 +196,7 @@ func (r *APIServiceExportRequestReconciler) Reconcile(ctx context.Context, req m
 
 	client := cl.GetClient()
 	cache := cl.GetCache()
+	mapper := cl.GetRESTMapper()
 
 	// Fetch the APIServiceExportRequest instance
 	apiServiceExportRequest := &kubebindv1alpha2.APIServiceExportRequest{}
@@ -214,7 +214,7 @@ func (r *APIServiceExportRequestReconciler) Reconcile(ctx context.Context, req m
 	original := apiServiceExportRequest.DeepCopy()
 
 	// Run the reconciliation logic
-	if err := r.reconciler.reconcile(ctx, client, cache, apiServiceExportRequest); err != nil {
+	if err := r.reconciler.reconcile(ctx, mapper, client, cache, apiServiceExportRequest); err != nil {
 		logger.Error(err, "Failed to reconcile APIServiceExportRequest")
 		return ctrl.Result{}, err
 	}
@@ -241,8 +241,8 @@ func (r *APIServiceExportRequestReconciler) SetupWithManager(mgr mcmanager.Manag
 			getServiceExportRequestMapper,
 		).
 		Watches(
-			&kubebindv1alpha2.APIResourceSchema{},
-			getAPIResourceSchemaMapper,
+			&kubebindv1alpha2.BoundSchema{},
+			getBoundSchemaMapper,
 		).
 		WithOptions(r.opts).
 		Named(controllerName).

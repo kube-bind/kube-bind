@@ -104,6 +104,15 @@ type APIServiceExportRequestSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceExportRequestResource `json:"resources"`
+
+	// permissionClaims defines the permissions that the consumer cluster requests from the provider.
+	// These permissions are required for the konnector to operate correctly with the exported resources.
+
+	// +optional
+	// +listType=map
+	// +listMapKey=group
+	// +listMapKey=resource
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 type APIServiceExportRequestResource struct {

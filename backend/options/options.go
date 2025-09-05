@@ -116,6 +116,8 @@ var (
 	CustomResourceDefinitionSource = SchemaSource("CustomResourceDefinition.v1.apiextensions.k8s.io")
 )
 
+// TODO(mjudeikis): https://github.com/kube-bind/kube-bind/issues/298
+// We should relax these once we happy they work with any schema.
 var schemaSourceAliases = map[string]string{
 	CustomResourceDefinitionSource.String(): CustomResourceDefinitionSource.String(), // mostrly for e2e tests
 	"customresourcedefinitions":             CustomResourceDefinitionSource.String(),

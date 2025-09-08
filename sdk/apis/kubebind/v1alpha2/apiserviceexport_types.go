@@ -85,6 +85,13 @@ type APIServiceExportSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceExportResource `json:"resources"`
+
+	// permissionClaims records decisions about permission claims requested by the service provider.
+	// Individual claims can be accepted or rejected. If accepted, the API service provider gets the
+	// requested access to the specified resources in this workspace. Access is granted per
+	// GroupResource, identity, and other properties.
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
+
 	// informerScope is the scope of the APIServiceExport. It can be either Cluster or Namespace.
 	//
 	// Cluster:    The konnector has permission to watch all namespaces at once and cluster-scoped resources.

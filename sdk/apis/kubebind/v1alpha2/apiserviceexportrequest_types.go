@@ -104,6 +104,12 @@ type APIServiceExportRequestSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceExportRequestResource `json:"resources"`
+
+	// permissionClaims records decisions about permission claims requested by the service provider.
+	// Individual claims can be accepted or rejected. If accepted, the API service provider gets the
+	// requested access to the specified resources in this workspace. Access is granted per
+	// GroupResource, identity, and other properties.
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 type APIServiceExportRequestResource struct {
@@ -112,6 +118,25 @@ type APIServiceExportRequestResource struct {
 	// versions is a list of versions that should be exported. If this is empty
 	// a sensible default is chosen by the service provider.
 	Versions []string `json:"versions,omitempty"`
+}
+
+// permissionClaim selects objects of a GVR that a service provider may
+// request and that a consumer may accept and allow the service provider access to.
+type PermissionClaim struct {
+	GroupResource `json:",inline"`
+
+	// versions is a list of versions that should be exported. If this is empty
+	// a sensible default is chosen by the service provider.
+	Versions []string `json:"versions,omitempty"`
+
+	// verbs is a list of supported API operation types (this includes
+	// but is not limited to get, list, watch, create, update, patch,
+	// delete, deletecollection, and proxy).
+	//
+	// +required
+	// +listType=set
+	// +kubebuilder:validation:MinItems=1
+	Verbs []string `json:"verbs"`
 }
 
 // GroupResource identifies a resource.

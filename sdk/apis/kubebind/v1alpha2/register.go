@@ -33,6 +33,9 @@ const (
 
 	// GroupVersion is the group version used in this package
 	GroupVersion = "v1alpha2"
+
+	// KindAPIServiceExport is the kind name for APIServiceExport
+	KindAPIServiceExport = "APIServiceExport"
 )
 
 // SchemeGroupVersion is group version used to register these objects

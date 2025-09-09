@@ -53,6 +53,7 @@ func CreateServiceAccount(ctx context.Context, client client.Client, ns, name st
 }
 
 // EnsureBinderClusterRole ensures that the binder cluster role is present in the cluster. This runs multiple times on bind.
+// This role is generic role to allowing generic schema operations and lifecycle. There is separate role for permission claims.
 func EnsureBinderClusterRole(ctx context.Context, client client.Client) error {
 	logger := klog.FromContext(ctx)
 

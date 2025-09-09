@@ -148,6 +148,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		ctx,
 		s.Config.Manager,
 		opts,
+		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceExport Controller: %w", err)

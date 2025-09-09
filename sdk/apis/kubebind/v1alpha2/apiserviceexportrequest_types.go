@@ -105,10 +105,8 @@ type APIServiceExportRequestSpec struct {
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceExportRequestResource `json:"resources"`
 
-	// permissionClaims records decisions about permission claims requested by the service provider.
-	// Individual claims can be accepted or rejected. If accepted, the API service provider gets the
-	// requested access to the specified resources in this workspace. Access is granted per
-	// GroupResource, identity, and other properties.
+	// PermissionClaims records decisions about permission claims requested by the service provider.
+	// Access is granted per GroupResource.
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
@@ -137,6 +135,55 @@ type PermissionClaim struct {
 	// +listType=set
 	// +kubebuilder:validation:MinItems=1
 	Verbs []string `json:"verbs"`
+
+	// Owner is the owner of the resource. Defaults to provider.
+	// If owned by provider - will be pulled to consumer. If owned by consumer - will be pushed to provider.
+	// +kubebuilder:validation:Enum=provider;consumer
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Immutable
+	// +kubebuilder:default="provider"
+	Owner Owner `json:"owner,omitempty"`
+
+	// Selector is a resource selector that selects objects of a GVR.
+	Selector Selector `json:"selector,omitempty"`
+}
+
+type Owner string
+
+const (
+	OwnerProvider Owner = "provider"
+	OwnerConsumer Owner = "consumer"
+)
+
+// Selector is a resource selector that selects objects of a GVR.
+type Selector struct {
+	// resourceNames is a list of resource names to select.
+	ResourceNames []SelectorResourceName `json:"resourceNames,omitempty"`
+}
+
+// SelectorResourceName identifies a specific resource by name.
+// If backend operates at the namespace level isolation, namespace will be included.
+type SelectorResourceName struct {
+	// Name is the name of the resource.
+	// +kubebuilder:validation:Required
+	Name string `json:"name,omitempty"`
+}
+
+// SelectorReference identifies a specific resource by a reference of the resource, distributed by the export itself.
+type SelectorReference struct {
+	// resource is the name of the resource.
+	// +kubebuilder:validation:Required
+	Resource string `json:"resource,omitempty"`
+	// group is the name of the API group.
+	// +kubebuilder:validation:Required
+	Group string `json:"group,omitempty"`
+	// type is the type of reference at the jsonpath. If not specified, it defaults to the corev1.ObjectReference.
+	// +kubebuilder:default="corev1.ObjectReference"
+	// +kubebuilder:validation:Enum=corev1.ObjectReference
+	Type string `json:"type,omitempty"`
+	// jsonPath is the jsonPath expression used to select the resource.
+	// +kubebuilder:validation:Required
+	JSONPath string `json:"jsonPath,omitempty"`
 }
 
 // GroupResource identifies a resource.

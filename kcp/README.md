@@ -102,7 +102,7 @@ kubectl ws create consumer --enter
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind` 
-kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+kubectl get secret kubeconfig-gzl5q -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
 ./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
 

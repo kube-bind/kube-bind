@@ -490,6 +490,83 @@ spec:
                 x-kubernetes-validations:
                 - message: informerScope is immutable
                   rule: self == oldSelf
+              permissionClaims:
+                description: |-
+                  permissionClaims records decisions about permission claims requested by the service provider.
+                  Individual claims can be accepted or rejected. If accepted, the API service provider gets the
+                  requested access to the specified resources in this workspace. Access is granted per
+                  GroupResource, identity, and other properties.
+                items:
+                  description: |-
+                    permissionClaim selects objects of a GVR that a service provider may
+                    request and that a consumer may accept and allow the service provider access to.
+                  properties:
+                    group:
+                      default: ""
+                      description: |-
+                        group is the name of an API group.
+                        For core groups this is the empty string '""'.
+                      pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
+                      type: string
+                    owner:
+                      default: provider
+                      description: |-
+                        Owner is the owner of the resource. Defaults to provider.
+                        If owned by provider - will be pulled to consumer. If owned by consumer - will be pushed to provider.
+                      enum:
+                      - provider
+                      - consumer
+                      type: string
+                    resource:
+                      description: |-
+                        resource is the name of the resource.
+                        Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+                        not provided by an service binding export.
+                      pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                      type: string
+                    selector:
+                      description: Selector is a resource selector that selects objects
+                        of a GVR.
+                      properties:
+                        resourceNames:
+                          description: resourceNames is a list of resource names to
+                            select.
+                          items:
+                            description: |-
+                              SelectorResourceName identifies a specific resource by name.
+                              If backend operates at the namespace level isolation, namespace will be included.
+                            properties:
+                              name:
+                                description: Name is the name of the resource.
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          type: array
+                      type: object
+                    verbs:
+                      description: |-
+                        verbs is a list of supported API operation types (this includes
+                        but is not limited to get, list, watch, create, update, patch,
+                        delete, deletecollection, and proxy).
+                      items:
+                        type: string
+                      minItems: 1
+                      type: array
+                      x-kubernetes-list-type: set
+                    versions:
+                      description: |-
+                        versions is a list of versions that should be exported. If this is empty
+                        a sensible default is chosen by the service provider.
+                      items:
+                        type: string
+                      type: array
+                  required:
+                  - owner
+                  - resource
+                  - verbs
+                  type: object
+                type: array
               resources:
                 description: resources is a list of resources that should be exported.
                 items:

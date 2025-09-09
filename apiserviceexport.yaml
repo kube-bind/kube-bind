@@ -1,0 +1,26 @@
+apiVersion: kube-bind.io/v1alpha2
+kind: APIServiceExportRequest
+metadata:
+  name: cowboys.wildwest.dev
+spec:
+  resources:
+  - group: wildwest.dev
+    resource: cowboys
+    versions:
+    - v1alpha1
+  permissionClaims:
+  - apiGroup: ""
+    resource: configmaps
+    verbs: ["*"]
+    selector:
+      resourceNames:
+      - name: cowboys
+        namespace: wildwest
+      references:
+      - resource: MangoDBInstance
+        group: mangodb.amazingcor.com
+        type: corev1.ObjectReference
+        JSONPath: spec.configuration
+
+
+status: {}

@@ -20,12 +20,10 @@ import (
 	"context"
 	"fmt"
 
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -57,6 +55,7 @@ func NewAPIServiceExportReconciler(
 	ctx context.Context,
 	mgr mcmanager.Manager,
 	opts controller.TypedOptions[mcreconcile.Request],
+	scope kubebindv1alpha2.InformerScope,
 ) (*APIServiceExportReconciler, error) {
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByBoundSchema,
 		indexers.IndexServiceExportByBoundSchema); err != nil {
@@ -67,22 +66,7 @@ func NewAPIServiceExportReconciler(
 		manager: mgr,
 		opts:    opts,
 		reconciler: reconciler{
-			getBoundSchema: func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.BoundSchema, error) {
-				var schema kubebindv1alpha2.BoundSchema
-				key := types.NamespacedName{Name: name}
-				if err := cache.Get(ctx, key, &schema); err != nil {
-					return nil, err
-				}
-				return &schema, nil
-			},
-			deleteServiceExport: func(ctx context.Context, cl client.Client, ns, name string) error {
-				return cl.Delete(ctx, &kubebindv1alpha2.APIServiceExport{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: ns,
-						Name:      name,
-					},
-				})
-			},
+			scope: scope,
 		},
 	}
 
@@ -123,7 +107,7 @@ func (r *APIServiceExportReconciler) Reconcile(ctx context.Context, req mcreconc
 	original := apiServiceExport.DeepCopy()
 
 	// Run the reconciliation logic
-	if err := r.reconciler.reconcile(ctx, cache, apiServiceExport); err != nil {
+	if err := r.reconciler.reconcile(ctx, cache, client, apiServiceExport); err != nil {
 		logger.Error(err, "Failed to reconcile APIServiceExport")
 		return ctrl.Result{}, err
 	}
@@ -174,6 +158,8 @@ func (r *APIServiceExportReconciler) SetupWithManager(mgr mcmanager.Manager) err
 			&kubebindv1alpha2.BoundSchema{},
 			getBoundSchemaMapper,
 		).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.ClusterRole{}).
 		WithOptions(r.opts).
 		Named(controllerName).
 		Complete(r)

@@ -54,7 +54,7 @@ type reconciler struct {
 }
 
 func (r *reconciler) reconcile(ctx context.Context, mapper meta.RESTMapper, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
-	if err := r.ensureBoundSchemas(ctx, mapper, cl, cache, req); err != nil {
+	if err := r.ensureBoundSchemas(ctx, cl, cache, req); err != nil {
 		return err
 	}
 
@@ -67,7 +67,7 @@ func (r *reconciler) reconcile(ctx context.Context, mapper meta.RESTMapper, cl c
 	return nil
 }
 
-func (r *reconciler) ensureBoundSchemas(ctx context.Context, mapper meta.RESTMapper, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	// Ensure all bound schemas exist
 	for _, res := range req.Spec.Resources {
 		if len(res.Versions) == 0 {
@@ -208,6 +208,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 				Versions: res.Versions,
 			})
 		}
+		export.Spec.PermissionClaims = append(export.Spec.PermissionClaims, req.Spec.PermissionClaims...)
 
 		logger.V(1).Info("Creating APIServiceExport", "name", export.Name, "namespace", export.Namespace)
 		if err := r.createServiceExport(ctx, cl, export); err != nil {

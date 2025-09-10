@@ -96,23 +96,18 @@ func NewController(
 
 			syncContext: map[string]syncContext{},
 
-			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
-				return crdInformer.Lister().Get(name)
-			},
 			getServiceBinding: func(name string) (*kubebindv1alpha2.APIServiceBinding, error) {
 				return serviceBindingInformer.Lister().Get(name)
 			},
-			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-				return providerBindClient.KubeBindV1alpha2().APIResourceSchemas().Get(ctx, name, metav1.GetOptions{})
+			getCRD: func(name string) (*apiextensionsv1.CustomResourceDefinition, error) {
+				return crdInformer.Lister().Get(name)
 			},
-			getBoundAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
-				return providerBindClient.KubeBindV1alpha2().BoundAPIResourceSchemas(providerNamespace).Get(ctx, name, metav1.GetOptions{})
+			getRemoteBoundSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.BoundSchema, error) {
+				return providerBindClient.KubeBindV1alpha2().BoundSchemas(providerNamespace).Get(ctx, name, metav1.GetOptions{})
 			},
-			createBoundAPIResourceSchema: func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
-				return providerBindClient.KubeBindV1alpha2().BoundAPIResourceSchemas(providerNamespace).Create(ctx, boundSchema, metav1.CreateOptions{})
-			},
-			updateBoundAPIResourceSchema: func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundAPIResourceSchema) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
-				return providerBindClient.KubeBindV1alpha2().BoundAPIResourceSchemas(providerNamespace).Update(ctx, boundSchema, metav1.UpdateOptions{})
+			updateRemoteBoundSchema: func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundSchema) error {
+				_, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(providerNamespace).UpdateStatus(ctx, boundSchema, metav1.UpdateOptions{})
+				return err
 			},
 		},
 

@@ -104,23 +104,13 @@ func EnsureBinderClusterRole(ctx context.Context, client client.Client) error {
 			},
 			{
 				APIGroups: []string{"kube-bind.io"},
-				Resources: []string{"apiresourceschemas"},
-				Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
+				Resources: []string{"boundschemas"},
+				Verbs:     []string{"get", "list", "watch"},
 			},
 			{
 				APIGroups: []string{"kube-bind.io"},
-				Resources: []string{"apiresourceschemas/status"},
-				Verbs:     []string{"get", "patch", "update"},
-			},
-			{
-				APIGroups: []string{"kube-bind.io"},
-				Resources: []string{"boundapiresourceschemas"},
-				Verbs:     []string{"create", "delete", "patch", "update", "get", "list", "watch"},
-			},
-			{
-				APIGroups: []string{"kube-bind.io"},
-				Resources: []string{"boundapiresourceschemas/status"},
-				Verbs:     []string{"get", "patch", "update"},
+				Resources: []string{"boundaschemas/status"},
+				Verbs:     []string{"get", "list", "patch", "update"},
 			},
 		},
 	}

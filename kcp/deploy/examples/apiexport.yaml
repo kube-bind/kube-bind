@@ -1,0 +1,11 @@
+apiVersion: apis.kcp.io/v1alpha2
+kind: APIExport
+metadata:
+  name: cowboys-stable
+spec:
+  resources:
+  - group: wildwest.dev
+    name: cowboys
+    schema: today.cowboys.wildwest.dev
+    storage:
+      crd: {}

@@ -77,11 +77,11 @@ func NewClusterBindingReconciler(
 				}
 				return exports, nil
 			},
-			getAPIResourceSchema: func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-				result := &kubebindv1alpha2.APIResourceSchema{}
-				err := cache.Get(ctx, types.NamespacedName{Name: name}, result)
+			getBoundSchema: func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error) {
+				result := &kubebindv1alpha2.BoundSchema{}
+				err := cache.Get(ctx, types.NamespacedName{Namespace: namespace, Name: name}, result)
 				if err != nil {
-					return nil, fmt.Errorf("failed to get APIResourceSchema %q: %w", name, err)
+					return nil, fmt.Errorf("failed to get BoundSchema %q: %w", name, err)
 				}
 				return result, nil
 			},

@@ -89,6 +89,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 						},
 						Namespace: "kube-bind",
 					},
+					PermissionClaims: request.Spec.PermissionClaims, // Claims are accepted by the user at the point of "request". No need to re-accept them.
 				},
 			}, metav1.CreateOptions{})
 			if err != nil {

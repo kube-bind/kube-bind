@@ -90,7 +90,7 @@ func (in *APIServiceBinding) DeepCopyInto(out *APIServiceBinding) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
-	out.Spec = in.Spec
+	in.Spec.DeepCopyInto(&out.Spec)
 	in.Status.DeepCopyInto(&out.Status)
 	return
 }
@@ -150,6 +150,13 @@ func (in *APIServiceBindingList) DeepCopyObject() runtime.Object {
 func (in *APIServiceBindingSpec) DeepCopyInto(out *APIServiceBindingSpec) {
 	*out = *in
 	out.KubeconfigSecretRef = in.KubeconfigSecretRef
+	if in.PermissionClaims != nil {
+		in, out := &in.PermissionClaims, &out.PermissionClaims
+		*out = make([]PermissionClaim, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	return
 }
 
@@ -1037,11 +1044,6 @@ func (in *PermissionClaim) DeepCopyInto(out *PermissionClaim) {
 	out.GroupResource = in.GroupResource
 	if in.Versions != nil {
 		in, out := &in.Versions, &out.Versions
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
-	if in.Verbs != nil {
-		in, out := &in.Verbs, &out.Verbs
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

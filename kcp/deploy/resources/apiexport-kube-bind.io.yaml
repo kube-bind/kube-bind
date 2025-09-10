@@ -49,17 +49,17 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: apiservicebindings
-    schema: v250809-5ed76a1.apiservicebindings.kube-bind.io
+    schema: v250910-2eb8a3f.apiservicebindings.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io
     name: apiserviceexportrequests
-    schema: v250909-9ab5527.apiserviceexportrequests.kube-bind.io
+    schema: v250910-2eb8a3f.apiserviceexportrequests.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io
     name: apiserviceexports
-    schema: v250909-9ab5527.apiserviceexports.kube-bind.io
+    schema: v250910-2eb8a3f.apiserviceexports.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io

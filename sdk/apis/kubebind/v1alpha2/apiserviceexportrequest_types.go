@@ -127,31 +127,17 @@ type PermissionClaim struct {
 	// a sensible default is chosen by the service provider.
 	Versions []string `json:"versions,omitempty"`
 
-	// verbs is a list of supported API operation types (this includes
-	// but is not limited to get, list, watch, create, update, patch,
-	// delete, deletecollection, and proxy).
-	//
-	// +required
-	// +listType=set
-	// +kubebuilder:validation:MinItems=1
-	Verbs []string `json:"verbs"`
-
-	// Owner is the owner of the resource. Defaults to provider.
-	// If owned by provider - will be pulled to consumer. If owned by consumer - will be pushed to provider.
-	// +kubebuilder:validation:Enum=provider;consumer
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Immutable
-	// +kubebuilder:default="provider"
-	Owner Owner `json:"owner,omitempty"`
-
 	// Selector is a resource selector that selects objects of a GVR.
 	Selector Selector `json:"selector,omitempty"`
 }
 
+// Owner is the owner of the resource.
 type Owner string
 
 const (
+	// OwnerProvider indicates that the resource is owned by the provider.
 	OwnerProvider Owner = "provider"
+	// OwnerConsumer indicates that the resource is owned by the consumer.
 	OwnerConsumer Owner = "consumer"
 )
 

@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
@@ -106,7 +107,8 @@ func NewController(
 				return providerBindClient.KubeBindV1alpha2().BoundSchemas(providerNamespace).Get(ctx, name, metav1.GetOptions{})
 			},
 			updateRemoteBoundSchema: func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundSchema) error {
-				_, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(providerNamespace).Update(ctx, boundSchema, metav1.UpdateOptions{})
+				spew.Dump("updating remote bound schema", boundSchema)
+				_, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(providerNamespace).UpdateStatus(ctx, boundSchema, metav1.UpdateOptions{})
 				return err
 			},
 		},
@@ -190,8 +192,10 @@ func (c *controller) enqueueCRD(logger klog.Logger, obj any) {
 		return
 	}
 
+	// TODO(IMPORTANT!!!!!): This is wrong, this should be index to resolve APIServiceExports to CRDs. Names of crds does not match bindings.
+
 	key := c.providerNamespace + "/" + crdKey
-	logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceExport", "APIServiceExportKey", crdKey)
+	logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "CRD", "APIServiceExportKey", crdKey)
 	c.queue.Add(key)
 }
 

@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -158,8 +157,6 @@ func (r *APIServiceExportReconciler) SetupWithManager(mgr mcmanager.Manager) err
 			&kubebindv1alpha2.BoundSchema{},
 			getBoundSchemaMapper,
 		).
-		Owns(&rbacv1.Role{}).
-		Owns(&rbacv1.ClusterRole{}).
 		WithOptions(r.opts).
 		Named(controllerName).
 		Complete(r)

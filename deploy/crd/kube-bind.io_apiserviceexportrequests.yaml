@@ -237,15 +237,6 @@ spec:
                         For core groups this is the empty string '""'.
                       pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
                       type: string
-                    owner:
-                      default: provider
-                      description: |-
-                        Owner is the owner of the resource. Defaults to provider.
-                        If owned by provider - will be pulled to consumer. If owned by consumer - will be pushed to provider.
-                      enum:
-                      - provider
-                      - consumer
-                      type: string
                     resource:
                       description: |-
                         resource is the name of the resource.
@@ -273,16 +264,6 @@ spec:
                             type: object
                           type: array
                       type: object
-                    verbs:
-                      description: |-
-                        verbs is a list of supported API operation types (this includes
-                        but is not limited to get, list, watch, create, update, patch,
-                        delete, deletecollection, and proxy).
-                      items:
-                        type: string
-                      minItems: 1
-                      type: array
-                      x-kubernetes-list-type: set
                     versions:
                       description: |-
                         versions is a list of versions that should be exported. If this is empty
@@ -291,9 +272,7 @@ spec:
                         type: string
                       type: array
                   required:
-                  - owner
                   - resource
-                  - verbs
                   type: object
                 type: array
               resources:

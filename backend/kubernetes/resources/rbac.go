@@ -110,7 +110,7 @@ func EnsureBinderClusterRole(ctx context.Context, client client.Client) error {
 			},
 			{
 				APIGroups: []string{"kube-bind.io"},
-				Resources: []string{"boundaschemas/status"},
+				Resources: []string{"boundschemas/status"},
 				Verbs:     []string{"get", "list", "patch", "update"},
 			},
 		},

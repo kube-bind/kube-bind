@@ -19,6 +19,8 @@ package serviceexport
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -35,6 +37,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/claimedresources"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/spec"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/status"
@@ -70,11 +73,9 @@ type syncContext struct {
 
 func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebindv1alpha2.APIServiceExport) error {
 	errs := []error{}
-
 	if err := r.ensureControllers(ctx, name, export); err != nil {
 		errs = append(errs, err)
 	}
-
 	if export != nil {
 		if err := r.ensureServiceBindingConditionCopied(ctx, export); err != nil {
 			errs = append(errs, err)
@@ -129,6 +130,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	var errs []error
 	processedSchemas := make(map[string]bool)
 
+	var isClusterScoped bool
 	for _, res := range export.Spec.Resources {
 		name := res.Resource + "." + res.Group
 		// Fetch the APIResourceSchema
@@ -150,12 +152,21 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 			continue
 		}
 
+		// TODO: We need to have higher level structure for context tracking.
+		// Export -> schemas + claims.
+
 		// Start/update controller for this schema
 		if err := r.ensureControllerForSchema(ctx, export, schema); err != nil {
 			errs = append(errs, err)
 		}
+		isClusterScoped = schema.Spec.Scope == apiextensionsv1.ClusterScoped || schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope
 
 		processedSchemas[name] = true
+	}
+
+	// Ensure controller for permission claims
+	if err := r.ensureControllersForPermissionClaims(ctx, binding, isClusterScoped); err != nil {
+		errs = append(errs, err)
 	}
 
 	// Stop controllers for schemas that are no longer referenced
@@ -176,7 +187,98 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport, schema *kubebindv1alpha2.BoundSchema) error {
+func (r *reconciler) ensureControllersForPermissionClaims(
+	ctx context.Context,
+	binding *kubebindv1alpha2.APIServiceBinding,
+	isClusterScoped bool, // schema.Spec.Scope == apiextensionsv1.ClusterScoped || schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope
+) error {
+	logger := klog.FromContext(ctx)
+
+	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
+	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
+	consumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
+
+	// PermissionClaims sync controller
+	var claimControllers []func(context.Context, int)
+	for _, claim := range binding.Spec.PermissionClaims {
+		if claim.Resource == "configmaps" { // TODO(mjudeikis): Replace with static mapping of what is allowed.
+			claim.Versions = []string{"v1"}
+			claim.Group = ""
+		}
+		for _, version := range claim.Versions { // one per version (if multiple specified)
+			claimGVR := runtimeschema.GroupVersionResource{
+				Group:    claim.Group,
+				Version:  version,
+				Resource: claim.Resource,
+			}
+
+			var providerInf multinsinformer.GetterInformer
+			var err error
+			if isClusterScoped {
+				factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
+				factory.ForResource(claimGVR).Lister() // wire the GVR up in the informer factory
+				providerInf = multinsinformer.GetterInformerWrapper{
+					GVR:      claimGVR,
+					Delegate: factory,
+				}
+			} else {
+				providerInf, err = multinsinformer.NewDynamicMultiNamespaceInformer(
+					claimGVR,
+					r.providerNamespace,
+					r.providerConfig,
+					r.serviceNamespaceInformer,
+				)
+				if err != nil {
+					logger.Info("aborting", "error", err)
+					return err
+				}
+			}
+			claimedCtrl, err := claimedresources.NewController(
+				claimGVR,
+				claim,
+				r.providerNamespace,
+				r.consumerConfig,
+				r.providerConfig,
+				consumerInf.ForResource(claimGVR),
+				providerInf,
+				r.serviceNamespaceInformer,
+			)
+
+			if err != nil {
+				runtime.HandleError(err)
+				return nil //nothing we can do here
+			}
+			logger.Info("creating claim reconciler", "gvr", claimGVR)
+
+			claimControllers = append(claimControllers, func(ctx context.Context, i int) {
+				providerInf.Start(ctx)
+
+				providerSynced := providerInf.WaitForCacheSync(ctx.Done())
+				logger.V(2).Info("Synced informers", "provider", slices.Collect(maps.Keys(providerSynced)))
+
+				claimedCtrl.Start(ctx, i)
+			})
+		}
+	}
+	consumerInf.Start(ctx.Done())
+
+	go func() {
+		// to not block the main thread
+		consumerSynced := consumerInf.WaitForCacheSync(ctx.Done())
+		logger.V(2).Info("Synced informers", "consumer", slices.Collect(maps.Keys(consumerSynced)))
+
+		for _, ctrl := range claimControllers {
+			go ctrl(ctx, 1)
+		}
+	}()
+
+	return nil
+}
+
+func (r *reconciler) ensureControllerForSchema(
+	ctx context.Context,
+	export *kubebindv1alpha2.APIServiceExport,
+	schema *kubebindv1alpha2.BoundSchema) error {
 	logger := klog.FromContext(ctx)
 	key := schema.Name + "." + export.Name
 
@@ -288,10 +390,10 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 	go func() {
 		// to not block the main thread
 		consumerSynced := consumerInf.WaitForCacheSync(ctxWithCancel.Done())
-		logger.V(2).Info("Synced informers", "key", key, "consumer", consumerSynced)
+		logger.V(2).Info("Synced informers", "key", key, "consumer", slices.Collect(maps.Keys(consumerSynced)))
 
 		providerSynced := providerInf.WaitForCacheSync(ctxWithCancel.Done())
-		logger.V(2).Info("Synced informers", "key", key, "provider", providerSynced)
+		logger.V(2).Info("Synced informers", "key", key, "provider", slices.Collect(maps.Keys(providerSynced)))
 
 		go specCtrl.Start(ctxWithCancel, 1)
 		go statusCtrl.Start(ctxWithCancel, 1)
@@ -311,9 +413,6 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 }
 
 func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) error {
-	if export == nil {
-		return nil
-	}
 	var errs []error
 	allValid := true // assume all BoundAPIResourceSchemas are valid
 	for _, res := range export.Spec.Resources {

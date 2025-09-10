@@ -159,7 +159,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}
 
 	if provider.APIVersion != kubebindv1alpha2.GroupVersion {
-		return fmt.Errorf("unsupported binding provider version: %q", provider.APIVersion)
+		return fmt.Errorf("unsupported binding provider version: %q != %q", provider.APIVersion, kubebindv1alpha2.GroupVersion)
 	}
 
 	ns, err := kubeClient.CoreV1().Namespaces().Get(ctx, "kube-bind", metav1.GetOptions{})

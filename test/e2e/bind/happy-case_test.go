@@ -65,7 +65,7 @@ func testHappyCase(t *testing.T, resourceScope apiextensionsv1.ResourceScope, in
 	t.Logf("Starting backend with random port")
 	addr, _ := framework.StartBackend(t, providerConfig, "--kubeconfig="+providerKubeconfig, "--listen-address=:0", "--consumer-scope="+string(informerScope))
 
-	t.Logf("Creating APIResourceSchemas on provider side")
+	t.Logf("Creating CRD on provider side")
 	providerfixtures.Bootstrap(t, framework.DiscoveryClient(t, providerConfig), framework.DynamicClient(t, providerConfig), nil)
 
 	t.Logf("Creating consumer workspace and starting konnector")

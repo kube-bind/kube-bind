@@ -35,12 +35,11 @@ import (
 type reconciler struct {
 	consumerSecretRefKey, providerNamespace string
 
-	reconcileServiceBinding   func(binding *kubebindv1alpha2.APIServiceBinding) bool
-	getServiceExport          func(name string) (*kubebindv1alpha2.APIServiceExport, error)
-	getServiceBinding         func(name string) (*kubebindv1alpha2.APIServiceBinding, error)
-	getClusterBinding         func(ctx context.Context) (*kubebindv1alpha2.ClusterBinding, error)
-	getAPIResourceSchema      func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error)
-	getBoundAPIResourceSchema func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error)
+	reconcileServiceBinding func(binding *kubebindv1alpha2.APIServiceBinding) bool
+	getServiceExport        func(name string) (*kubebindv1alpha2.APIServiceExport, error)
+	getServiceBinding       func(name string) (*kubebindv1alpha2.APIServiceBinding, error)
+	getClusterBinding       func(ctx context.Context) (*kubebindv1alpha2.ClusterBinding, error)
+	getBoundSchema          func(ctx context.Context, name string) (*kubebindv1alpha2.BoundSchema, error)
 
 	updateServiceExportStatus func(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error)
 
@@ -117,14 +116,14 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 	}
 
 	// Get all APIResourceSchema objects referenced by the export
-	schemas, err := r.getAPIResourceSchemasFromExport(ctx, export)
+	schemas, err := r.getSchemasFromExport(ctx, export)
 	if err != nil {
 		conditions.MarkFalse(
 			binding,
 			kubebindv1alpha2.APIServiceBindingConditionConnected,
-			"APIResourceSchemaFetchFailed",
+			"BoundSchemaFetchFailed",
 			conditionsapi.ConditionSeverityError,
-			"Failed to fetch APIResourceSchema objects: %s",
+			"Failed to fetch BoundSchema objects: %s",
 			err,
 		)
 		// We dont have schema - try again. Might be a race on provider side.
@@ -137,7 +136,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 			errs = append(errs, err)
 		}
 
-		if err := r.ensureCRDsFromAPIResourceSchema(ctx, binding, schema); err != nil {
+		if err := r.ensureCRDsFromBoundSchema(ctx, binding, schema); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -152,17 +151,17 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 }
 
 func (r *reconciler) referenceBoundAPIResourceSchema(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding, name string) error {
-	boundSchema, err := r.getBoundAPIResourceSchema(ctx, name)
+	boundSchema, err := r.getBoundSchema(ctx, name)
 	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("failed to get BoundAPIResourceSchema %s: %w", name, err)
+		return fmt.Errorf("failed to get BoundSchema %s: %w", name, err)
 	}
 
 	if boundSchema == nil {
 		return nil
 	}
 
-	group := boundSchema.Spec.APIResourceSchemaCRDSpec.Group
-	resource := boundSchema.Spec.APIResourceSchemaCRDSpec.Names.Plural
+	group := boundSchema.Spec.Group
+	resource := boundSchema.Spec.Names.Plural
 
 	if len(binding.Status.BoundSchemas) > 0 {
 		for _, ref := range binding.Status.BoundSchemas {
@@ -187,20 +186,9 @@ func (r *reconciler) referenceBoundAPIResourceSchema(ctx context.Context, bindin
 	return nil
 }
 
-func (r *reconciler) ensureCRDsFromAPIResourceSchema(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding, schema *kubebindv1alpha2.APIResourceSchema) error {
+func (r *reconciler) ensureCRDsFromBoundSchema(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding, schema *kubebindv1alpha2.BoundSchema) error {
 	var errs []error
-	crd, err := kubebindhelpers.APIResourceSchemaToCRD(schema)
-	if err != nil {
-		conditions.MarkFalse(
-			binding,
-			kubebindv1alpha2.APIServiceBindingConditionConnected,
-			"APIResourceSchemaInvalid",
-			conditionsapi.ConditionSeverityError,
-			"APIResourceSchema %s is invalid: %s",
-			binding.Name, err,
-		)
-		return nil
-	}
+	crd := kubebindhelpers.BoundSchemaToCRD(schema)
 
 	newReference := metav1.OwnerReference{
 		APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
@@ -275,19 +263,16 @@ func (r *reconciler) ensurePrettyName(ctx context.Context, binding *kubebindv1al
 	return nil
 }
 
-func (r *reconciler) getAPIResourceSchemasFromExport(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) ([]*kubebindv1alpha2.APIResourceSchema, error) {
-	schemas := make([]*kubebindv1alpha2.APIResourceSchema, 0, len(export.Spec.Resources))
+// getSchemasFromExport will return all schemas, based on export we are dealing with.
+func (r *reconciler) getSchemasFromExport(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) ([]*kubebindv1alpha2.BoundSchema, error) {
+	schemas := make([]*kubebindv1alpha2.BoundSchema, 0, len(export.Spec.Resources))
 
 	for _, ref := range export.Spec.Resources {
-		if ref.Type != "APIResourceSchema" {
-			return nil, fmt.Errorf("unsupported resource type %q in APIServiceExport %s",
-				ref.Type, export.Name)
-		}
-
-		schema, err := r.getAPIResourceSchema(ctx, ref.Name)
+		name := ref.Resource + "." + ref.Group
+		schema, err := r.getBoundSchema(ctx, name)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get APIResourceSchema %s: %w",
-				ref.Name, err)
+			return nil, fmt.Errorf("failed to get Schema %s: %w",
+				name, err)
 		}
 
 		schemas = append(schemas, schema)

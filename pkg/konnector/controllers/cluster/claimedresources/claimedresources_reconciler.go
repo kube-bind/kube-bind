@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 
-	"github.com/davecgh/go-spew/spew"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 

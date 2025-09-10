@@ -99,12 +99,12 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 				Verbs:         []string{"*"}, // claim by resourceName or reference (in the future gives us *)
 				ResourceNames: resourceNames,
 			})
-			permissions = append(permissions,
-				rbacv1.PolicyRule{
-					APIGroups: []string{claim.Group},
-					Resources: []string{claim.Resource},
-					Verbs:     []string{"watch", "list", "create"}, // We always need watch on <resource> without resourceName. so informers would start.
-				})
+			permissions = append(permissions, rbacv1.PolicyRule{
+				APIGroups: []string{claim.Group},
+				Resources: []string{claim.Resource},
+				// We need list and watch for informers to be able to start. And create to create initial object.
+				Verbs: []string{"watch", "list", "create"},
+			})
 
 		}
 		if c.scope == kubebindv1alpha2.ClusterScope {

@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250910-2eb8a3f.apiserviceexports.kube-bind.io
+  name: v250910-d3d69cb.apiserviceexports.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -583,53 +583,6 @@ spec:
         status:
           description: status contains reconciliation information for the resource.
           properties:
-            acceptedNames:
-              description: |-
-                acceptedNames are the names that are actually being used to serve discovery.
-                They may be different than the names in spec.
-              properties:
-                categories:
-                  description: |-
-                    categories is a list of grouped resources this custom resource belongs to (e.g. 'all').
-                    This is published in API discovery documents, and used by clients to support invocations like
-                    `kubectl get all`.
-                  items:
-                    type: string
-                  type: array
-                  x-kubernetes-list-type: atomic
-                kind:
-                  description: |-
-                    kind is the serialized kind of the resource. It is normally CamelCase and singular.
-                    Custom resource instances will use this value as the `kind` attribute in API calls.
-                  type: string
-                listKind:
-                  description: listKind is the serialized kind of the list for this
-                    resource. Defaults to "`kind`List".
-                  type: string
-                plural:
-                  description: |-
-                    plural is the plural name of the resource to serve.
-                    The custom resources are served under `/apis/<group>/<version>/.../<plural>`.
-                    Must match the name of the CustomResourceDefinition (in the form `<names.plural>.<group>`).
-                    Must be all lowercase.
-                  type: string
-                shortNames:
-                  description: |-
-                    shortNames are short names for the resource, exposed in API discovery documents,
-                    and used by clients to support invocations like `kubectl get <shortname>`.
-                    It must be all lowercase.
-                  items:
-                    type: string
-                  type: array
-                  x-kubernetes-list-type: atomic
-                singular:
-                  description: singular is the singular name of the resource. It must
-                    be all lowercase. Defaults to lowercased `kind`.
-                  type: string
-              required:
-              - kind
-              - plural
-              type: object
             conditions:
               description: |-
                 conditions is a list of conditions that apply to the APIServiceExport. It is
@@ -676,17 +629,6 @@ spec:
                 - status
                 - type
                 type: object
-              type: array
-            storedVersions:
-              description: |-
-                storedVersions lists all versions of CustomResources that were ever persisted. Tracking these
-                versions allows a migration path for stored versions in etcd. The field is mutable
-                so a migration controller can finish a migration to another version (ensuring
-                no old objects are left in storage), and then remove the rest of the
-                versions from this list.
-                Versions may not be removed from `spec.versions` while they exist in this list.
-              items:
-                type: string
               type: array
           type: object
       required:

@@ -24,7 +24,6 @@ import (
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -34,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kube-bind/kube-bind/backend/kubernetes/resources"
+	claimableresources "github.com/kube-bind/kube-bind/pkg/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
@@ -53,12 +53,19 @@ type reconciler struct {
 	deleteServiceExportRequest func(ctx context.Context, cl client.Client, namespace, name string) error
 }
 
-func (r *reconciler) reconcile(ctx context.Context, mapper meta.RESTMapper, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	//if err := r.checkPermissionClaims(ctx, req); err != nil {
+	//	conditions.SetSummary(req)
+	//	return err
+	//}
+
 	if err := r.ensureBoundSchemas(ctx, cl, cache, req); err != nil {
+		conditions.SetSummary(req)
 		return err
 	}
 
 	if err := r.ensureExports(ctx, cl, cache, req); err != nil {
+		conditions.SetSummary(req)
 		return err
 	}
 
@@ -227,6 +234,37 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 	if time.Since(req.CreationTimestamp.Time) > 10*time.Minute {
 		logger.Info("Deleting service binding request %s/%s", req.Namespace, req.Name, "reason", "timeout", "age", time.Since(req.CreationTimestamp.Time))
 		return r.deleteServiceExportRequest(ctx, cl, req.Namespace, req.Name)
+	}
+
+	return nil
+}
+
+func (r *reconciler) checkPermissionClaims(ctx context.Context, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	var errors []string
+	for _, claim := range req.Spec.PermissionClaims {
+		isClaimable := false
+		for _, claimableAPI := range claimableresources.ClaimableAPIs {
+			if claim.Group == claimableAPI.GroupVersion.Group && claim.Resource == claimableAPI.Names.Plural {
+				isClaimable = true
+				break
+			}
+		}
+		if !isClaimable {
+			errors = append(errors, fmt.Sprintf("%s/%s", claim.Group, claim.Resource))
+		}
+	}
+
+	if len(errors) > 0 {
+		conditions.MarkFalse(
+			req,
+			kubebindv1alpha2.APIServiceExportConditionPermissionClaim,
+			"PermissionClaimsInvalid",
+			conditionsapi.ConditionSeverityError,
+			"PermissionClaims %v are invalid: %v",
+			req.Spec.PermissionClaims,
+			errors,
+		)
+		return fmt.Errorf("permission claims are invalid: %v", errors)
 	}
 
 	return nil

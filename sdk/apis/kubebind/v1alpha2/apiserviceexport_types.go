@@ -37,6 +37,9 @@ const (
 	// APIServiceExportConditionConsumerInSync is set to true when the APIServiceExport's
 	// schema is applied to the consumer cluster.
 	APIServiceExportConditionConsumerInSync conditionsapi.ConditionType = "ConsumerInSync"
+
+	// APIServiceExportConditionPermissionClaim describes status of the permission claim, requested in the APIServiceExport and APIServiceExportRequest.
+	APIServiceExportConditionPermissionClaim conditionsapi.ConditionType = "PermissionClaim"
 )
 
 // APIServiceExport specifies the resource to be exported. It is mostly a CRD:

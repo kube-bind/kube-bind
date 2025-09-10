@@ -196,7 +196,6 @@ func (r *APIServiceExportRequestReconciler) Reconcile(ctx context.Context, req m
 
 	client := cl.GetClient()
 	cache := cl.GetCache()
-	mapper := cl.GetRESTMapper()
 
 	// Fetch the APIServiceExportRequest instance
 	apiServiceExportRequest := &kubebindv1alpha2.APIServiceExportRequest{}
@@ -214,7 +213,7 @@ func (r *APIServiceExportRequestReconciler) Reconcile(ctx context.Context, req m
 	original := apiServiceExportRequest.DeepCopy()
 
 	// Run the reconciliation logic
-	if err := r.reconciler.reconcile(ctx, mapper, client, cache, apiServiceExportRequest); err != nil {
+	if err := r.reconciler.reconcile(ctx, client, cache, apiServiceExportRequest); err != nil {
 		logger.Error(err, "Failed to reconcile APIServiceExportRequest")
 		return ctrl.Result{}, err
 	}

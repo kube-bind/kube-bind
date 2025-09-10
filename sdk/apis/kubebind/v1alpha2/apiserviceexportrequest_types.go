@@ -104,6 +104,10 @@ type APIServiceExportRequestSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceExportRequestResource `json:"resources"`
+
+	// PermissionClaims records decisions about permission claims requested by the service provider.
+	// Access is granted per GroupResource.
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 type APIServiceExportRequestResource struct {
@@ -112,6 +116,58 @@ type APIServiceExportRequestResource struct {
 	// versions is a list of versions that should be exported. If this is empty
 	// a sensible default is chosen by the service provider.
 	Versions []string `json:"versions,omitempty"`
+}
+
+// permissionClaim selects objects of a GVR that a service provider may
+// request and that a consumer may accept and allow the service provider access to.
+type PermissionClaim struct {
+	GroupResource `json:",inline"`
+
+	// versions is a list of versions that should be exported. If this is empty
+	// a sensible default is chosen by the service provider.
+	Versions []string `json:"versions,omitempty"`
+
+	// Verbs is a list of verbs that are required by the provider to operate.
+	Verbs []string `json:"verbs,omitempty"`
+
+	// Selector is a resource selector that selects objects of a GVR.
+	Selector Selector `json:"selector,omitempty"`
+}
+
+// Owner is the owner of the resource.
+type Owner string
+
+const (
+	// OwnerProvider indicates that the resource is owned by the provider.
+	OwnerProvider Owner = "provider"
+	// OwnerConsumer indicates that the resource is owned by the consumer.
+	OwnerConsumer Owner = "consumer"
+)
+
+// Selector is a resource selector that selects objects of a GVR.
+// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Selector reference must not be changed"
+// +kubebuilder:validation:XValidation:rule="(self.all && !has(self.resourceNames) && !has(self.labelSelector)) || (!self.all && ((has(self.resourceNames) && size(self.resourceNames) > 0) != (has(self.labelSelector) && size(self.labelSelector) > 0)))",message="exactly one of \"all\", \"resourceNames\", or \"labelSelector\" must be set"
+type Selector struct {
+	// all claims all resources for the given group/resource.
+	// This is mutually exclusive with resourceSelector.
+	// +optional
+	All bool `json:"all,omitempty"`
+
+	// resourceNames is a list of resource names to select.
+	// +optional
+	ResourceNames []SelectorResourceName `json:"resourceNames,omitempty"`
+
+	// LabelSelector is a label selector that selects objects of a GVR.
+	// +optional
+	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
+}
+
+// SelectorResourceName identifies a specific resource by name.
+// If backend operates at the namespace level isolation, namespace will be included.
+type SelectorResourceName struct {
+	// Name is the name of the resource.
+	// +kubebuilder:validation:Required
+	Name string `json:"name,omitempty"`
 }
 
 // GroupResource identifies a resource.

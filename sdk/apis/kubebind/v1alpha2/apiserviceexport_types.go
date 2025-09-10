@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha2
 
 import (
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
@@ -86,6 +85,10 @@ type APIServiceExportSpec struct {
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceExportResource `json:"resources"`
 
+	// PermissionClaims records decisions about permission claims requested by the service provider.
+	// Access is granted per GroupResource.
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
+
 	// informerScope is the scope of the APIServiceExport. It can be either Cluster or Namespace.
 	//
 	// Cluster:    The konnector has permission to watch all namespaces at once and cluster-scoped resources.
@@ -122,20 +125,6 @@ const (
 // APIServiceExportStatus stores status information about a APIServiceExport. It
 // reflects the status of the CRD of the consumer cluster.
 type APIServiceExportStatus struct {
-	// acceptedNames are the names that are actually being used to serve discovery.
-	// They may be different than the names in spec.
-	// +optional
-	AcceptedNames apiextensionsv1.CustomResourceDefinitionNames `json:"acceptedNames"`
-
-	// storedVersions lists all versions of CustomResources that were ever persisted. Tracking these
-	// versions allows a migration path for stored versions in etcd. The field is mutable
-	// so a migration controller can finish a migration to another version (ensuring
-	// no old objects are left in storage), and then remove the rest of the
-	// versions from this list.
-	// Versions may not be removed from `spec.versions` while they exist in this list.
-	// +optional
-	StoredVersions []string `json:"storedVersions"`
-
 	// conditions is a list of conditions that apply to the APIServiceExport. It is
 	// updated by the konnector on the consumer cluster.
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`

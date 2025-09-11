@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -118,6 +120,13 @@ type APIServiceExportRequestResource struct {
 	Versions []string `json:"versions,omitempty"`
 }
 
+// ResourceGroupName returns the group name of the resource.
+//
+// Important: If you change this, change one for BoundSchema too.
+func (r APIServiceExportRequestResource) ResourceGroupName() string {
+	return fmt.Sprintf("%s.%s", r.Resource, r.Group)
+}
+
 // permissionClaim selects objects of a GVR that a service provider may
 // request and that a consumer may accept and allow the service provider access to.
 type PermissionClaim struct {
@@ -145,8 +154,6 @@ const (
 )
 
 // Selector is a resource selector that selects objects of a GVR.
-// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Selector reference must not be changed"
-// +kubebuilder:validation:XValidation:rule="(self.all && !has(self.resourceNames) && !has(self.labelSelector)) || (!self.all && ((has(self.resourceNames) && size(self.resourceNames) > 0) != (has(self.labelSelector) && size(self.labelSelector) > 0)))",message="exactly one of \"all\", \"resourceNames\", or \"labelSelector\" must be set"
 type Selector struct {
 	// all claims all resources for the given group/resource.
 	// This is mutually exclusive with resourceSelector.

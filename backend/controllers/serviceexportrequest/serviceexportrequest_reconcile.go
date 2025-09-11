@@ -53,11 +53,20 @@ type reconciler struct {
 }
 
 func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	// We must ensure schemas are created in form of bound schemas first for validation.
+	// Worst case scenario if validation fails, we will reuse schemas for same consumer once issues are fixed.
 	if err := r.ensureBoundSchemas(ctx, cl, cache, req); err != nil {
+		conditions.SetSummary(req)
+		return err
+	}
+
+	if err := r.validate(ctx, cl, req); err != nil {
+		conditions.SetSummary(req)
 		return err
 	}
 
 	if err := r.ensureExports(ctx, cl, cache, req); err != nil {
+		conditions.SetSummary(req)
 		return err
 	}
 
@@ -66,63 +75,75 @@ func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cach
 	return nil
 }
 
+// exportedSchemas are the schemas exported by the current backend.
+// Keys are resource.version.group string for quick resolve.
+type exportedSchemas map[string]*kubebindv1alpha2.BoundSchema
+
+// getExportedSchemas will list all schemas, exported by current backend.
+// Important: getExportedSchemas is using client.Client to list resources, not cache.
+// This is due to fact we use dynamic client and unstructured.Unstructured to get schemas and it
+// does not quite work with dynamic cache informers:
+// failed to get informer for *unstructured.UnstructuredList apis.kcp.io/v1alpha1, Kind=APIResourceSchemaList: failed to find newly started informer for apis.kcp.io/v1alpha1, Kind=APIResourceSchema"}
+func (r *reconciler) getExportedSchemas(ctx context.Context, cl client.Client) (exportedSchemas, error) {
+	parts := strings.SplitN(r.schemaSource, ".", 3)
+	if len(parts) != 3 { // We check this in validation, but just in case.
+		return nil, fmt.Errorf("invalid schema source: %q", r.schemaSource)
+	}
+
+	gvk := schema.GroupVersionKind{
+		Kind:    parts[0],
+		Version: parts[1],
+		Group:   parts[2],
+	}
+
+	// Ensure we have the List kind
+	listGVK := gvk
+	if !strings.HasSuffix(listGVK.Kind, "List") {
+		listGVK.Kind += "List"
+	}
+
+	list := &unstructured.UnstructuredList{}
+	list.SetGroupVersionKind(listGVK)
+
+	// TODO(mjudeikis): This is hardcoded here and in handlers.go for now.
+	labelSelector := labels.Set{
+		resources.ExportedCRDsLabel: "true",
+	}
+
+	listOpts := []client.ListOption{}
+	listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelector.AsSelector()})
+
+	if err := cl.List(ctx, list, listOpts...); err != nil {
+		return nil, err
+	}
+
+	var boundSchemas exportedSchemas = make(map[string]*kubebindv1alpha2.BoundSchema, len(list.Items))
+	for _, item := range list.Items {
+		boundSchema, err := helpers.UnstructuredToBoundSchema(item)
+		if err != nil {
+			return nil, err
+		}
+		boundSchemas[boundSchema.ResourceGroupName()] = boundSchema
+	}
+
+	return boundSchemas, nil
+}
+
 func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	exportedSchemas, err := r.getExportedSchemas(ctx, cl)
+	if err != nil {
+		return err
+	}
+
 	// Ensure all bound schemas exist
 	for _, res := range req.Spec.Resources {
 		if len(res.Versions) == 0 {
 			continue
 		}
 
-		parts := strings.SplitN(r.schemaSource, ".", 3)
-		if len(parts) != 3 { // We check this in validation, but just in case.
-			return fmt.Errorf("invalid schema source: %q", r.schemaSource)
-		}
-
-		gvk := schema.GroupVersionKind{
-			Kind:    parts[0],
-			Version: parts[1],
-			Group:   parts[2],
-		}
-
-		// Ensure we have the List kind
-		listGVK := gvk
-		if !strings.HasSuffix(listGVK.Kind, "List") {
-			listGVK.Kind += "List"
-		}
-
-		list := &unstructured.UnstructuredList{}
-		list.SetGroupVersionKind(listGVK)
-
-		// TODO(mjudeikis): This is hardcoded here and in handlers.go for now.
-		labelSelector := labels.Set{
-			resources.ExportedCRDsLabel: "true",
-		}
-
-		listOpts := []client.ListOption{}
-		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelector.AsSelector()})
-
-		if err := cl.List(ctx, list, listOpts...); err != nil {
-			return err
-		}
-
-		for _, item := range list.Items {
-			spec := item.Object["spec"]
-			if spec == nil {
-				return fmt.Errorf("invalid schema %s/%s: no spec found", item.GetNamespace(), item.GetName())
-			}
-			group := spec.(map[string]interface{})["group"]
-			names := spec.(map[string]interface{})["names"]
-			if group == nil || names == nil {
-				return fmt.Errorf("invalid schema %s/%s: no group or names found", item.GetNamespace(), item.GetName())
-			}
-			plural := names.(map[string]interface{})["plural"]
-
-			if group == res.Group && plural == res.Resource {
-				boundSchema, err := helpers.UnstructuredToBoundSchema(item)
-				if err != nil {
-					return err
-				}
-				boundSchema.Name = res.Resource + "." + res.Group
+		for _, boundSchema := range exportedSchemas {
+			if boundSchema.Spec.Group == res.Group && boundSchema.Spec.Names.Plural == res.Resource {
+				boundSchema.Name = res.ResourceGroupName()
 				boundSchema.Namespace = req.Namespace
 				boundSchema.Spec.InformerScope = r.informerScope
 				boundSchema.ResourceVersion = ""
@@ -154,7 +175,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 	var scope apiextensionsv1.ResourceScope
 	if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhasePending {
 		for _, res := range req.Spec.Resources {
-			name := res.Resource + "." + res.Group
+			name := res.ResourceGroupName()
 			boundSchema, err := r.getBoundSchema(ctx, cache, req.Namespace, name)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
@@ -225,6 +246,62 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 	if time.Since(req.CreationTimestamp.Time) > 10*time.Minute {
 		logger.Info("Deleting service binding request %s/%s", req.Namespace, req.Name, "reason", "timeout", "age", time.Since(req.CreationTimestamp.Time))
 		return r.deleteServiceExportRequest(ctx, cl, req.Namespace, req.Name)
+	}
+
+	return nil
+}
+
+// Validate validates if the APIServiceExportRequest is in a valid state.
+// Currently it validates if all requested schemas are of the same scope and
+// if claimable apis are allowed and valid.
+func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	exportedSchemas, err := r.getExportedSchemas(ctx, cl)
+	if err != nil {
+		return err
+	}
+
+	if len(exportedSchemas) == 0 {
+		conditions.MarkFalse(
+			req,
+			kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
+			"SchemaNotFound",
+			conditionsapi.ConditionSeverityError,
+			"SchemaNotFound not found",
+		)
+		return fmt.Errorf("no exported schemas found")
+	}
+
+	var scopes []apiextensionsv1.ResourceScope
+	for _, res := range req.Spec.Resources {
+		boundSchema, ok := exportedSchemas[res.ResourceGroupName()]
+		if !ok {
+			conditions.MarkFalse(
+				req,
+				kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
+				"SchemaNotFound",
+				conditionsapi.ConditionSeverityError,
+				"Schema %s not found",
+				res.ResourceGroupName(),
+			)
+			return fmt.Errorf("schema %s not found", res.ResourceGroupName())
+		}
+		scopes = append(scopes, boundSchema.Spec.Scope)
+	}
+
+	if len(scopes) > 1 {
+		first := scopes[0]
+		for _, scope := range scopes[1:] {
+			if scope != first {
+				conditions.MarkFalse(req,
+					kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
+					"DifferentScopes",
+					conditionsapi.ConditionSeverityError,
+					"Different scopes found: %v",
+					scopes,
+				)
+				return fmt.Errorf("different scopes found for claimed resources: %v", scopes)
+			}
+		}
 	}
 
 	return nil

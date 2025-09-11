@@ -151,8 +151,7 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, client client.Cl
 	}
 	for _, export := range exports {
 		for _, res := range export.Spec.Resources {
-			name := res.Resource + "." + res.Group
-			schema, err := r.getBoundSchema(ctx, cache, clusterBinding.Namespace, name)
+			schema, err := r.getBoundSchema(ctx, cache, clusterBinding.Namespace, res.ResourceGroupName())
 			if err != nil {
 				return fmt.Errorf("failed to get BoundSchema %w", err)
 			}

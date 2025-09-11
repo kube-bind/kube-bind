@@ -268,11 +268,9 @@ func (r *reconciler) getSchemasFromExport(ctx context.Context, export *kubebindv
 	schemas := make([]*kubebindv1alpha2.BoundSchema, 0, len(export.Spec.Resources))
 
 	for _, ref := range export.Spec.Resources {
-		name := ref.Resource + "." + ref.Group
-		schema, err := r.getBoundSchema(ctx, name)
+		schema, err := r.getBoundSchema(ctx, ref.ResourceGroupName())
 		if err != nil {
-			return nil, fmt.Errorf("failed to get Schema %s: %w",
-				name, err)
+			return nil, fmt.Errorf("failed to get Schema %s: %w", ref.ResourceGroupName(), err)
 		}
 
 		schemas = append(schemas, schema)

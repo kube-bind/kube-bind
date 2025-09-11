@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -137,7 +136,6 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string)
 
 		candidate := candidateFromOwnerObj(consumerNS, providerObj)
 		current := candidateFromOwnerObj(consumerNS, consumerObj)
-		spew.Dump(candidate, current)
 		if !equality.Semantic.DeepEqual(candidate, current) {
 			logger.Info("Updating downstream object data", "downstreamNamespace", consumerNS, "downstreamName", consumerObj.GetName())
 			if _, err := r.updateConsumerObject(ctx, candidate); err != nil {

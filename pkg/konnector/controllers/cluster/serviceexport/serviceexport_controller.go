@@ -122,6 +122,10 @@ func NewController(
 		indexers.ServiceNamespaceByNamespace: indexers.IndexServiceNamespaceByNamespace,
 	})
 
+	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceExportByCustomResourceDefinition: indexers.IndexServiceExportByCustomResourceDefinition,
+	})
+
 	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj any) {
 			c.enqueueServiceExport(logger, obj)
@@ -153,6 +157,7 @@ type controller struct {
 	serviceNamespaceIndexer cache.Indexer
 
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister]
+	serviceExportInformer  dynamic.Informer[bindlisters.APIServiceExportLister]
 	crdInformer            dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister]
 
 	reconciler
@@ -184,17 +189,30 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj any) {
 }
 
 func (c *controller) enqueueCRD(logger klog.Logger, obj any) {
-	crdKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	name, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	// TODO(IMPORTANT!!!!!): This is wrong, this should be index to resolve APIServiceExports to CRDs. Names of crds does not match bindings.
+	exports, err := c.serviceExportIndexer.ByIndex(indexers.ServiceExportByCustomResourceDefinition, name)
+	if err != nil && !errors.IsNotFound(err) {
+		runtime.HandleError(err)
+		return
+	} else if errors.IsNotFound(err) {
+		return // skip this secret
+	}
 
-	key := c.providerNamespace + "/" + crdKey
-	logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceExport", "APIServiceExportKey", crdKey)
-	c.queue.Add(key)
+	for _, obj := range exports {
+		export := obj.(*kubebindv1alpha2.APIServiceExport)
+		key, err := cache.MetaNamespaceKeyFunc(export)
+		if err != nil {
+			runtime.HandleError(err)
+			return
+		}
+		logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "CustomResourceDefinition", "name", name)
+		c.queue.Add(key)
+	}
 }
 
 // Start starts the controller, which stops when ctx.Done() is closed.

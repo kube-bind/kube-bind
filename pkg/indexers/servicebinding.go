@@ -17,12 +17,16 @@ limitations under the License.
 package indexers
 
 import (
+	"fmt"
+
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 const (
 	//nolint:gosec
 	ByServiceBindingKubeconfigSecret = "byKubeconfigSecret"
+	//nolint:gosec
+	ByAPIServiceBindingCRD = "byCRD"
 )
 
 func IndexServiceBindingByKubeconfigSecret(obj any) ([]string, error) {
@@ -36,4 +40,18 @@ func IndexServiceBindingByKubeconfigSecret(obj any) ([]string, error) {
 func ByServiceBindingKubeconfigSecretKey(binding *kubebindv1alpha2.APIServiceBinding) string {
 	ref := &binding.Spec.KubeconfigSecretRef
 	return ref.Namespace + "/" + ref.Name
+}
+
+func IndexAPIServiceBindingByCRD(obj any) ([]string, error) {
+	binding, ok := obj.(*kubebindv1alpha2.APIServiceBinding)
+	if !ok {
+		return nil, nil
+	}
+
+	keys := make([]string, 0, len(binding.Status.BoundSchemas))
+	for _, bound := range binding.Status.BoundSchemas {
+		keys = append(keys, fmt.Sprintf("%s.%s", bound.Resource, bound.Group))
+	}
+
+	return keys, nil
 }

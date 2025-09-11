@@ -190,6 +190,8 @@ func (c *controller) enqueueCRD(logger klog.Logger, obj any) {
 		return
 	}
 
+	// TODO(IMPORTANT!!!!!): This is wrong, this should be index to resolve APIServiceExports to CRDs. Names of crds does not match bindings.
+
 	key := c.providerNamespace + "/" + crdKey
 	logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceExport", "APIServiceExportKey", crdKey)
 	c.queue.Add(key)

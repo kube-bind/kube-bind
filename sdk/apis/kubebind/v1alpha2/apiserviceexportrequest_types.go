@@ -132,13 +132,6 @@ func (r APIServiceExportRequestResource) ResourceGroupName() string {
 type PermissionClaim struct {
 	GroupResource `json:",inline"`
 
-	// versions is a list of versions that should be exported. If this is empty
-	// a sensible default is chosen by the service provider.
-	Versions []string `json:"versions,omitempty"`
-
-	// Verbs is a list of verbs that are required by the provider to operate.
-	Verbs []string `json:"verbs,omitempty"`
-
 	// Selector is a resource selector that selects objects of a GVR.
 	Selector Selector `json:"selector,omitempty"`
 }
@@ -159,10 +152,6 @@ type Selector struct {
 	// This is mutually exclusive with resourceSelector.
 	// +optional
 	All bool `json:"all,omitempty"`
-
-	// resourceNames is a list of resource names to select.
-	// +optional
-	ResourceNames []SelectorResourceName `json:"resourceNames,omitempty"`
 
 	// LabelSelector is a label selector that selects objects of a GVR.
 	// +optional

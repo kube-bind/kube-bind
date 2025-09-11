@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250910-b5c68ea.apiserviceexportrequests.kube-bind.io
+  name: v250911-d9cca98.apiserviceexportrequests.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -296,35 +296,7 @@ spec:
                             type: object
                         type: object
                         x-kubernetes-map-type: atomic
-                      resourceNames:
-                        description: resourceNames is a list of resource names to
-                          select.
-                        items:
-                          description: |-
-                            SelectorResourceName identifies a specific resource by name.
-                            If backend operates at the namespace level isolation, namespace will be included.
-                          properties:
-                            name:
-                              description: Name is the name of the resource.
-                              type: string
-                          required:
-                          - name
-                          type: object
-                        type: array
                     type: object
-                  verbs:
-                    description: Verbs is a list of verbs that are required by the
-                      provider to operate.
-                    items:
-                      type: string
-                    type: array
-                  versions:
-                    description: |-
-                      versions is a list of versions that should be exported. If this is empty
-                      a sensible default is chosen by the service provider.
-                    items:
-                      type: string
-                    type: array
                 required:
                 - resource
                 type: object

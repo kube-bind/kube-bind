@@ -19,6 +19,8 @@ package serviceexport
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -35,6 +37,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/claimedresources"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/spec"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/status"
@@ -128,6 +131,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	// Process each resource referenced by the export
 	var errs []error
 	processedSchemas := make(map[string]bool)
+	var isClusterScoped bool
 
 	for _, res := range export.Spec.Resources {
 		name := res.Resource + "." + res.Group
@@ -156,6 +160,12 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 		}
 
 		processedSchemas[name] = true
+		isClusterScoped = schema.Spec.Scope == apiextensionsv1.ClusterScoped || schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope
+	}
+
+	// Ensure controller for permission claims
+	if err := r.ensureControllersForPermissionClaims(ctx, binding, isClusterScoped); err != nil {
+		errs = append(errs, err)
 	}
 
 	// Stop controllers for schemas that are no longer referenced
@@ -288,10 +298,10 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 	go func() {
 		// to not block the main thread
 		consumerSynced := consumerInf.WaitForCacheSync(ctxWithCancel.Done())
-		logger.V(2).Info("Synced informers", "key", key, "consumer", consumerSynced)
+		logger.V(2).Info("Synced informers", "key", key, "consumer", slices.Collect(maps.Keys(consumerSynced)))
 
 		providerSynced := providerInf.WaitForCacheSync(ctxWithCancel.Done())
-		logger.V(2).Info("Synced informers", "key", key, "provider", providerSynced)
+		logger.V(2).Info("Synced informers", "key", key, "provider", slices.Collect(maps.Keys(providerSynced)))
 
 		go specCtrl.Start(ctxWithCancel, 1)
 		go statusCtrl.Start(ctxWithCancel, 1)
@@ -306,6 +316,109 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 		generation: schema.Generation,
 		cancel:     cancel,
 	}
+
+	return nil
+}
+
+func (r *reconciler) ensureControllersForPermissionClaims(
+	ctx context.Context,
+	binding *kubebindv1alpha2.APIServiceBinding,
+	isClusterScoped bool, // schema.Spec.Scope == apiextensionsv1.ClusterScoped || schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope
+) error {
+	logger := klog.FromContext(ctx)
+
+	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
+	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
+
+	// We will create a new filtered informer factory for each claim that has a label selector.
+	// We still need a default one for claims without a selector.
+	defaultConsumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
+
+	// PermissionClaims sync controller
+	var claimControllers []func(context.Context, int)
+	for _, claim := range binding.Spec.PermissionClaims {
+		claimGVR, err := kubebindv1alpha2.ResolveClaimableAPI(claim)
+		if err != nil {
+			logger.Info("skipping unsupported claim", "claim", claim, "error", err)
+			continue
+		}
+		// Define a function to tweak list options based on the claim's LabelSelector.
+		tweakListOptions := func(options *metav1.ListOptions) {
+			if claim.Selector.LabelSelector != nil {
+				// Convert the LabelSelector struct to a string that the API server understands.
+				selector, err := metav1.LabelSelectorAsSelector(claim.Selector.LabelSelector)
+				if err == nil {
+					options.LabelSelector = selector.String()
+					logger.V(2).Info("Applying label selector to informer", "selector", options.LabelSelector, "resource", claim.Resource)
+				} else {
+					logger.Error(err, "failed to parse label selector", "selector", claim.Selector.LabelSelector)
+				}
+			}
+		}
+
+		var providerInf multinsinformer.GetterInformer
+		if isClusterScoped {
+			factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
+			factory.ForResource(claimGVR).Lister() // wire the GVR up in the informer factory
+			providerInf = multinsinformer.GetterInformerWrapper{
+				GVR:      claimGVR,
+				Delegate: factory,
+			}
+		} else {
+			providerInf, err = multinsinformer.NewDynamicMultiNamespaceInformer(
+				claimGVR,
+				r.providerNamespace,
+				r.providerConfig,
+				r.serviceNamespaceInformer,
+			)
+			if err != nil {
+				logger.Info("aborting", "error", err)
+				return err
+			}
+		}
+
+		if claim.Selector.LabelSelector != nil {
+			defaultConsumerInf = dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30, metav1.NamespaceAll, tweakListOptions)
+		}
+
+		claimedCtrl, err := claimedresources.NewController(
+			claimGVR,
+			claim,
+			r.providerNamespace,
+			r.consumerConfig,
+			r.providerConfig,
+			defaultConsumerInf.ForResource(claimGVR),
+			providerInf,
+			r.serviceNamespaceInformer,
+		)
+
+		if err != nil {
+			runtime.HandleError(err)
+			return nil //nothing we can do here
+		}
+		logger.Info("creating claim reconciler", "gvr", claimGVR)
+
+		claimControllers = append(claimControllers, func(ctx context.Context, i int) {
+			providerInf.Start(ctx)
+
+			providerSynced := providerInf.WaitForCacheSync(ctx.Done())
+			logger.V(2).Info("Synced informers", "provider", slices.Collect(maps.Keys(providerSynced)))
+
+			claimedCtrl.Start(ctx, i)
+		})
+
+	}
+	defaultConsumerInf.Start(ctx.Done())
+
+	go func() {
+		// to not block the main thread
+		consumerSynced := defaultConsumerInf.WaitForCacheSync(ctx.Done())
+		logger.V(2).Info("Synced informers", "consumer", slices.Collect(maps.Keys(consumerSynced)))
+
+		for _, ctrl := range claimControllers {
+			go ctrl(ctx, 1)
+		}
+	}()
 
 	return nil
 }

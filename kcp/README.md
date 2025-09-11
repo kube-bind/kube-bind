@@ -99,34 +99,16 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/fcaehwcimtlcvhss/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/36note1hch913ryv/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind` 
-kubectl get secret kubeconfig-4hhc6 -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+kubectl get secret kubeconfig-bpmvf -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-vlh79
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-qsps8
 
 export KUBECONFIG=.kcp/consumer.kubeconfig
 go run ./cmd/konnector/ --lease-namespace default
-
-
-11. (Optional) Add second consumer to test
-
-```bash
-cp .kcp/admin.kubeconfig .kcp/consumer2.kubeconfig
-export KUBECONFIG=.kcp/consumer2.kubeconfig
-kubectl ws use :root
-kubectl ws create consumer2 --enter
-
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/2vgrh380y0cq38du/exports --dry-run -o yaml > apiserviceexport2.yaml
-kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote2.kubeconfig
-
-./bin/kubectl-bind apiservice --remote-kubeconfig remote2.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
-
-
-export KUBECONFIG=.kcp/consumer2.kubeconfig
-go run ./cmd/konnector/ --lease-namespace default --server-address :8091
 ```
 
 Create objects:
@@ -145,3 +127,8 @@ k ws use :root:kube-bind
 
 k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" api-resources   
 k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" get crd
+
+# some claimed objects
+kubectl create cm provider -n kube-bind-qsps8-default
+kubectl label cm provider app=wildwest -n kube-bind-qsps8-default
+```

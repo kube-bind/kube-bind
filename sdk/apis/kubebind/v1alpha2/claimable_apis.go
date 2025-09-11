@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,11 +27,11 @@ import (
 
 // InternalAPI describes an API to be imported from some schemes and generated OpenAPI V2 definitions.
 type InternalAPI struct {
-	Names         apiextensionsv1.CustomResourceDefinitionNames
-	GroupVersion  schema.GroupVersion
-	Instance      runtime.Object
-	ResourceScope apiextensionsv1.ResourceScope
-	HasStatus     bool
+	Names                apiextensionsv1.CustomResourceDefinitionNames
+	GroupVersionResource schema.GroupVersionResource
+	Instance             runtime.Object
+	ResourceScope        apiextensionsv1.ResourceScope
+	HasStatus            bool
 }
 
 // ClaimableAPIs is a list of APIs that can be claimed by a user.
@@ -40,7 +42,11 @@ var ClaimableAPIs = []InternalAPI{
 			Singular: "configmap",
 			Kind:     "ConfigMap",
 		},
-		GroupVersion:  schema.GroupVersion{Group: "", Version: "v1"},
+		GroupVersionResource: schema.GroupVersionResource{
+			Group:    "",
+			Version:  "v1",
+			Resource: "configmaps",
+		},
 		Instance:      &corev1.ConfigMap{},
 		ResourceScope: apiextensionsv1.NamespaceScoped,
 	},
@@ -50,7 +56,11 @@ var ClaimableAPIs = []InternalAPI{
 			Singular: "secret",
 			Kind:     "Secret",
 		},
-		GroupVersion:  schema.GroupVersion{Group: "", Version: "v1"},
+		GroupVersionResource: schema.GroupVersionResource{
+			Group:    "",
+			Version:  "v1",
+			Resource: "secrets",
+		},
 		Instance:      &corev1.Secret{},
 		ResourceScope: apiextensionsv1.NamespaceScoped,
 	},
@@ -60,8 +70,21 @@ var ClaimableAPIs = []InternalAPI{
 			Singular: "serviceaccount",
 			Kind:     "ServiceAccount",
 		},
-		GroupVersion:  schema.GroupVersion{Group: "", Version: "v1"},
+		GroupVersionResource: schema.GroupVersionResource{
+			Group:    "",
+			Version:  "v1",
+			Resource: "serviceaccounts",
+		},
 		Instance:      &corev1.ServiceAccount{},
 		ResourceScope: apiextensionsv1.NamespaceScoped,
 	},
+}
+
+func ResolveClaimableAPI(claim PermissionClaim) (schema.GroupVersionResource, error) {
+	for _, api := range ClaimableAPIs {
+		if api.Names.Plural == claim.Resource && api.GroupVersionResource.Group == claim.Group {
+			return api.GroupVersionResource, nil
+		}
+	}
+	return schema.GroupVersionResource{}, fmt.Errorf("no matching API found")
 }

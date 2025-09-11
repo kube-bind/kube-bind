@@ -25,6 +25,8 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -45,6 +47,7 @@ type reconciler struct {
 }
 
 func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache cache.Cache, sns *kubebindv1alpha2.APIServiceNamespace) error {
+	logger := klog.FromContext(ctx)
 	var ns *corev1.Namespace
 	nsName := sns.Namespace + "-" + sns.Name
 	if sns.Status.Namespace != "" {
@@ -73,6 +76,133 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 
 	if sns.Status.Namespace != nsName {
 		sns.Status.Namespace = nsName
+	}
+
+	// List APIServiceExports in the namespace
+	apiServiceExports, err := c.listAPIServiceExports(ctx, cache, sns.Namespace)
+	if err != nil {
+		return fmt.Errorf("failed to list APIServiceExports: %w", err)
+	}
+
+	for _, export := range apiServiceExports.Items {
+		name := "kube-binder-export-" + export.Name // unique name for the service export related permissions
+		permissions := []rbacv1.PolicyRule{}
+		for _, claim := range export.Spec.PermissionClaims {
+			permissions = append(permissions, rbacv1.PolicyRule{
+				APIGroups: []string{claim.Group},
+				Resources: []string{claim.Resource},
+				// We need list and watch for informers to be able to start. And create to create initial object.
+				Verbs: []string{"*"},
+			})
+
+		}
+		if c.scope == kubebindv1alpha2.ClusterScope {
+			role, err := c.getPermissionClaimsClusterRole(ctx, cache, name)
+			if err != nil && !errors.IsNotFound(err) {
+				return fmt.Errorf("failed to get Role %s: %w", name, err)
+			}
+			if role == nil {
+				role = &rbacv1.ClusterRole{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: name,
+					},
+					Rules: permissions,
+				}
+				// Create new ClusterRole
+				if err := client.Create(ctx, role); err != nil {
+					return fmt.Errorf("failed to create ClusterRole %s: %w", name, err)
+				}
+			} else {
+				role.Rules = permissions
+				if err := client.Update(ctx, role); err != nil {
+					return fmt.Errorf("failed to update ClusterRole %s: %w", name, err)
+				}
+			}
+
+			clusterBinding, err := c.getPermissionClaimsClusterRoleBinding(ctx, cache, name)
+			if err != nil && !errors.IsNotFound(err) {
+				return fmt.Errorf("failed to get ClusterRoleBinding %s: %w", name, err)
+			}
+			if clusterBinding == nil {
+				clusterBinding = &rbacv1.ClusterRoleBinding{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: name,
+					},
+					Subjects: []rbacv1.Subject{
+						{
+							Kind:      "ServiceAccount",
+							Namespace: sns.Namespace,
+							Name:      kuberesources.ServiceAccountName,
+						},
+					},
+					RoleRef: rbacv1.RoleRef{
+						Kind:     "ClusterRole",
+						Name:     name,
+						APIGroup: "rbac.authorization.k8s.io",
+					},
+				}
+				if err := client.Create(ctx, clusterBinding); err != nil {
+					return fmt.Errorf("failed to create ClusterRoleBinding %s: %w", name, err)
+				}
+			} else {
+				logger.Info("ClusterRoleBinding already exists, update not implemented.", "name", name)
+			}
+
+		} else {
+			role, err := c.getPermissionClaimsRole(ctx, cache, sns.Status.Namespace, name)
+			if err != nil && !errors.IsNotFound(err) {
+				return fmt.Errorf("failed to get Role %s: %w", name, err)
+			}
+			if role == nil {
+				role := &rbacv1.Role{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: sns.Status.Namespace,
+					},
+					Rules: permissions,
+				}
+				// Create new Role
+				if err := client.Create(ctx, role); err != nil {
+					return fmt.Errorf("failed to create Role %s: %w", name, err)
+				}
+			} else {
+				role.Rules = permissions
+				if err := client.Update(ctx, role); err != nil {
+					return fmt.Errorf("failed to update Role %s: %w", name, err)
+				}
+			}
+
+			rolebinding, err := c.getPermissionClaimsRoleBinding(ctx, cache, sns.Status.Namespace, name)
+			if err != nil && !errors.IsNotFound(err) {
+				return fmt.Errorf("failed to get Role %s: %w", name, err)
+			}
+
+			if rolebinding == nil {
+				rolebinding := &rbacv1.RoleBinding{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: sns.Status.Namespace,
+					},
+					Subjects: []rbacv1.Subject{
+						{
+							Kind:      "ServiceAccount",
+							Namespace: sns.Namespace,
+							Name:      kuberesources.ServiceAccountName,
+						},
+					},
+					RoleRef: rbacv1.RoleRef{
+						Kind:     "Role",
+						Name:     name,
+						APIGroup: "rbac.authorization.k8s.io",
+					},
+				}
+				if err := client.Create(ctx, rolebinding); err != nil {
+					return fmt.Errorf("failed to create Role %s: %w", name, err)
+				}
+			} else {
+				logger.Info("Role already exists, update not implemented.", "name", name)
+			}
+		}
 	}
 
 	return nil
@@ -118,4 +248,48 @@ func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, client client.Cl
 	}
 
 	return nil
+}
+
+func (r *reconciler) getPermissionClaimsClusterRole(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error) {
+	var role rbacv1.ClusterRole
+	key := types.NamespacedName{Name: name}
+	if err := cache.Get(ctx, key, &role); err != nil {
+		return nil, err
+	}
+	return &role, nil
+}
+
+func (r *reconciler) getPermissionClaimsRole(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.Role, error) {
+	var role rbacv1.Role
+	key := types.NamespacedName{Namespace: namespace, Name: name}
+	if err := cache.Get(ctx, key, &role); err != nil {
+		return nil, err
+	}
+	return &role, nil
+}
+
+func (r *reconciler) getPermissionClaimsClusterRoleBinding(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error) {
+	var roleBinding rbacv1.ClusterRoleBinding
+	key := types.NamespacedName{Name: name}
+	if err := cache.Get(ctx, key, &roleBinding); err != nil {
+		return nil, err
+	}
+	return &roleBinding, nil
+}
+
+func (r *reconciler) getPermissionClaimsRoleBinding(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.RoleBinding, error) {
+	var roleBinding rbacv1.RoleBinding
+	key := types.NamespacedName{Name: name, Namespace: namespace}
+	if err := cache.Get(ctx, key, &roleBinding); err != nil {
+		return nil, err
+	}
+	return &roleBinding, nil
+}
+
+func (r *reconciler) listAPIServiceExports(ctx context.Context, cache cache.Cache, namespace string) (*kubebindv1alpha2.APIServiceExportList, error) {
+	exports := &kubebindv1alpha2.APIServiceExportList{}
+	if err := cache.List(ctx, exports, client.InNamespace(namespace)); err != nil {
+		return nil, err
+	}
+	return exports, nil
 }

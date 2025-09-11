@@ -11,11 +11,6 @@ spec:
   permissionClaims:
   - apiGroup: ""
     resource: configmaps
-    verbs:
-    - get
-    - list
-    - watch
-    - create
     selector:
       labelSelector:
         matchLabels:

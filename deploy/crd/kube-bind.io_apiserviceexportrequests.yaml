@@ -316,15 +316,6 @@ spec:
                             type: object
                           type: array
                       type: object
-                      x-kubernetes-validations:
-                      - message: Selector reference must not be changed
-                        rule: self == oldSelf
-                      - message: exactly one of "all", "resourceNames", or "labelSelector"
-                          must be set
-                        rule: (self.all && !has(self.resourceNames) && !has(self.labelSelector))
-                          || (!self.all && ((has(self.resourceNames) && size(self.resourceNames)
-                          > 0) != (has(self.labelSelector) && size(self.labelSelector)
-                          > 0)))
                     verbs:
                       description: Verbs is a list of verbs that are required by the
                         provider to operate.

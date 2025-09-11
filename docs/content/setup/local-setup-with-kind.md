@@ -3,10 +3,12 @@
 This guide will walk you through setting up kube-bind between two Kubernetes clusters, where
 
 **Backend cluster**:
+
   * Deploys dex, cert-manager and kube-bind/example-backend
   * Provides kube-bind compatible backend for MangoDB resources
 
 **App cluster**:
+
   * Provides an application consuming MangoDBs
 
 ## Pre-requisites
@@ -200,7 +202,7 @@ NAME                                DESIRED   CURRENT   READY   AGE
 replicaset.apps/mangodb-6ff44cbbf   1         1         1       100s
 ```
 
-## App cluster
+## Consumer App cluster
 
 The App cluster will consume MangoDB CRs provided by the Backend.
 

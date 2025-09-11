@@ -619,13 +619,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#app-cluster" class="md-nav__link">
+  <a href="#consumer-app-cluster" class="md-nav__link">
     <span class="md-ellipsis">
-      App cluster
+      Consumer App cluster
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="App cluster">
+    <nav class="md-nav" aria-label="Consumer App cluster">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1778,13 +1778,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#app-cluster" class="md-nav__link">
+  <a href="#consumer-app-cluster" class="md-nav__link">
     <span class="md-ellipsis">
-      App cluster
+      Consumer App cluster
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="App cluster">
+    <nav class="md-nav" aria-label="Consumer App cluster">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1848,11 +1848,15 @@
 
 <h1 id="local-kube-bind-with-kind">Local kube-bind with kind</h1>
 <p>This guide will walk you through setting up kube-bind between two Kubernetes clusters, where</p>
-<p><strong>Backend cluster</strong>:
-  * Deploys dex, cert-manager and kube-bind/example-backend
-  * Provides kube-bind compatible backend for MangoDB resources</p>
-<p><strong>App cluster</strong>:
-  * Provides an application consuming MangoDBs</p>
+<p><strong>Backend cluster</strong>:</p>
+<ul>
+<li>Deploys dex, cert-manager and kube-bind/example-backend</li>
+<li>Provides kube-bind compatible backend for MangoDB resources</li>
+</ul>
+<p><strong>App cluster</strong>:</p>
+<ul>
+<li>Provides an application consuming MangoDBs</li>
+</ul>
 <h2 id="pre-requisites">Pre-requisites</h2>
 <p>To start, you'll need following tools available in your system or a VM:</p>
 <ul>
@@ -2013,7 +2017,7 @@
 <a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>NAME<span class="w">                                </span>DESIRED<span class="w">   </span>CURRENT<span class="w">   </span>READY<span class="w">   </span>AGE
 <a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>replicaset.apps/mangodb-6ff44cbbf<span class="w">   </span><span class="m">1</span><span class="w">         </span><span class="m">1</span><span class="w">         </span><span class="m">1</span><span class="w">       </span>100s
 </code></pre></div>
-<h2 id="app-cluster">App cluster</h2>
+<h2 id="consumer-app-cluster">Consumer App cluster</h2>
 <p>The App cluster will consume MangoDB CRs provided by the Backend.</p>
 <h3 id="step-one-create-the-app-cluster">Step one: create the App cluster</h3>
 <p>Again, let's start by stashing the host's external IP in a variable as we're going to use it often (possibly the same one as for the Backend cluster):</p>

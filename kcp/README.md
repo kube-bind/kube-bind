@@ -132,6 +132,7 @@ go run ./cmd/konnector/ --lease-namespace default --server-address :8091
 Create objects:
 ```
 kubectl apply -f kcp/deploy/examples/cowboy.yaml
+kubectl apply -f kcp/deploy/examples/sheriff.yaml
 ```
 
 
@@ -143,4 +144,4 @@ export KUBECONFIG=.kcp/debug.kubeconfig
 k ws use :root:kube-bind
 
 k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" api-resources   
-k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*"  get crd
+k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" get crd

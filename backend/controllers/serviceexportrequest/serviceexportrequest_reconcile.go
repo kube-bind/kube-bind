@@ -83,7 +83,7 @@ type exportedSchemas map[string]*kubebindv1alpha2.BoundSchema
 // Important: getExportedSchemas is using client.Client to list resources, not cache.
 // This is due to fact we use dynamic client and unstructured.Unstructured to get schemas and it
 // does not quite work with dynamic cache informers:
-// failed to get informer for *unstructured.UnstructuredList apis.kcp.io/v1alpha1, Kind=APIResourceSchemaList: failed to find newly started informer for apis.kcp.io/v1alpha1, Kind=APIResourceSchema"}
+// failed to get informer for *unstructured.UnstructuredList apis.kcp.io/v1alpha1, Kind=APIResourceSchemaList: failed to find newly started informer for apis.kcp.io/v1alpha1, Kind=APIResourceSchema"}.
 func (r *reconciler) getExportedSchemas(ctx context.Context, cl client.Client) (exportedSchemas, error) {
 	parts := strings.SplitN(r.schemaSource, ".", 3)
 	if len(parts) != 3 { // We check this in validation, but just in case.
@@ -272,7 +272,7 @@ func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebi
 		return fmt.Errorf("no exported schemas found")
 	}
 
-	var scopes []apiextensionsv1.ResourceScope
+	scopes := make([]apiextensionsv1.ResourceScope, 0, len(exportedSchemas))
 	for _, res := range req.Spec.Resources {
 		boundSchema, ok := exportedSchemas[res.ResourceGroupName()]
 		if !ok {

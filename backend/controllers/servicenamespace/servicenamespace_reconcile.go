@@ -94,7 +94,6 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 				// We need list and watch for informers to be able to start. And create to create initial object.
 				Verbs: []string{"*"},
 			})
-
 		}
 		if c.scope == kubebindv1alpha2.ClusterScope {
 			role, err := c.getPermissionClaimsClusterRole(ctx, cache, name)
@@ -147,7 +146,6 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 			} else {
 				logger.Info("ClusterRoleBinding already exists, update not implemented.", "name", name)
 			}
-
 		} else {
 			role, err := c.getPermissionClaimsRole(ctx, cache, sns.Status.Namespace, name)
 			if err != nil && !errors.IsNotFound(err) {
@@ -250,7 +248,7 @@ func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, client client.Cl
 	return nil
 }
 
-func (r *reconciler) getPermissionClaimsClusterRole(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error) {
+func (c *reconciler) getPermissionClaimsClusterRole(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error) {
 	var role rbacv1.ClusterRole
 	key := types.NamespacedName{Name: name}
 	if err := cache.Get(ctx, key, &role); err != nil {
@@ -259,7 +257,7 @@ func (r *reconciler) getPermissionClaimsClusterRole(ctx context.Context, cache c
 	return &role, nil
 }
 
-func (r *reconciler) getPermissionClaimsRole(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.Role, error) {
+func (c *reconciler) getPermissionClaimsRole(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.Role, error) {
 	var role rbacv1.Role
 	key := types.NamespacedName{Namespace: namespace, Name: name}
 	if err := cache.Get(ctx, key, &role); err != nil {
@@ -268,7 +266,7 @@ func (r *reconciler) getPermissionClaimsRole(ctx context.Context, cache cache.Ca
 	return &role, nil
 }
 
-func (r *reconciler) getPermissionClaimsClusterRoleBinding(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error) {
+func (c *reconciler) getPermissionClaimsClusterRoleBinding(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error) {
 	var roleBinding rbacv1.ClusterRoleBinding
 	key := types.NamespacedName{Name: name}
 	if err := cache.Get(ctx, key, &roleBinding); err != nil {
@@ -277,7 +275,7 @@ func (r *reconciler) getPermissionClaimsClusterRoleBinding(ctx context.Context, 
 	return &roleBinding, nil
 }
 
-func (r *reconciler) getPermissionClaimsRoleBinding(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.RoleBinding, error) {
+func (c *reconciler) getPermissionClaimsRoleBinding(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.RoleBinding, error) {
 	var roleBinding rbacv1.RoleBinding
 	key := types.NamespacedName{Name: name, Namespace: namespace}
 	if err := cache.Get(ctx, key, &roleBinding); err != nil {
@@ -286,7 +284,7 @@ func (r *reconciler) getPermissionClaimsRoleBinding(ctx context.Context, cache c
 	return &roleBinding, nil
 }
 
-func (r *reconciler) listAPIServiceExports(ctx context.Context, cache cache.Cache, namespace string) (*kubebindv1alpha2.APIServiceExportList, error) {
+func (c *reconciler) listAPIServiceExports(ctx context.Context, cache cache.Cache, namespace string) (*kubebindv1alpha2.APIServiceExportList, error) {
 	exports := &kubebindv1alpha2.APIServiceExportList{}
 	if err := cache.List(ctx, exports, client.InNamespace(namespace)); err != nil {
 		return nil, err

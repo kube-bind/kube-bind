@@ -57,7 +57,7 @@ func NewController(
 	providerDynamicInformer multinsinformer.GetterInformer,
 	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister],
 ) (*controller, error) {
-	queue := workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), controllerName)
+	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
 	logger := klog.Background().WithValues("controller", controllerName, "gvr", gvr)
 
@@ -101,7 +101,6 @@ func NewController(
 					return nil, errors.NewNotFound(kubebindv1alpha2.SchemeGroupVersion.WithResource("APIServiceNamespace").GroupResource(), upstreamNamespace)
 				}
 				return sns[0].(*kubebindv1alpha2.APIServiceNamespace), nil
-
 			},
 			getConsumerObject: func(ctx context.Context, ns, name string) (*unstructured.Unstructured, error) {
 				return consumerClient.Resource(gvr).Namespace(ns).Get(ctx, name, metav1.GetOptions{})
@@ -136,7 +135,7 @@ func NewController(
 		},
 	}
 
-	consumerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if _, err = consumerDynamicInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueConsumer(logger, obj)
 		},
@@ -146,9 +145,11 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueConsumer(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
-	providerDynamicInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	if err := providerDynamicInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			c.enqueueProvider(logger, obj)
 		},
@@ -158,14 +159,16 @@ func NewController(
 		DeleteFunc: func(obj interface{}) {
 			c.enqueueProvider(logger, obj)
 		},
-	})
+	}); err != nil {
+		return nil, err
+	}
 
 	return c, nil
 }
 
 // controller reconciles upstream objects to downstream.
 type controller struct {
-	queue workqueue.RateLimitingInterface
+	queue workqueue.TypedRateLimitingInterface[string]
 
 	claim kubebindv1alpha2.PermissionClaim
 
@@ -314,7 +317,6 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		return
 	}
 	for _, obj := range objs {
-
 		logger.Info("enqueueing provider object", "obj", obj)
 
 		key, err := cache.MetaNamespaceKeyFunc(obj)
@@ -365,11 +367,10 @@ func (c *controller) startWorker(ctx context.Context) {
 
 func (c *controller) processNextWorkItem(ctx context.Context) bool {
 	// Wait until there is a new item in the working queue
-	k, quit := c.queue.Get()
+	key, quit := c.queue.Get()
 	if quit {
 		return false
 	}
-	key := k.(string)
 
 	logger := klog.FromContext(ctx).WithValues("key", key)
 	ctx = klog.NewContext(ctx, logger)

@@ -335,7 +335,7 @@ func (r *reconciler) ensureControllersForPermissionClaims(
 	defaultConsumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
 
 	// PermissionClaims sync controller
-	var claimControllers []func(context.Context, int)
+	claimControllers := make([]func(context.Context, int), len(binding.Spec.PermissionClaims))
 	for _, claim := range binding.Spec.PermissionClaims {
 		claimGVR, err := kubebindv1alpha2.ResolveClaimableAPI(claim)
 		if err != nil {
@@ -394,7 +394,7 @@ func (r *reconciler) ensureControllersForPermissionClaims(
 
 		if err != nil {
 			runtime.HandleError(err)
-			return nil //nothing we can do here
+			return nil // nothing we can do here
 		}
 		logger.Info("creating claim reconciler", "gvr", claimGVR)
 
@@ -406,7 +406,6 @@ func (r *reconciler) ensureControllersForPermissionClaims(
 
 			claimedCtrl.Start(ctx, i)
 		})
-
 	}
 	defaultConsumerInf.Start(ctx.Done())
 

@@ -157,7 +157,6 @@ type controller struct {
 	serviceNamespaceIndexer cache.Indexer
 
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister]
-	serviceExportInformer  dynamic.Informer[bindlisters.APIServiceExportLister]
 	crdInformer            dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister]
 
 	reconciler

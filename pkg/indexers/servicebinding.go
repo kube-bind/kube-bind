@@ -25,8 +25,7 @@ import (
 const (
 	//nolint:gosec
 	ByServiceBindingKubeconfigSecret = "byKubeconfigSecret"
-	//nolint:gosec
-	ByAPIServiceBindingCRD = "byCRD"
+	ByAPIServiceBindingCRD           = "byCRD"
 )
 
 func IndexServiceBindingByKubeconfigSecret(obj any) ([]string, error) {

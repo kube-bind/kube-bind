@@ -235,14 +235,14 @@ func candidateFromOwnerObj(downstreamNS string, obj *unstructured.Unstructured) 
 }
 
 // determineOwner determines the owner of a resource given at least one object exists either on the
-// consumer or provider side
+// consumer or provider side.
 func determineOwner(providerObj, consumerObj *unstructured.Unstructured) (kubebindv1alpha2.Owner, error) {
 	if providerObj != nil {
 		ownerLabel := providerObj.GetLabels()[label]
 		switch ownerLabel {
-		case "provider":
+		case kubebindv1alpha2.OwnerProvider.String():
 			return kubebindv1alpha2.OwnerProvider, nil
-		case "consumer":
+		case kubebindv1alpha2.OwnerConsumer.String():
 			return kubebindv1alpha2.OwnerConsumer, nil
 		}
 		if ownerLabel == "" && consumerObj == nil {
@@ -253,9 +253,9 @@ func determineOwner(providerObj, consumerObj *unstructured.Unstructured) (kubebi
 	if consumerObj != nil {
 		ownerLabel := consumerObj.GetLabels()[label]
 		switch ownerLabel {
-		case "provider":
+		case kubebindv1alpha2.OwnerProvider.String():
 			return kubebindv1alpha2.OwnerProvider, nil
-		case "consumer":
+		case kubebindv1alpha2.OwnerConsumer.String():
 			return kubebindv1alpha2.OwnerConsumer, nil
 		}
 		if ownerLabel == "" && providerObj == nil {

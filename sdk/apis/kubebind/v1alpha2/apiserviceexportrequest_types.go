@@ -146,6 +146,10 @@ const (
 	OwnerConsumer Owner = "consumer"
 )
 
+func (o Owner) String() string {
+	return string(o)
+}
+
 // Selector is a resource selector that selects objects of a GVR.
 type Selector struct {
 	// all claims all resources for the given group/resource.

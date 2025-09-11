@@ -228,6 +228,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 				Versions: res.Versions,
 			})
 		}
+		export.Spec.PermissionClaims = req.Spec.PermissionClaims
 
 		logger.V(1).Info("Creating APIServiceExport", "name", export.Name, "namespace", export.Namespace)
 		if err := r.createServiceExport(ctx, cl, export); err != nil {
@@ -288,6 +289,7 @@ func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebi
 		scopes = append(scopes, boundSchema.Spec.Scope)
 	}
 
+	// Check CRD scopes matches.
 	if len(scopes) > 1 {
 		first := scopes[0]
 		for _, scope := range scopes[1:] {
@@ -304,5 +306,30 @@ func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebi
 		}
 	}
 
+	// Add validation if claimable apis are valid here
+	for _, claim := range req.Spec.PermissionClaims {
+		if !isClaimableAPI(claim) {
+			conditions.MarkFalse(
+				req,
+				kubebindv1alpha2.APIServiceExportConditionPermissionClaim,
+				"InvalidPermissionClaim",
+				conditionsapi.ConditionSeverityError,
+				"Resource %s is not a valid claimable API",
+				claim.GroupResource.String(),
+			)
+			return fmt.Errorf("resource %s is not a valid claimable API", claim.GroupResource.String())
+		}
+	}
+
 	return nil
+}
+
+// isClaimableAPI checks if a permission claim is for a claimable API.
+func isClaimableAPI(claim kubebindv1alpha2.PermissionClaim) bool {
+	for _, api := range kubebindv1alpha2.ClaimableAPIs {
+		if claim.Group == api.GroupVersion.Group && claim.Resource == api.Names.Plural {
+			return true
+		}
+	}
+	return false
 }

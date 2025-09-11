@@ -372,11 +372,11 @@ func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context,
 
 		if err := r.updateRemoteBoundSchema(ctx, boundSchema); err != nil {
 			errs = append(errs, err)
-			allValid = false // at least one BoundAPIResourceSchema is not valid
+			allValid = false // at least one BoundSchemas is not valid
 		}
 	}
 
-	// Set APIServiceExport Ready condition based on all BoundAPIResourceSchemas
+	// Set APIServiceExport Ready condition based on all BoundSchemas
 	if allValid {
 		conditions.MarkTrue(
 			export,
@@ -386,9 +386,9 @@ func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context,
 		conditions.MarkFalse(
 			export,
 			kubebindv1alpha2.APIServiceExportConditionConnected,
-			"BoundAPIResourceSchemasNotValid",
+			"BoundSchemasNotValid",
 			conditionsapi.ConditionSeverityWarning,
-			"One or more BoundAPIResourceSchemas are not valid",
+			"One or more BoundSchemas are not valid",
 		)
 	}
 

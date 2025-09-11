@@ -196,6 +196,10 @@ type GroupResource struct {
 	Resource string `json:"resource"`
 }
 
+func (r GroupResource) String() string {
+	return fmt.Sprintf("%s.%s", r.Resource, r.Group)
+}
+
 // APIServiceExportRequestPhase describes the phase of a binding request.
 type APIServiceExportRequestPhase string
 

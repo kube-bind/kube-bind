@@ -36,7 +36,7 @@ func NewKey(export kubebindv1alpha2.APIServiceExport) Key {
 	return Key(export.Namespace + "/" + export.Name)
 }
 
-type ContextStore interface {
+type Store interface {
 	Get(key Key) (SyncContext, bool)
 	Set(key Key, value SyncContext)
 	Delete(key Key)
@@ -52,7 +52,7 @@ type SyncContext struct {
 	cancel     func()
 }
 
-func New() ContextStore {
+func New() Store {
 	return &contextStore{
 		store: make(map[Key]SyncContext),
 	}
@@ -60,6 +60,10 @@ func New() ContextStore {
 
 func (c *SyncContext) Generation() int64 {
 	return c.generation
+}
+
+func (c *SyncContext) Cancel() {
+	c.cancel()
 }
 
 func (c *contextStore) Get(key Key) (SyncContext, bool) {

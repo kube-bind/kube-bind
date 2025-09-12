@@ -45,8 +45,7 @@ func IndexServiceExportByBoundSchema(obj client.Object) []string {
 
 	names := make([]string, 0, len(export.Spec.Resources))
 	for _, res := range export.Spec.Resources {
-		name := res.Resource + "." + res.Group
-		names = append(names, name)
+		names = append(names, res.ResourceGroupName())
 	}
 
 	return names

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sort"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -150,23 +151,34 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, client client.Cl
 		},
 	}
 	for _, export := range exports {
+		// Collect unique GroupResources and sort for stable rule ordering.
+		grSet := map[string]kubebindv1alpha2.GroupResource{}
 		for _, res := range export.Spec.Resources {
-			name := res.Resource + "." + res.Group
+			key := res.ResourceGroupName()
+			grSet[key] = kubebindv1alpha2.GroupResource{Group: res.Group, Resource: res.Resource}
+		}
+		keys := make([]string, 0, len(grSet))
+		for k := range grSet {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			gr := grSet[k]
+			name := gr.Resource + "." + gr.Group
 			schema, err := r.getBoundSchema(ctx, cache, clusterBinding.Namespace, name)
 			if err != nil {
-				return fmt.Errorf("failed to get BoundSchema %w", err)
+				return fmt.Errorf("failed to get BoundSchema %q: %w", name, err)
 			}
-
 			expected.Rules = append(expected.Rules,
 				rbacv1.PolicyRule{
 					APIGroups: []string{schema.Spec.Group},
 					Resources: []string{schema.Spec.Names.Plural},
-					Verbs:     []string{"get", "list", "watch", "update", "patch", "delete", "create"},
+					Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 				},
 				rbacv1.PolicyRule{
 					APIGroups: []string{kubebindv1alpha2.GroupName},
 					Resources: []string{"boundschemas"},
-					Verbs:     []string{"get", "list", "watch", "update", "patch"},
+					Verbs:     []string{"get", "list", "watch"},
 				},
 			)
 		}

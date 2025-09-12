@@ -267,12 +267,11 @@ func (r *reconciler) ensurePrettyName(ctx context.Context, binding *kubebindv1al
 func (r *reconciler) getSchemasFromExport(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) ([]*kubebindv1alpha2.BoundSchema, error) {
 	schemas := make([]*kubebindv1alpha2.BoundSchema, 0, len(export.Spec.Resources))
 
-	for _, ref := range export.Spec.Resources {
-		name := ref.Resource + "." + ref.Group
-		schema, err := r.getBoundSchema(ctx, name)
+	for _, res := range export.Spec.Resources {
+		schema, err := r.getBoundSchema(ctx, res.ResourceGroupName())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get Schema %s: %w",
-				name, err)
+				res.ResourceGroupName(), err)
 		}
 
 		schemas = append(schemas, schema)

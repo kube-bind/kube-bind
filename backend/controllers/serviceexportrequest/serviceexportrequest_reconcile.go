@@ -61,6 +61,10 @@ func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cach
 		return err
 	}
 
+	// TODO(mjudeikis): we could potentially add finallizer to APIServiceExport above or "adopt" boundschemas
+	// with owner references once export is created.
+	// https://github.com/kube-bind/kube-bind/issues/297
+
 	conditions.SetSummary(req)
 
 	return nil
@@ -69,10 +73,6 @@ func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cach
 func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	// Ensure all bound schemas exist
 	for _, res := range req.Spec.Resources {
-		if len(res.Versions) == 0 {
-			continue
-		}
-
 		parts := strings.SplitN(r.schemaSource, ".", 3)
 		if len(parts) != 3 { // We check this in validation, but just in case.
 			return fmt.Errorf("invalid schema source: %q", r.schemaSource)
@@ -106,23 +106,25 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, c
 		}
 
 		for _, item := range list.Items {
-			spec := item.Object["spec"]
-			if spec == nil {
-				return fmt.Errorf("invalid schema %s/%s: no spec found", item.GetNamespace(), item.GetName())
+			obj := item.UnstructuredContent()
+			spec, ok := obj["spec"].(map[string]interface{})
+			if !ok {
+				klog.FromContext(ctx).Error(nil, "Skipping invalid schema: missing spec", "ns", item.GetNamespace(), "name", item.GetName())
+				continue
 			}
-			group := spec.(map[string]interface{})["group"]
-			names := spec.(map[string]interface{})["names"]
-			if group == nil || names == nil {
-				return fmt.Errorf("invalid schema %s/%s: no group or names found", item.GetNamespace(), item.GetName())
+			g, _ := spec["group"].(string)
+			names, _ := spec["names"].(map[string]interface{})
+			p, _ := names["plural"].(string)
+			if g == "" || p == "" {
+				klog.FromContext(ctx).Error(nil, "Skipping invalid schema: missing group or names.plural", "ns", item.GetNamespace(), "name", item.GetName())
+				continue
 			}
-			plural := names.(map[string]interface{})["plural"]
-
-			if group == res.Group && plural == res.Resource {
+			if g == res.Group && p == res.Resource {
 				boundSchema, err := helpers.UnstructuredToBoundSchema(item)
 				if err != nil {
 					return err
 				}
-				boundSchema.Name = res.Resource + "." + res.Group
+				boundSchema.Name = res.ResourceGroupName()
 				boundSchema.Namespace = req.Namespace
 				boundSchema.Spec.InformerScope = r.informerScope
 				boundSchema.ResourceVersion = ""
@@ -154,7 +156,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 	var scope apiextensionsv1.ResourceScope
 	if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhasePending {
 		for _, res := range req.Spec.Resources {
-			name := res.Resource + "." + res.Group
+			name := res.ResourceGroupName()
 			boundSchema, err := r.getBoundSchema(ctx, cache, req.Namespace, name)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
@@ -177,8 +179,14 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 			schemas = append(schemas, boundSchema)
 		}
 
-		if _, err := r.getServiceExport(ctx, cache, req.Namespace, req.Name); err != nil && !apierrors.IsNotFound(err) {
-			return err
+		if _, err := r.getServiceExport(ctx, cache, req.Namespace, req.Name); err != nil {
+			if !apierrors.IsNotFound(err) {
+				return err
+			}
+		} else {
+			// already exists; nothing to do
+			conditions.MarkTrue(req, kubebindv1alpha2.APIServiceExportRequestConditionExportsReady)
+			return nil
 		}
 
 		hash := helpers.BoundSchemasSpecHash(schemas)
@@ -210,6 +218,9 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 
 		logger.V(1).Info("Creating APIServiceExport", "name", export.Name, "namespace", export.Namespace)
 		if err := r.createServiceExport(ctx, cl, export); err != nil {
+			if apierrors.IsAlreadyExists(err) {
+				return nil
+			}
 			return err
 		}
 

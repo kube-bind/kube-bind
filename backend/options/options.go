@@ -122,6 +122,7 @@ var schemaSourceAliases = map[string]string{
 	CustomResourceDefinitionSource.String(): CustomResourceDefinitionSource.String(), // mostrly for e2e tests
 	"customresourcedefinitions":             CustomResourceDefinitionSource.String(),
 	"apiresourceschemas":                    KCPAPIResourceSchemaSource.String(),
+	KCPAPIResourceSchemaSource.String():     KCPAPIResourceSchemaSource.String(),
 }
 
 func (options *Options) AddFlags(fs *pflag.FlagSet) {

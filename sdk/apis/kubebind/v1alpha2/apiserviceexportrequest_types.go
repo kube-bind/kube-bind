@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -112,6 +114,13 @@ type APIServiceExportRequestResource struct {
 	// versions is a list of versions that should be exported. If this is empty
 	// a sensible default is chosen by the service provider.
 	Versions []string `json:"versions,omitempty"`
+}
+
+func (r APIServiceExportRequestResource) ResourceGroupName() string {
+	if r.Group == "" {
+		r.Group = "core"
+	}
+	return fmt.Sprintf("%s.%s", r.Resource, r.Group)
 }
 
 // GroupResource identifies a resource.

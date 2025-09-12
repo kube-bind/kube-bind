@@ -20,7 +20,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,6 +51,9 @@ func CRDToBoundSchema(crd *apiextensionsv1.CustomResourceDefinition, prefix stri
 		},
 	}
 
+	if len(crd.Spec.Versions) == 0 {
+		return nil, fmt.Errorf("no versions specified for CRD %q", crd.Name)
+	}
 	if len(crd.Spec.Versions) > 1 && crd.Spec.Conversion == nil {
 		return nil, fmt.Errorf("multiple versions specified for CRD %q but no conversion strategy", crd.Name)
 	}
@@ -129,7 +131,7 @@ func BoundSchemaToCRD(schema *kubebindv1alpha2.BoundSchema) *apiextensionsv1.Cus
 			Kind:       "CustomResourceDefinition",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: schema.Name,
+			Name: schema.Spec.Names.Plural + "." + schema.Spec.Group,
 		},
 		Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 			Group: schema.Spec.Group,
@@ -172,12 +174,12 @@ func BoundSchemaToCRD(schema *kubebindv1alpha2.BoundSchema) *apiextensionsv1.Cus
 		// Now schema can be openapiv3 or v2.
 		// we do some poor man checking:
 		if len(version.Schema.Raw) > 0 {
-			if strings.Contains(string(version.Schema.Raw), "openAPIV3Schema") {
-				var jsonSchema apiextensionsv1.CustomResourceValidation // we need to unmarshal into the correct type
-				if err := json.Unmarshal(version.Schema.Raw, &jsonSchema); err == nil {
-					crdVersion.Schema = &jsonSchema
-				}
+			// Try to unmarshal as CustomResourceValidation first (contains openAPIV3Schema field)
+			var validation apiextensionsv1.CustomResourceValidation
+			if err := json.Unmarshal(version.Schema.Raw, &validation); err == nil && validation.OpenAPIV3Schema != nil {
+				crdVersion.Schema = &validation
 			} else {
+				// Fall back to direct JSONSchemaProps
 				var jsonSchema apiextensionsv1.JSONSchemaProps
 				if err := json.Unmarshal(version.Schema.Raw, &jsonSchema); err == nil {
 					crdVersion.Schema = &apiextensionsv1.CustomResourceValidation{

@@ -130,6 +130,9 @@ spec:
 				t.Logf("Waiting for %s CRD to be created on consumer side", serviceGVR.Resource)
 				crdClient := framework.ApiextensionsClient(t, consumerConfig).ApiextensionsV1().CustomResourceDefinitions()
 				require.Eventually(t, func() bool {
+					if serviceGVR.Group == "" {
+						serviceGVR.Group = "core"
+					}
 					_, err := crdClient.Get(ctx, serviceGVR.Resource+"."+serviceGVR.Group, metav1.GetOptions{})
 					return err == nil
 				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for %s CRD to be created on consumer side", serviceGVR.Resource)

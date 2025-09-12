@@ -266,7 +266,7 @@ type BoundSchemaStatus struct {
 	StoredVersions []string `json:"storedVersions"`
 	// Conditions represent the latest available observations of the object's state.
 	// +optional
-	Conditions []conditionsapi.Condition `json:"conditions,omitempty"`
+	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 
 	// Instantiations tracks the number of instances of the resource on the consumer side.
 	// +optional

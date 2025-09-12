@@ -130,7 +130,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	processedSchemas := make(map[string]bool)
 
 	for _, res := range export.Spec.Resources {
-		name := res.Resource + "." + res.Group
+		name := res.ResourceGroupName()
 		// Fetch the APIResourceSchema
 		schema, err := r.getRemoteBoundSchema(ctx, name)
 		if err != nil {
@@ -317,8 +317,7 @@ func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context,
 	var errs []error
 	allValid := true // assume all BoundAPIResourceSchemas are valid
 	for _, res := range export.Spec.Resources {
-		name := res.Resource + "." + res.Group
-		boundSchema, err := r.getRemoteBoundSchema(ctx, name)
+		boundSchema, err := r.getRemoteBoundSchema(ctx, res.ResourceGroupName())
 		if err != nil {
 			if errors.IsNotFound(err) {
 				continue

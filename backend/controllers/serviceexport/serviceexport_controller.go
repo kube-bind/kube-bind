@@ -67,9 +67,9 @@ func NewAPIServiceExportReconciler(
 		manager: mgr,
 		opts:    opts,
 		reconciler: reconciler{
-			getBoundSchema: func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.BoundSchema, error) {
+			getBoundSchema: func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error) {
 				var schema kubebindv1alpha2.BoundSchema
-				key := types.NamespacedName{Name: name}
+				key := types.NamespacedName{Namespace: namespace, Name: name}
 				if err := cache.Get(ctx, key, &schema); err != nil {
 					return nil, err
 				}
@@ -92,6 +92,8 @@ func NewAPIServiceExportReconciler(
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=boundschemas,verbs=get;list;watch
+//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=boundschemas/status,verbs=get;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -128,8 +130,16 @@ func (r *APIServiceExportReconciler) Reconcile(ctx context.Context, req mcreconc
 		return ctrl.Result{}, err
 	}
 
-	// Update status if it has changed
-	if !equality.Semantic.DeepEqual(original, apiServiceExport) {
+	// Update annotatations changed (hash)
+	if !equality.Semantic.DeepEqual(original.Annotations, apiServiceExport.Annotations) {
+		err := client.Update(ctx, apiServiceExport)
+		if err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to update APIServiceExport status: %w", err)
+		}
+		logger.Info("APIServiceExport hash updated", "namespace", apiServiceExport.Namespace, "name", apiServiceExport.Name)
+		return ctrl.Result{Requeue: true}, nil
+	}
+	if !equality.Semantic.DeepEqual(original.Status, apiServiceExport.Status) {
 		err := client.Status().Update(ctx, apiServiceExport)
 		if err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to update APIServiceExport status: %w", err)

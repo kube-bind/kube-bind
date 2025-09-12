@@ -27,41 +27,42 @@ import (
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
+	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 )
 
 type reconciler struct {
-	getBoundSchema      func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.BoundSchema, error)
+	getBoundSchema      func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
 	deleteServiceExport func(ctx context.Context, client client.Client, namespace, name string) error
 }
 
 func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, export *kubebindv1alpha2.APIServiceExport) error {
 	var errs []error
 
-	if specChanged, err := r.ensureSchema(ctx, cache, export); err != nil {
+	if err := r.ensureSchema(ctx, cache, export); err != nil {
 		errs = append(errs, err)
-	} else if specChanged {
-		// TODO: This should be separate controller for apiresourceschemas.
-		// This is wrong place now.
-		//	r.requeue(export)
-		return nil
 	}
 
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureSchema(ctx context.Context, cache cache.Cache, export *kubebindv1alpha2.APIServiceExport) (specChanged bool, err error) {
+func (r *reconciler) ensureSchema(ctx context.Context, cache cache.Cache, export *kubebindv1alpha2.APIServiceExport) error {
 	logger := klog.FromContext(ctx)
 	schemas := make([]*kubebindv1alpha2.BoundSchema, 0, len(export.Spec.Resources))
 
 	for _, res := range export.Spec.Resources {
-		name := res.Resource + "." + res.Group
-		schema, err := r.getBoundSchema(ctx, cache, name)
+		schema, err := r.getBoundSchema(ctx, cache, export.Namespace, res.ResourceGroupName())
 		if err != nil {
 			if errors.IsNotFound(err) {
-				continue
+				conditions.MarkFalse(
+					export,
+					kubebindv1alpha2.APIServiceExportConditionProviderInSync,
+					"BoundSchemaMissing",
+					conditionsapi.ConditionSeverityError,
+					"BoundSchemas are not available: %v", schema.Name)
+				return nil
 			}
-			return false, err
+			return err
 		}
 
 		schemas = append(schemas, schema)
@@ -76,10 +77,10 @@ func (r *reconciler) ensureSchema(ctx context.Context, cache cache.Cache, export
 			export.Annotations = map[string]string{}
 		}
 		export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hash
-		return true, nil
+		return nil
 	}
 
 	conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionProviderInSync)
 
-	return false, nil
+	return nil
 }

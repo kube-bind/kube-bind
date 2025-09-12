@@ -56,7 +56,7 @@ type ExtraOptions struct {
 	// Defines the source of the schema for the bind screen.
 	// Options are:
 	// CustomResourceDefinition.v1.apiextensions.k8s.io
-	// APIResourceSchema.v1alpha2.apis.kcp.io
+	// APIResourceSchema.v1alpha1.apis.kcp.io
 	SchemaSource string
 
 	TestingAutoSelect         string

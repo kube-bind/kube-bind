@@ -130,18 +130,18 @@ func (r *APIServiceExportReconciler) Reconcile(ctx context.Context, req mcreconc
 		return ctrl.Result{}, err
 	}
 
-	// Update annotatations changed (hash)
+	// Update annotations changed (hash), we need to propagate it and requeue for status changes.
+	// This is why we compare annotations only as we don't expect any changes to spec.
+	// Status changes are handled below.
 	if !equality.Semantic.DeepEqual(original.Annotations, apiServiceExport.Annotations) {
-		err := client.Update(ctx, apiServiceExport)
-		if err != nil {
-			return ctrl.Result{}, fmt.Errorf("failed to update APIServiceExport status: %w", err)
+		if err := client.Update(ctx, apiServiceExport); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to update APIServiceExport: %w", err)
 		}
 		logger.Info("APIServiceExport hash updated", "namespace", apiServiceExport.Namespace, "name", apiServiceExport.Name)
 		return ctrl.Result{Requeue: true}, nil
 	}
 	if !equality.Semantic.DeepEqual(original.Status, apiServiceExport.Status) {
-		err := client.Status().Update(ctx, apiServiceExport)
-		if err != nil {
+		if err := client.Status().Update(ctx, apiServiceExport); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to update APIServiceExport status: %w", err)
 		}
 		logger.Info("APIServiceExport status updated", "namespace", apiServiceExport.Namespace, "name", apiServiceExport.Name)
@@ -154,7 +154,7 @@ func (r *APIServiceExportReconciler) Reconcile(ctx context.Context, req mcreconc
 func getBoundSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
 	return handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		boundSchema := obj.(*kubebindv1alpha2.BoundSchema)
-		boundSchemaKey := boundSchema.Name
+		boundSchemaKey := boundSchema.Spec.Names.Plural + "." + boundSchema.Spec.Group
 		c := cl.GetClient()
 
 		var exports kubebindv1alpha2.APIServiceExportList

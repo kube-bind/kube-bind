@@ -31,8 +31,12 @@ import (
 
 // CRDToBoundSchema converts a CustomResourceDefinition to an BoundSchema.
 func CRDToBoundSchema(crd *apiextensionsv1.CustomResourceDefinition, prefix string) (*kubebindv1alpha2.BoundSchema, error) {
-	name := prefix + "." + crd.Name
-	informerScope := kubebindv1alpha2.NamespacedScope
+	name := crd.Name
+	if prefix != "" {
+		name = prefix + "." + crd.Name
+	}
+	// Derive informer scope from the CRD scope.
+	informerScope := kubebindv1alpha2.InformerScope(crd.Spec.Scope)
 	boundSchema := &kubebindv1alpha2.BoundSchema{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
@@ -114,14 +118,14 @@ func UnstructuredToBoundSchema(u unstructured.Unstructured) (*kubebindv1alpha2.B
 	return boundSchema, nil
 }
 
-func BoundSchemasSpecHash(schemas []*kubebindv1alpha2.BoundSchema) string {
+func BoundSchemasSpecHash(schemas []*kubebindv1alpha2.BoundSchema) (string, error) {
 	hash := sha256.New()
 	for _, schema := range schemas {
 		if err := json.NewEncoder(hash).Encode(schema); err != nil {
-			continue
+			return "", fmt.Errorf("failed to encode schema %s: %w", schema.Name, err)
 		}
 	}
-	return fmt.Sprintf("%x", hash.Sum(nil))
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
 func BoundSchemaToCRD(schema *kubebindv1alpha2.BoundSchema) *apiextensionsv1.CustomResourceDefinition {

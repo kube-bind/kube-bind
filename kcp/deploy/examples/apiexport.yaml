@@ -9,3 +9,8 @@ spec:
     schema: today.cowboys.wildwest.dev
     storage:
       crd: {}
+  - group: wildwest.dev
+    name: sheriffs
+    schema: today.sheriffs.wildwest.dev
+    storage:
+      crd: {}

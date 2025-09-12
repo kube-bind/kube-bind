@@ -37,6 +37,7 @@ type reconciler struct {
 
 	reconcileServiceBinding func(binding *kubebindv1alpha2.APIServiceBinding) bool
 	getServiceExport        func(name string) (*kubebindv1alpha2.APIServiceExport, error)
+	getServiceExportRequest func(name string) (*kubebindv1alpha2.APIServiceExportRequest, error)
 	getServiceBinding       func(name string) (*kubebindv1alpha2.APIServiceBinding, error)
 	getClusterBinding       func(ctx context.Context) (*kubebindv1alpha2.ClusterBinding, error)
 	getBoundSchema          func(ctx context.Context, name string) (*kubebindv1alpha2.BoundSchema, error)
@@ -78,6 +79,21 @@ func (r *reconciler) ensureValidServiceExport(_ context.Context, binding *kubebi
 	if _, err := r.getServiceExport(binding.Name); err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
+		// If serviceexport is not found, check if request is not in failed state already:
+		request, errRequest := r.getServiceExportRequest(binding.Name)
+		if errRequest == nil && request.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhaseFailed {
+			// If request is in failed state, propagate the message to binding status and mark as failed
+			conditions.MarkFalse(
+				binding,
+				kubebindv1alpha2.APIServiceBindingConditionConnected,
+				"APIServiceExportFailed",
+				conditionsapi.ConditionSeverityError,
+				request.Status.TerminalMessage,
+				binding.Name,
+			)
+			return fmt.Errorf("APIServiceExportRequest %s is in failed state: %s", binding.Name, request.Status.TerminalMessage)
+		}
+
 		conditions.MarkFalse(
 			binding,
 			kubebindv1alpha2.APIServiceBindingConditionConnected,

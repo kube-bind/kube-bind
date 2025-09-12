@@ -54,6 +54,7 @@ func NewController(
 	consumerConfig, providerConfig *rest.Config,
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
 	serviceExportInformer bindinformers.APIServiceExportInformer,
+	serviceExportRequestInformer bindinformers.APIServiceExportRequestInformer,
 	crdInformer dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister],
 ) (*controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
@@ -96,6 +97,9 @@ func NewController(
 
 			getServiceExport: func(name string) (*kubebindv1alpha2.APIServiceExport, error) {
 				return serviceExportInformer.Lister().APIServiceExports(providerNamespace).Get(name)
+			},
+			getServiceExportRequest: func(name string) (*kubebindv1alpha2.APIServiceExportRequest, error) {
+				return serviceExportRequestInformer.Lister().APIServiceExportRequests(providerNamespace).Get(name)
 			},
 			getServiceBinding: func(name string) (*kubebindv1alpha2.APIServiceBinding, error) {
 				return serviceBindingInformer.Lister().Get(name)

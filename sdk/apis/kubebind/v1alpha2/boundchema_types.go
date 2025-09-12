@@ -30,7 +30,7 @@ import (
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings,shortName=bas
+// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings,shortName=bs
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type BoundSchema struct {
@@ -50,6 +50,11 @@ const (
 	ClusterScope    InformerScope = "Cluster"
 	NamespacedScope InformerScope = "Namespaced"
 )
+
+// String returns the string representation of the InformerScope.
+func (in InformerScope) String() string {
+	return string(in)
+}
 
 // BoundSchemaSpec defines the desired state of the BoundSchema.
 type BoundSchemaSpec struct {

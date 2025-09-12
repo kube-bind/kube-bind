@@ -388,6 +388,12 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 			scope = "-"
 		}
 
+		// TODO(mjudeikis): This logic is very brittle, needs rework.
+		// This will be improved in the permissionClaims PR.
+		if !strings.EqualFold(h.scope.String(), scope.(string)) && h.scope != kubebindv1alpha2.ClusterScope {
+			continue
+		}
+
 		group := item.UnstructuredContent()["spec"].(map[string]interface{})["group"]
 		if group == nil {
 			group = "-"

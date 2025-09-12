@@ -192,24 +192,3 @@ func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk 
 
 	return list, nil
 }
-
-/* func (m *Manager) CreateBoundSchema(ctx context.Context, cluster string, name string, u *unstructured.Unstructured) error {
-	cl, err := m.manager.GetCluster(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	c := cl.GetClient()
-
-	boundSchema := &kubebindv1alpha2.BoundSchema{}
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), boundSchema)
-	if err != nil {
-		return err
-	}
-
-	boundSchema.ResourceVersion = ""
-	boundSchema.Name = name
-	boundSchema.Spec.InformerScope = m.scope
-
-	return c.Create(ctx, boundSchema)
-}
-*/

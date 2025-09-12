@@ -153,7 +153,7 @@ func getServiceExportRequestMapper(clusterName string, cl cluster.Cluster) handl
 func getBoundSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
 	return handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		boundSchema := obj.(*kubebindv1alpha2.BoundSchema)
-		boundSchemaKey := boundSchema.Name
+		boundSchemaKey := boundSchema.Spec.Names.Plural + "." + boundSchema.Spec.Group
 		c := cl.GetClient()
 
 		var requests kubebindv1alpha2.APIServiceExportRequestList
@@ -215,13 +215,20 @@ func (r *APIServiceExportRequestReconciler) Reconcile(ctx context.Context, req m
 	// Run the reconciliation logic
 	if err := r.reconciler.reconcile(ctx, client, cache, apiServiceExportRequest); err != nil {
 		logger.Error(err, "Failed to reconcile APIServiceExportRequest")
+		if !reflect.DeepEqual(original.Status.Phase, apiServiceExportRequest.Status.Phase) {
+			if err := client.Status().Update(ctx, apiServiceExportRequest); err != nil {
+				logger.Error(err, "Failed to update APIServiceExportRequest status")
+				return ctrl.Result{}, fmt.Errorf("failed to update APIServiceExportRequest status: %w", err)
+			}
+			logger.Info("APIServiceExportRequest status updated", "namespace", apiServiceExportRequest.Namespace, "name", apiServiceExportRequest.Name)
+		}
+
 		return ctrl.Result{}, err
 	}
 
 	// Update status if it has changed
 	if !reflect.DeepEqual(original.Status, apiServiceExportRequest.Status) {
-		err := client.Status().Update(ctx, apiServiceExportRequest)
-		if err != nil {
+		if err := client.Status().Update(ctx, apiServiceExportRequest); err != nil {
 			logger.Error(err, "Failed to update APIServiceExportRequest status")
 			return ctrl.Result{}, fmt.Errorf("failed to update APIServiceExportRequest status: %w", err)
 		}

@@ -51,7 +51,8 @@ func (r *reconciler) ensureSchema(ctx context.Context, cache cache.Cache, export
 	schemas := make([]*kubebindv1alpha2.BoundSchema, 0, len(export.Spec.Resources))
 
 	for _, res := range export.Spec.Resources {
-		schema, err := r.getBoundSchema(ctx, cache, export.Namespace, res.ResourceGroupName())
+		name := res.ResourceGroupName()
+		schema, err := r.getBoundSchema(ctx, cache, export.Namespace, name)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				conditions.MarkFalse(
@@ -59,7 +60,7 @@ func (r *reconciler) ensureSchema(ctx context.Context, cache cache.Cache, export
 					kubebindv1alpha2.APIServiceExportConditionProviderInSync,
 					"BoundSchemaMissing",
 					conditionsapi.ConditionSeverityError,
-					"BoundSchemas are not available: %v", schema.Name)
+					"BoundSchema %q is not available: %v", name, err)
 				return nil
 			}
 			return err
@@ -68,7 +69,10 @@ func (r *reconciler) ensureSchema(ctx context.Context, cache cache.Cache, export
 		schemas = append(schemas, schema)
 	}
 
-	hash := helpers.BoundSchemasSpecHash(schemas)
+	hash, err := helpers.BoundSchemasSpecHash(schemas)
+	if err != nil {
+		return err
+	}
 
 	if export.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] != hash {
 		// both exist, update APIServiceExport

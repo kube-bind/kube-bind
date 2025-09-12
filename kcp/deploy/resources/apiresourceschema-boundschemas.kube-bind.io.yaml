@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250912-0a5b301.boundschemas.kube-bind.io
+  name: v250918-f26732b.boundschemas.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -14,7 +14,7 @@ spec:
     listKind: BoundSchemaList
     plural: boundschemas
     shortNames:
-    - bas
+    - bs
     singular: boundschema
   scope: Namespaced
   versions:

@@ -54,10 +54,12 @@ type reconciler struct {
 
 func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	if err := r.ensureBoundSchemas(ctx, cl, cache, req); err != nil {
+		conditions.SetSummary(req)
 		return err
 	}
 
 	if err := r.ensureExports(ctx, cl, cache, req); err != nil {
+		conditions.SetSummary(req)
 		return err
 	}
 
@@ -75,7 +77,7 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, c
 	for _, res := range req.Spec.Resources {
 		parts := strings.SplitN(r.schemaSource, ".", 3)
 		if len(parts) != 3 { // We check this in validation, but just in case.
-			return fmt.Errorf("invalid schema source: %q", r.schemaSource)
+			return fmt.Errorf("malformed schema source: %q", r.schemaSource)
 		}
 
 		gvk := schema.GroupVersionKind{
@@ -106,20 +108,57 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, c
 		}
 
 		for _, item := range list.Items {
+			var schemaFailed bool
 			obj := item.UnstructuredContent()
-			spec, ok := obj["spec"].(map[string]interface{})
-			if !ok {
-				klog.FromContext(ctx).Error(nil, "Skipping invalid schema: missing spec", "ns", item.GetNamespace(), "name", item.GetName())
-				continue
+			group, ok, err := unstructured.NestedString(obj, "spec", "group")
+			if !ok || err != nil || group == "" {
+				klog.FromContext(ctx).Error(err, "Skipping invalid schema: missing group", "ns", item.GetNamespace(), "name", item.GetName())
+				schemaFailed = true
 			}
-			g, _ := spec["group"].(string)
-			names, _ := spec["names"].(map[string]interface{})
-			p, _ := names["plural"].(string)
-			if g == "" || p == "" {
-				klog.FromContext(ctx).Error(nil, "Skipping invalid schema: missing group or names.plural", "ns", item.GetNamespace(), "name", item.GetName())
-				continue
+			plural, ok, err := unstructured.NestedString(obj, "spec", "names", "plural")
+			if !ok || err != nil || plural == "" {
+				klog.FromContext(ctx).Error(err, "Skipping invalid schema: missing names.plural", "ns", item.GetNamespace(), "name", item.GetName())
+				schemaFailed = true
 			}
-			if g == res.Group && p == res.Resource {
+
+			scope, ok, err := unstructured.NestedString(obj, "spec", "scope")
+			if !ok || err != nil || scope == "" {
+				klog.FromContext(ctx).Error(err, "Skipping invalid schema: missing scope", "ns", item.GetNamespace(), "name", item.GetName())
+				schemaFailed = true
+			}
+
+			if schemaFailed {
+				conditions.MarkFalse(
+					req,
+					kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
+					"APIServiceExportRequestInvalid",
+					conditionsapi.ConditionSeverityError,
+					"APIServiceExportRequest %s is invalid: resource %s/%s has invalid schema",
+					req.Name, group, plural,
+				)
+				req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
+				return fmt.Errorf("resource %s/%s is invalid", group, plural)
+			}
+
+			if group == res.Group && plural == res.Resource {
+				// Important: This checks if the resource are correctly scoped. If consumer is namespaced, we can't allow this.
+				// We terminate early to prevent triggering other controllers.
+				if r.informerScope.String() != scope && r.informerScope != kubebindv1alpha2.ClusterScope {
+					conditions.MarkFalse(
+						req,
+						kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
+						"APIServiceExportRequestInvalid",
+						conditionsapi.ConditionSeverityError,
+						"APIServiceExportRequest %s is invalid: resource %s/%s has scope %q which is incompatible with backend informer scope %q",
+						req.Name, group, plural, scope, r.informerScope,
+					)
+					req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
+					req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha2.APIServiceExportRequestConditionExportsReady)
+					// We can't proceed with this request.
+					return fmt.Errorf("resource %s/%s has scope %q which is incompatible with backend informer scope %q", group, plural, scope, r.informerScope)
+				}
+
+				// https://github.com/kube-bind/kube-bind/issues/297 to fix.
 				boundSchema, err := helpers.UnstructuredToBoundSchema(item)
 				if err != nil {
 					return err
@@ -163,9 +202,9 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 					conditions.MarkFalse(
 						req,
 						kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
-						"APIResourceSchemaNotFound",
+						"BoundSchemaNotFound",
 						conditionsapi.ConditionSeverityError,
-						"APIResourceSchema %s in the service provider cluster not found",
+						"BoundSchema %s in the service provider cluster not found",
 						name,
 					)
 					return err
@@ -189,7 +228,11 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 			return nil
 		}
 
-		hash := helpers.BoundSchemasSpecHash(schemas)
+		// https://github.com/kube-bind/kube-bind/issues/297 To fix.
+		hash, err := helpers.BoundSchemasSpecHash(schemas)
+		if err != nil {
+			return err
+		}
 		export := &kubebindv1alpha2.APIServiceExport{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      req.Name,

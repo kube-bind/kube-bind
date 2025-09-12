@@ -19,8 +19,9 @@ package clusterbinding
 import (
 	"context"
 	"fmt"
+	"maps"
 	"reflect"
-	"sort"
+	"slices"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -149,7 +150,15 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, client client.Cl
 				},
 			},
 		},
-	}
+		Rules: []rbacv1.PolicyRule{
+			// Always need to be able to get/list/watch the BoundSchemas
+			// to be able to figure out what to bind.
+			{
+				APIGroups: []string{kubebindv1alpha2.GroupName},
+				Resources: []string{"boundschemas"},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+		}}
 	for _, export := range exports {
 		// Collect unique GroupResources and sort for stable rule ordering.
 		grSet := map[string]kubebindv1alpha2.GroupResource{}
@@ -157,28 +166,19 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, client client.Cl
 			key := res.ResourceGroupName()
 			grSet[key] = kubebindv1alpha2.GroupResource{Group: res.Group, Resource: res.Resource}
 		}
-		keys := make([]string, 0, len(grSet))
-		for k := range grSet {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
+		keys := slices.Collect(maps.Keys(grSet))
+		slices.Sort(keys)
 		for _, k := range keys {
-			gr := grSet[k]
-			name := gr.Resource + "." + gr.Group
-			schema, err := r.getBoundSchema(ctx, cache, clusterBinding.Namespace, name)
+			// k is already normalized (e.g., "pods.core" for empty group).
+			schema, err := r.getBoundSchema(ctx, cache, clusterBinding.Namespace, k)
 			if err != nil {
-				return fmt.Errorf("failed to get BoundSchema %q: %w", name, err)
+				return fmt.Errorf("failed to get BoundSchema %q: %w", k, err)
 			}
 			expected.Rules = append(expected.Rules,
 				rbacv1.PolicyRule{
 					APIGroups: []string{schema.Spec.Group},
 					Resources: []string{schema.Spec.Names.Plural},
 					Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
-				},
-				rbacv1.PolicyRule{
-					APIGroups: []string{kubebindv1alpha2.GroupName},
-					Resources: []string{"boundschemas"},
-					Verbs:     []string{"get", "list", "watch"},
 				},
 			)
 		}
@@ -205,7 +205,6 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, client cl
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get ClusterRoleBinding %s: %w", name, err)
 	}
-
 	if r.scope != kubebindv1alpha2.ClusterScope {
 		if err := r.deleteClusterRoleBinding(ctx, client, name); err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", name, err)

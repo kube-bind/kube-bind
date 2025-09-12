@@ -69,7 +69,7 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: boundschemas
-    schema: v250912-0a5b301.boundschemas.kube-bind.io
+    schema: v250918-f26732b.boundschemas.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io

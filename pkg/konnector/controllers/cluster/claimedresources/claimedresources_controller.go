@@ -214,7 +214,7 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 	if !c.isClaimed(o) {
 		return
 	}
-	logger.V(2).Info("queueing consumer object", "key", fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName()))
+	logger.V(2).Info("queueing consumer object", "gvr", o.GroupVersionKind().String(), "key", fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName()))
 
 	key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
@@ -301,7 +301,6 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 
 	sn, err := c.serviceNamespaceInformer.Lister().APIServiceNamespaces(ns).Get(name)
 	if err != nil {
-		logger.Error(err, "\n\ncould not list")
 		runtime.HandleError(err)
 		return
 	}

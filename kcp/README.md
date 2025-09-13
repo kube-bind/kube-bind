@@ -99,13 +99,13 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/36note1hch913ryv/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/12jj50d1t39g65d6/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind` 
-kubectl get secret kubeconfig-bpmvf -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+kubectl get secret kubeconfig-shj8k -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-qsps8
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-lxj5k
 
 export KUBECONFIG=.kcp/consumer.kubeconfig
 go run ./cmd/konnector/ --lease-namespace default
@@ -126,9 +126,11 @@ export KUBECONFIG=.kcp/debug.kubeconfig
 k ws use :root:kube-bind
 
 k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" api-resources   
-k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" get crd
+k -s "$(kubectl get apiexportendpointslice kube-bind.io -o §®jsonpath="{.status.endpoints[0].url}")/clusters/*" get crd
 
 # some claimed objects
-kubectl create cm provider -n kube-bind-qsps8-default
-kubectl label cm provider app=wildwest -n kube-bind-qsps8-default
-```
+kubectl create cm provider -n kube-bind-lxj5k-default
+kubectl label cm provider app=wildwest -n kube-bind-lxj5k-default
+
+kubectl create cm consumer -n default
+kubectl label cm consumer app=wildwest -n default

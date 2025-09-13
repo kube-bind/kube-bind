@@ -18,6 +18,7 @@ package bind
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/headzoo/surf.v1"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,18 +46,23 @@ import (
 func TestClusterScoped(t *testing.T) {
 	t.Parallel()
 	// cluster scoped resource, with cluster scoped informers
-	testHappyCase(t, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope)
+	testHappyCase(t, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope, false)
 }
 
 func TestNamespacedScoped(t *testing.T) {
 	t.Parallel()
 	// namespaced resource, with namespace scoped informers
-	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope)
+	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope, false)
 	// namespaced resource, but with cluster scoped informers
-	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope)
+	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope, true)
 }
 
-func testHappyCase(t *testing.T, resourceScope apiextensionsv1.ResourceScope, informerScope kubebindv1alpha2.InformerScope) {
+func testHappyCase(
+	t *testing.T,
+	resourceScope apiextensionsv1.ResourceScope,
+	informerScope kubebindv1alpha2.InformerScope,
+	withPermissionClaims bool,
+) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
@@ -79,6 +86,9 @@ func testHappyCase(t *testing.T, resourceScope apiextensionsv1.ResourceScope, in
 
 	consumerClient := framework.DynamicClient(t, consumerConfig).Resource(serviceGVR)
 	providerClient := framework.DynamicClient(t, providerConfig).Resource(serviceGVR)
+
+	consumerCoreClient := framework.KubeClient(t, consumerConfig).CoreV1()
+	providerCoreClient := framework.KubeClient(t, providerConfig).CoreV1()
 
 	mangodbInstance := `
 apiVersion: mangodb.com/v1alpha1
@@ -125,6 +135,45 @@ spec:
 				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/exports", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
 				inv := <-invocations
 				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
+
+				// If we are in permissions claims mode - add configmaps & secrets
+				if withPermissionClaims {
+					var request kubebindv1alpha2.APIServiceExportRequest
+					err := json.Unmarshal(inv.Stdin, &request)
+					require.NoError(t, err)
+					request.Spec.PermissionClaims = []kubebindv1alpha2.PermissionClaim{
+						{
+							GroupResource: kubebindv1alpha2.GroupResource{
+								Group:    "",
+								Resource: "configmaps",
+							},
+							Selector: kubebindv1alpha2.Selector{
+								LabelSelector: &metav1.LabelSelector{
+									MatchLabels: map[string]string{
+										"app": "configmaps",
+									},
+								},
+							},
+						},
+						{
+							GroupResource: kubebindv1alpha2.GroupResource{
+								Group:    "",
+								Resource: "secrets",
+							},
+							Selector: kubebindv1alpha2.Selector{
+								LabelSelector: &metav1.LabelSelector{
+									MatchLabels: map[string]string{
+										"app": "secrets",
+									},
+								},
+							},
+						},
+					}
+					payload, err := json.Marshal(request)
+					require.NoError(t, err)
+					inv.Stdin = payload
+				}
+
 				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
 
 				t.Logf("Waiting for %s CRD to be created on consumer side", serviceGVR.Resource)
@@ -164,6 +213,109 @@ spec:
 					clusterNs, _ = clusterscoped.ExtractClusterNs(&instances.Items[0])
 					clusterScopedUpInsName = clusterscoped.Prepend("test", clusterNs)
 				}
+			},
+		},
+		{
+			name: "create secrets and configmaps if permission claims enabled",
+			step: func(t *testing.T) {
+				if !withPermissionClaims {
+					t.Skip("Skipping permission claims test when permission claims are disabled")
+					return
+				}
+
+				t.Logf("Creating configmap on consumer side")
+				configMapData := map[string]string{
+					"config.yaml": "test: value",
+				}
+				configMap := &corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-configmap",
+						Namespace: downstreamNs,
+						Labels: map[string]string{
+							"app": "configmaps",
+						},
+					},
+					Data: configMapData,
+				}
+				_, err := consumerCoreClient.ConfigMaps(downstreamNs).Create(ctx, configMap, metav1.CreateOptions{})
+				require.NoError(t, err)
+
+				t.Logf("Creating secret on consumer side")
+				secretData := map[string][]byte{
+					"password": []byte("secret-password"),
+				}
+				secret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-secret",
+						Namespace: downstreamNs,
+						Labels: map[string]string{
+							"app": "secrets",
+						},
+					},
+					Data: secretData,
+				}
+				_, err = consumerCoreClient.Secrets(downstreamNs).Create(ctx, secret, metav1.CreateOptions{})
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "verify secrets and configmaps are synced to provider",
+			step: func(t *testing.T) {
+				if !withPermissionClaims {
+					t.Skip("Skipping permission claims test when permission claims are disabled")
+					return
+				}
+
+				t.Logf("Waiting for configmap to be synced to provider side")
+				require.Eventually(t, func() bool {
+					_, err := providerCoreClient.ConfigMaps(upstreamNS).Get(ctx, "test-configmap", metav1.GetOptions{})
+					return err == nil
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for configmap to be synced to provider side")
+
+				t.Logf("Waiting for secret to be synced to provider side")
+				require.Eventually(t, func() bool {
+					_, err := providerCoreClient.Secrets(upstreamNS).Get(ctx, "test-secret", metav1.GetOptions{})
+					return err == nil
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for secret to be synced to provider side")
+
+				t.Logf("Verifying configmap data is correct")
+				providerConfigMap, err := providerCoreClient.ConfigMaps(upstreamNS).Get(ctx, "test-configmap", metav1.GetOptions{})
+				require.NoError(t, err)
+				require.Equal(t, "test: value", providerConfigMap.Data["config.yaml"])
+
+				t.Logf("Verifying secret data is correct")
+				providerSecret, err := providerCoreClient.Secrets(upstreamNS).Get(ctx, "test-secret", metav1.GetOptions{})
+				require.NoError(t, err)
+				require.Equal(t, []byte("secret-password"), providerSecret.Data["password"])
+			},
+		},
+		{
+			name: "verify secrets and configmaps are deleted when removed from consumer",
+			step: func(t *testing.T) {
+				if !withPermissionClaims {
+					t.Skip("Skipping permission claims test when permission claims are disabled")
+					return
+				}
+
+				t.Logf("Deleting configmap from consumer side")
+				err := consumerCoreClient.ConfigMaps(downstreamNs).Delete(ctx, "test-configmap", metav1.DeleteOptions{})
+				require.NoError(t, err)
+
+				t.Logf("Deleting secret from consumer side")
+				err = consumerCoreClient.Secrets(downstreamNs).Delete(ctx, "test-secret", metav1.DeleteOptions{})
+				require.NoError(t, err)
+
+				t.Logf("Waiting for configmap to be deleted from provider side")
+				require.Eventually(t, func() bool {
+					_, err := providerCoreClient.ConfigMaps(upstreamNS).Get(ctx, "test-configmap", metav1.GetOptions{})
+					return errors.IsNotFound(err)
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for configmap to be deleted from provider side")
+
+				t.Logf("Waiting for secret to be deleted from provider side")
+				require.Eventually(t, func() bool {
+					_, err := providerCoreClient.Secrets(upstreamNS).Get(ctx, "test-secret", metav1.GetOptions{})
+					return errors.IsNotFound(err)
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for secret to be deleted from provider side")
 			},
 		},
 		{

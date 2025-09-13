@@ -35,6 +35,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/contextstore"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
@@ -94,7 +95,7 @@ func NewController(
 			consumerConfig:           consumerConfig,
 			providerConfig:           providerConfig,
 
-			syncContext: map[string]syncContext{},
+			syncStore: contextstore.New(),
 
 			getServiceBinding: func(name string) (*kubebindv1alpha2.APIServiceBinding, error) {
 				return serviceBindingInformer.Lister().Get(name)
@@ -287,7 +288,7 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 func (c *controller) process(ctx context.Context, key string) error {
-	ns, name, err := cache.SplitMetaNamespaceKey(key)
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)
 		return nil // we cannot do anything
@@ -295,19 +296,19 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.serviceExportLister.APIServiceExports(ns).Get(name)
+	obj, err := c.serviceExportLister.APIServiceExports(namespace).Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		logger.Error(err, "APIServiceExport disappeared")
-		return c.reconcile(ctx, name, nil)
+		return c.reconcile(ctx, namespace, name, nil)
 	}
 
 	old := obj
 	obj = obj.DeepCopy()
 
 	var errs []error
-	if err := c.reconcile(ctx, name, obj); err != nil {
+	if err := c.reconcile(ctx, namespace, name, obj); err != nil {
 		errs = append(errs, err)
 	}
 

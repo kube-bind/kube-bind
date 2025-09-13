@@ -21,9 +21,8 @@ package contextstore
 // Context are stored at the APIServiceExport level.
 
 import (
+	"strings"
 	"sync"
-
-	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type Key string
@@ -32,14 +31,16 @@ func (k Key) String() string {
 	return string(k)
 }
 
-func NewKey(export kubebindv1alpha2.APIServiceExport) Key {
-	return Key(export.Namespace + "/" + export.Name)
+func NewKey(exportNamespace, exportName string, suffix ...string) Key {
+	return Key(exportNamespace + "." + exportName + "." + strings.Join(suffix, "."))
 }
 
 type Store interface {
 	Get(key Key) (SyncContext, bool)
+	ListPrefixed(prefix Key) []SyncContext
 	Set(key Key, value SyncContext)
 	Delete(key Key)
+	BulkDeletePrefixed(prefix Key) []SyncContext
 }
 
 type contextStore struct {
@@ -48,8 +49,9 @@ type contextStore struct {
 }
 
 type SyncContext struct {
-	generation int64
-	cancel     func()
+	key        Key // reference key for the context for logging
+	Generation int64
+	Cancel     func()
 }
 
 func New() Store {
@@ -58,12 +60,8 @@ func New() Store {
 	}
 }
 
-func (c *SyncContext) Generation() int64 {
-	return c.generation
-}
-
-func (c *SyncContext) Cancel() {
-	c.cancel()
+func (c *SyncContext) Key() Key {
+	return c.key
 }
 
 func (c *contextStore) Get(key Key) (SyncContext, bool) {
@@ -73,9 +71,23 @@ func (c *contextStore) Get(key Key) (SyncContext, bool) {
 	return val, ok
 }
 
+func (c *contextStore) ListPrefixed(prefix Key) []SyncContext {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	var results []SyncContext
+	for k, v := range c.store {
+		if strings.HasPrefix(k.String(), prefix.String()) {
+			results = append(results, v)
+		}
+	}
+	return results
+}
+
 func (c *contextStore) Set(key Key, value SyncContext) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
+	value.key = key
 	c.store[key] = value
 }
 
@@ -84,7 +96,30 @@ func (c *contextStore) Delete(key Key) {
 	defer c.lock.Unlock()
 	ctx, ok := c.store[key]
 	if ok {
-		ctx.cancel()
+		ctx.Cancel()
 	}
 	delete(c.store, key)
+}
+
+func (c *contextStore) BulkDeletePrefixed(prefix Key) []SyncContext {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	var deleted []SyncContext
+	var keysToDelete []Key
+
+	for k, v := range c.store {
+		if strings.HasPrefix(k.String(), prefix.String()) {
+			keysToDelete = append(keysToDelete, k)
+			deleted = append(deleted, v)
+		}
+	}
+
+	for _, k := range keysToDelete {
+		ctx := c.store[k]
+		ctx.Cancel()
+		delete(c.store, k)
+	}
+
+	return deleted
 }

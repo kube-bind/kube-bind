@@ -162,14 +162,15 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, client client.Cl
 					Resources: []string{schema.Spec.Names.Plural},
 					Verbs:     []string{"get", "list", "watch", "update", "patch", "delete", "create"},
 				},
-				rbacv1.PolicyRule{
-					APIGroups: []string{kubebindv1alpha2.GroupName},
-					Resources: []string{"boundschemas"},
-					Verbs:     []string{"get", "list", "watch", "update", "patch"},
-				},
 			)
 		}
 	}
+	expected.Rules = append(expected.Rules,
+		rbacv1.PolicyRule{
+			APIGroups: []string{kubebindv1alpha2.GroupName},
+			Resources: []string{"boundschemas"},
+			Verbs:     []string{"get", "list", "watch", "update", "patch"},
+		})
 
 	if role == nil {
 		if err := r.createClusterRole(ctx, client, expected); err != nil {

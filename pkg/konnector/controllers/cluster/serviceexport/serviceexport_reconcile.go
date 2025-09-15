@@ -240,6 +240,7 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 	}
 
 	specCtrl, err := spec.NewController(
+		export, // pass the export to establish owner references on ServiceNamespace creation
 		gvr,
 		r.providerNamespace,
 		providerNamespaceUID,

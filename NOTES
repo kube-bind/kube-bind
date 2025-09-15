@@ -22,8 +22,6 @@ When binding cluster-scoped CRD. Oject will be renamed to `kube-bind-<identity>-
 
 TODO: There is some issue with permissiong setting up. It required fursther investigation as initial sync fails with permission error.
 
-
-1. Consumer operates on namespaced CRDs - cowboys and cluster-scoped CRDs - sheriffs
-2. Backend is set to `consumer-scope=cluster` and `cluster-scoped-isolation=namespaced`
-
-
+To make sure claims has right access:
+1. If consumer is namespaced - create Role and RoleBinding in the consumer namespace. Watch APIServiceNamespaces for this.
+2. If consumer is cluster-scoped - create ClusterRole and ClusterRoleBinding based on APISericeExport spec.

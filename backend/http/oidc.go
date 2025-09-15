@@ -19,7 +19,7 @@ package http
 import (
 	"context"
 
-	oidc "github.com/coreos/go-oidc"
+	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
 
@@ -42,8 +42,8 @@ type OIDCServiceProvider struct {
 	provider *oidc.Provider
 }
 
-func NewOIDCServiceProvider(clientID, clientSecret, redirectURI, issuerURL string) (*OIDCServiceProvider, error) {
-	provider, err := oidc.NewProvider(context.TODO(), issuerURL)
+func NewOIDCServiceProvider(ctx context.Context, clientID, clientSecret, redirectURI, issuerURL string) (*OIDCServiceProvider, error) {
+	provider, err := oidc.NewProvider(ctx, issuerURL)
 	if err != nil {
 		return nil, err
 	}

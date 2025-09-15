@@ -10,9 +10,27 @@ replace (
 	github.com/kube-bind/kube-bind/sdk/client => ./sdk/client
 )
 
+// Matches multicluster-runtime v0.21.0-alpha.8
+replace (
+	github.com/google/cel-go => github.com/google/cel-go v0.22.0
+	github.com/kcp-dev/apimachinery/v2 => github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250728122101-adbf20db3e51
+	github.com/kcp-dev/multicluster-provider => github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250818102159-3d31cbb06ebe
+	k8s.io/api => k8s.io/api v0.33.0
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.33.0
+	k8s.io/apimachinery => k8s.io/apimachinery v0.33.0
+	k8s.io/apiserver => k8s.io/apiserver v0.33.0
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.33.0
+	k8s.io/client-go => k8s.io/client-go v0.33.0
+	k8s.io/code-generator => k8s.io/code-generator v0.33.0
+	k8s.io/component-base => k8s.io/component-base v0.33.0
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.21.0
+	//sigs.k8s.io/multicluster-runtime => sigs.k8s.io/multicluster-runtime v0.20.4-alpha.7
+	sigs.k8s.io/multicluster-runtime => github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250818101434-d8ebc45e169b
+)
+
 require (
 	github.com/coreos/go-oidc v2.3.0+incompatible
-	github.com/dexidp/dex/api/v2 v2.1.0
+	github.com/dexidp/dex/api/v2 v2.3.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/google/go-cmp v0.7.0
 	github.com/gorilla/mux v1.8.0
@@ -31,7 +49,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/vmihailenco/msgpack/v4 v4.3.12
 	golang.org/x/oauth2 v0.29.0
-	google.golang.org/grpc v1.69.2
+	google.golang.org/grpc v1.70.0
 	gopkg.in/headzoo/surf.v1 v1.0.1
 	k8s.io/api v0.33.3
 	k8s.io/apiextensions-apiserver v0.33.0
@@ -48,8 +66,6 @@ require (
 	sigs.k8s.io/multicluster-runtime v0.21.0-alpha.8
 	sigs.k8s.io/yaml v1.4.0
 )
-
-replace cloud.google.com/go => cloud.google.com/go v0.100.2
 
 require (
 	cel.dev/expr v0.19.1 // indirect
@@ -166,22 +182,4 @@ require (
 	sigs.k8s.io/kustomize/kyaml v0.19.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
-)
-
-// Matches multicluster-runtime v0.21.0-alpha.8
-replace (
-	github.com/google/cel-go => github.com/google/cel-go v0.22.0
-	github.com/kcp-dev/apimachinery/v2 => github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250728122101-adbf20db3e51
-	github.com/kcp-dev/multicluster-provider => github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250818102159-3d31cbb06ebe
-	k8s.io/api => k8s.io/api v0.33.0
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.33.0
-	k8s.io/apimachinery => k8s.io/apimachinery v0.33.0
-	k8s.io/apiserver => k8s.io/apiserver v0.33.0
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.33.0
-	k8s.io/client-go => k8s.io/client-go v0.33.0
-	k8s.io/code-generator => k8s.io/code-generator v0.33.0
-	k8s.io/component-base => k8s.io/component-base v0.33.0
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.21.0
-	//sigs.k8s.io/multicluster-runtime => sigs.k8s.io/multicluster-runtime v0.20.4-alpha.7
-	sigs.k8s.io/multicluster-runtime => github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250818101434-d8ebc45e169b
 )

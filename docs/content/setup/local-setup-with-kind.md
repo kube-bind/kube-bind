@@ -2,13 +2,10 @@
 
 This guide will walk you through setting up kube-bind between two Kubernetes clusters, where
 
-**Backend cluster**:
-
+* **Backend cluster**:
   * Deploys dex, cert-manager and kube-bind/example-backend
   * Provides kube-bind compatible backend for MangoDB resources
-
-**App cluster**:
-
+* **App cluster**:
   * Provides an application consuming MangoDBs
 
 ## Pre-requisites
@@ -30,7 +27,7 @@ To install `kubectl-bind` plugin, please download the archive for your platform 
 > sudo sysctl fs.inotify.max_user_instances=512
 > ```
 >
-> See https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files for more details.
+> See the [kind documentation](https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files) for more details.
 
 ## Provider cluster
 
@@ -62,7 +59,7 @@ nodes:
   - containerPort: 30080
     hostPort: 8080
     protocol: TCP
-  # DEX endpoint
+  # dex endpoint
   - containerPort: 30556
     hostPort: 5556
     protocol: TCP
@@ -73,7 +70,7 @@ EOF_BackendClusterDefinition
 
 ### Step two: deploy an identity provider
 
-kube-bind relies on OAuth2 for securely authenticating consumer and producer clusters. There are many ways to handle that in Kubernetes, for example with [DEX IDP](https://github.com/dexidp/dex). It depends on cert-manager, which we'll deploy first:
+kube-bind relies on OAuth2 for securely authenticating consumer and producer clusters. There are many ways to handle that in Kubernetes, for example with [dex IDP](https://github.com/dexidp/dex). It depends on cert-manager, which we'll deploy first:
 
 ```sh
 helm repo add jetstack https://charts.jetstack.io
@@ -85,7 +82,7 @@ helm install \
     cert-manager jetstack/cert-manager
 ```
 
-And now let's deploy DEX:
+And now let's deploy dex:
 
 ```sh
 helm repo add dex https://charts.dexidp.io

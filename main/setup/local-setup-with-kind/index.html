@@ -1848,13 +1848,11 @@
 
 <h1 id="local-kube-bind-with-kind">Local kube-bind with kind</h1>
 <p>This guide will walk you through setting up kube-bind between two Kubernetes clusters, where</p>
-<p><strong>Backend cluster</strong>:</p>
 <ul>
+<li><strong>Backend cluster</strong>:</li>
 <li>Deploys dex, cert-manager and kube-bind/example-backend</li>
 <li>Provides kube-bind compatible backend for MangoDB resources</li>
-</ul>
-<p><strong>App cluster</strong>:</p>
-<ul>
+<li><strong>App cluster</strong>:</li>
 <li>Provides an application consuming MangoDBs</li>
 </ul>
 <h2 id="pre-requisites">Pre-requisites</h2>
@@ -1872,7 +1870,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>fs.inotify.max_user_watches<span class="o">=</span><span class="m">524288</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>fs.inotify.max_user_instances<span class="o">=</span><span class="m">512</span>
 </code></pre></div>
-<p>See https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files for more details.</p>
+<p>See the <a href="https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files">kind documentation</a> for more details.</p>
 </blockquote>
 <h2 id="provider-cluster">Provider cluster</h2>
 <p>The provider cluster we'll prepare in this section will provide a kube-bind compatible backend that will provide a controller for a demo resource "MangoDB" we'll consume in another cluster later.</p>
@@ -1897,7 +1895,7 @@
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="s">  - containerPort: 30080</span>
 <a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="s">    hostPort: 8080</span>
 <a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="s">    protocol: TCP</span>
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="s">  # DEX endpoint</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="s">  # dex endpoint</span>
 <a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="s">  - containerPort: 30556</span>
 <a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="s">    hostPort: 5556</span>
 <a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="s">    protocol: TCP</span>
@@ -1907,7 +1905,7 @@
 <p>Note: the port mappings will become clear later on, but in general this setup is solely specific to how Kind exposes ports of its nodes on the host. Specifically, we're exposing ports from containers through NodePort services on Kind's nodes, and to make these ports available on the host we need to map them to host's ports through <code>extraPortMappings</code>.</p>
 </blockquote>
 <h3 id="step-two-deploy-an-identity-provider">Step two: deploy an identity provider</h3>
-<p>kube-bind relies on OAuth2 for securely authenticating consumer and producer clusters. There are many ways to handle that in Kubernetes, for example with <a href="https://github.com/dexidp/dex">DEX IDP</a>. It depends on cert-manager, which we'll deploy first:</p>
+<p>kube-bind relies on OAuth2 for securely authenticating consumer and producer clusters. There are many ways to handle that in Kubernetes, for example with <a href="https://github.com/dexidp/dex">dex IDP</a>. It depends on cert-manager, which we'll deploy first:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>jetstack<span class="w"> </span>https://charts.jetstack.io
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>helm<span class="w"> </span>install<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span>--create-namespace<span class="w"> </span><span class="se">\</span>
@@ -1916,7 +1914,7 @@
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span>--set<span class="w"> </span>crds.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span>cert-manager<span class="w"> </span>jetstack/cert-manager
 </code></pre></div>
-<p>And now let's deploy DEX:</p>
+<p>And now let's deploy dex:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>dex<span class="w"> </span>https://charts.dexidp.io
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>cat<span class="w"> </span><span class="s">&lt;&lt; EOF_DEXDeploymentConfig |</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="s">config:</span>

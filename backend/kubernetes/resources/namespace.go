@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	IdentityAnnotationKey = "example-backend.kube-bind.io/identity"
+	IdentityAnnotationKey = "backend.kube-bind.io/identity"
 )
 
 func CreateNamespace(ctx context.Context, client client.Client, generateName, id string) (*corev1.Namespace, error) {

@@ -11,7 +11,7 @@ spec:
     listKind: SheriffList
     plural: sheriffs
     singular: sheriff
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:

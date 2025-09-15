@@ -1,0 +1,29 @@
+How does backend operates:
+
+1. `--consumer-scope=cluster` - backend will create a namespace per identity in the consumer cluster. 
+2. `--cluster-scoped-isolation` -  {Prefixed,Namespaced,None}
+
+
+Scenario:
+1. Consumer operates on namespaced CRDs - cowboys and cluster-scoped CRDs - sheriffs
+2. Backend is set to `consumer-scope=namespaced` and `cluster-scoped-isolation=prefixed`
+
+When binding namespaced CRD - backend will create namespace `kube-bind-<identity>-<consumer-namespace>` in the provider cluster. Objects will be created in that namespace. Same with claims.
+
+When binding cluster-scoped CRD - NOT SUPPORTED. TODO: Add condition on konnector side to tell this is the case.
+
+Scenario:
+1. Consumer operates on namespaced CRDs - cowboys and cluster-scoped CRDs - sheriffs
+2. Backend is set to `consumer-scope=cluster` and `cluster-scoped-isolation=prefixed`
+
+When binding namespaced CRD - backend will create namespace `kube-bind-<identity>-<consumer-namespace>` in the provider cluster. Objects will be created in that namespace. Same with claims.
+
+When binding cluster-scoped CRD. Oject will be renamed to `kube-bind-<identity>-<original-name>`. 
+
+TODO: There is some issue with permissiong setting up. It required fursther investigation as initial sync fails with permission error.
+
+
+1. Consumer operates on namespaced CRDs - cowboys and cluster-scoped CRDs - sheriffs
+2. Backend is set to `consumer-scope=cluster` and `cluster-scoped-isolation=namespaced`
+
+

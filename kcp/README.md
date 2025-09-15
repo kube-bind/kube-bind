@@ -23,6 +23,11 @@ It will do the following:
 
 # How to run
 
+1. Start Dex:
+```bash
+./bin/dex serve ./kcp/deploy/examples/dex-config.yaml
+```
+
 1. Start kcp
 2. Bootstrap kcp:
 ```bash
@@ -45,7 +50,9 @@ bin/backend \
   --namespace-prefix="kube-bind-" \
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
   --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
-  --schema-source apiresourceschemas
+  --schema-source apiresourceschemas \
+  --consumer-scope=cluster \
+  --cluster-scoped-isolation=namespaced
 ```
 
 
@@ -85,7 +92,7 @@ kubectl kcp bind apiexport root:provider:cowboys-stable
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/2xh2v3gzjhn4tmve 
+# cluster   Ready   https://192.168.2.166:6443/clusters/1lpjniwpn1ov82uz   
 ```
 
 9. Now we gonna initiate consumer:
@@ -99,13 +106,16 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/12jj50d1t39g65d6/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/1lpjniwpn1ov82uz/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind` 
-kubectl get secret kubeconfig-shj8k -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+kubectl get secret kubeconfig-9kszx -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-lxj5k
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport-namespaced.yaml  --skip-konnector --remote-namespace kube-bind-lzf7l
+
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport-cluster.yaml  --skip-konnector --remote-namespace kube-bind-lzf7l
+
 
 export KUBECONFIG=.kcp/consumer.kubeconfig
 go run ./cmd/konnector/ --lease-namespace default
@@ -126,7 +136,7 @@ export KUBECONFIG=.kcp/debug.kubeconfig
 k ws use :root:kube-bind
 
 k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" api-resources   
-k -s "$(kubectl get apiexportendpointslice kube-bind.io -o §®jsonpath="{.status.endpoints[0].url}")/clusters/*" get crd
+k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" get crd
 
 # some claimed objects
 kubectl create cm provider -n kube-bind-lxj5k-default

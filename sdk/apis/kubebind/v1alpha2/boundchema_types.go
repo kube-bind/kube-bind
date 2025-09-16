@@ -27,7 +27,11 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
-// BoundAPIResourceSchema
+// ExportedSchemas are the schemas exported by the current backend.
+// Keys are resource.version.group string for quick resolve.
+type ExportedSchemas map[string]*BoundSchema
+
+// BoundSchema
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

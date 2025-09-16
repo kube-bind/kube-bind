@@ -34,6 +34,7 @@ import (
 
 	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
 )
 
 type Manager struct {
@@ -165,7 +166,7 @@ func (m *Manager) ListCustomResourceDefinitions(ctx context.Context, cluster str
 	return &crds, nil
 }
 
-func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk schema.GroupVersionKind, selector labels.Selector) (*unstructured.UnstructuredList, error) {
+func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk schema.GroupVersionKind, selector labels.Selector) (kubebindv1alpha2.ExportedSchemas, error) {
 	cl, err := m.manager.GetCluster(ctx, cluster)
 	if err != nil {
 		return nil, err
@@ -190,5 +191,14 @@ func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk 
 		return nil, err
 	}
 
-	return list, nil
+	var boundSchemas kubebindv1alpha2.ExportedSchemas = make(map[string]*kubebindv1alpha2.BoundSchema, len(list.Items))
+	for _, item := range list.Items {
+		boundSchema, err := helpers.UnstructuredToBoundSchema(item)
+		if err != nil {
+			return nil, err
+		}
+		boundSchemas[boundSchema.ResourceGroupName()] = boundSchema
+	}
+
+	return boundSchemas, nil
 }

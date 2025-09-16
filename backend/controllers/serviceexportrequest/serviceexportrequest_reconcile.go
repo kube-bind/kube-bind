@@ -75,16 +75,12 @@ func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cach
 	return nil
 }
 
-// exportedSchemas are the schemas exported by the current backend.
-// Keys are resource.version.group string for quick resolve.
-type exportedSchemas map[string]*kubebindv1alpha2.BoundSchema
-
 // getExportedSchemas will list all schemas, exported by current backend.
 // Important: getExportedSchemas is using client.Client to list resources, not cache.
 // This is due to fact we use dynamic client and unstructured.Unstructured to get schemas and it
 // does not quite work with dynamic cache informers:
 // failed to get informer for *unstructured.UnstructuredList apis.kcp.io/v1alpha1, Kind=APIResourceSchemaList: failed to find newly started informer for apis.kcp.io/v1alpha1, Kind=APIResourceSchema"}.
-func (r *reconciler) getExportedSchemas(ctx context.Context, cl client.Client) (exportedSchemas, error) {
+func (r *reconciler) getExportedSchemas(ctx context.Context, cl client.Client) (kubebindv1alpha2.ExportedSchemas, error) {
 	parts := strings.SplitN(r.schemaSource, ".", 3)
 	if len(parts) != 3 { // We check this in validation, but just in case.
 		return nil, fmt.Errorf("invalid schema source: %q", r.schemaSource)
@@ -117,7 +113,7 @@ func (r *reconciler) getExportedSchemas(ctx context.Context, cl client.Client) (
 		return nil, err
 	}
 
-	var boundSchemas exportedSchemas = make(map[string]*kubebindv1alpha2.BoundSchema, len(list.Items))
+	var boundSchemas kubebindv1alpha2.ExportedSchemas = make(map[string]*kubebindv1alpha2.BoundSchema, len(list.Items))
 	for _, item := range list.Items {
 		boundSchema, err := helpers.UnstructuredToBoundSchema(item)
 		if err != nil {

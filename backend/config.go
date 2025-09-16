@@ -152,7 +152,7 @@ func parseKCPServerURL(ctx context.Context, clusterConfig *rest.Config) (string,
 	clusterID := pathParts[5]
 
 	// Construct new URL with cluster path
-	u.Path = "/clusters/" + clusterID
+	u.Path = "/api/clusters/" + clusterID
 
 	return u.String(), nil
 }

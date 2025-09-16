@@ -72,7 +72,7 @@ func (d *LocalhostCallbackAuthenticator) Start() error {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/callback", d.callback)
+	mux.HandleFunc("/api/callback", d.callback)
 	d.server = &http.Server{Handler: mux}
 
 	listener, err := net.ListenTCP("tcp", address)

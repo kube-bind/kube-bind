@@ -26,7 +26,6 @@ import (
 	htmltemplate "html/template"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
@@ -34,7 +33,6 @@ import (
 	"github.com/gorilla/securecookie"
 	"golang.org/x/oauth2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -103,20 +101,20 @@ func NewHandler(
 func (h *handler) AddRoutes(mux *mux.Router) {
 	// Server contains double routes for when backend is multi-cluster aware or single cluster.
 	// When called multi-cluster aware route in single cluster mode, it will ignore cluster parameter.
-	mux.HandleFunc("/clusters/{cluster}/exports", h.handleServiceExport).Methods("GET")
-	mux.HandleFunc("/exports", h.handleServiceExport).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/exports", h.handleServiceExport).Methods("GET")
+	mux.HandleFunc("/api/exports", h.handleServiceExport).Methods("GET")
 
-	mux.HandleFunc("/clusters/{cluster}/resources", h.handleResources).Methods("GET")
-	mux.HandleFunc("/resources", h.handleResources).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/resources", h.handleResources).Methods("GET")
+	mux.HandleFunc("/api/resources", h.handleResources).Methods("GET")
 
-	mux.HandleFunc("/clusters/{cluster}/bind", h.handleBind).Methods("GET")
-	mux.HandleFunc("/bind", h.handleBind).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/bind", h.handleBind).Methods("GET")
+	mux.HandleFunc("/api/bind", h.handleBind).Methods("GET")
 
-	mux.HandleFunc("/clusters/{cluster}/authorize", h.handleAuthorize).Methods("GET")
-	mux.HandleFunc("/authorize", h.handleAuthorize).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/authorize", h.handleAuthorize).Methods("GET")
+	mux.HandleFunc("/api/authorize", h.handleAuthorize).Methods("GET")
 
-	mux.HandleFunc("/callback", h.handleCallback).Methods("GET")
-	mux.HandleFunc("/healthz", h.handleHealthz).Methods("GET")
+	mux.HandleFunc("/api/callback", h.handleCallback).Methods("GET")
+	mux.HandleFunc("/api/healthz", h.handleHealthz).Methods("GET")
 }
 
 func (h *handler) handleHealthz(w http.ResponseWriter, r *http.Request) {
@@ -132,9 +130,9 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 	oidcAuthorizeURL := h.oidcAuthorizeURL
 	if oidcAuthorizeURL == "" {
 		if singleClusterScoped {
-			oidcAuthorizeURL = fmt.Sprintf("http://%s/authorize", r.Host)
+			oidcAuthorizeURL = fmt.Sprintf("http://%s/api/authorize", r.Host)
 		} else {
-			oidcAuthorizeURL = fmt.Sprintf("http://%s/clusters/%s/authorize", r.Host, cluster)
+			oidcAuthorizeURL = fmt.Sprintf("http://%s/api/clusters/%s/authorize", r.Host, cluster)
 		}
 	}
 
@@ -207,7 +205,7 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		ProviderClusterID: providerCluster, // used in multicluster-runtime providers
 	}
 	if callbackPort != "" && code.RedirectURL == "" {
-		code.RedirectURL = fmt.Sprintf("http://localhost:%s/callback", callbackPort)
+		code.RedirectURL = fmt.Sprintf("http://localhost:%s/api/callback", callbackPort)
 	}
 
 	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {
@@ -295,9 +293,9 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
 	if authCode.ProviderClusterID == "" {
-		http.Redirect(w, r, "/resources?s="+cookieName, http.StatusFound)
+		http.Redirect(w, r, "/api/resources?s="+cookieName, http.StatusFound)
 	} else {
-		http.Redirect(w, r, "/clusters/"+authCode.ProviderClusterID+"/resources?s="+cookieName, http.StatusFound)
+		http.Redirect(w, r, "/api/clusters/"+authCode.ProviderClusterID+"/resources?s="+cookieName, http.StatusFound)
 	}
 }
 
@@ -374,7 +372,7 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
+	exportedSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
 	if err != nil {
 		logger.Error(err, "failed to get dynamic resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -382,43 +380,17 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var result []UISchema
-	for _, item := range apiResourceSchemas.Items {
-		scope := item.UnstructuredContent()["spec"].(map[string]interface{})["scope"]
-		if scope == nil {
-			scope = "-"
-		}
-
-		group := item.UnstructuredContent()["spec"].(map[string]interface{})["group"]
-		if group == nil {
-			group = "-"
-		}
-		resource := item.UnstructuredContent()["spec"].(map[string]interface{})["names"].(map[string]interface{})["plural"]
-		if resource == nil {
-			resource = "-"
-		}
-
-		kind := item.UnstructuredContent()["spec"].(map[string]interface{})["names"].(map[string]interface{})["kind"]
-		if kind == nil {
-			kind = "-"
-		}
-
-		versions := item.UnstructuredContent()["spec"].(map[string]interface{})["versions"]
-		if versions == nil {
-			versions = []interface{}{""}
-		}
-		for _, v := range versions.([]interface{}) {
-			version := v.(map[string]interface{})["name"]
-			result = append(result, UISchema{
-				Name:    item.GetName(),
-				Kind:    kind.(string),
-				Scope:   scope.(string),
-				Version: version.(string),
-				Group:   group.(string),
-				// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
-				Resource:  resource.(string),
-				SessionID: sessionID,
-			})
-		}
+	for _, item := range exportedSchemas {
+		result = append(result, UISchema{
+			Name:    item.GetName(),
+			Kind:    item.Spec.Names.Kind,
+			Scope:   string(item.Spec.Scope),
+			Version: item.Spec.Versions[0].Name,
+			Group:   item.Spec.Group,
+			// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
+			Resource:  item.Spec.Names.Plural,
+			SessionID: sessionID,
+		})
 	}
 
 	bs := bytes.Buffer{}
@@ -547,7 +519,7 @@ func mustRead(f func(name string) ([]byte, error), name string) string {
 	return string(bs)
 }
 
-func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string) (*unstructured.UnstructuredList, error) {
+func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string) (kubebindv1alpha2.ExportedSchemas, error) {
 	labelSelector := labels.Set{
 		resources.ExportedCRDsLabel: "true",
 	}
@@ -562,12 +534,5 @@ func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string)
 		Version: parts[1],
 		Group:   parts[2],
 	}
-	apiResourceSchemas, err := h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
-	if err != nil {
-		return nil, fmt.Errorf("failed to list crds: %w", err)
-	}
-	sort.SliceStable(apiResourceSchemas.Items, func(i, j int) bool {
-		return apiResourceSchemas.Items[i].GetName() < apiResourceSchemas.Items[j].GetName()
-	})
-	return apiResourceSchemas, nil
+	return h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
 }

@@ -68,7 +68,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	// setup oidc backend
 	callback := c.Options.OIDC.CallbackURL
 	if callback == "" {
-		callback = fmt.Sprintf("http://%s/callback", s.WebServer.Addr().String())
+		callback = fmt.Sprintf("http://%s/api/callback", s.WebServer.Addr().String())
 	}
 	s.OIDC, err = http.NewOIDCServiceProvider(
 		c.Options.OIDC.IssuerClientID,

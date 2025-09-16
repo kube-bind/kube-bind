@@ -73,3 +73,64 @@ type BindingResponseAuthenticationOAuth2CodeGrant struct {
 	// id is the ID of the authenticated user. It is for informational purposes only.
 	ID string `json:"id"`
 }
+
+type BindableResourcesResponse struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// resources is a list of resources that the user can select from.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	Resources []BindableResource `json:"resources"`
+}
+
+type BindableResource struct {
+	// name is the name of the resource.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+
+	// description is a human friendly description of the resource.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	Description string `json:"description,omitempty"`
+
+	// kind is the kind of the resource.
+	// +required
+	// +kubebuilder:validation:Required
+	Kind string `json:"kind"`
+
+	// scope is the scope of the resource, either "Cluster" or "Namespaced".
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Scope string `json:"scope"`
+
+	// apiVersion is the API version of the resource.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	APIVersion string `json:"apiVersion"`
+
+	// group is the API group of the resource.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Group string `json:"group"`
+
+	// resource is the plural name of the resource.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Resource string `json:"resource"`
+
+	// sessionID is a session ID that the consumer must pass back to the service provider
+	// during the binding step.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	SessionID string `json:"sessionID"`
+}

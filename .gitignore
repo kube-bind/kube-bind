@@ -15,3 +15,9 @@ coverage.*
 /bin
 docs/generators/cli-doc/cli-doc
 dex/
+
+# Frontend dependencies and build
+web/node_modules/
+web/dist/
+web/.vite/
+web/*.tsbuildinfo

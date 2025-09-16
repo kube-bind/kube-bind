@@ -23,22 +23,33 @@ The frontend integrates with the existing Go backend through the following endpo
 ### Prerequisites
 
 - Node.js 18+ and npm
-- Running Kube Bind backend server
+- Go 1.19+ for running the backend server
 
-### Installation
+### Development Workflow
 
+#### Option 1: Integrated Development (Recommended)
 ```bash
-# Navigate to web directory
-cd web
+# Build the frontend first
+cd web && npm install && npm run build && cd ..
 
-# Install dependencies
-npm install
-n
-# Start development server
-npm run dev
+# Run the Go backend server (serves both API and frontend)
+go run ./cmd/backend --listen-port=8080
+
+# Visit http://localhost:8080 for the complete application
 ```
 
-The development server will start on `http://localhost:3000` with API proxy to `http://localhost:8080`.
+#### Option 2: Separate Development Servers
+```bash
+# Terminal 1: Start Go backend
+go run ./cmd/backend --listen-port=8080
+
+# Terminal 2: Start frontend dev server with hot reload
+cd web
+npm install
+npm run dev
+
+# Visit http://localhost:3000 for frontend (proxies API to :8080)
+```
 
 ### Available Scripts
 
@@ -76,9 +87,31 @@ The frontend automatically detects the backend API through Vite proxy configurat
 
 ## Building for Production
 
+### Integrated Build
+```bash
+# Use the build script (builds frontend + Go binary)
+./scripts/build-frontend.sh
+
+# Or build manually:
+cd web && npm run build && cd ..
+go build -o bin/kube-bind-server ./cmd/backend
+
+# The frontend is automatically embedded in the Go binary
+```
+
+### Frontend Only
 ```bash
 cd web
 npm run build
 ```
 
-The built files will be in the `dist/` directory and can be served by any static file server or integrated into the Go backend's static file serving.
+The built files will be in the `web/dist/` directory and are automatically embedded into the Go binary via the `//go:embed` directive.
+
+## Architecture Integration
+
+The frontend is now fully integrated with the Go backend:
+
+- **Production**: Frontend assets are embedded in the Go binary using `//go:embed`
+- **Development**: Fallback to local filesystem for live development
+- **Routing**: SPA routes are handled by the Go server with proper fallback
+- **API**: All `/api/*` routes are handled by Go, everything else serves the Vue.js app

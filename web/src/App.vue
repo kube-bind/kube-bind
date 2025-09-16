@@ -4,12 +4,7 @@
       <div class="container">
         <h1 class="logo">Kube Bind</h1>
         <nav class="nav">
-          <router-link to="/" class="nav-link">Home</router-link>
-          <router-link to="/clusters" class="nav-link">Clusters</router-link>
-          <router-link to="/resources" class="nav-link">Resources</router-link>
-          <router-link to="/exports" class="nav-link">Exports</router-link>
-          <button v-if="!isAuthenticated" @click="login" class="btn btn-primary">Login</button>
-          <button v-if="isAuthenticated" @click="logout" class="btn btn-secondary">Logout</button>
+          <span class="nav-info">Resources</span>
         </nav>
       </div>
     </header>
@@ -21,30 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { authService } from './services/auth'
-
-const router = useRouter()
-const isAuthenticated = ref(false)
-
-const checkAuth = async () => {
-  isAuthenticated.value = await authService.checkAuthentication()
-}
-
-const login = () => {
-  authService.login()
-}
-
-const logout = () => {
-  authService.logout()
-  isAuthenticated.value = false
-  router.push('/')
-}
-
-onMounted(() => {
-  checkAuth()
-})
+// Simplified app - just serves resources view
 </script>
 
 <style>
@@ -90,18 +62,10 @@ body {
   gap: 1rem;
 }
 
-.nav-link {
-  text-decoration: none;
+.nav-info {
   color: #586069;
   font-weight: 500;
   padding: 0.5rem;
-  border-radius: 4px;
-  transition: color 0.2s;
-}
-
-.nav-link:hover,
-.nav-link.router-link-active {
-  color: #0366d6;
 }
 
 .btn {

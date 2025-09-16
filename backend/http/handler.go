@@ -17,7 +17,6 @@ limitations under the License.
 package http
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -42,6 +41,7 @@ import (
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
 	"github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/backend/session"
+	"github.com/kube-bind/kube-bind/backend/spaserver"
 	"github.com/kube-bind/kube-bind/backend/template"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -73,6 +73,8 @@ type handler struct {
 
 	client      *http.Client
 	kubeManager *kubernetes.Manager
+
+	frontend string
 }
 
 func NewHandler(
@@ -82,6 +84,7 @@ func NewHandler(
 	schemaSource string,
 	scope kubebindv1alpha2.InformerScope,
 	mgr *kubernetes.Manager,
+	frontend string,
 ) (*handler, error) {
 	return &handler{
 		oidc:                provider,
@@ -90,6 +93,7 @@ func NewHandler(
 		providerPrettyName:  providerPrettyName,
 		testingAutoSelect:   testingAutoSelect,
 		schemaSource:        schemaSource,
+		frontend:            frontend,
 		scope:               scope,
 		client:              http.DefaultClient,
 		kubeManager:         mgr,
@@ -99,7 +103,7 @@ func NewHandler(
 }
 
 func (h *handler) AddRoutes(mux *mux.Router) {
-	// Server contains double routes for when backend is multi-cluster aware or single cluster.
+	// API routes - Server contains double routes for when backend is multi-cluster aware or single cluster.
 	// When called multi-cluster aware route in single cluster mode, it will ignore cluster parameter.
 	mux.HandleFunc("/api/clusters/{cluster}/exports", h.handleServiceExport).Methods("GET")
 	mux.HandleFunc("/api/exports", h.handleServiceExport).Methods("GET")
@@ -115,6 +119,18 @@ func (h *handler) AddRoutes(mux *mux.Router) {
 
 	mux.HandleFunc("/api/callback", h.handleCallback).Methods("GET")
 	mux.HandleFunc("/api/healthz", h.handleHealthz).Methods("GET")
+
+	if strings.HasPrefix(h.frontend, "http://") {
+		spaserver, err := spaserver.NewSPAReverseProxyServer(h.frontend)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create SPA reverse proxy server: %v", err)) // Development only.
+		}
+		mux.PathPrefix("/").Handler(spaserver)
+	} else {
+		fileSystem := http.Dir(h.frontend)
+		mux.PathPrefix("/").Handler(spaserver.NewSPAFileServer(fileSystem))
+	}
+
 }
 
 func (h *handler) handleHealthz(w http.ResponseWriter, r *http.Request) {
@@ -148,7 +164,7 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 			Kind:       "BindingProvider",
 		},
 		Version:            ver,
-		ProviderPrettyName: "example-backend",
+		ProviderPrettyName: "backend",
 		AuthenticationMethods: []kubebindv1alpha2.AuthenticationMethod{
 			{
 				Method: "OAuth2CodeGrant",
@@ -293,9 +309,9 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
 	if authCode.ProviderClusterID == "" {
-		http.Redirect(w, r, "/api/resources?s="+cookieName, http.StatusFound)
+		http.Redirect(w, r, "/resources?s="+cookieName, http.StatusFound)
 	} else {
-		http.Redirect(w, r, "/api/clusters/"+authCode.ProviderClusterID+"/resources?s="+cookieName, http.StatusFound)
+		http.Redirect(w, r, "/clusters/"+authCode.ProviderClusterID+"/resources?s="+cookieName, http.StatusFound)
 	}
 }
 
@@ -379,35 +395,31 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var result []UISchema
+	result := kubebindv1alpha2.BindableResourcesResponse{}
 	for _, item := range exportedSchemas {
-		result = append(result, UISchema{
-			Name:    item.GetName(),
-			Kind:    item.Spec.Names.Kind,
-			Scope:   string(item.Spec.Scope),
-			Version: item.Spec.Versions[0].Name,
-			Group:   item.Spec.Group,
+
+		result.Resources = append(result.Resources, kubebindv1alpha2.BindableResource{
+			Name:       item.GetName(),
+			Kind:       item.Spec.Names.Kind,
+			Scope:      string(item.Spec.Scope),
+			APIVersion: item.Spec.Versions[0].Name,
+			Group:      item.Spec.Group,
 			// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
 			Resource:  item.Spec.Names.Plural,
 			SessionID: sessionID,
 		})
 	}
 
-	bs := bytes.Buffer{}
-	if err := resourcesTemplate.Execute(&bs, struct {
-		Cluster string
-		Schemas []UISchema
-	}{
-		Cluster: providerCluster,
-		Schemas: result,
-	}); err != nil {
-		logger.Error(err, "failed to execute template")
+	bs, err := json.Marshal(&result)
+	if err != nil {
+		logger.Error(err, "failed to marshal resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(bs.Bytes()) //nolint:errcheck
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bs) //nolint:errcheck
+
 }
 
 func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {

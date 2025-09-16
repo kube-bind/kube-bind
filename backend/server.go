@@ -118,6 +118,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		c.Options.SchemaSource,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		s.Kubernetes,
+		s.Config.Options.Frontend,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)

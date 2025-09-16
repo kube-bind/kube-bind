@@ -112,6 +112,46 @@ class AuthService {
     }
   }
 
+  async getResourcesWithSession(clusterId: string = '', sessionId: string): Promise<any> {
+    try {
+      // Use cluster-aware endpoint if clusterId is provided
+      const resourcesPath = clusterId ? `/api/clusters/${clusterId}/resources` : '/api/resources'
+      const fullUrl = `${resourcesPath}?s=${sessionId}`
+      
+      console.log('🌐 Making API request to:', fullUrl)
+      console.log('🔑 Session ID:', sessionId)
+      console.log('🏷️ Cluster ID:', clusterId || 'none (single cluster)')
+      
+      const response = await axios.get(fullUrl)
+      
+      console.log('✅ API Response Status:', response.status)
+      console.log('📄 Response Headers:', response.headers)
+      console.log('📦 Response Data:', response.data)
+      
+      return response.data
+    } catch (error: any) {
+      console.error('❌ Failed to fetch resources with session:', error)
+      if (error.response) {
+        console.error('📄 Error Response Status:', error.response.status)
+        console.error('📄 Error Response Data:', error.response.data)
+        console.error('📄 Error Response Headers:', error.response.headers)
+      }
+      throw error
+    }
+  }
+
+  async bindResourceWithSession(group: string, resource: string, version: string, clusterId: string = '', sessionId: string): Promise<void> {
+    try {
+      // Use cluster-aware endpoint if clusterId is provided
+      const bindPath = clusterId ? `/api/clusters/${clusterId}/bind` : '/api/bind'
+      const bindUrl = `${bindPath}?group=${group}&resource=${resource}&version=${version}&s=${sessionId}`
+      window.location.href = bindUrl
+    } catch (error) {
+      console.error('Failed to bind resource with session:', error)
+      throw error
+    }
+  }
+
   async getExports(clusterId: string = ''): Promise<any> {
     try {
       // Use cluster-aware endpoint if clusterId is provided

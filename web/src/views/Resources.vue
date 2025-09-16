@@ -1,13 +1,6 @@
 <template>
   <div class="container">
     <div class="resources-header">
-      <div class="breadcrumb" v-if="clusterId">
-        <router-link to="/clusters" class="breadcrumb-link">Clusters</router-link>
-        <span class="breadcrumb-separator">→</span>
-        <router-link :to="`/clusters/${clusterId}`" class="breadcrumb-link">{{ clusterId }}</router-link>
-        <span class="breadcrumb-separator">→</span>
-        <span class="breadcrumb-current">Resources</span>
-      </div>
       <h1>Available Resources</h1>
       <p v-if="clusterId">Resources for cluster: <span class="cluster-name">{{ clusterId }}</span></p>
       <p v-else>Select resources to bind to your cluster</p>
@@ -32,14 +25,15 @@
     <div v-else class="resources-grid">
       <div
         v-for="resource in resources"
-        :key="`${resource.Group}.${resource.Resource}`"
+        :key="`${resource.group}.${resource.resource}`"
         class="resource-card"
       >
+      
         <div class="resource-header">
           <div class="resource-icon">🔧</div>
           <div class="resource-info">
-            <h3 class="resource-name">{{ resource.Name }}</h3>
-            <p class="resource-kind">{{ resource.Kind }}</p>
+            <h3 class="resource-name">{{ resource.name }}</h3>
+            <p class="resource-kind">{{ resource.kind }}</p>
           </div>
         </div>
 
@@ -47,15 +41,15 @@
           <div class="resource-meta">
             <div class="meta-item">
               <span class="meta-label">Group:</span>
-              <span class="meta-value">{{ resource.Group || 'core' }}</span>
+              <span class="meta-value">{{ resource.group || 'core' }}</span>
             </div>
             <div class="meta-item">
               <span class="meta-label">Version:</span>
-              <span class="meta-value">{{ resource.Version }}</span>
+              <span class="meta-value">{{ resource.version }}</span>
             </div>
             <div class="meta-item">
               <span class="meta-label">Scope:</span>
-              <span class="meta-value">{{ resource.Scope }}</span>
+              <span class="meta-value">{{ resource.scope }}</span>
             </div>
           </div>
         </div>
@@ -64,7 +58,7 @@
           <button
             @click="bindResource(resource)"
             class="btn btn-primary btn-full"
-            :disabled="binding === resource.Resource"
+            :disabled="binding === resource.resource"
           >
             <span v-if="binding === resource.Resource">Binding...</span>
             <span v-else>Bind Resource</span>
@@ -76,8 +70,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { authService } from '../services/auth'
 
 interface Props {
@@ -95,7 +89,6 @@ interface UISchema {
 }
 
 const props = defineProps<Props>()
-const router = useRouter()
 const route = useRoute()
 
 const resources = ref<UISchema[]>([])
@@ -107,24 +100,78 @@ const clusterId = computed(() => {
   return props.cluster || (route.params.cluster as string) || ''
 })
 
+const sessionId = computed(() => {
+  return (route.query.s as string) || ''
+})
+
 const loadResources = async () => {
+  console.log('🔄 Loading resources...')
+  console.log('📋 Current state:', { 
+    clusterId: clusterId.value, 
+    sessionId: sessionId.value,
+    route: route.path,
+    query: route.query,
+    params: route.params
+  })
+  
   loading.value = true
   error.value = null
   
   try {
-    const isAuth = await authService.checkAuthentication()
-    if (!isAuth) {
-      router.push('/login')
-      return
-    }
+    // If we have a session ID from the URL, use it directly
+    const currentSessionId = sessionId.value
+    if (currentSessionId) {
+      console.log('🔑 Using session ID from URL:', currentSessionId)
+      const data = await authService.getResourcesWithSession(clusterId.value, currentSessionId)
+      console.log('📦 Raw API response:', data)
+      
+      // Handle response format - check for both 'resources' (lowercase) and 'Resources' (uppercase)
+      if (data && typeof data === 'object' && 'resources' in data && Array.isArray(data.resources)) {
+        console.log('✅ Found resources in response.resources:', data.resources.length, 'items')
+        resources.value = data.resources
+      } else if (data && typeof data === 'object' && 'Resources' in data && Array.isArray(data.Resources)) {
+        console.log('✅ Found resources in response.Resources:', data.Resources.length, 'items')
+        resources.value = data.Resources
+      } else if (Array.isArray(data)) {
+        console.log('✅ Found resources as direct array:', data.length, 'items')
+        resources.value = data
+      } else {
+        console.log('❌ Unexpected response format:', data)
+        resources.value = []
+      }
+    } else {
+      console.log('🔍 No session ID, checking authentication...')
+      // Fallback to checking authentication status
+      const isAuth = await authService.checkAuthentication()
+      if (!isAuth) {
+        console.log('❌ Not authenticated')
+        error.value = 'No session found. Please authenticate first.'
+        return
+      }
 
-    const data = await authService.getResources(clusterId.value)
-    resources.value = data
+      console.log('✅ Authenticated, fetching resources...')
+      const data = await authService.getResources(clusterId.value)
+      console.log('📦 Raw API response (fallback):', data)
+      
+      // Handle response format - check for both 'resources' (lowercase) and 'Resources' (uppercase)
+      if (data && typeof data === 'object' && 'resources' in data && Array.isArray(data.resources)) {
+        resources.value = data.resources
+      } else if (data && typeof data === 'object' && 'Resources' in data && Array.isArray(data.Resources)) {
+        resources.value = data.Resources
+      } else if (Array.isArray(data)) {
+        resources.value = data
+      } else {
+        resources.value = []
+      }
+    }
+    
+    console.log('📊 Final resources count:', resources.value.length)
   } catch (err) {
-    console.error('Failed to load resources:', err)
+    console.error('❌ Failed to load resources:', err)
     error.value = err instanceof Error ? err.message : 'Failed to load resources'
   } finally {
     loading.value = false
+    console.log('🏁 Loading complete')
   }
 }
 
@@ -132,7 +179,12 @@ const bindResource = async (resource: UISchema) => {
   binding.value = resource.Resource
   
   try {
-    await authService.bindResource(resource.Group, resource.Resource, resource.Version, clusterId.value)
+    const currentSessionId = sessionId.value
+    if (currentSessionId) {
+      await authService.bindResourceWithSession(resource.Group, resource.Resource, resource.Version, clusterId.value, currentSessionId)
+    } else {
+      await authService.bindResource(resource.Group, resource.Resource, resource.Version, clusterId.value)
+    }
   } catch (err) {
     console.error('Failed to bind resource:', err)
     error.value = err instanceof Error ? err.message : 'Failed to bind resource'
@@ -140,6 +192,11 @@ const bindResource = async (resource: UISchema) => {
     binding.value = null
   }
 }
+
+// Watch for route changes to reload resources automatically
+watch([clusterId, sessionId], () => {
+  loadResources()
+}, { immediate: true })
 
 onMounted(() => {
   loadResources()
@@ -150,36 +207,6 @@ onMounted(() => {
 .resources-header {
   text-align: center;
   margin-bottom: 3rem;
-}
-
-.breadcrumb {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-
-.breadcrumb-link {
-  color: #0366d6;
-  text-decoration: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.breadcrumb-link:hover {
-  background-color: #f6f8fa;
-}
-
-.breadcrumb-separator {
-  margin: 0 0.5rem;
-  color: #6b7280;
-}
-
-.breadcrumb-current {
-  color: #374151;
-  font-weight: 500;
 }
 
 .cluster-name {

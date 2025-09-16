@@ -159,10 +159,10 @@ class AuthService {
     }
   }
 
-  async bindResourceWithSession(group: string, resource: string, version: string, clusterId: string = '', sessionId: string, scope: string = 'Namespaced', kind: string = '', name: string = ''): Promise<any> {
+  async bindResourceWithSession(group: string, resource: string, apiVersion: string, clusterId: string = '', sessionId: string, scope: string = 'Namespaced', kind: string = '', name: string = ''): Promise<any> {
     try {
       console.log('🔗 Binding resource with POST request')
-      console.log('📋 Resource details:', { group, resource, version, clusterId, sessionId })
+      console.log('📋 Resource details:', { group, resource, apiVersion, clusterId, sessionId })
       
       // Use cluster-aware endpoint if clusterId is provided
       const bindPath = clusterId ? `/api/clusters/${clusterId}/bind` : '/api/bind'
@@ -178,7 +178,7 @@ class AuthService {
           name: name || `${resource}.${group || 'core'}`,
           kind: kind || resource,
           scope: scope,
-          apiVersion: version,
+          apiVersion: apiVersion,
           group: group || '',
           resource: resource,
           sessionID: sessionId

@@ -45,7 +45,7 @@
             </div>
             <div class="meta-item">
               <span class="meta-label">Version:</span>
-              <span class="meta-value">{{ resource.version }}</span>
+              <span class="meta-value">{{ resource.apiVersion }}</span>
             </div>
             <div class="meta-item">
               <span class="meta-label">Scope:</span>
@@ -80,7 +80,7 @@ interface Props {
 
 interface UISchema {
   name: string
-  version: string
+  apiVersion: string
   group: string
   kind: string
   scope: string
@@ -188,7 +188,7 @@ const bindResource = async (resource: UISchema) => {
       response = await authService.bindResourceWithSession(
         resource.group, 
         resource.resource, 
-        resource.version, 
+        resource.apiVersion, 
         clusterId.value, 
         currentSessionId,
         resource.scope,

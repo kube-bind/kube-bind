@@ -85,6 +85,7 @@ type BindableResourcesResponse struct {
 	Resources []BindableResource `json:"resources"`
 }
 
+// BindableResource describes a resource that the user can select to bind to.
 type BindableResource struct {
 	// name is the name of the resource.
 	//
@@ -128,9 +129,30 @@ type BindableResource struct {
 	Resource string `json:"resource"`
 
 	// sessionID is a session ID that the consumer must pass back to the service provider
-	// during the binding step.
+	// during the binding step. If multiple backends are aggregated, this can be used to
+	// to authenticate the user to the correct backend.
 	//
 	// +required
 	// +kubebuilder:validation:Required
 	SessionID string `json:"sessionID"`
+}
+
+// BindableResourcesRequest is sent by the consumer to the service provider
+// to indicate which resources the user wants to bind to. It is sent after
+// authentication and resource selection on the service provider website.
+type BindableResourcesRequest struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// resources is a list of resources that the user can select from.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	Resources []BindableResource `json:"resources"`
+
+	// PermissionClaims are additional permissions that the user wants to have.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }

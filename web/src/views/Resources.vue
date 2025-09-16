@@ -60,7 +60,7 @@
             class="btn btn-primary btn-full"
             :disabled="binding === resource.resource"
           >
-            <span v-if="binding === resource.Resource">Binding...</span>
+            <span v-if="binding === resource.resource">Binding...</span>
             <span v-else>Bind Resource</span>
           </button>
         </div>
@@ -79,13 +79,13 @@ interface Props {
 }
 
 interface UISchema {
-  Name: string
-  Version: string
-  Group: string
-  Kind: string
-  Scope: string
-  Resource: string
-  SessionID: string
+  name: string
+  version: string
+  group: string
+  kind: string
+  scope: string
+  resource: string
+  sessionID: string
 }
 
 const props = defineProps<Props>()
@@ -176,17 +176,48 @@ const loadResources = async () => {
 }
 
 const bindResource = async (resource: UISchema) => {
-  binding.value = resource.Resource
+  binding.value = resource.resource
+  console.log('🔗 Starting bind process for resource:', resource)
   
   try {
     const currentSessionId = sessionId.value
+    let response
+    
     if (currentSessionId) {
-      await authService.bindResourceWithSession(resource.Group, resource.Resource, resource.Version, clusterId.value, currentSessionId)
+      console.log('🔑 Using session ID for binding')
+      response = await authService.bindResourceWithSession(
+        resource.group, 
+        resource.resource, 
+        resource.version, 
+        clusterId.value, 
+        currentSessionId,
+        resource.scope,
+        resource.kind,
+        resource.name
+      )
     } else {
-      await authService.bindResource(resource.Group, resource.Resource, resource.Version, clusterId.value)
+      console.log('🍪 Using cookie-based authentication for binding')
+      response = await authService.bindResource(resource.group, resource.resource, resource.version, clusterId.value)
     }
+    
+    console.log('✅ Bind operation completed successfully')
+    console.log('📦 Bind response:', response)
+    
+    // Handle the response - could be a redirect URL or success message
+    if (response && typeof response === 'string' && response.startsWith('http')) {
+      console.log('🔄 Redirecting to:', response)
+      window.location.href = response
+    } else if (response && response.redirectURL) {
+      console.log('🔄 Redirecting to:', response.redirectURL)
+      window.location.href = response.redirectURL
+    } else {
+      console.log('✅ Bind completed, no redirect needed')
+      // Show success message or refresh resources
+      // Could implement a success toast notification here
+    }
+    
   } catch (err) {
-    console.error('Failed to bind resource:', err)
+    console.error('❌ Failed to bind resource:', err)
     error.value = err instanceof Error ? err.message : 'Failed to bind resource'
   } finally {
     binding.value = null

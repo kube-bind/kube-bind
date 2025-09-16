@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	htmltemplate "html/template"
 	"net/http"
 	"net/url"
 	"strings"
@@ -42,13 +41,8 @@ import (
 	"github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/backend/session"
 	"github.com/kube-bind/kube-bind/backend/spaserver"
-	"github.com/kube-bind/kube-bind/backend/template"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
-)
-
-var (
-	resourcesTemplate = htmltemplate.Must(htmltemplate.New("resource").Parse(mustRead(template.Files.ReadFile, "resources.gohtml")))
 )
 
 // See https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching?hl=en
@@ -105,20 +99,23 @@ func NewHandler(
 func (h *handler) AddRoutes(mux *mux.Router) {
 	// API routes - Server contains double routes for when backend is multi-cluster aware or single cluster.
 	// When called multi-cluster aware route in single cluster mode, it will ignore cluster parameter.
-	mux.HandleFunc("/api/clusters/{cluster}/exports", h.handleServiceExport).Methods("GET")
-	mux.HandleFunc("/api/exports", h.handleServiceExport).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/exports", h.handleServiceExport).Methods(http.MethodGet)
+	mux.HandleFunc("/api/exports", h.handleServiceExport).Methods(http.MethodGet)
 
-	mux.HandleFunc("/api/clusters/{cluster}/resources", h.handleResources).Methods("GET")
-	mux.HandleFunc("/api/resources", h.handleResources).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/resources", h.handleResources).Methods(http.MethodGet)
+	mux.HandleFunc("/api/resources", h.handleResources).Methods(http.MethodGet)
 
-	mux.HandleFunc("/api/clusters/{cluster}/bind", h.handleBind).Methods("GET")
-	mux.HandleFunc("/api/bind", h.handleBind).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/bind", h.handleBind).Methods(http.MethodGet)
+	mux.HandleFunc("/api/bind", h.handleBind).Methods(http.MethodGet)
 
-	mux.HandleFunc("/api/clusters/{cluster}/authorize", h.handleAuthorize).Methods("GET")
-	mux.HandleFunc("/api/authorize", h.handleAuthorize).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/bind", h.handleBindPost).Methods(http.MethodPost)
+	mux.HandleFunc("/api/bind", h.handleBindPost).Methods(http.MethodPost)
 
-	mux.HandleFunc("/api/callback", h.handleCallback).Methods("GET")
-	mux.HandleFunc("/api/healthz", h.handleHealthz).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/authorize", h.handleAuthorize).Methods(http.MethodGet)
+	mux.HandleFunc("/api/authorize", h.handleAuthorize).Methods(http.MethodGet)
+
+	mux.HandleFunc("/api/callback", h.handleCallback).Methods(http.MethodGet)
+	mux.HandleFunc("/api/healthz", h.handleHealthz).Methods(http.MethodGet)
 
 	if strings.HasPrefix(h.frontend, "http://") {
 		spaserver, err := spaserver.NewSPAReverseProxyServer(h.frontend)
@@ -523,12 +520,149 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, parsedAuthURL.String(), http.StatusFound)
 }
 
-func mustRead(f func(name string) ([]byte, error), name string) string {
-	bs, err := f(name)
-	if err != nil {
-		panic(err)
+func (h *handler) handleBindPost(w http.ResponseWriter, r *http.Request) {
+	logger := getLogger(r)
+	providerCluster := mux.Vars(r)["cluster"]
+
+	prepareNoCache(w)
+
+	// Get session ID from query parameter
+	sessionID := r.URL.Query().Get("s")
+	if sessionID == "" {
+		logger.Error(errors.New("missing session parameter"), "failed to get session from query")
+		http.Error(w, "missing session parameter 's'", http.StatusBadRequest)
+		return
 	}
-	return string(bs)
+
+	// Get session cookie
+	ck, err := r.Cookie(sessionID)
+	if err != nil {
+		logger.Error(err, "failed to get session cookie")
+		http.Error(w, "no session cookie found", http.StatusBadRequest)
+		return
+	}
+
+	// Decode session state
+	state := session.State{}
+	s := securecookie.New(h.cookieSigningKey, h.cookieEncryptionKey)
+	if err := s.Decode(sessionID, ck.Value, &state); err != nil {
+		logger.Error(err, "failed to decode session cookie")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// Parse JSON request body
+	var bindRequest kubebindv1alpha2.BindableResourcesRequest
+	if err := json.NewDecoder(r.Body).Decode(&bindRequest); err != nil {
+		logger.Error(err, "failed to parse JSON request body")
+		http.Error(w, "invalid JSON request body", http.StatusBadRequest)
+		return
+	}
+
+	logger.V(1).Info("received bind request", "resources", len(bindRequest.Resources), "permissionClaims", len(bindRequest.PermissionClaims))
+
+	// Validate request
+	if len(bindRequest.Resources) == 0 {
+		logger.Error(errors.New("no resources specified"), "validation failed")
+		http.Error(w, "at least one resource must be specified", http.StatusBadRequest)
+		return
+	}
+
+	// Handle kubeconfig setup
+	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, providerCluster)
+	if err != nil {
+		logger.Error(err, "failed to handle resources")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// Create API service export requests for each resource
+	var requests []runtime.RawExtension
+	for _, bindableResource := range bindRequest.Resources {
+		exportRequest := kubebindv1alpha2.APIServiceExportRequestResponse{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
+				Kind:       "APIServiceExportRequest",
+			},
+			ObjectMeta: kubebindv1alpha2.NameObjectMeta{
+				Name: bindableResource.Resource + "." + bindableResource.Group,
+			},
+			Spec: kubebindv1alpha2.APIServiceExportRequestSpec{
+				Resources: []kubebindv1alpha2.APIServiceExportRequestResource{
+					{
+						GroupResource: kubebindv1alpha2.GroupResource{
+							Group:    bindableResource.Group,
+							Resource: bindableResource.Resource,
+						},
+						Versions: []string{bindableResource.APIVersion},
+					},
+				},
+			},
+		}
+
+		requestBytes, err := json.Marshal(&exportRequest)
+		if err != nil {
+			logger.Error(err, "failed to marshal export request", "resource", bindableResource.Resource)
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+
+		requests = append(requests, runtime.RawExtension{Raw: requestBytes})
+	}
+
+	// Create binding response
+	response := kubebindv1alpha2.BindingResponse{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
+			Kind:       "BindingResponse",
+		},
+		Authentication: kubebindv1alpha2.BindingResponseAuthentication{
+			OAuth2CodeGrant: &kubebindv1alpha2.BindingResponseAuthenticationOAuth2CodeGrant{
+				SessionID: state.SessionID,
+				ID:        state.Token.Issuer + "/" + state.Token.Subject,
+			},
+		},
+		Kubeconfig: kfg,
+		Requests:   requests,
+	}
+
+	payload, err := json.Marshal(&response)
+	if err != nil {
+		logger.Error(err, "failed to marshal binding response")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	encoded := base64.URLEncoding.EncodeToString(payload)
+
+	parsedAuthURL, err := url.Parse(state.RedirectURL)
+	if err != nil {
+		logger.Error(err, "failed to parse redirect URL")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	values := parsedAuthURL.Query()
+	values.Add("response", encoded)
+
+	parsedAuthURL.RawQuery = values.Encode()
+
+	logger.V(1).Info("redirecting to auth callback after POST bind",
+		"url", state.RedirectURL+"?response=<redacted>",
+		"resourceCount", len(bindRequest.Resources))
+
+	// For POST requests, we can either redirect or return JSON response
+	// Since this is called from frontend JavaScript, return the redirect URL as JSON
+	w.Header().Set("Content-Type", "application/json")
+	redirectResponse := map[string]string{
+		"redirectURL": parsedAuthURL.String(),
+	}
+
+	if err := json.NewEncoder(w).Encode(redirectResponse); err != nil {
+		logger.Error(err, "failed to encode redirect response")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string) (kubebindv1alpha2.ExportedSchemas, error) {

@@ -6,6 +6,28 @@ export interface SessionInfo {
   isAuthenticated: boolean
 }
 
+export interface BindableResource {
+  name: string
+  kind: string
+  scope: string
+  apiVersion: string
+  group: string
+  resource: string
+  sessionID: string
+}
+
+export interface PermissionClaim {
+  // Add permission claim properties as needed
+  [key: string]: any
+}
+
+export interface BindableResourcesRequest {
+  apiVersion: string
+  kind: string
+  resources: BindableResource[]
+  permissionClaims?: PermissionClaim[]
+}
+
 class AuthService {
   private sessionInfo: SessionInfo | null = null
 
@@ -95,17 +117,14 @@ class AuthService {
     }
   }
 
-  async bindResource(group: string, resource: string, version: string, clusterId: string = ''): Promise<void> {
+  async bindResource(group: string, resource: string, version: string, clusterId: string = ''): Promise<any> {
     try {
       const sessionCookie = this.getSessionCookie()
       if (!sessionCookie) {
         throw new Error('No session found')
       }
 
-      // Use cluster-aware endpoint if clusterId is provided
-      const bindPath = clusterId ? `/api/clusters/${clusterId}/bind` : '/api/bind'
-      const bindUrl = `${bindPath}?group=${group}&resource=${resource}&version=${version}&s=${sessionCookie}`
-      window.location.href = bindUrl
+      return this.bindResourceWithSession(group, resource, version, clusterId, sessionCookie)
     } catch (error) {
       console.error('Failed to bind resource:', error)
       throw error
@@ -140,14 +159,51 @@ class AuthService {
     }
   }
 
-  async bindResourceWithSession(group: string, resource: string, version: string, clusterId: string = '', sessionId: string): Promise<void> {
+  async bindResourceWithSession(group: string, resource: string, version: string, clusterId: string = '', sessionId: string, scope: string = 'Namespaced', kind: string = '', name: string = ''): Promise<any> {
     try {
+      console.log('🔗 Binding resource with POST request')
+      console.log('📋 Resource details:', { group, resource, version, clusterId, sessionId })
+      
       // Use cluster-aware endpoint if clusterId is provided
       const bindPath = clusterId ? `/api/clusters/${clusterId}/bind` : '/api/bind'
-      const bindUrl = `${bindPath}?group=${group}&resource=${resource}&version=${version}&s=${sessionId}`
-      window.location.href = bindUrl
-    } catch (error) {
-      console.error('Failed to bind resource with session:', error)
+      const bindUrl = `${bindPath}?s=${sessionId}`
+      
+      console.log('🌐 POST request to:', bindUrl)
+      
+      // Create the BindableResourcesRequest payload
+      const requestPayload: BindableResourcesRequest = {
+        apiVersion: 'kubebind.io/v1alpha2',
+        kind: 'BindableResourcesRequest',
+        resources: [{
+          name: name || `${resource}.${group || 'core'}`,
+          kind: kind || resource,
+          scope: scope,
+          apiVersion: version,
+          group: group || '',
+          resource: resource,
+          sessionID: sessionId
+        }],
+        permissionClaims: []
+      }
+      
+      console.log('📦 Request payload:', requestPayload)
+      
+      const response = await axios.post(bindUrl, requestPayload, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      console.log('✅ Bind response status:', response.status)
+      console.log('📦 Bind response data:', response.data)
+      
+      return response.data
+    } catch (error: any) {
+      console.error('❌ Failed to bind resource with session:', error)
+      if (error.response) {
+        console.error('📄 Error Response Status:', error.response.status)
+        console.error('📄 Error Response Data:', error.response.data)
+      }
       throw error
     }
   }

@@ -242,7 +242,8 @@ GO_TEST = $(GOTESTSUM) $(GOTESTSUM_ARGS) --
 endif
 
 COUNT ?= 1
-E2E_PARALLELISM ?= 1
+NPROC ?= $$(( $(shell nproc) / 2 ))
+E2E_PARALLELISM ?= $$(( $(NPROC) > 1 ? $(NPROC) : 1))
 
 dex:
 		git clone https://github.com/dexidp/dex.git

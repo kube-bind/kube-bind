@@ -250,8 +250,8 @@ dex/bin/dex: dex
 
 $(DEX):
 	mkdir -p $(TOOLS_DIR)
-	git clone --branch $(DEX_VER) --depth 1 https://github.com/dexidp/dex $(TOOLS_DIR)/dex-clone-$(DEX_VER)
-	cd $(TOOLS_DIR)/dex-clone-$(DEX_VER) && make build
+	git clone --branch $(DEX_VER) --depth 1 https://github.com/dexidp/dex $(TOOLS_DIR)/dex-clone-$(DEX_VER) || true
+	cd $(TOOLS_DIR)/dex-clone-$(DEX_VER) && GOWORK=off make build
 	cp -a $(TOOLS_DIR)/dex-clone-$(DEX_VER)/bin/dex $(DEX)
 
 $(KCP):

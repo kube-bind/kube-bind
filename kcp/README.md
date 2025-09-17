@@ -45,13 +45,13 @@ bin/backend \
   --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
   --oidc-issuer-client-id=kube-bind \
   --oidc-issuer-url=http://127.0.0.1:5556/dex \
-  --oidc-callback-url=http://127.0.0.1:8080/callback \
+  --oidc-callback-url=http://127.0.0.1:8080/api/callback \
   --pretty-name="BigCorp.com" \
   --namespace-prefix="kube-bind-" \
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
   --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
   --schema-source apiresourceschemas \
-  --consumer-scope=namespaced
+  --consumer-scope=namespaced --frontend http://localhost:3000
 ```
 
 
@@ -91,7 +91,7 @@ kubectl kcp bind apiexport root:provider:cowboys-stable
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/1a2ysx9kyac9gubl    
+# cluster   Ready   https://192.168.2.166:6443/clusters/h3tp9nwm225v19nz     
 ```
 
 9. Now we gonna initiate consumer:
@@ -105,27 +105,26 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/1a2ysx9kyac9gubl/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/api/clusters/h3tp9nwm225v19nz/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind` 
-kubectl get secret kubeconfig-tq87c -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+kubectl get secret kubeconfig-zjx72 -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport-namespaced.yaml  --skip-konnector --remote-namespace kube-bind-pd7m9
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport-namespaced.yaml  --skip-konnector --remote-namespace kube-bind-v9jlf
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport-cluster.yaml  --skip-konnector --remote-namespace kube-bind-tnnfp
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport-cluster.yaml  --skip-konnector --remote-namespace kube-bind-2nkhf
 
 
 export KUBECONFIG=.kcp/consumer.kubeconfig
 go run ./cmd/konnector/ --lease-namespace default
 ```
 
-Create objects:
+Create objects: 
 ```
 kubectl apply -f kcp/deploy/examples/cowboy.yaml
 kubectl apply -f kcp/deploy/examples/sheriff.yaml
 ```
-
 
 ## Debug
 

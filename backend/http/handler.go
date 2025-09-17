@@ -305,6 +305,7 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	secure := false
 
 	http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
+	// These are UI paths, not API paths, hence no /api/ prefix. UI will call the API for data.
 	if authCode.ProviderClusterID == "" {
 		http.Redirect(w, r, "/resources?s="+cookieName, http.StatusFound)
 	} else {

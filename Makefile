@@ -273,7 +273,7 @@ test-e2e: WHAT ?= ./test/e2e...
 test-e2e: $(KCP) $(DEX) build ## Run e2e tests
 	mkdir .kcp
 	$(DEX) serve hack/dex-config-dev.yaml 2>&1 & DEX_PID=$$!; \
-	$(KCP) start &>.kcp/kcp.log & KCP_PID=$$!; \
+	$(KCP) start --bind-address=127.0.0.1 &>.kcp/kcp.log & KCP_PID=$$!; \
 	trap 'kill -TERM $$DEX_PID $$KCP_PID; rm -rf .kcp' TERM INT EXIT && \
 	echo "Waiting for kcp to be ready (check .kcp/kcp.log)." && while ! KUBECONFIG=.kcp/admin.kubeconfig kubectl get --raw /readyz &>/dev/null; do sleep 1; echo -n "."; done && echo && \
 	KUBECONFIG=$$PWD/.kcp/admin.kubeconfig GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) $(WHAT) $(TEST_ARGS)

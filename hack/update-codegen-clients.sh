@@ -26,17 +26,17 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; go list -f '{{.Dir}}' -m k8s.i
 
 source "${CODEGEN_PKG}/kube_codegen.sh"
 
-pushd ./sdk/apis
+pushd sdk
 kube::codegen::gen_helpers \
-    --boilerplate "../../hack/boilerplate/boilerplate.generatego.txt" \
-    "."
+    --boilerplate "../hack/boilerplate/boilerplate.generatego.txt" \
+    "./apis"
 
+rm -rf ./client
 kube::codegen::gen_client \
     --with-watch \
-    --output-dir "../client" \
+    --output-dir "./client" \
     --output-pkg "github.com/kube-bind/kube-bind/sdk/client" \
-    --boilerplate "../../hack/boilerplate/boilerplate.generatego.txt" \
-    "."
+    --boilerplate "../hack/boilerplate/boilerplate.generatego.txt" \
+    "./apis"
 
 popd
-

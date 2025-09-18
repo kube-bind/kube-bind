@@ -6,8 +6,7 @@ replace (
 	github.com/kube-bind/kube-bind => ./
 	github.com/kube-bind/kube-bind/cli => ./cli
 	github.com/kube-bind/kube-bind/contrib => ./contrib
-	github.com/kube-bind/kube-bind/sdk/apis => ./sdk/apis
-	github.com/kube-bind/kube-bind/sdk/client => ./sdk/client
+	github.com/kube-bind/kube-bind/sdk => ./sdk
 )
 
 // Matches multicluster-runtime v0.21.0-alpha.8
@@ -41,8 +40,7 @@ require (
 	github.com/kcp-dev/kcp/sdk v0.28.0
 	github.com/kcp-dev/multicluster-provider v0.1.0
 	github.com/kube-bind/kube-bind/cli v0.0.0-20250515145715-d9f20e7c840d
-	github.com/kube-bind/kube-bind/sdk/apis v0.4.8
-	github.com/kube-bind/kube-bind/sdk/client v0.0.0-20250515145715-d9f20e7c840d
+	github.com/kube-bind/kube-bind/sdk v0.4.1
 	github.com/martinlindhe/base36 v1.1.1
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6

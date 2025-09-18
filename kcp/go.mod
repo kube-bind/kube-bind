@@ -4,9 +4,7 @@ go 1.24.0
 
 replace github.com/kube-bind/kube-bind => ../
 
-replace github.com/kube-bind/kube-bind/sdk/apis => ../sdk/apis
-
-replace github.com/kube-bind/kube-bind/sdk/client => ../sdk/client
+replace github.com/kube-bind/kube-bind/sdk => ../sdk
 
 replace github.com/kube-bind/kube-bind/cli => ../cli
 

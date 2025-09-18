@@ -20,7 +20,7 @@
           <li class="list-group-item">Scope: {{.Scope}}</li>
         </ul>
         <div class="card-body">
-           <a href="{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?s={{.SessionID}}&resource={{.Resource}}&group={{.Group}}&version={{.Version}}&kind={{.Kind}}&name={{.Name}}" class="btn btn-lg btn-block btn-primary {{.Resource}}">Bind</a>
+           <a href="/api/{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?s={{.SessionID}}&resource={{.Resource}}&group={{.Group}}&version={{.Version}}&kind={{.Kind}}&name={{.Name}}" class="btn btn-lg btn-block btn-primary {{.Resource}}">Bind</a>
         </div>
       </div>
       {{end}}

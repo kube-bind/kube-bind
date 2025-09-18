@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -27,7 +28,7 @@ import (
 
 func BrowserEventuallyAtPath(t *testing.T, browser *browser.Browser, path string) {
 	require.Eventuallyf(t, func() bool {
-		if browser.Url().Path == path {
+		if strings.Contains(browser.Url().Path, path) {
 			t.Logf("Browser is at %s, waiting for path %s", browser.Url(), path)
 			return true
 		}

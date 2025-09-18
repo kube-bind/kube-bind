@@ -68,7 +68,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	// setup oidc backend
 	callback := c.Options.OIDC.CallbackURL
 	if callback == "" {
-		callback = fmt.Sprintf("http://%s/callback", s.WebServer.Addr().String())
+		callback = fmt.Sprintf("http://%s/api/callback", s.WebServer.Addr().String())
 	}
 	s.OIDC, err = http.NewOIDCServiceProvider(
 		ctx,
@@ -119,6 +119,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		c.Options.SchemaSource,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		s.Kubernetes,
+		s.Config.Options.Frontend,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)
@@ -180,6 +181,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		opts,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
+		c.Options.SchemaSource,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest Controller: %w", err)

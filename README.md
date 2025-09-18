@@ -62,6 +62,36 @@ All the actions shown between the clusters are done by the konnector, except: th
 
 To get familiar with setting up the environment, please check out docs at [kube-bind.io](https://docs.kube-bind.io/main/setup).
 
+### Web Frontend
+
+The project includes a modern Vue.js + TypeScript web frontend that's fully integrated with the Go backend. The frontend provides:
+
+- **SSO Authentication**: OAuth2/OIDC integration with the backend
+- **Multi-cluster Support**: Browse resources across different clusters  
+- **Resource Management**: Browse and bind available Kubernetes resources
+- **Modern UI**: Responsive design built with Vue.js 3 and TypeScript
+
+#### Quick Start (Integrated)
+```bash
+# Build frontend and run integrated server
+./scripts/run-frontend.sh
+go run ./cmd/backend --listen-port=8080
+
+# Visit http://localhost:8080 for the complete application
+```
+
+#### Development Mode
+```bash
+# Option 1: Integrated (recommended)
+cd web && npm run build && cd .. && go run ./cmd/backend
+
+# Option 2: Separate servers with hot reload  
+go run ./cmd/backend &
+cd web && npm run dev
+```
+
+See [web/README.md](./web/README.md) for detailed frontend documentation.
+
 ## API Changes in coming v0.5.0 release
 
 Version v0.5.0 includes significant architectural improvements to the API structure:

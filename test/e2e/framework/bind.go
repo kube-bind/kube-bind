@@ -53,7 +53,6 @@ func Bind(t *testing.T, iostreams genericclioptions.IOStreams, authURLCh chan<- 
 	require.NoError(t, err)
 	err = opts.Validate()
 	require.NoError(t, err)
-
 	opts.Runner = func(cmd *exec.Cmd) error {
 		bs, err := io.ReadAll(cmd.Stdin)
 		if err != nil {

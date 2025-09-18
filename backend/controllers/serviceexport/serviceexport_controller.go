@@ -58,17 +58,17 @@ func NewAPIServiceExportReconciler(
 	mgr mcmanager.Manager,
 	opts controller.TypedOptions[mcreconcile.Request],
 ) (*APIServiceExportReconciler, error) {
-	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByAPIResourceSchema,
-		indexers.IndexServiceExportByAPIResourceSchema); err != nil {
-		return nil, fmt.Errorf("failed to setup ServiceExportByAPIResourceSchema indexer: %w", err)
+	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByBoundSchema,
+		indexers.IndexServiceExportByBoundSchema); err != nil {
+		return nil, fmt.Errorf("failed to setup ServiceExportByBoundSchema indexer: %w", err)
 	}
 
 	r := &APIServiceExportReconciler{
 		manager: mgr,
 		opts:    opts,
 		reconciler: reconciler{
-			getAPIResourceSchema: func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-				var schema kubebindv1alpha2.APIResourceSchema
+			getBoundSchema: func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.BoundSchema, error) {
+				var schema kubebindv1alpha2.BoundSchema
 				key := types.NamespacedName{Name: name}
 				if err := cache.Get(ctx, key, &schema); err != nil {
 					return nil, err
@@ -141,14 +141,14 @@ func (r *APIServiceExportReconciler) Reconcile(ctx context.Context, req mcreconc
 }
 
 // getAPIResourceSchemaMapper returns a mapper function that uses the manager to find related APIServiceExports.
-func getAPIResourceSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
+func getBoundSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
 	return handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []mcreconcile.Request {
-		apiResourceSchema := obj.(*kubebindv1alpha2.APIResourceSchema)
-		apiResourceSchemaKey := apiResourceSchema.Name
+		boundSchema := obj.(*kubebindv1alpha2.BoundSchema)
+		boundSchemaKey := boundSchema.Name
 		c := cl.GetClient()
 
 		var exports kubebindv1alpha2.APIServiceExportList
-		if err := c.List(ctx, &exports, client.MatchingFields{indexers.ServiceExportByAPIResourceSchema: apiResourceSchemaKey}); err != nil {
+		if err := c.List(ctx, &exports, client.MatchingFields{indexers.ServiceExportByBoundSchema: boundSchemaKey}); err != nil {
 			return []mcreconcile.Request{}
 		}
 
@@ -171,8 +171,8 @@ func (r *APIServiceExportReconciler) SetupWithManager(mgr mcmanager.Manager) err
 	return mcbuilder.ControllerManagedBy(mgr).
 		For(&kubebindv1alpha2.APIServiceExport{}).
 		Watches(
-			&kubebindv1alpha2.APIResourceSchema{},
-			getAPIResourceSchemaMapper,
+			&kubebindv1alpha2.BoundSchema{},
+			getBoundSchemaMapper,
 		).
 		WithOptions(r.opts).
 		Named(controllerName).

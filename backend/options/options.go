@@ -56,11 +56,15 @@ type ExtraOptions struct {
 	// Defines the source of the schema for the bind screen.
 	// Options are:
 	// CustomResourceDefinition.v1.apiextensions.k8s.io
-	// APIResourceSchema.v1alpha2.kube-bind.io
+	// APIResourceSchema.v1alpha2.apis.kcp.io
 	SchemaSource string
 
 	TestingAutoSelect         string
 	TestingSkipNameValidation bool
+
+	// If ControllerFrontend starts with http:// it is treated as a URL to a SPA server
+	// Else - it is treated as a path to static files to be served.
+	Frontend string
 }
 
 type completedOptions struct {
@@ -95,6 +99,7 @@ func NewOptions() *Options {
 			ClusterScopedIsolation: string(kubebindv1alpha2.IsolationPrefixed),
 			ServerURL:              "",
 			SchemaSource:           CustomResourceDefinitionSource.String(),
+			Frontend:               "/www",
 		},
 	}
 }
@@ -112,14 +117,16 @@ func (s SchemaSource) String() string {
 }
 
 var (
-	APIResourceSchemaSource        = SchemaSource("APIResourceSchema.v1alpha2.kube-bind.io")
+	KCPAPIResourceSchemaSource     = SchemaSource("APIResourceSchema.v1alpha1.apis.kcp.io")
 	CustomResourceDefinitionSource = SchemaSource("CustomResourceDefinition.v1.apiextensions.k8s.io")
 )
 
+// TODO(mjudeikis): https://github.com/kube-bind/kube-bind/issues/298
+// We should relax these once we happy they work with any schema.
 var schemaSourceAliases = map[string]string{
-	CustomResourceDefinitionSource.String(): CustomResourceDefinitionSource.String(),
-	"apiresourceschema":                     APIResourceSchemaSource.String(),
-	"customresourcedefinition":              CustomResourceDefinitionSource.String(),
+	CustomResourceDefinitionSource.String(): CustomResourceDefinitionSource.String(), // mostrly for e2e tests
+	"customresourcedefinitions":             CustomResourceDefinitionSource.String(),
+	"apiresourceschemas":                    KCPAPIResourceSchemaSource.String(),
 }
 
 func (options *Options) AddFlags(fs *pflag.FlagSet) {
@@ -136,6 +143,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.ExternalAddress, "external-address", options.ExternalAddress, "The external address for the service provider cluster, including https:// and port. If not specified, service account's hosts are used.")
 	fs.StringVar(&options.ExternalCAFile, "external-ca-file", options.ExternalCAFile, "The external CA file for the service provider cluster. If not specified, service account's CA is used.")
 	fs.StringVar(&options.TLSExternalServerName, "external-server-name", options.TLSExternalServerName, "The external (TLS) server name used by consumers to talk to the service provider cluster. This can be useful to select the right certificate via SNI.")
+	fs.StringVar(&options.Frontend, "frontend", options.Frontend, "If starts with http:// it is treated as a URL to a SPA server Else - it is treated as a path to static files to be served.")
 
 	fs.StringVar(&options.Provider, "multicluster-runtime-provider", options.Provider,
 		fmt.Sprintf("The multicluster runtime provider. Possible values are: %v", sets.List(sets.Set[string](sets.StringKeySet(providerAliases)))),

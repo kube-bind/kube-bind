@@ -17,25 +17,20 @@ limitations under the License.
 package http
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	htmltemplate "html/template"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"golang.org/x/oauth2"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -45,13 +40,9 @@ import (
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
 	"github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/backend/session"
-	"github.com/kube-bind/kube-bind/backend/template"
+	"github.com/kube-bind/kube-bind/backend/spaserver"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
-)
-
-var (
-	resourcesTemplate = htmltemplate.Must(htmltemplate.New("resource").Parse(mustRead(template.Files.ReadFile, "resources.gohtml")))
 )
 
 // See https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching?hl=en
@@ -76,6 +67,8 @@ type handler struct {
 
 	client      *http.Client
 	kubeManager *kubernetes.Manager
+
+	frontend string
 }
 
 func NewHandler(
@@ -85,6 +78,7 @@ func NewHandler(
 	schemaSource string,
 	scope kubebindv1alpha2.InformerScope,
 	mgr *kubernetes.Manager,
+	frontend string,
 ) (*handler, error) {
 	return &handler{
 		oidc:                provider,
@@ -93,6 +87,7 @@ func NewHandler(
 		providerPrettyName:  providerPrettyName,
 		testingAutoSelect:   testingAutoSelect,
 		schemaSource:        schemaSource,
+		frontend:            frontend,
 		scope:               scope,
 		client:              http.DefaultClient,
 		kubeManager:         mgr,
@@ -102,21 +97,43 @@ func NewHandler(
 }
 
 func (h *handler) AddRoutes(mux *mux.Router) {
-	// Server contains double routes for when backend is multi-cluster aware or single cluster.
+	// API routes - Server contains double routes for when backend is multi-cluster aware or single cluster.
 	// When called multi-cluster aware route in single cluster mode, it will ignore cluster parameter.
-	mux.HandleFunc("/clusters/{cluster}/exports", h.handleServiceExport).Methods("GET")
-	mux.HandleFunc("/exports", h.handleServiceExport).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/exports", h.handleServiceExport).Methods(http.MethodGet)
+	mux.HandleFunc("/api/exports", h.handleServiceExport).Methods(http.MethodGet)
 
-	mux.HandleFunc("/clusters/{cluster}/resources", h.handleResources).Methods("GET")
-	mux.HandleFunc("/resources", h.handleResources).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/resources", h.handleResources).Methods(http.MethodGet)
+	mux.HandleFunc("/api/resources", h.handleResources).Methods(http.MethodGet)
 
-	mux.HandleFunc("/clusters/{cluster}/bind", h.handleBind).Methods("GET")
-	mux.HandleFunc("/bind", h.handleBind).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/bind", h.handleBind).Methods(http.MethodGet)
+	mux.HandleFunc("/api/bind", h.handleBind).Methods(http.MethodGet)
 
-	mux.HandleFunc("/clusters/{cluster}/authorize", h.handleAuthorize).Methods("GET")
-	mux.HandleFunc("/authorize", h.handleAuthorize).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/bind", h.handleBindPost).Methods(http.MethodPost)
+	mux.HandleFunc("/api/bind", h.handleBindPost).Methods(http.MethodPost)
 
-	mux.HandleFunc("/callback", h.handleCallback).Methods("GET")
+	mux.HandleFunc("/api/clusters/{cluster}/authorize", h.handleAuthorize).Methods(http.MethodGet)
+	mux.HandleFunc("/api/authorize", h.handleAuthorize).Methods(http.MethodGet)
+
+	mux.HandleFunc("/api/callback", h.handleCallback).Methods(http.MethodGet)
+	mux.HandleFunc("/api/healthz", h.handleHealthz).Methods(http.MethodGet)
+	mux.HandleFunc("/api/bindable-resources", h.handleBindableResources).Methods(http.MethodGet)
+
+	if strings.HasPrefix(h.frontend, "http://") {
+		spaserver, err := spaserver.NewSPAReverseProxyServer(h.frontend)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create SPA reverse proxy server: %v", err)) // Development only.
+		}
+		mux.PathPrefix("/").Handler(spaserver)
+	} else {
+		fileSystem := http.Dir(h.frontend)
+		mux.PathPrefix("/").Handler(spaserver.NewSPAFileServer(fileSystem))
+	}
+
+}
+
+func (h *handler) handleHealthz(w http.ResponseWriter, r *http.Request) {
+	prepareNoCache(w)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
@@ -127,9 +144,9 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 	oidcAuthorizeURL := h.oidcAuthorizeURL
 	if oidcAuthorizeURL == "" {
 		if singleClusterScoped {
-			oidcAuthorizeURL = fmt.Sprintf("http://%s/authorize", r.Host)
+			oidcAuthorizeURL = fmt.Sprintf("http://%s/api/authorize", r.Host)
 		} else {
-			oidcAuthorizeURL = fmt.Sprintf("http://%s/clusters/%s/authorize", r.Host, cluster)
+			oidcAuthorizeURL = fmt.Sprintf("http://%s/api/clusters/%s/authorize", r.Host, cluster)
 		}
 	}
 
@@ -145,7 +162,7 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 			Kind:       "BindingProvider",
 		},
 		Version:            ver,
-		ProviderPrettyName: "example-backend",
+		ProviderPrettyName: "backend",
 		AuthenticationMethods: []kubebindv1alpha2.AuthenticationMethod{
 			{
 				Method: "OAuth2CodeGrant",
@@ -202,7 +219,7 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		ProviderClusterID: providerCluster, // used in multicluster-runtime providers
 	}
 	if callbackPort != "" && code.RedirectURL == "" {
-		code.RedirectURL = fmt.Sprintf("http://localhost:%s/callback", callbackPort)
+		code.RedirectURL = fmt.Sprintf("http://localhost:%s/api/callback", callbackPort)
 	}
 
 	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {
@@ -289,6 +306,7 @@ func (h *handler) handleCallback(w http.ResponseWriter, r *http.Request) {
 	secure := false
 
 	http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
+	// These are UI paths, not API paths, hence no /api/ prefix. UI will call the API for data.
 	if authCode.ProviderClusterID == "" {
 		http.Redirect(w, r, "/resources?s="+cookieName, http.StatusFound)
 	} else {
@@ -369,73 +387,42 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
+	exportedSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
 	if err != nil {
 		logger.Error(err, "failed to get dynamic resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	var result []UISchema
-	for _, item := range apiResourceSchemas.Items {
-		scope := item.UnstructuredContent()["spec"].(map[string]interface{})["scope"]
-		if scope == nil {
-			scope = "-"
-		}
+	result := kubebindv1alpha2.BindableResourcesResponse{}
+	for _, item := range exportedSchemas {
 
-		group := item.UnstructuredContent()["spec"].(map[string]interface{})["group"]
-		if group == nil {
-			group = "-"
-		}
-		resource := item.UnstructuredContent()["spec"].(map[string]interface{})["names"].(map[string]interface{})["plural"]
-		if resource == nil {
-			resource = "-"
-		}
-
-		kind := item.UnstructuredContent()["spec"].(map[string]interface{})["names"].(map[string]interface{})["kind"]
-		if kind == nil {
-			kind = "-"
-		}
-
-		versions := item.UnstructuredContent()["spec"].(map[string]interface{})["versions"]
-		if versions == nil {
-			versions = []interface{}{""}
-		}
-		for _, v := range versions.([]interface{}) {
-			version := v.(map[string]interface{})["name"]
-			result = append(result, UISchema{
-				Name:    item.GetName(),
-				Kind:    kind.(string),
-				Scope:   scope.(string),
-				Version: version.(string),
-				Group:   group.(string),
-				// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
-				Resource:  resource.(string),
-				SessionID: sessionID,
-			})
-		}
+		result.Resources = append(result.Resources, kubebindv1alpha2.BindableResource{
+			Name:       item.GetName(),
+			Kind:       item.Spec.Names.Kind,
+			Scope:      string(item.Spec.Scope),
+			APIVersion: item.Spec.Versions[0].Name,
+			Group:      item.Spec.Group,
+			// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
+			Resource:  item.Spec.Names.Plural,
+			SessionID: sessionID,
+		})
 	}
 
-	bs := bytes.Buffer{}
-	if err := resourcesTemplate.Execute(&bs, struct {
-		Cluster string
-		Schemas []UISchema
-	}{
-		Cluster: providerCluster,
-		Schemas: result,
-	}); err != nil {
-		logger.Error(err, "failed to execute template")
+	bs, err := json.Marshal(&result)
+	if err != nil {
+		logger.Error(err, "failed to marshal resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write(bs.Bytes()) //nolint:errcheck
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bs) //nolint:errcheck
+
 }
 
 func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	logger := getLogger(r)
-	name := r.URL.Query().Get("name")
 	group := r.URL.Query().Get("group")
 	resource := r.URL.Query().Get("resource")
 	version := r.URL.Query().Get("version")
@@ -457,37 +444,6 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		logger.Error(err, "failed to decode session cookie")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
-	}
-
-	// There is an intent to bind. We need to create APIResourceSchema if one does not exists.
-	{
-		apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
-		if err != nil {
-			logger.Error(err, "failed to get dynamic resources")
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-
-		schema := &unstructured.Unstructured{}
-		for _, item := range apiResourceSchemas.Items {
-			if item.GetName() == name {
-				schema = &item
-				break
-			}
-		}
-		if schema == nil || schema.GetName() != name {
-			logger.Error(nil, "no APIResourceSchema found", "name", name, "group", group, "resource", resource, "version", version)
-			http.Error(w, fmt.Sprintf("no APIResourceSchema found for %s.%s.%s/%s", group, resource, version, name), http.StatusNotFound)
-			return
-		}
-
-		// create apiResourceSchema if not exists
-		err = h.kubeManager.CreateAPIResourceSchema(r.Context(), providerCluster, name, schema)
-		if err != nil && !apierrors.IsAlreadyExists(err) {
-			logger.Error(err, "failed to create APIResourceSchema")
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
 	}
 
 	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, providerCluster)
@@ -566,15 +522,168 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, parsedAuthURL.String(), http.StatusFound)
 }
 
-func mustRead(f func(name string) ([]byte, error), name string) string {
-	bs, err := f(name)
-	if err != nil {
-		panic(err)
+func (h *handler) handleBindPost(w http.ResponseWriter, r *http.Request) {
+	logger := getLogger(r)
+	providerCluster := mux.Vars(r)["cluster"]
+
+	prepareNoCache(w)
+
+	// Get session ID from query parameter
+	sessionID := r.URL.Query().Get("s")
+	if sessionID == "" {
+		logger.Error(errors.New("missing session parameter"), "failed to get session from query")
+		http.Error(w, "missing session parameter 's'", http.StatusBadRequest)
+		return
 	}
-	return string(bs)
+
+	// Get session cookie
+	ck, err := r.Cookie(sessionID)
+	if err != nil {
+		logger.Error(err, "failed to get session cookie")
+		http.Error(w, "no session cookie found", http.StatusBadRequest)
+		return
+	}
+
+	// Decode session state
+	state := session.State{}
+	s := securecookie.New(h.cookieSigningKey, h.cookieEncryptionKey)
+	if err := s.Decode(sessionID, ck.Value, &state); err != nil {
+		logger.Error(err, "failed to decode session cookie")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// Parse JSON request body
+	var bindRequest kubebindv1alpha2.BindableResourcesRequest
+	if err := json.NewDecoder(r.Body).Decode(&bindRequest); err != nil {
+		logger.Error(err, "failed to parse JSON request body")
+		http.Error(w, "invalid JSON request body", http.StatusBadRequest)
+		return
+	}
+
+	logger.V(1).Info("received bind request", "resources", len(bindRequest.Resources), "permissionClaims", len(bindRequest.PermissionClaims))
+
+	// Validate request
+	if len(bindRequest.Resources) == 0 {
+		logger.Error(errors.New("no resources specified"), "validation failed")
+		http.Error(w, "at least one resource must be specified", http.StatusBadRequest)
+		return
+	}
+
+	// Handle kubeconfig setup
+	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, providerCluster)
+	if err != nil {
+		logger.Error(err, "failed to handle resources")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	exportRequest := kubebindv1alpha2.APIServiceExportRequestResponse{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
+			Kind:       "APIServiceExportRequest",
+		},
+		ObjectMeta: kubebindv1alpha2.NameObjectMeta{
+			Name: bindRequest.Name,
+		},
+		Spec: kubebindv1alpha2.APIServiceExportRequestSpec{
+			Resources:        []kubebindv1alpha2.APIServiceExportRequestResource{},
+			PermissionClaims: []kubebindv1alpha2.PermissionClaim{},
+		},
+	}
+
+	for _, resource := range bindRequest.Resources {
+		exportRequest.Spec.Resources = append(exportRequest.Spec.Resources, kubebindv1alpha2.APIServiceExportRequestResource{
+			GroupResource: kubebindv1alpha2.GroupResource{
+				Group:    resource.Group,
+				Resource: resource.Resource,
+			},
+			Versions: []string{resource.APIVersion},
+		})
+	}
+
+	for _, claim := range bindRequest.PermissionClaims {
+		_, err := kubebindv1alpha2.ResolveClaimableAPI(claim)
+		if err != nil {
+			logger.Error(err, "invalid permission claim", "claim", claim)
+			http.Error(w, fmt.Sprintf("invalid permission claim: %v", err), http.StatusBadRequest)
+			return
+		}
+		exportRequest.Spec.PermissionClaims = append(exportRequest.Spec.PermissionClaims, kubebindv1alpha2.PermissionClaim{
+			GroupResource: kubebindv1alpha2.GroupResource{
+				Group:    claim.Group,
+				Resource: claim.Resource,
+			},
+			Selector: kubebindv1alpha2.Selector{
+				All:           claim.Selector.All,
+				LabelSelector: claim.Selector.LabelSelector,
+			},
+		})
+	}
+
+	requestBytes, err := json.Marshal(&exportRequest)
+	if err != nil {
+		logger.Error(err, "failed to marshal export request")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	// Create binding response
+	response := kubebindv1alpha2.BindingResponse{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
+			Kind:       "BindingResponse",
+		},
+		Authentication: kubebindv1alpha2.BindingResponseAuthentication{
+			OAuth2CodeGrant: &kubebindv1alpha2.BindingResponseAuthenticationOAuth2CodeGrant{
+				SessionID: state.SessionID,
+				ID:        state.Token.Issuer + "/" + state.Token.Subject,
+			},
+		},
+		Kubeconfig: kfg,
+		Requests:   []runtime.RawExtension{{Raw: requestBytes}},
+	}
+
+	payload, err := json.Marshal(&response)
+	if err != nil {
+		logger.Error(err, "failed to marshal binding response")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	encoded := base64.URLEncoding.EncodeToString(payload)
+
+	parsedAuthURL, err := url.Parse(state.RedirectURL)
+	if err != nil {
+		logger.Error(err, "failed to parse redirect URL")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	values := parsedAuthURL.Query()
+	values.Add("response", encoded)
+
+	parsedAuthURL.RawQuery = values.Encode()
+
+	logger.V(1).Info("redirecting to auth callback after POST bind",
+		"url", state.RedirectURL+"?response=<redacted>",
+		"resourceCount", len(bindRequest.Resources))
+
+	// For POST requests, we can either redirect or return JSON response
+	// Since this is called from frontend JavaScript, return the redirect URL as JSON
+	w.Header().Set("Content-Type", "application/json")
+	redirectResponse := map[string]string{
+		"redirectURL": parsedAuthURL.String(),
+	}
+
+	if err := json.NewEncoder(w).Encode(redirectResponse); err != nil {
+		logger.Error(err, "failed to encode redirect response")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
 }
 
-func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string) (*unstructured.UnstructuredList, error) {
+func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string) (kubebindv1alpha2.ExportedSchemas, error) {
 	labelSelector := labels.Set{
 		resources.ExportedCRDsLabel: "true",
 	}
@@ -589,12 +698,20 @@ func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string)
 		Version: parts[1],
 		Group:   parts[2],
 	}
-	apiResourceSchemas, err := h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
+	return h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
+}
+
+// handleBindableResources returns a static list of resources that can be claimed/bound by users.
+func (h *handler) handleBindableResources(w http.ResponseWriter, r *http.Request) {
+	logger := getLogger(r)
+
+	bs, err := json.Marshal(&kubebindv1alpha2.ClaimableAPIsData)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list crds: %w", err)
+		logger.Error(err, "failed to marshal resources")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
-	sort.SliceStable(apiResourceSchemas.Items, func(i, j int) bool {
-		return apiResourceSchemas.Items[i].GetName() < apiResourceSchemas.Items[j].GetName()
-	})
-	return apiResourceSchemas, nil
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bs) //nolint:errcheck
 }

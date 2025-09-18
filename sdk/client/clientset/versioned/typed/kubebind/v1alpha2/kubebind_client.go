@@ -29,22 +29,17 @@ import (
 
 type KubeBindV1alpha2Interface interface {
 	RESTClient() rest.Interface
-	APIResourceSchemasGetter
 	APIServiceBindingsGetter
 	APIServiceExportsGetter
 	APIServiceExportRequestsGetter
 	APIServiceNamespacesGetter
-	BoundAPIResourceSchemasGetter
+	BoundSchemasGetter
 	ClusterBindingsGetter
 }
 
 // KubeBindV1alpha2Client is used to interact with features provided by the kube-bind.io group.
 type KubeBindV1alpha2Client struct {
 	restClient rest.Interface
-}
-
-func (c *KubeBindV1alpha2Client) APIResourceSchemas() APIResourceSchemaInterface {
-	return newAPIResourceSchemas(c)
 }
 
 func (c *KubeBindV1alpha2Client) APIServiceBindings() APIServiceBindingInterface {
@@ -63,8 +58,8 @@ func (c *KubeBindV1alpha2Client) APIServiceNamespaces(namespace string) APIServi
 	return newAPIServiceNamespaces(c, namespace)
 }
 
-func (c *KubeBindV1alpha2Client) BoundAPIResourceSchemas(namespace string) BoundAPIResourceSchemaInterface {
-	return newBoundAPIResourceSchemas(c, namespace)
+func (c *KubeBindV1alpha2Client) BoundSchemas(namespace string) BoundSchemaInterface {
+	return newBoundSchemas(c, namespace)
 }
 
 func (c *KubeBindV1alpha2Client) ClusterBindings(namespace string) ClusterBindingInterface {

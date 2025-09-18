@@ -17,8 +17,11 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
@@ -104,6 +107,10 @@ type APIServiceExportRequestSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceExportRequestResource `json:"resources"`
+
+	// PermissionClaims records decisions about permission claims requested by the service provider.
+	// Access is granted per GroupResource.
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 type APIServiceExportRequestResource struct {
@@ -112,6 +119,56 @@ type APIServiceExportRequestResource struct {
 	// versions is a list of versions that should be exported. If this is empty
 	// a sensible default is chosen by the service provider.
 	Versions []string `json:"versions,omitempty"`
+}
+
+// ResourceGroupName returns the group name of the resource.
+//
+// Important: If you change this, change one for BoundSchema too.
+func (r APIServiceExportRequestResource) ResourceGroupName() string {
+	return fmt.Sprintf("%s.%s", r.Resource, r.Group)
+}
+
+// permissionClaim selects objects of a GVR that a service provider may
+// request and that a consumer may accept and allow the service provider access to.
+type PermissionClaim struct {
+	GroupResource `json:",inline"`
+
+	// Selector is a resource selector that selects objects of a GVR.
+	Selector Selector `json:"selector,omitempty"`
+}
+
+// Owner is the owner of the resource.
+type Owner string
+
+const (
+	// OwnerProvider indicates that the resource is owned by the provider.
+	OwnerProvider Owner = "provider"
+	// OwnerConsumer indicates that the resource is owned by the consumer.
+	OwnerConsumer Owner = "consumer"
+)
+
+func (o Owner) String() string {
+	return string(o)
+}
+
+// Selector is a resource selector that selects objects of a GVR.
+type Selector struct {
+	// all claims all resources for the given group/resource.
+	// This is mutually exclusive with resourceSelector.
+	// +optional
+	All bool `json:"all,omitempty"`
+
+	// LabelSelector is a label selector that selects objects of a GVR.
+	// +optional
+	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
+}
+
+// SelectorResourceName identifies a specific resource by name.
+// If backend operates at the namespace level isolation, namespace will be included.
+type SelectorResourceName struct {
+	// Name is the name of the resource.
+	// +kubebuilder:validation:Required
+	Name string `json:"name,omitempty"`
 }
 
 // GroupResource identifies a resource.
@@ -131,6 +188,47 @@ type GroupResource struct {
 	// +required
 	// +kubebuilder:validation:Required
 	Resource string `json:"resource"`
+}
+
+// String returns the string representation of the GR.
+func (r GroupResource) String() string {
+	return fmt.Sprintf("%s.%s", r.Resource, r.Group)
+}
+
+// GroupVersionResource unambiguously identifies a resource.
+type GroupVersionResource struct {
+	// group is the name of an API group.
+	// For core groups this is the empty string '""'.
+	//
+	// +kubebuilder:validation:Pattern=`^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$`
+	// +kubebuilder:default=""
+	Group string `json:"group,omitempty"`
+	// version is the version of the resource.
+	//
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`
+	// +required
+	// +kubebuilder:validation:Required
+	Version string `json:"version,omitempty"`
+	// resource is the name of the resource.
+	//
+	// +kubebuilder:validation:Pattern=`^[a-z][-a-z0-9]*[a-z0-9]$`
+	// +required
+	// +kubebuilder:validation:Required
+	Resource string `json:"resource,omitempty"`
+}
+
+// String returns the string representation of the GVR.
+func (r GroupVersionResource) String() string {
+	return fmt.Sprintf("%s.%s.%s", r.Resource, r.Version, r.Group)
+}
+
+// GetSchemaGroupVersionResource returns the schema.GroupVersionResource representation of the GVR.
+func (r GroupVersionResource) GetSchemaGroupVersionResource() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    r.Group,
+		Version:  r.Version,
+		Resource: r.Resource,
+	}
 }
 
 // APIServiceExportRequestPhase describes the phase of a binding request.

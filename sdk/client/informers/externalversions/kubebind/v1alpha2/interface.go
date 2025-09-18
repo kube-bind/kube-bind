@@ -24,8 +24,6 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// APIResourceSchemas returns a APIResourceSchemaInformer.
-	APIResourceSchemas() APIResourceSchemaInformer
 	// APIServiceBindings returns a APIServiceBindingInformer.
 	APIServiceBindings() APIServiceBindingInformer
 	// APIServiceExports returns a APIServiceExportInformer.
@@ -34,8 +32,8 @@ type Interface interface {
 	APIServiceExportRequests() APIServiceExportRequestInformer
 	// APIServiceNamespaces returns a APIServiceNamespaceInformer.
 	APIServiceNamespaces() APIServiceNamespaceInformer
-	// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
-	BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer
+	// BoundSchemas returns a BoundSchemaInformer.
+	BoundSchemas() BoundSchemaInformer
 	// ClusterBindings returns a ClusterBindingInformer.
 	ClusterBindings() ClusterBindingInformer
 }
@@ -49,11 +47,6 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
-}
-
-// APIResourceSchemas returns a APIResourceSchemaInformer.
-func (v *version) APIResourceSchemas() APIResourceSchemaInformer {
-	return &aPIResourceSchemaInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // APIServiceBindings returns a APIServiceBindingInformer.
@@ -76,9 +69,9 @@ func (v *version) APIServiceNamespaces() APIServiceNamespaceInformer {
 	return &aPIServiceNamespaceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
-// BoundAPIResourceSchemas returns a BoundAPIResourceSchemaInformer.
-func (v *version) BoundAPIResourceSchemas() BoundAPIResourceSchemaInformer {
-	return &boundAPIResourceSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// BoundSchemas returns a BoundSchemaInformer.
+func (v *version) BoundSchemas() BoundSchemaInformer {
+	return &boundSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // ClusterBindings returns a ClusterBindingInformer.

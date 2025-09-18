@@ -23,6 +23,11 @@ It will do the following:
 
 # How to run
 
+1. Start Dex:
+```bash
+./bin/dex serve ./kcp/deploy/examples/dex-config.yaml
+```
+
 1. Start kcp
 2. Bootstrap kcp:
 ```bash
@@ -40,23 +45,25 @@ bin/backend \
   --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
   --oidc-issuer-client-id=kube-bind \
   --oidc-issuer-url=http://127.0.0.1:5556/dex \
-  --oidc-callback-url=http://127.0.0.1:8080/callback \
+  --oidc-callback-url=http://127.0.0.1:8080/api/callback \
   --pretty-name="BigCorp.com" \
   --namespace-prefix="kube-bind-" \
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
-  --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y=
+  --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
+  --schema-source apiresourceschemas \
+  --consumer-scope=namespaced --frontend http://localhost:3000
 ```
 
 
-4. Copy the kubeconfig to the provider:
+4. Copy the kubeconfig to the provider and create provider workspace:
 ```bash
 cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
 export KUBECONFIG=.kcp/provider.kubeconfig
 k ws use :root
+kubectl ws create provider --enter
 ```
 
-5. Run `kubectl ws create provider --enter`
-6. Bind the APIExport to the workspace
+5. Bind the APIExport to the workspace
 ```bash
 kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
   --accept-permission-claim clusterroles.rbac.authorization.k8s.io \
@@ -65,14 +72,18 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim
   --accept-permission-claim configmaps.core \
   --accept-permission-claim secrets.core \
   --accept-permission-claim namespaces.core \
-  --accept-permission-claim serviceaccounts.rbac.authorization.k8s.io \
   --accept-permission-claim roles.rbac.authorization.k8s.io \
-  --accept-permission-claim rolebindings.rbac.authorization.k8s.io
+  --accept-permission-claim rolebindings.rbac.authorization.k8s.io \
+  --accept-permission-claim apiresourceschemas.apis.kcp.io 
 ```
 
 7. Create CRD:
 ```bash
-kubectl apply -f deploy/examples/crd-mangodb.yaml
+kubectl create -f kcp/deploy/examples/apiexport.yaml  
+kubectl create -f kcp/deploy/examples/apiresourceschema-cowboys.yaml
+kubectl create -f kcp/deploy/examples/apiresourceschema-sheriffs.yaml
+# recursive bind
+kubectl kcp bind apiexport root:provider:cowboys-stable
 ```
 
 8. Get LogicalCluster:
@@ -80,7 +91,7 @@ kubectl apply -f deploy/examples/crd-mangodb.yaml
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/2xh2v3gzjhn4tmve 
+# cluster   Ready   https://192.168.2.166:6443/clusters/h3tp9nwm225v19nz     
 ```
 
 9. Now we gonna initiate consumer:
@@ -94,41 +105,26 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/2vgrh380y0cq38du/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/api/clusters/h3tp9nwm225v19nz/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind` 
-kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+kubectl get secret kubeconfig-zjx72 -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport-namespaced.yaml  --skip-konnector --remote-namespace kube-bind-v9jlf
+
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport-cluster.yaml  --skip-konnector --remote-namespace kube-bind-2nkhf
+
 
 export KUBECONFIG=.kcp/consumer.kubeconfig
 go run ./cmd/konnector/ --lease-namespace default
-
-
-11. (Optional) Add second consumer to test
-
-```bash
-cp .kcp/admin.kubeconfig .kcp/consumer2.kubeconfig
-export KUBECONFIG=.kcp/consumer2.kubeconfig
-kubectl ws use :root
-kubectl ws create consumer2 --enter
-
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/2vgrh380y0cq38du/exports --dry-run -o yaml > apiserviceexport2.yaml
-kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote2.kubeconfig
-
-./bin/kubectl-bind apiservice --remote-kubeconfig remote2.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
-
-
-export KUBECONFIG=.kcp/consumer2.kubeconfig
-go run ./cmd/konnector/ --lease-namespace default --server-address :8091
 ```
 
-Create objects:
+Create objects: 
 ```
-kubectl create -f deploy/examples/mangodb.yaml
+kubectl apply -f kcp/deploy/examples/cowboy.yaml
+kubectl apply -f kcp/deploy/examples/sheriff.yaml
 ```
-
 
 ## Debug
 
@@ -138,4 +134,11 @@ export KUBECONFIG=.kcp/debug.kubeconfig
 k ws use :root:kube-bind
 
 k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" api-resources   
-k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*"  get crd
+k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" get crd
+
+# some claimed objects
+kubectl create cm provider -n kube-bind-lxj5k-default
+kubectl label cm provider app=wildwest -n kube-bind-lxj5k-default
+
+kubectl create cm consumer -n default
+kubectl label cm consumer app=wildwest -n default

@@ -73,3 +73,87 @@ type BindingResponseAuthenticationOAuth2CodeGrant struct {
 	// id is the ID of the authenticated user. It is for informational purposes only.
 	ID string `json:"id"`
 }
+
+type BindableResourcesResponse struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// resources is a list of resources that the user can select from.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	Resources []BindableResource `json:"resources"`
+}
+
+// BindableResource describes a resource that the user can select to bind to.
+type BindableResource struct {
+	// name is the name of the resource.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+
+	// description is a human friendly description of the resource.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	Description string `json:"description,omitempty"`
+
+	// kind is the kind of the resource.
+	// +required
+	// +kubebuilder:validation:Required
+	Kind string `json:"kind"`
+
+	// scope is the scope of the resource, either "Cluster" or "Namespaced".
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Scope string `json:"scope"`
+
+	// apiVersion is the API version of the resource.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	APIVersion string `json:"apiVersion"`
+
+	// group is the API group of the resource.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Group string `json:"group"`
+
+	// resource is the plural name of the resource.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Resource string `json:"resource"`
+
+	// sessionID is a session ID that the consumer must pass back to the service provider
+	// during the binding step. If multiple backends are aggregated, this can be used to
+	// to authenticate the user to the correct backend.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	SessionID string `json:"sessionID"`
+}
+
+// BindableResourcesRequest is sent by the consumer to the service provider
+// to indicate which resources the user wants to bind to. It is sent after
+// authentication and resource selection on the service provider website.
+type BindableResourcesRequest struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	// resources is a list of resources that the user can select from.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	Resources []BindableResource `json:"resources"`
+
+	// PermissionClaims are additional permissions that the user wants to have.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
+}

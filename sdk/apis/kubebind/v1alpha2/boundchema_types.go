@@ -258,12 +258,12 @@ const (
 	BoundSchemaDriftDetected BoundSchemaConditionReason = "DriftDetected"
 )
 
-func (in *BoundSchema) GetConditions() conditionsapi.Conditions {
-	return in.Status.Conditions
+func (b *BoundSchema) GetConditions() conditionsapi.Conditions {
+	return b.Status.Conditions
 }
 
-func (in *BoundSchema) SetConditions(conditions conditionsapi.Conditions) {
-	in.Status.Conditions = conditions
+func (b *BoundSchema) SetConditions(conditions conditionsapi.Conditions) {
+	b.Status.Conditions = conditions
 }
 
 // BoundSchemaStatus defines the observed state of the BoundSchema.

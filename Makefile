@@ -114,7 +114,7 @@ all: build
 check: verify lint test test-e2e
 .PHONY: check
 
-GOMODS := $(shell find . -name 'go.mod' -exec dirname {} \; | grep -v hack/tools)
+GOMODS := $(shell find . -name 'go.mod' -exec dirname {} \; | grep -v hack/tools | grep -v ./dex)
 
 ldflags:
 	@echo $(LDFLAGS)

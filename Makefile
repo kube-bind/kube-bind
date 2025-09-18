@@ -77,7 +77,7 @@ CODE_GENERATOR_BIN := code-generator
 CODE_GENERATOR := $(TOOLS_GOBIN_DIR)/$(CODE_GENERATOR_BIN)-$(CODE_GENERATOR_VER)
 export CODE_GENERATOR # so hack scripts can use it
 
-KCP_VER := v0.28.0
+KCP_VER := v0.28.1
 KCP_BIN := kcp
 KCP := $(TOOLS_GOBIN_DIR)/$(KCP_BIN)-$(KCP_VER)
 

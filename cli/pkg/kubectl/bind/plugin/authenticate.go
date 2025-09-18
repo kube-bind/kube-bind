@@ -83,9 +83,10 @@ func getProvider(url string, insecure bool) (*kubebindv1alpha2.BindingProvider, 
 }
 
 func validateProviderVersion(providerVersion string) error {
-	if providerVersion == "" {
+	switch providerVersion {
+	case "":
 		return fmt.Errorf("provider version %q is empty, please update the backend to v0.5.0+", providerVersion)
-	} else if providerVersion == "v0.0.0" || providerVersion == "v0.0.0-master+$Format:%H$" {
+	case "v0.0.0", "v0.0.0-master+$Format:%H$":
 		// unversioned, development version
 		return nil
 	}
@@ -134,7 +135,7 @@ func (b *BindOptions) authenticate(provider *kubebindv1alpha2.BindingProvider, c
 	values.Add("c", clusterID)
 	u.RawQuery = values.Encode()
 
-	fmt.Fprintf(b.Options.ErrOut, "\nTo authenticate, visit in your browser:\n\n\t%s\n", u.String()) //nolint:errcheck
+	fmt.Fprintf(b.Options.ErrOut, "\nTo authenticate, visit in your browser:\n\n\t%s\n", u.String())
 
 	// TODO(sttts): callback backend, not 127.0.0.1
 	if false {

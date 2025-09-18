@@ -143,7 +143,7 @@ func (b *BindAPIServiceOptions) Validate() error {
 
 // Run starts the binding process.
 func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
-	//nolint:staticcheck
+
 	config, err := b.Options.ClientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -177,7 +177,7 @@ func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
 		return err
 	}
 
-	fmt.Fprintln(b.Options.ErrOut) //nolint:errcheck
+	fmt.Fprintln(b.Options.ErrOut)
 	return b.printTable(ctx, config, bindings)
 }
 
@@ -235,7 +235,7 @@ func (b *BindAPIServiceOptions) getRequestManifest() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to get %s: %w", b.url, err)
 		}
-		defer resp.Body.Close() //nolint:errcheck
+		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read response body: %w", err)

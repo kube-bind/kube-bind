@@ -28,17 +28,17 @@ var (
 )
 
 const (
-	// GroupName is the group name used in this package
+	// GroupName is the group name used in this package.
 	GroupName = "kube-bind.io"
 
-	// GroupVersion is the group version used in this package
+	// GroupVersion is the group version used in this package.
 	GroupVersion = "v1alpha2"
 )
 
-// SchemeGroupVersion is group version used to register these objects
+// SchemeGroupVersion is group version used to register these objects.
 var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: GroupVersion}
 
-// Resource takes an unqualified resource and returns a Group qualified GroupResource
+// Resource takes an unqualified resource and returns a Group qualified GroupResource.
 func Resource(resource string) schema.GroupResource {
 	return SchemeGroupVersion.WithResource(resource).GroupResource()
 }

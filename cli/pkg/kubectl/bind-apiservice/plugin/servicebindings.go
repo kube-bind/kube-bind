@@ -54,7 +54,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 			if existing.Spec.KubeconfigSecretRef.Namespace != "kube-bind" || existing.Spec.KubeconfigSecretRef.Name != secretName {
 				return nil, fmt.Errorf("found existing APIServiceBinding %s not from this service provider", name)
 			}
-			fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Updating existing APIServiceBinding %s.\n", existing.Name) //nolint:errcheck
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Updating existing APIServiceBinding %s.\n", existing.Name)
 			bindings = append(bindings, existing)
 
 			// checking CRD to match the binding
@@ -74,7 +74,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 		if err := wait.PollUntilContextCancel(ctx, 1*time.Second, false, func(ctx context.Context) (bool, error) {
 			if !first {
 				first = false
-				fmt.Fprint(b.Options.IOStreams.ErrOut, ".") //nolint:errcheck
+				fmt.Fprint(b.Options.IOStreams.ErrOut, ".")
 			}
 			created, err := bindClient.KubeBindV1alpha2().APIServiceBindings().Create(ctx, &kubebindv1alpha2.APIServiceBinding{
 				ObjectMeta: metav1.ObjectMeta{
@@ -102,13 +102,13 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 				conditionsapi.ConditionSeverityInfo,
 				"Pending",
 			)
-			_, _ = bindClient.KubeBindV1alpha2().APIServiceBindings().UpdateStatus(ctx, created, metav1.UpdateOptions{}) //nolint:errcheck
+			_, _ = bindClient.KubeBindV1alpha2().APIServiceBindings().UpdateStatus(ctx, created, metav1.UpdateOptions{})
 
-			fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Created APIServiceBinding %s.%s\n", resource.Resource, resource.Group) //nolint:errcheck
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Created APIServiceBinding %s.%s\n", resource.Resource, resource.Group)
 			bindings = append(bindings, created)
 			return true, nil
 		}); err != nil {
-			fmt.Fprintln(b.Options.IOStreams.ErrOut, "") //nolint:errcheck
+			fmt.Fprintln(b.Options.IOStreams.ErrOut, "")
 			return nil, err
 		}
 	}

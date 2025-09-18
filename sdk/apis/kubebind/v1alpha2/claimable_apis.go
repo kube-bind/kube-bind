@@ -22,27 +22,29 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // InternalAPI describes an API to be imported from some schemes and generated OpenAPI V2 definitions.
 type InternalAPI struct {
-	Names                apiextensionsv1.CustomResourceDefinitionNames
-	GroupVersionResource schema.GroupVersionResource
-	Instance             runtime.Object
-	ResourceScope        apiextensionsv1.ResourceScope
-	HasStatus            bool
+	Names                apiextensionsv1.CustomResourceDefinitionNames `json:"names"`
+	GroupVersionResource GroupVersionResource                          `json:"groupVersionResource"`
+	Instance             runtime.Object                                `json:"instance"`
+	ResourceScope        apiextensionsv1.ResourceScope                 `json:"resourceScope"`
+	HasStatus            bool                                          `json:"hasStatus"`
 }
 
 // ClaimableAPIs is a list of APIs that can be claimed by a user.
-var ClaimableAPIs = []InternalAPI{
+type ClaimableAPIs []InternalAPI
+
+// ClaimableAPIsData is a list of APIs that can be claimed by a user.
+var ClaimableAPIsData = ClaimableAPIs{
 	{
 		Names: apiextensionsv1.CustomResourceDefinitionNames{
 			Plural:   "configmaps",
 			Singular: "configmap",
 			Kind:     "ConfigMap",
 		},
-		GroupVersionResource: schema.GroupVersionResource{
+		GroupVersionResource: GroupVersionResource{
 			Group:    "",
 			Version:  "v1",
 			Resource: "configmaps",
@@ -56,7 +58,7 @@ var ClaimableAPIs = []InternalAPI{
 			Singular: "secret",
 			Kind:     "Secret",
 		},
-		GroupVersionResource: schema.GroupVersionResource{
+		GroupVersionResource: GroupVersionResource{
 			Group:    "",
 			Version:  "v1",
 			Resource: "secrets",
@@ -70,7 +72,7 @@ var ClaimableAPIs = []InternalAPI{
 			Singular: "serviceaccount",
 			Kind:     "ServiceAccount",
 		},
-		GroupVersionResource: schema.GroupVersionResource{
+		GroupVersionResource: GroupVersionResource{
 			Group:    "",
 			Version:  "v1",
 			Resource: "serviceaccounts",
@@ -80,11 +82,11 @@ var ClaimableAPIs = []InternalAPI{
 	},
 }
 
-func ResolveClaimableAPI(claim PermissionClaim) (schema.GroupVersionResource, error) {
-	for _, api := range ClaimableAPIs {
+func ResolveClaimableAPI(claim PermissionClaim) (GroupVersionResource, error) {
+	for _, api := range ClaimableAPIsData {
 		if api.Names.Plural == claim.Resource && api.GroupVersionResource.Group == claim.Group {
 			return api.GroupVersionResource, nil
 		}
 	}
-	return schema.GroupVersionResource{}, fmt.Errorf("no matching API found")
+	return GroupVersionResource{}, fmt.Errorf("no matching API found")
 }

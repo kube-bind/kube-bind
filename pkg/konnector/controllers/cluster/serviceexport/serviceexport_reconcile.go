@@ -354,7 +354,7 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 	ctx context.Context,
 	binding *kubebindv1alpha2.APIServiceBinding,
 	claim kubebindv1alpha2.PermissionClaim,
-	claimGVR runtimeschema.GroupVersionResource,
+	claimGVR kubebindv1alpha2.GroupVersionResource,
 	isClusterScoped bool,
 	claimKey contextstore.Key,
 ) error {
@@ -390,15 +390,15 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 	var providerInf multinsinformer.GetterInformer
 	if isClusterScoped {
 		factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
-		factory.ForResource(claimGVR).Lister() // wire the GVR up in the informer factory
+		factory.ForResource(claimGVR.GetSchemaGroupVersionResource()).Lister() // wire the GVR up in the informer factory
 		providerInf = multinsinformer.GetterInformerWrapper{
-			GVR:      claimGVR,
+			GVR:      claimGVR.GetSchemaGroupVersionResource(),
 			Delegate: factory,
 		}
 	} else {
 		var err error
 		providerInf, err = multinsinformer.NewDynamicMultiNamespaceInformer(
-			claimGVR,
+			claimGVR.GetSchemaGroupVersionResource(),
 			r.providerNamespace,
 			r.providerConfig,
 			r.serviceNamespaceInformer,
@@ -411,12 +411,12 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 	}
 
 	claimedCtrl, err := claimedresources.NewController(
-		claimGVR,
+		claimGVR.GetSchemaGroupVersionResource(),
 		claim,
 		r.providerNamespace,
 		r.consumerConfig,
 		r.providerConfig,
-		defaultConsumerInf.ForResource(claimGVR),
+		defaultConsumerInf.ForResource(claimGVR.GetSchemaGroupVersionResource()),
 		providerInf,
 		r.serviceNamespaceInformer,
 	)

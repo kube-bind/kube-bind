@@ -141,7 +141,8 @@ type BindableResource struct {
 // to indicate which resources the user wants to bind to. It is sent after
 // authentication and resource selection on the service provider website.
 type BindableResourcesRequest struct {
-	metav1.TypeMeta `json:",inline"`
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// resources is a list of resources that the user can select from.
 	//

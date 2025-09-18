@@ -21,6 +21,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
@@ -189,8 +190,45 @@ type GroupResource struct {
 	Resource string `json:"resource"`
 }
 
+// String returns the string representation of the GR.
 func (r GroupResource) String() string {
 	return fmt.Sprintf("%s.%s", r.Resource, r.Group)
+}
+
+// GroupVersionResource unambiguously identifies a resource.
+type GroupVersionResource struct {
+	// group is the name of an API group.
+	// For core groups this is the empty string '""'.
+	//
+	// +kubebuilder:validation:Pattern=`^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$`
+	// +kubebuilder:default=""
+	Group string `json:"group,omitempty"`
+	// version is the version of the resource.
+	//
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`
+	// +required
+	// +kubebuilder:validation:Required
+	Version string `json:"version,omitempty"`
+	// resource is the name of the resource.
+	//
+	// +kubebuilder:validation:Pattern=`^[a-z][-a-z0-9]*[a-z0-9]$`
+	// +required
+	// +kubebuilder:validation:Required
+	Resource string `json:"resource,omitempty"`
+}
+
+// String returns the string representation of the GVR.
+func (r GroupVersionResource) String() string {
+	return fmt.Sprintf("%s.%s.%s", r.Resource, r.Version, r.Group)
+}
+
+// GetSchemaGroupVersionResource returns the schema.GroupVersionResource representation of the GVR.
+func (r GroupVersionResource) GetSchemaGroupVersionResource() schema.GroupVersionResource {
+	return schema.GroupVersionResource{
+		Group:    r.Group,
+		Version:  r.Version,
+		Resource: r.Resource,
+	}
 }
 
 // APIServiceExportRequestPhase describes the phase of a binding request.

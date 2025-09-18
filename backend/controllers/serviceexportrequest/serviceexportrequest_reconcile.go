@@ -322,7 +322,7 @@ func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebi
 
 // isClaimableAPI checks if a permission claim is for a claimable API.
 func isClaimableAPI(claim kubebindv1alpha2.PermissionClaim) bool {
-	for _, api := range kubebindv1alpha2.ClaimableAPIs {
+	for _, api := range kubebindv1alpha2.ClaimableAPIsData {
 		if claim.Group == api.GroupVersionResource.Group && claim.Resource == api.Names.Plural {
 			return true
 		}

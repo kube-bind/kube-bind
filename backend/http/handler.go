@@ -116,6 +116,7 @@ func (h *handler) AddRoutes(mux *mux.Router) {
 
 	mux.HandleFunc("/api/callback", h.handleCallback).Methods(http.MethodGet)
 	mux.HandleFunc("/api/healthz", h.handleHealthz).Methods(http.MethodGet)
+	mux.HandleFunc("/api/bindable-resources", h.handleBindableResources).Methods(http.MethodGet)
 
 	if strings.HasPrefix(h.frontend, "http://") {
 		spaserver, err := spaserver.NewSPAReverseProxyServer(h.frontend)
@@ -577,38 +578,54 @@ func (h *handler) handleBindPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create API service export requests for each resource
-	var requests []runtime.RawExtension
-	for _, bindableResource := range bindRequest.Resources {
-		exportRequest := kubebindv1alpha2.APIServiceExportRequestResponse{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
-				Kind:       "APIServiceExportRequest",
-			},
-			ObjectMeta: kubebindv1alpha2.NameObjectMeta{
-				Name: bindableResource.Resource + "." + bindableResource.Group,
-			},
-			Spec: kubebindv1alpha2.APIServiceExportRequestSpec{
-				Resources: []kubebindv1alpha2.APIServiceExportRequestResource{
-					{
-						GroupResource: kubebindv1alpha2.GroupResource{
-							Group:    bindableResource.Group,
-							Resource: bindableResource.Resource,
-						},
-						Versions: []string{bindableResource.APIVersion},
-					},
-				},
-			},
-		}
+	exportRequest := kubebindv1alpha2.APIServiceExportRequestResponse{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
+			Kind:       "APIServiceExportRequest",
+		},
+		ObjectMeta: kubebindv1alpha2.NameObjectMeta{
+			Name: bindRequest.Name,
+		},
+		Spec: kubebindv1alpha2.APIServiceExportRequestSpec{
+			Resources:        []kubebindv1alpha2.APIServiceExportRequestResource{},
+			PermissionClaims: []kubebindv1alpha2.PermissionClaim{},
+		},
+	}
 
-		requestBytes, err := json.Marshal(&exportRequest)
+	for _, resource := range bindRequest.Resources {
+		exportRequest.Spec.Resources = append(exportRequest.Spec.Resources, kubebindv1alpha2.APIServiceExportRequestResource{
+			GroupResource: kubebindv1alpha2.GroupResource{
+				Group:    resource.Group,
+				Resource: resource.Resource,
+			},
+			Versions: []string{resource.APIVersion},
+		})
+	}
+
+	for _, claim := range bindRequest.PermissionClaims {
+		_, err := kubebindv1alpha2.ResolveClaimableAPI(claim)
 		if err != nil {
-			logger.Error(err, "failed to marshal export request", "resource", bindableResource.Resource)
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			logger.Error(err, "invalid permission claim", "claim", claim)
+			http.Error(w, fmt.Sprintf("invalid permission claim: %v", err), http.StatusBadRequest)
 			return
 		}
+		exportRequest.Spec.PermissionClaims = append(exportRequest.Spec.PermissionClaims, kubebindv1alpha2.PermissionClaim{
+			GroupResource: kubebindv1alpha2.GroupResource{
+				Group:    claim.Group,
+				Resource: claim.Resource,
+			},
+			Selector: kubebindv1alpha2.Selector{
+				All:           claim.Selector.All,
+				LabelSelector: claim.Selector.LabelSelector,
+			},
+		})
+	}
 
-		requests = append(requests, runtime.RawExtension{Raw: requestBytes})
+	requestBytes, err := json.Marshal(&exportRequest)
+	if err != nil {
+		logger.Error(err, "failed to marshal export request")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
 	}
 
 	// Create binding response
@@ -624,7 +641,7 @@ func (h *handler) handleBindPost(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 		Kubeconfig: kfg,
-		Requests:   requests,
+		Requests:   []runtime.RawExtension{{Raw: requestBytes}},
 	}
 
 	payload, err := json.Marshal(&response)
@@ -682,4 +699,19 @@ func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string)
 		Group:   parts[2],
 	}
 	return h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
+}
+
+// handleBindableResources returns a static list of resources that can be claimed/bound by users.
+func (h *handler) handleBindableResources(w http.ResponseWriter, r *http.Request) {
+	logger := getLogger(r)
+
+	bs, err := json.Marshal(&kubebindv1alpha2.ClaimableAPIsData)
+	if err != nil {
+		logger.Error(err, "failed to marshal resources")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(bs) //nolint:errcheck
 }

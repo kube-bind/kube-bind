@@ -16,14 +16,45 @@ export interface BindableResource {
   sessionID: string
 }
 
+export interface ClaimableResource {
+  names: {
+    plural: string
+    singular: string
+    kind: string
+  }
+  groupVersionResource: {
+    group?: string
+    version: string
+    resource: string
+  }
+  resourceScope: string
+  hasStatus?: boolean
+}
+
+export interface PermissionClaimSelector {
+  matchLabels?: Record<string, string>
+  matchExpressions?: Array<{
+    key: string
+    operator: string
+    values?: string[]
+  }>
+}
+
 export interface PermissionClaim {
-  // Add permission claim properties as needed
-  [key: string]: any
+  group: string
+  resource: string
+  selector?: {
+    all?: boolean
+    labelSelector?: PermissionClaimSelector
+  }
 }
 
 export interface BindableResourcesRequest {
   apiVersion: string
   kind: string
+  metadata?: {
+    name?: string
+  }
   resources: BindableResource[]
   permissionClaims?: PermissionClaim[]
 }
@@ -53,13 +84,13 @@ class AuthService {
     const authPath = clusterId ? `/api/clusters/${clusterId}/authorize` : '/api/authorize'
     const authUrl = new URL(authPath, window.location.origin)
     authUrl.searchParams.set('s', sessionId)
-    authUrl.searchParams.set('c', clusterId || 'default')
+    authUrl.searchParams.set('c', clusterId)
     authUrl.searchParams.set('u', redirectUrl)
     authUrl.searchParams.set('p', redirectPort)
 
     this.sessionInfo = {
       sessionId,
-      clusterId: clusterId || 'default',
+      clusterId: clusterId,
       isAuthenticated: false
     }
 
@@ -159,7 +190,7 @@ class AuthService {
     }
   }
 
-  async bindResourceWithSession(group: string, resource: string, apiVersion: string, clusterId: string = '', sessionId: string, scope: string = 'Namespaced', kind: string = '', name: string = ''): Promise<any> {
+  async bindResourceWithSession(group: string, resource: string, apiVersion: string, clusterId: string = '', sessionId: string, scope: string = 'Namespaced', kind: string = '', name: string = '', permissionClaims: PermissionClaim[] = [], customRequestName?: string): Promise<any> {
     try {
       console.log('🔗 Binding resource with POST request')
       console.log('📋 Resource details:', { group, resource, apiVersion, clusterId, sessionId })
@@ -183,7 +214,14 @@ class AuthService {
           resource: resource,
           sessionID: sessionId
         }],
-        permissionClaims: []
+        permissionClaims: permissionClaims
+      }
+      
+      // Add custom request name if provided
+      if (customRequestName && customRequestName.trim()) {
+        requestPayload.metadata = {
+          name: customRequestName.trim()
+        }
       }
       
       console.log('📦 Request payload:', requestPayload)
@@ -216,6 +254,18 @@ class AuthService {
       return response.data
     } catch (error) {
       console.error('Failed to fetch exports:', error)
+      throw error
+    }
+  }
+
+  async getClaimableResources(): Promise<ClaimableResource[]> {
+    try {
+      console.log('🔍 Fetching claimable resources from /api/bindable-resources')
+      const response = await axios.get('/api/bindable-resources')
+      console.log('📦 Claimable resources response:', response.data)
+      return response.data || []
+    } catch (error) {
+      console.error('❌ Failed to fetch claimable resources:', error)
       throw error
     }
   }

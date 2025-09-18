@@ -26,7 +26,7 @@ spec:
     name: v1alpha2
     schema:
       openAPIV3Schema:
-        description: BoundAPIResourceSchema
+        description: BoundSchema
         properties:
           apiVersion:
             description: |-

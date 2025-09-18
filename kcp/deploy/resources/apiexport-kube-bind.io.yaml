@@ -68,8 +68,13 @@ spec:
     storage:
       crd: {}
   - group: kube-bind.io
+    name: bindableresourcesrequests
+    schema: v250917-8ab6385.bindableresourcesrequests.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
     name: boundschemas
-    schema: v250905-71082b5.boundschemas.kube-bind.io
+    schema: v250917-8ab6385.boundschemas.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io

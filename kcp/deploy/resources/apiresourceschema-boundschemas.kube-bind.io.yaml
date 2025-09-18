@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250905-71082b5.boundschemas.kube-bind.io
+  name: v250917-8ab6385.boundschemas.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -24,7 +24,7 @@ spec:
       type: date
     name: v1alpha2
     schema:
-      description: BoundAPIResourceSchema
+      description: BoundSchema
       properties:
         apiVersion:
           description: |-

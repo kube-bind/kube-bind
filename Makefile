@@ -299,8 +299,12 @@ test:  ## Run unit tests
 	fi
 
 .PHONY: verify-imports
-verify-imports:
-	hack/verify-imports.sh
+verify-imports: imports
+	if ! git diff --quiet HEAD; then \
+		git diff; \
+		echo "You need to run 'make imports' to update the immport statement ordering and commit them"; \
+		exit 1; \
+	fi
 
 .PHONY: verify-go-versions
 verify-go-versions:

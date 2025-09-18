@@ -111,6 +111,9 @@ LDFLAGS := \
 all: build
 .PHONY: all
 
+check: verify lint test test-e2e
+.PHONY: check
+
 GOMODS := $(shell find . -name 'go.mod' -exec dirname {} \; | grep -v hack/tools)
 
 ldflags:

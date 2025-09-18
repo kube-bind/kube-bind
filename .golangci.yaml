@@ -82,6 +82,17 @@ issues:
 formatters:
   enable:
     - gofmt
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/kube-bind)
+        - prefix(github.com/kube-bind/sdk)
+        - blank
+        - dot
+      custom-order: true
   exclusions:
     generated: lax
     paths:

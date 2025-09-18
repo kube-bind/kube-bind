@@ -118,7 +118,7 @@ type CustomResourceConversion struct {
 	Webhook *WebhookConversion `json:"webhook,omitempty"`
 }
 
-// WebhookConversion describes how to call a conversion webhook
+// WebhookConversion describes how to call a conversion webhook.
 type WebhookConversion struct {
 	// clientConfig is the instructions for how to call the webhook if strategy is `Webhook`.
 	// +optional

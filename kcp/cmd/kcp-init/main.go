@@ -33,7 +33,7 @@ import (
 func main() {
 	ctx := genericapiserver.SetupSignalContext()
 	if err := run(ctx); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v", err) // nolint: errcheck
+		fmt.Fprintf(os.Stderr, "Error: %v", err)
 		os.Exit(1)
 	}
 }

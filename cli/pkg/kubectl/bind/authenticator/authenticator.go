@@ -73,7 +73,10 @@ func (d *LocalhostCallbackAuthenticator) Start() error {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/callback", d.callback)
-	d.server = &http.Server{Handler: mux}
+	d.server = &http.Server{
+		Handler:     mux,
+		ReadTimeout: 30 * time.Second,
+	}
 
 	listener, err := net.ListenTCP("tcp", address)
 	if err != nil {

@@ -49,11 +49,13 @@ func (b *BindAPIServiceOptions) createServiceExportRequest(
 		request.GenerateName = "export-"
 	}
 	created, err := bindRemoteClient.KubeBindV1alpha2().APIServiceExportRequests(ns).Create(ctx, request, metav1.CreateOptions{})
-	if err != nil && !apierrors.IsAlreadyExists(err) {
-		return nil, err
-	} else if err != nil && request.Name == "" {
-		return nil, err
-	} else if err != nil {
+	if err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return nil, err
+		}
+		if request.Name == "" {
+			return nil, err
+		}
 		request.GenerateName = request.Name + "-"
 		request.Name = ""
 		created, err = bindRemoteClient.KubeBindV1alpha2().APIServiceExportRequests(ns).Create(ctx, request, metav1.CreateOptions{})

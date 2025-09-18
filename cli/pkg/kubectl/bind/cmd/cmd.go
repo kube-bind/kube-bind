@@ -23,12 +23,13 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/exec"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 
 	"github.com/kube-bind/kube-bind/cli/pkg/help"
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/plugin"
+
+	_ "k8s.io/client-go/plugin/pkg/client/auth/exec"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 )
 
 var (
@@ -78,7 +79,7 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 			}
 
 			yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
-			fmt.Fprintf(streams.ErrOut, "%s\n\n", yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time.")) //nolint:errcheck
+			fmt.Fprintf(streams.ErrOut, "%s\n\n", yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time."))
 
 			if len(args) == 0 {
 				return cmd.Help()

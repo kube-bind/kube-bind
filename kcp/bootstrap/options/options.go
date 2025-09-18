@@ -60,7 +60,6 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&options.KCPKubeConfig, "kcp-kubeconfig", options.KCPKubeConfig, "path to a kcp kubeconfig. Required to bootstrap the server.")
 	fs.StringVar(&options.KCPContext, "context", options.KCPContext, "Name of the context in the kcp kubeconfig file to use")
-
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {

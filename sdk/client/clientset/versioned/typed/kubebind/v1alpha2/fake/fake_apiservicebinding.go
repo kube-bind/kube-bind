@@ -19,10 +19,9 @@ limitations under the License.
 package fake
 
 import (
-	gentype "k8s.io/client-go/gentype"
-
 	v1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha2"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // fakeAPIServiceBindings implements APIServiceBindingInterface

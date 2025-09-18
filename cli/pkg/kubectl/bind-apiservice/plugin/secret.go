@@ -43,7 +43,7 @@ func (b *BindAPIServiceOptions) createKubeconfigSecret(ctx context.Context, conf
 	}, metav1.CreateOptions{}); err != nil && !apierrors.IsAlreadyExists(err) {
 		return "", err
 	} else if err == nil {
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "📦 Created kube-binding namespace.\n") //nolint:errcheck
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "📦 Created kube-binding namespace.\n")
 	}
 
 	// look for secret of the given identity
@@ -54,7 +54,7 @@ func (b *BindAPIServiceOptions) createKubeconfigSecret(ctx context.Context, conf
 		return secretName, nil
 	}
 
-	fmt.Fprintf(b.Options.IOStreams.ErrOut, "🔒 Creating secret for host %s, namespace %s\n", remoteHost, remoteNamespace) //nolint:errcheck
+	fmt.Fprintf(b.Options.IOStreams.ErrOut, "🔒 Creating secret for host %s, namespace %s\n", remoteHost, remoteNamespace)
 	secretName, err = b.ensureKubeconfigSecretWithLogging(ctx, kubeconfig, "", kubeClient)
 	if err != nil {
 		return "", err

@@ -25,13 +25,14 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/leaderelection"
 	logsv1 "k8s.io/component-base/logs/api/v1"
-	_ "k8s.io/component-base/logs/json/register"
 	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/pkg/konnector"
 	konnectoroptions "github.com/kube-bind/kube-bind/pkg/konnector/options"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
+
+	_ "k8s.io/component-base/logs/json/register"
 )
 
 const LeaderElectionTimeout = 20 * time.Second

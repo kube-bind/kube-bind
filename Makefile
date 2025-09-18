@@ -63,10 +63,6 @@ GOLANGCI_LINT_VER := v2.1.6
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_GOBIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
-GOIMPORTS_VER := v0.35.0
-GOIMPORTS_BIN := goimports
-GOIMPORTS := $(TOOLS_GOBIN_DIR)/$(GOIMPORTS_BIN)-$(GOIMPORTS_VER)
-
 GOTESTSUM_VER := v1.8.1
 GOTESTSUM_BIN := gotestsum
 GOTESTSUM := $(abspath $(TOOLS_DIR))/$(GOTESTSUM_BIN)-$(GOTESTSUM_VER)
@@ -76,7 +72,7 @@ LOGCHECK_BIN := logcheck
 LOGCHECK := $(TOOLS_GOBIN_DIR)/$(LOGCHECK_BIN)-$(LOGCHECK_VER)
 export LOGCHECK # so hack scripts can use it
 
-CODE_GENERATOR_VER := v2.3.1
+CODE_GENERATOR_VER := v2.4.0
 CODE_GENERATOR_BIN := code-generator
 CODE_GENERATOR := $(TOOLS_GOBIN_DIR)/$(CODE_GENERATOR_BIN)-$(CODE_GENERATOR_VER)
 export CODE_GENERATOR # so hack scripts can use it
@@ -115,6 +111,11 @@ LDFLAGS := \
 all: build
 .PHONY: all
 
+check: verify lint test test-e2e
+.PHONY: check
+
+GOMODS := $(shell find . -name 'go.mod' -exec dirname {} \; | grep -v hack/tools)
+
 ldflags:
 	@echo $(LDFLAGS)
 
@@ -141,20 +142,23 @@ install: ## install binaries to GOBIN
 $(GOLANGCI_LINT):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 
-$(GOIMPORTS):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) golang.org/x/tools/cmd/goimports $(GOIMPORTS_BIN) $(GOIMPORTS_VER)
-
 $(LOGCHECK):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) sigs.k8s.io/logtools/logcheck $(LOGCHECK_BIN) $(LOGCHECK_VER)
 
 $(CODE_GENERATOR):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/kcp-dev/code-generator/v2 $(CODE_GENERATOR_BIN) $(CODE_GENERATOR_VER)
 
-lint: $(GOLANGCI_LINT) $(LOGCHECK) ## Run linters
-	$(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) -c $(ROOT_DIR)/.golangci.yaml --timeout 20m
+lint: $(GOLANGCI_LINT) $(LOGCHECK) ## Run golangci-lint
+	@if [ -n "$(WHAT)" ]; then \
+		$(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) -c $(ROOT_DIR)/.golangci.yaml --timeout 20m $(WHAT); \
+	else \
+		for MOD in $(GOMODS); do \
+			(cd $$MOD; echo "Linting $$MOD"; $(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) -c $(ROOT_DIR)/.golangci.yaml --timeout 20m); \
+		done; \
+	fi
 .PHONY: lint
 
-fix-lint: $(GOLANGCI_LINT)
+fix-lint: $(GOLANGCI_LINT) ## Run golangci-lint with --fix
 	GOLANGCI_LINT_FLAGS="--fix" $(MAKE) lint
 .PHONY: fix-lint
 
@@ -163,7 +167,7 @@ vendor: ## Vendor the dependencies
 	go mod vendor
 .PHONY: vendor
 
-tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR)
+tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR) ## Install tools
 .PHONY: tools
 
 $(CONTROLLER_GEN):
@@ -185,8 +189,7 @@ $(KUBE_APPLYCONFIGURATION_GEN):
 	GOBIN=$(GOBIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/$(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_VER)
 
 
-codegen: WHAT ?= ./sdk/client
-codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN)
+codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN) ## Generate code
 	go mod download
 	./hack/update-codegen.sh
 	$(MAKE) imports
@@ -210,15 +213,13 @@ verify-codegen:
 	fi
 
 .PHONY: imports
-imports: $(GOLANGCI_LINT) $(GOIMPORTS) verify-go-versions
-	if [ -n "$(WHAT)" ]; then \
-	  $(GOLANGCI_LINT) fmt --enable gci -c $(ROOT_DIR)/.golangci.yaml $(WHAT); \
-	  $(GOIMPORTS) -local github.com/kube-bind/kube-bind -w $(WHAT); \
+imports: $(GOLANGCI_LINT) verify-go-versions ## Fix imports and format code
+	@if [ -n "$(WHAT)" ]; then \
+		$(GOLANGCI_LINT) fmt --enable gci -c $(ROOT_DIR)/.golangci.yaml $(WHAT); \
 	else \
-	 for MOD in . $$(git ls-files '**/go.mod' | sed 's,/go.mod,,'); do \
-		(set -x; cd $$MOD; $(GOLANGCI_LINT) fmt --enable gci -c $(ROOT_DIR)/.golangci.yaml); \
-		$(GOIMPORTS) -local github.com/kube-bind/kube-bind -w .; \
-	  done; \
+		for MOD in $(GOMODS); do \
+			( cd $$MOD; $(GOLANGCI_LINT) fmt --enable gci -c $(ROOT_DIR)/.golangci.yaml; ) \
+	  	done; \
 	fi
 
 $(TOOLS_DIR)/verify_boilerplate.py:
@@ -269,7 +270,7 @@ endif
 test-e2e: TEST_ARGS ?=
 test-e2e: WORK_DIR ?= .
 test-e2e: WHAT ?= ./test/e2e...
-test-e2e: $(KCP) $(DEX) build
+test-e2e: $(KCP) $(DEX) build ## Run e2e tests
 	mkdir .kcp
 	$(DEX) serve hack/dex-config-dev.yaml 2>&1 & DEX_PID=$$!; \
 	$(KCP) start &>.kcp/kcp.log & KCP_PID=$$!; \
@@ -283,13 +284,22 @@ test: $(GOTESTSUM)
 endif
 test: WHAT ?= ./...
 # We will need to move into the sub package, of pkg/apis to run those tests.
-test:  ## run unit tests
-	$(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $$(go list "$(WHAT)" | grep -v ./test/e2e/ | grep -v ./kcp)
-	cd sdk/apis && $(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $(WHAT)
+test:  ## Run unit tests
+	@if [ -n "$(WHAT)" ]; then \
+		$(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $$(go list "$(WHAT)" | grep -v ./test/e2e/); \
+	else \
+		for MOD in $(GOMODS); do \
+			( cd $$MOD; $(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) ) \
+	  	done; \
+	fi
 
 .PHONY: verify-imports
-verify-imports:
-	hack/verify-imports.sh
+verify-imports: imports
+	if ! git diff --quiet HEAD; then \
+		git diff; \
+		echo "You need to run 'make imports' to update the immport statement ordering and commit them"; \
+		exit 1; \
+	fi
 
 .PHONY: verify-go-versions
 verify-go-versions:
@@ -297,22 +307,22 @@ verify-go-versions:
 
 .PHONY: modules
 modules: ## Run go mod tidy to ensure modules are up to date
-	go mod tidy
-	cd sdk/apis; go mod tidy
+	for MOD in $(GOMODS); do \
+		(cd $$MOD; echo "Tidying $$MOD"; go mod tidy); \
+	done
 
 .PHONY: verify-modules
 verify-modules: modules  # Verify go modules are up to date
-	@if !(git diff --quiet HEAD -- go.sum go.mod pkg/apis/go.mod pkg/apis/go.sum); then \
-		git diff; \
-		echo "go module files are out of date"; exit 1; \
-	fi
+	@for MOD in $(GOMODS); do \
+		(cd $$MOD; echo "Verifying $$MOD"; if ! git diff --quiet HEAD -- go.mod go.sum; then echo "[$$MOD] go modules are out of date, please run 'make modules'"; exit 1; fi; ) \
+	done
 
 .PHONY: verify
 verify: verify-modules verify-go-versions verify-imports verify-codegen verify-boilerplate ## verify formal properties of the code
 
 .PHONY: help
-help: ## Show this help.
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+help: ## Show this help
+	@awk 'BEGIN { fs="## " } { FS=fs } /:.*##/ { doc=$$2; FS=":"; $$0=$$0; printf "\033[36m%-30s\033[0m %s\n", $$1, doc; }' $(MAKEFILE_LIST) | sort | grep -v fs=
 
 .PHONY: generate-cli-docs
 generate-cli-docs: ## Generate cli docs

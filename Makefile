@@ -63,10 +63,6 @@ GOLANGCI_LINT_VER := v2.1.6
 GOLANGCI_LINT_BIN := golangci-lint
 GOLANGCI_LINT := $(TOOLS_GOBIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
 
-GOIMPORTS_VER := v0.35.0
-GOIMPORTS_BIN := goimports
-GOIMPORTS := $(TOOLS_GOBIN_DIR)/$(GOIMPORTS_BIN)-$(GOIMPORTS_VER)
-
 GOTESTSUM_VER := v1.8.1
 GOTESTSUM_BIN := gotestsum
 GOTESTSUM := $(abspath $(TOOLS_DIR))/$(GOTESTSUM_BIN)-$(GOTESTSUM_VER)
@@ -143,9 +139,6 @@ install: ## install binaries to GOBIN
 $(GOLANGCI_LINT):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
 
-$(GOIMPORTS):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) golang.org/x/tools/cmd/goimports $(GOIMPORTS_BIN) $(GOIMPORTS_VER)
-
 $(LOGCHECK):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) sigs.k8s.io/logtools/logcheck $(LOGCHECK_BIN) $(LOGCHECK_VER)
 
@@ -217,13 +210,12 @@ verify-codegen:
 	fi
 
 .PHONY: imports
-imports: $(GOLANGCI_LINT) $(GOIMPORTS) verify-go-versions ## Fix imports and format code
+imports: $(GOLANGCI_LINT) verify-go-versions ## Fix imports and format code
 	@if [ -n "$(WHAT)" ]; then \
 		$(GOLANGCI_LINT) fmt --enable gci -c $(ROOT_DIR)/.golangci.yaml $(WHAT); \
-		$(GOIMPORTS) -local github.com/kube-bind/kube-bind -w $(WHAT); \
 	else \
 		for MOD in $(GOMODS); do \
-			( cd $$MOD; $(GOLANGCI_LINT) fmt --enable gci -c $(ROOT_DIR)/.golangci.yaml; $(GOIMPORTS) -local github.com/kube-bind/kube-bind -w $$(go list -f '{{.Dir}}' ./...); ) \
+			( cd $$MOD; $(GOLANGCI_LINT) fmt --enable gci -c $(ROOT_DIR)/.golangci.yaml; ) \
 	  	done; \
 	fi
 

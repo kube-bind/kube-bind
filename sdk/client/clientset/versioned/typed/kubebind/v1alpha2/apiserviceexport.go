@@ -21,13 +21,12 @@ package v1alpha2
 import (
 	context "context"
 
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	scheme "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
-
-	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
-	scheme "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/scheme"
 )
 
 // APIServiceExportsGetter has a method to return a APIServiceExportInterface.

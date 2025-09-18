@@ -21,10 +21,9 @@ package v1alpha2
 import (
 	http "net/http"
 
-	rest "k8s.io/client-go/rest"
-
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	scheme "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/scheme"
+	rest "k8s.io/client-go/rest"
 )
 
 type KubeBindV1alpha2Interface interface {

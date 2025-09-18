@@ -2963,7 +2963,7 @@ Namespaced: The konnector has permission to watch only single namespaces.
 </div>
 
 <div class="property-description">
-<p>resources specifies the API resources to export</p>
+<p>resources is a list of resources that should be exported.</p>
 
 </div>
 
@@ -2980,8 +2980,22 @@ Namespaced: The konnector has permission to watch only single namespaces.
 
 </div>
 
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.resources[*].group">.spec.resources[*].group</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
 <div class="property-description">
-<p>APIResourceSchemaReference is a list of references to APIResourceSchemas.</p>
+<p>group is the name of an API group.
+For core groups this is the empty string &lsquo;&ldquo;&rdquo;&rsquo;.</p>
 
 </div>
 
@@ -2990,7 +3004,7 @@ Namespaced: The konnector has permission to watch only single namespaces.
 
 <div class="property depth-3">
 <div class="property-header">
-<h3 class="property-path" id="v1alpha2-.spec.resources[*].name">.spec.resources[*].name</h3>
+<h3 class="property-path" id="v1alpha2-.spec.resources[*].resource">.spec.resources[*].resource</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
@@ -2999,7 +3013,9 @@ Namespaced: The konnector has permission to watch only single namespaces.
 </div>
 
 <div class="property-description">
-<p>Name is the name of the resource to export</p>
+<p>resource is the name of the resource.
+Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+not provided by an service binding export.</p>
 
 </div>
 
@@ -3008,17 +3024,30 @@ Namespaced: The konnector has permission to watch only single namespaces.
 
 <div class="property depth-3">
 <div class="property-header">
-<h3 class="property-path" id="v1alpha2-.spec.resources[*].type">.spec.resources[*].type</h3>
+<h3 class="property-path" id="v1alpha2-.spec.resources[*].versions">.spec.resources[*].versions</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>versions is a list of versions that should be exported. If this is empty
+a sensible default is chosen by the service provider.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.resources[*].versions[*]">.spec.resources[*].versions[*]</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
 <span class="property-type">string</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>Type of the resource to export
-Currently only APIResourceSchema is supported</p>
 
 </div>
 

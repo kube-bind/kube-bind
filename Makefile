@@ -152,7 +152,7 @@ $(LOGCHECK):
 $(CODE_GENERATOR):
 	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/kcp-dev/code-generator/v2 $(CODE_GENERATOR_BIN) $(CODE_GENERATOR_VER)
 
-lint: $(GOLANGCI_LINT) $(LOGCHECK) ## Run linters
+lint: $(GOLANGCI_LINT) $(LOGCHECK) ## Run golangci-lint
 	@if [ -n "$(WHAT)" ]; then \
 		$(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) -c $(ROOT_DIR)/.golangci.yaml --timeout 20m $(WHAT); \
 	else \
@@ -162,7 +162,7 @@ lint: $(GOLANGCI_LINT) $(LOGCHECK) ## Run linters
 	fi
 .PHONY: lint
 
-fix-lint: $(GOLANGCI_LINT)
+fix-lint: $(GOLANGCI_LINT) ## Run golangci-lint with --fix
 	GOLANGCI_LINT_FLAGS="--fix" $(MAKE) lint
 .PHONY: fix-lint
 
@@ -171,7 +171,7 @@ vendor: ## Vendor the dependencies
 	go mod vendor
 .PHONY: vendor
 
-tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR)
+tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR) ## Install tools
 .PHONY: tools
 
 $(CONTROLLER_GEN):
@@ -194,7 +194,7 @@ $(KUBE_APPLYCONFIGURATION_GEN):
 
 
 codegen: WHAT ?= ./sdk/client
-codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN)
+codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN) ## Generate code
 	go mod download
 	./hack/update-codegen.sh
 	$(MAKE) imports
@@ -218,7 +218,7 @@ verify-codegen:
 	fi
 
 .PHONY: imports
-imports: $(GOLANGCI_LINT) $(GOIMPORTS) verify-go-versions
+imports: $(GOLANGCI_LINT) $(GOIMPORTS) verify-go-versions ## Fix imports and format code
 	@if [ -n "$(WHAT)" ]; then \
 		$(GOLANGCI_LINT) fmt --enable gci -c $(ROOT_DIR)/.golangci.yaml $(WHAT); \
 		$(GOIMPORTS) -local github.com/kube-bind/kube-bind -w $(WHAT); \
@@ -276,7 +276,7 @@ endif
 test-e2e: TEST_ARGS ?=
 test-e2e: WORK_DIR ?= .
 test-e2e: WHAT ?= ./test/e2e...
-test-e2e: $(KCP) $(DEX) build
+test-e2e: $(KCP) $(DEX) build ## Run e2e tests
 	mkdir .kcp
 	$(DEX) serve hack/dex-config-dev.yaml 2>&1 & DEX_PID=$$!; \
 	$(KCP) start &>.kcp/kcp.log & KCP_PID=$$!; \
@@ -290,7 +290,7 @@ test: $(GOTESTSUM)
 endif
 test: WHAT ?= ./...
 # We will need to move into the sub package, of pkg/apis to run those tests.
-test:  ## run unit tests
+test:  ## Run unit tests
 	@if [ -n "$(WHAT)" ]; then \
 		$(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $$(go list "$(WHAT)" | grep -v ./test/e2e/); \
 	else \
@@ -323,8 +323,8 @@ verify-modules: modules  # Verify go modules are up to date
 verify: verify-modules verify-go-versions verify-imports verify-codegen verify-boilerplate ## verify formal properties of the code
 
 .PHONY: help
-help: ## Show this help.
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+help: ## Show this help
+	@awk 'BEGIN { fs="## " } { FS=fs } /:.*##/ { doc=$$2; FS=":"; $$0=$$0; printf "\033[36m%-30s\033[0m %s\n", $$1, doc; }' $(MAKEFILE_LIST) | sort | grep -v fs=
 
 .PHONY: generate-cli-docs
 generate-cli-docs: ## Generate cli docs

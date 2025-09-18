@@ -40,12 +40,12 @@ func getProvider(url string, insecure bool) (*kubebindv1alpha2.BindingProvider, 
 	if insecure {
 		client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: insecure,
+				InsecureSkipVerify: insecure, //nolint:gosec
 			},
 		}
 	}
 
-	resp, err := client.Get(url)
+	resp, err := client.Get(url) //nolint:noctx
 	if err != nil {
 		return nil, err
 	}

@@ -215,7 +215,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 	}
 
 	// extract the requests
-	var apiRequests []*kubebindv1alpha2.APIServiceExportRequestResponse
+	apiRequests := make([]*kubebindv1alpha2.APIServiceExportRequestResponse, len(bindingResponse.Requests))
 	for i, request := range bindingResponse.Requests {
 		var meta metav1.TypeMeta
 		if err := json.Unmarshal(request.Raw, &meta); err != nil {
@@ -228,7 +228,7 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 		if err := json.Unmarshal(request.Raw, &apiRequest); err != nil {
 			return fmt.Errorf("failed to unmarshal api request #%d: %v", i+1, err)
 		}
-		apiRequests = append(apiRequests, &apiRequest)
+		apiRequests[i] = &apiRequest
 	}
 
 	// copy kubeconfig into local cluster

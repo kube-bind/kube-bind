@@ -32,7 +32,7 @@ import (
 func ParseRemoteKubeconfig(kubeconfig []byte) (host string, ns string, err error) {
 	config, err := clientcmd.Load(kubeconfig)
 	if err != nil {
-		return "", "", nil
+		return "", "", err
 	}
 	if _, found := config.Contexts[config.CurrentContext]; !found {
 		return "", "", fmt.Errorf("current context %q of remote kubeconfig not found", config.CurrentContext)

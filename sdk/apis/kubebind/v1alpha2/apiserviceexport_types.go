@@ -73,11 +73,19 @@ func (in *APIServiceExport) SetConditions(conditions conditionsapi.Conditions) {
 	in.Status.Conditions = conditions
 }
 
+// APIServiceExportResource is a type alias for APIServiceExportRequestResource.
+type APIServiceExportResource = APIServiceExportRequestResource
+
 // APIServiceExportSpec defines the desired state of APIServiceExport.
 type APIServiceExportSpec struct {
-	// resources specifies the API resources to export
+	// resources is a list of resources that should be exported.
+	//
 	// +required
-	Resources []APIResourceSchemaReference `json:"resources"`
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
+	Resources []APIServiceExportResource `json:"resources"`
+
 	// informerScope is the scope of the APIServiceExport. It can be either Cluster or Namespace.
 	//
 	// Cluster:    The konnector has permission to watch all namespaces at once and cluster-scoped resources.
@@ -93,20 +101,6 @@ type APIServiceExportSpec struct {
 	// ClusterScopedIsolation specifies how cluster scoped service objects are isolated between multiple consumers on the provider side.
 	// It can be "Prefixed", "Namespaced", or "None".
 	ClusterScopedIsolation Isolation `json:"clusterScopedIsolation,omitempty"`
-}
-
-// APIResourceSchemaReference is a list of references to APIResourceSchemas.
-type APIResourceSchemaReference struct {
-	// Name is the name of the resource to export
-	// +required
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
-
-	// Type of the resource to export
-	// Currently only APIResourceSchema is supported
-	// +kubebuilder:validation:Enum=APIResourceSchema
-	// +required
-	Type string `json:"type"`
 }
 
 // Isolation is an enum defining the different ways to isolate cluster scoped objects

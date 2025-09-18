@@ -33,7 +33,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"golang.org/x/oauth2"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -117,6 +116,12 @@ func (h *handler) AddRoutes(mux *mux.Router) {
 	mux.HandleFunc("/authorize", h.handleAuthorize).Methods("GET")
 
 	mux.HandleFunc("/callback", h.handleCallback).Methods("GET")
+	mux.HandleFunc("/healthz", h.handleHealthz).Methods("GET")
+}
+
+func (h *handler) handleHealthz(w http.ResponseWriter, r *http.Request) {
+	prepareNoCache(w)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
@@ -383,6 +388,12 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 			scope = "-"
 		}
 
+		// TODO(mjudeikis): This logic is very brittle, needs rework.
+		// This will be improved in the permissionClaims PR.
+		if !strings.EqualFold(h.scope.String(), scope.(string)) && h.scope != kubebindv1alpha2.ClusterScope {
+			continue
+		}
+
 		group := item.UnstructuredContent()["spec"].(map[string]interface{})["group"]
 		if group == nil {
 			group = "-"
@@ -435,7 +446,6 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	logger := getLogger(r)
-	name := r.URL.Query().Get("name")
 	group := r.URL.Query().Get("group")
 	resource := r.URL.Query().Get("resource")
 	version := r.URL.Query().Get("version")
@@ -457,37 +467,6 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		logger.Error(err, "failed to decode session cookie")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
-	}
-
-	// There is an intent to bind. We need to create APIResourceSchema if one does not exists.
-	{
-		apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
-		if err != nil {
-			logger.Error(err, "failed to get dynamic resources")
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-
-		schema := &unstructured.Unstructured{}
-		for _, item := range apiResourceSchemas.Items {
-			if item.GetName() == name {
-				schema = &item
-				break
-			}
-		}
-		if schema == nil || schema.GetName() != name {
-			logger.Error(nil, "no APIResourceSchema found", "name", name, "group", group, "resource", resource, "version", version)
-			http.Error(w, fmt.Sprintf("no APIResourceSchema found for %s.%s.%s/%s", group, resource, version, name), http.StatusNotFound)
-			return
-		}
-
-		// create apiResourceSchema if not exists
-		err = h.kubeManager.CreateAPIResourceSchema(r.Context(), providerCluster, name, schema)
-		if err != nil && !apierrors.IsAlreadyExists(err) {
-			logger.Error(err, "failed to create APIResourceSchema")
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
 	}
 
 	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, providerCluster)

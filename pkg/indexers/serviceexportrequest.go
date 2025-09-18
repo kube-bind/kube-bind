@@ -36,7 +36,7 @@ func IndexServiceExportRequestByGroupResource(obj client.Object) []string {
 	}
 	keys := []string{}
 	for _, gr := range apiServiceExportRequest.Spec.Resources {
-		keys = append(keys, gr.Resource+"."+gr.Group)
+		keys = append(keys, gr.ResourceGroupName())
 	}
 	return keys
 }
@@ -50,7 +50,7 @@ func IndexServiceExportRequestByServiceExport(obj client.Object) []string {
 	}
 	keys := []string{}
 	for _, gr := range apiServiceExportRequest.Spec.Resources {
-		keys = append(keys, apiServiceExportRequest.Namespace+"/"+gr.Resource+"."+gr.Group)
+		keys = append(keys, apiServiceExportRequest.Namespace+"/"+gr.ResourceGroupName())
 	}
 	return keys
 }

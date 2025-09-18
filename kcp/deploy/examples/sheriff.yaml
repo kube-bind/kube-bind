@@ -1,0 +1,4 @@
+apiVersion: wildwest.dev/v1alpha1
+kind: Sheriff
+metadata:
+  name: sheriff

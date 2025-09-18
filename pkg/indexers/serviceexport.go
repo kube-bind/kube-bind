@@ -24,7 +24,7 @@ import (
 
 const (
 	ServiceExportByCustomResourceDefinition = "serviceExportByCustomResourceDefinition"
-	ServiceExportByAPIResourceSchema        = "ServiceExportByAPIResourceSchema"
+	ServiceExportByBoundSchema              = "serviceExportByBoundSchema"
 )
 
 func IndexServiceExportByCustomResourceDefinition(obj any) ([]string, error) {
@@ -36,16 +36,16 @@ func IndexServiceExportByCustomResourceDefinition(obj any) ([]string, error) {
 	return []string{export.Name}, nil
 }
 
-// IndexServiceExportByAPIResourceSchema is a controller-runtime compatible indexer function.
-func IndexServiceExportByAPIResourceSchema(obj client.Object) []string {
+// IndexServiceExportByBoundSchema is a controller-runtime compatible indexer function.
+func IndexServiceExportByBoundSchema(obj client.Object) []string {
 	export, ok := obj.(*v1alpha2.APIServiceExport)
 	if !ok {
 		return nil
 	}
 
 	names := make([]string, 0, len(export.Spec.Resources))
-	for _, resource := range export.Spec.Resources {
-		names = append(names, resource.Name)
+	for _, res := range export.Spec.Resources {
+		names = append(names, res.ResourceGroupName())
 	}
 
 	return names

@@ -18,10 +18,6 @@ limitations under the License.
 
 package v1alpha2
 
-// APIResourceSchemaListerExpansion allows custom methods to be added to
-// APIResourceSchemaLister.
-type APIResourceSchemaListerExpansion interface{}
-
 // APIServiceBindingListerExpansion allows custom methods to be added to
 // APIServiceBindingLister.
 type APIServiceBindingListerExpansion interface{}
@@ -50,13 +46,13 @@ type APIServiceNamespaceListerExpansion interface{}
 // APIServiceNamespaceNamespaceLister.
 type APIServiceNamespaceNamespaceListerExpansion interface{}
 
-// BoundAPIResourceSchemaListerExpansion allows custom methods to be added to
-// BoundAPIResourceSchemaLister.
-type BoundAPIResourceSchemaListerExpansion interface{}
+// BoundSchemaListerExpansion allows custom methods to be added to
+// BoundSchemaLister.
+type BoundSchemaListerExpansion interface{}
 
-// BoundAPIResourceSchemaNamespaceListerExpansion allows custom methods to be added to
-// BoundAPIResourceSchemaNamespaceLister.
-type BoundAPIResourceSchemaNamespaceListerExpansion interface{}
+// BoundSchemaNamespaceListerExpansion allows custom methods to be added to
+// BoundSchemaNamespaceLister.
+type BoundSchemaNamespaceListerExpansion interface{}
 
 // ClusterBindingListerExpansion allows custom methods to be added to
 // ClusterBindingLister.

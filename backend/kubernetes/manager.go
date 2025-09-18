@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
@@ -150,21 +149,6 @@ func (m *Manager) HandleResources(ctx context.Context, identity, cluster string)
 	return kfgSecret.Data["kubeconfig"], nil
 }
 
-func (m *Manager) ListAPIResourceSchemas(ctx context.Context, cluster string) (*kubebindv1alpha2.APIResourceSchemaList, error) {
-	cl, err := m.manager.GetCluster(ctx, cluster)
-	if err != nil {
-		return nil, err
-	}
-	cache := cl.GetCache()
-
-	var schemas kubebindv1alpha2.APIResourceSchemaList
-	err = cache.List(ctx, &schemas)
-	if err != nil {
-		return nil, err
-	}
-	return &schemas, nil
-}
-
 func (m *Manager) ListCustomResourceDefinitions(ctx context.Context, cluster string, selector labels.Selector) (*apiextensionsv1.CustomResourceDefinitionList, error) {
 	cl, err := m.manager.GetCluster(ctx, cluster)
 	if err != nil {
@@ -207,24 +191,4 @@ func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk 
 	}
 
 	return list, nil
-}
-
-func (m *Manager) CreateAPIResourceSchema(ctx context.Context, cluster string, name string, u *unstructured.Unstructured) error {
-	cl, err := m.manager.GetCluster(ctx, cluster)
-	if err != nil {
-		return err
-	}
-	c := cl.GetClient()
-
-	apiResourceSchema := &kubebindv1alpha2.APIResourceSchema{}
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), apiResourceSchema)
-	if err != nil {
-		return err
-	}
-
-	apiResourceSchema.ResourceVersion = ""
-	apiResourceSchema.Name = name
-	apiResourceSchema.Spec.InformerScope = m.scope
-
-	return c.Create(ctx, apiResourceSchema)
 }

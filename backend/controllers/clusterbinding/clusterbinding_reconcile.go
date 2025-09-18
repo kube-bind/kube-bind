@@ -19,7 +19,9 @@ package clusterbinding
 import (
 	"context"
 	"fmt"
+	"maps"
 	"reflect"
+	"slices"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -40,11 +42,11 @@ import (
 type reconciler struct {
 	scope kubebindv1alpha2.InformerScope
 
-	listServiceExports   func(ctx context.Context, cache cache.Cache, ns string) ([]*kubebindv1alpha2.APIServiceExport, error)
-	getAPIResourceSchema func(ctx context.Context, cache cache.Cache, name string) (*kubebindv1alpha2.APIResourceSchema, error)
-	getClusterRole       func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error)
-	createClusterRole    func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) error
-	updateClusterRole    func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) error
+	listServiceExports func(ctx context.Context, cache cache.Cache, ns string) ([]*kubebindv1alpha2.APIServiceExport, error)
+	getBoundSchema     func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
+	getClusterRole     func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error)
+	createClusterRole  func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) error
+	updateClusterRole  func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) error
 
 	getClusterRoleBinding    func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error)
 	createClusterRoleBinding func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRoleBinding) error
@@ -148,24 +150,35 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, client client.Cl
 				},
 			},
 		},
-	}
+		Rules: []rbacv1.PolicyRule{
+			// Always need to be able to get/list/watch the BoundSchemas
+			// to be able to figure out what to bind.
+			{
+				APIGroups: []string{kubebindv1alpha2.GroupName},
+				Resources: []string{"boundschemas"},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+		}}
 	for _, export := range exports {
+		// Collect unique GroupResources and sort for stable rule ordering.
+		grSet := map[string]kubebindv1alpha2.GroupResource{}
 		for _, res := range export.Spec.Resources {
-			schema, err := r.getAPIResourceSchema(ctx, cache, res.Name)
+			key := res.ResourceGroupName()
+			grSet[key] = kubebindv1alpha2.GroupResource{Group: res.Group, Resource: res.Resource}
+		}
+		keys := slices.Collect(maps.Keys(grSet))
+		slices.Sort(keys)
+		for _, k := range keys {
+			// k is already normalized (e.g., "pods.core" for empty group).
+			schema, err := r.getBoundSchema(ctx, cache, clusterBinding.Namespace, k)
 			if err != nil {
-				return fmt.Errorf("failed to get APIResourceSchema %w", err)
+				return fmt.Errorf("failed to get BoundSchema %q: %w", k, err)
 			}
-
 			expected.Rules = append(expected.Rules,
 				rbacv1.PolicyRule{
-					APIGroups: []string{schema.Spec.APIResourceSchemaCRDSpec.Group},
-					Resources: []string{schema.Spec.APIResourceSchemaCRDSpec.Names.Plural},
-					Verbs:     []string{"get", "list", "watch", "update", "patch", "delete", "create"},
-				},
-				rbacv1.PolicyRule{
-					APIGroups: []string{kubebindv1alpha2.GroupName},
-					Resources: []string{"apiresourceschemas"},
-					Verbs:     []string{"get", "list", "watch"},
+					APIGroups: []string{schema.Spec.Group},
+					Resources: []string{schema.Spec.Names.Plural},
+					Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
 				},
 			)
 		}
@@ -192,7 +205,6 @@ func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, client cl
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get ClusterRoleBinding %s: %w", name, err)
 	}
-
 	if r.scope != kubebindv1alpha2.ClusterScope {
 		if err := r.deleteClusterRoleBinding(ctx, client, name); err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", name, err)

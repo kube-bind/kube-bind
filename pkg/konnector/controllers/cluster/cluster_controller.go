@@ -132,6 +132,7 @@ func NewController(
 		providerConfig,
 		serviceBindingInformer,
 		providerBindInformers.KubeBind().V1alpha2().APIServiceExports(),
+		providerBindInformers.KubeBind().V1alpha2().APIServiceExportRequests(),
 		crdInformer,
 	)
 	if err != nil {

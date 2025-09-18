@@ -54,6 +54,7 @@ func NewController(
 	consumerConfig, providerConfig *rest.Config,
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister],
 	serviceExportInformer bindinformers.APIServiceExportInformer,
+	serviceExportRequestInformer bindinformers.APIServiceExportRequestInformer,
 	crdInformer dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister],
 ) (*controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
@@ -97,17 +98,17 @@ func NewController(
 			getServiceExport: func(name string) (*kubebindv1alpha2.APIServiceExport, error) {
 				return serviceExportInformer.Lister().APIServiceExports(providerNamespace).Get(name)
 			},
+			getServiceExportRequest: func(name string) (*kubebindv1alpha2.APIServiceExportRequest, error) {
+				return serviceExportRequestInformer.Lister().APIServiceExportRequests(providerNamespace).Get(name)
+			},
 			getServiceBinding: func(name string) (*kubebindv1alpha2.APIServiceBinding, error) {
 				return serviceBindingInformer.Lister().Get(name)
 			},
 			getClusterBinding: func(ctx context.Context) (*kubebindv1alpha2.ClusterBinding, error) {
 				return providerBindClient.KubeBindV1alpha2().ClusterBindings(providerNamespace).Get(ctx, "cluster", metav1.GetOptions{})
 			},
-			getAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.APIResourceSchema, error) {
-				return providerBindClient.KubeBindV1alpha2().APIResourceSchemas().Get(ctx, name, metav1.GetOptions{})
-			},
-			getBoundAPIResourceSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.BoundAPIResourceSchema, error) {
-				return providerBindClient.KubeBindV1alpha2().BoundAPIResourceSchemas(providerNamespace).Get(ctx, name, metav1.GetOptions{})
+			getBoundSchema: func(ctx context.Context, name string) (*kubebindv1alpha2.BoundSchema, error) {
+				return providerBindClient.KubeBindV1alpha2().BoundSchemas(providerNamespace).Get(ctx, name, metav1.GetOptions{})
 			},
 			updateServiceExportStatus: func(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) (*kubebindv1alpha2.APIServiceExport, error) {
 				return providerBindClient.KubeBindV1alpha2().APIServiceExports(providerNamespace).UpdateStatus(ctx, export, metav1.UpdateOptions{})

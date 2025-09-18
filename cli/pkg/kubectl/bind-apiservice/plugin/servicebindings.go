@@ -46,7 +46,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 
 	var bindings []*kubebindv1alpha2.APIServiceBinding
 	for _, resource := range request.Spec.Resources {
-		name := resource.Resource + "." + resource.Group
+		name := resource.ResourceGroupName()
 		existing, err := bindClient.KubeBindV1alpha2().APIServiceBindings().Get(ctx, name, metav1.GetOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return nil, err
@@ -58,7 +58,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 			bindings = append(bindings, existing)
 
 			// checking CRD to match the binding
-			crd, err := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, resource.Resource+"."+resource.Group, metav1.GetOptions{})
+			crd, err := apiextensionsClient.ApiextensionsV1().CustomResourceDefinitions().Get(ctx, resource.ResourceGroupName(), metav1.GetOptions{})
 			if err != nil && !apierrors.IsNotFound(err) {
 				return nil, err
 			} else if err == nil {
@@ -78,7 +78,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 			}
 			created, err := bindClient.KubeBindV1alpha2().APIServiceBindings().Create(ctx, &kubebindv1alpha2.APIServiceBinding{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      resource.Resource + "." + resource.Group,
+					Name:      resource.ResourceGroupName(),
 					Namespace: "kube-bind",
 				},
 				Spec: kubebindv1alpha2.APIServiceBindingSpec{

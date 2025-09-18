@@ -65,7 +65,7 @@ func testHappyCase(t *testing.T, resourceScope apiextensionsv1.ResourceScope, in
 	t.Logf("Starting backend with random port")
 	addr, _ := framework.StartBackend(t, providerConfig, "--kubeconfig="+providerKubeconfig, "--listen-address=:0", "--consumer-scope="+string(informerScope))
 
-	t.Logf("Creating APIResourceSchemas on provider side")
+	t.Logf("Creating CRD on provider side")
 	providerfixtures.Bootstrap(t, framework.DiscoveryClient(t, providerConfig), framework.DynamicClient(t, providerConfig), nil)
 
 	t.Logf("Creating consumer workspace and starting konnector")
@@ -130,6 +130,9 @@ spec:
 				t.Logf("Waiting for %s CRD to be created on consumer side", serviceGVR.Resource)
 				crdClient := framework.ApiextensionsClient(t, consumerConfig).ApiextensionsV1().CustomResourceDefinitions()
 				require.Eventually(t, func() bool {
+					if serviceGVR.Group == "" {
+						serviceGVR.Group = "core"
+					}
 					_, err := crdClient.Get(ctx, serviceGVR.Resource+"."+serviceGVR.Group, metav1.GetOptions{})
 					return err == nil
 				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for %s CRD to be created on consumer side", serviceGVR.Resource)

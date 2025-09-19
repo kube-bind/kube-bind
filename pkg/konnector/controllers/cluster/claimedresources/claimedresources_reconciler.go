@@ -62,8 +62,9 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string)
 			return err // hoping the APIServiceNamespace will be created soon. Otherwise, this item goes into backoff.
 		}
 		if sn.Status.Namespace == "" {
-			runtime.HandleError(err)
-			return err // hoping the status is set soon.
+			e := fmt.Errorf("APIServiceNamespace %q has empty status.namespace", providerNS)
+			runtime.HandleError(e)
+			return e // hoping the status is set soon.
 		}
 
 		logger = logger.WithValues("providerNamespace", sn.Status.Namespace)
@@ -128,8 +129,8 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string)
 		}
 
 		if providerObj.GetDeletionTimestamp() != nil && !providerObj.GetDeletionTimestamp().IsZero() {
-			logger.Info("Deleting downstream object because it has been deleted upstream", "downStreamNamespace", providerNS, "downstreamName", providerObj.GetName())
-			if err := r.deleteConsumerObject(ctx, providerNS, providerObj.GetName()); err != nil {
+			logger.Info("Deleting downstream object because it has been deleted upstream", "downstreamNamespace", consumerNS, "downstreamName", providerObj.GetName())
+			if err := r.deleteConsumerObject(ctx, consumerNS, providerObj.GetName()); err != nil {
 				return err
 			}
 		}

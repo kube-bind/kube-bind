@@ -25,7 +25,7 @@ It will do the following:
 
 1. Start Dex:
 ```bash
-./bin/dex serve ./kcp/deploy/examples/dex-config.yaml
+./dex/bin/dex serve ./hack/dex-config-dev.yaml
 ```
 
 1. Start kcp

@@ -210,7 +210,15 @@ func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
-	o := obj.(*unstructured.Unstructured)
+	// handle tombstones
+	if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+		obj = tombstone.Obj
+	}
+	o, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		runtime.HandleError(fmt.Errorf("unexpected type %T in enqueueConsumer", obj))
+		return
+	}
 	if !c.isClaimed(o) {
 		return
 	}
@@ -305,11 +313,11 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		return
 	}
 
-	if sn.Namespace == "" {
+	if sn.Status.Namespace == "" {
 		return // not ready
 	}
 
-	logger.Info("enqueueing service namespace", "name", sn.Status.Namespace)
+	logger.Info("enqueueing service namespace", "upstreamNamespace", sn.Status.Namespace)
 	objs, err := c.providerDynamicInformer.List(sn.Status.Namespace)
 	if err != nil {
 		runtime.HandleError(err)

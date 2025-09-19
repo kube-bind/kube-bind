@@ -148,7 +148,11 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 
 	// Process each schema
 	for _, schema := range schemas {
-		if err := r.referenceBoundAPIResourceSchema(ctx, binding, schema.Name); err != nil {
+		if err := r.referenceBoundSchema(ctx, binding, schema.Name); err != nil {
+			errs = append(errs, err)
+		}
+
+		if err := r.referencePermissionClaims(ctx, binding, export); err != nil {
 			errs = append(errs, err)
 		}
 
@@ -166,7 +170,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) referenceBoundAPIResourceSchema(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding, name string) error {
+func (r *reconciler) referenceBoundSchema(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding, name string) error {
 	boundSchema, err := r.getBoundSchema(ctx, name)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get BoundSchema %s: %w", name, err)
@@ -199,6 +203,11 @@ func (r *reconciler) referenceBoundAPIResourceSchema(ctx context.Context, bindin
 			},
 		})
 
+	return nil
+}
+
+func (r *reconciler) referencePermissionClaims(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding, export *kubebindv1alpha2.APIServiceExport) error {
+	binding.Status.PermissionClaims = export.Spec.PermissionClaims
 	return nil
 }
 

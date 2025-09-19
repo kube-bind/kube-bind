@@ -241,7 +241,7 @@ func bindAPIExport(ctx context.Context, kcpClient kcpclient.Interface, exportNam
 						Group:    "apis.kcp.io",
 						Resource: "apiresourceschemas",
 					},
-					Verbs: []string{"*"},
+					Verbs: []string{"get", "list", "watch"},
 				},
 				Selector: apisv1alpha2.PermissionClaimSelector{
 					MatchAll: true,

@@ -9,7 +9,7 @@ spec:
     versions:
     - v1alpha1
   permissionClaims:
-  - apiGroup: ""
+  - group: ""
     resource: configmaps
     selector:
       labelSelector:

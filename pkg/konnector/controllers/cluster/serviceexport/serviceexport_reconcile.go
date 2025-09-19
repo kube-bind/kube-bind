@@ -232,6 +232,7 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 			r.providerNamespace,
 			r.providerConfig,
 			r.serviceNamespaceInformer,
+			nil, // no label selector
 		)
 		if err != nil {
 			return err
@@ -288,7 +289,7 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 	}()
 
 	r.syncStore.Set(key, contextstore.SyncContext{
-		Generation: schema.Generation,
+		Generation: export.Generation,
 		Cancel:     cancel,
 	})
 
@@ -308,7 +309,7 @@ func (r *reconciler) ensureControllersForPermissionClaims(
 	var errs []error
 
 	// Process each permission claim
-	for _, claim := range binding.Spec.PermissionClaims {
+	for _, claim := range binding.Status.PermissionClaims {
 		claimGVR, err := kubebindv1alpha2.ResolveClaimableAPI(claim)
 		if err != nil {
 			logger.Info("skipping unsupported claim", "claim", claim, "error", err)
@@ -386,22 +387,45 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 		defaultConsumerInf = dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
 	}
 
-	var providerInf multinsinformer.GetterInformer
+	// Now if you reading this and thinking "What is happening here...", this is why this comment exists :)
+	// Provider informers can operate in 2 modes:
+	// 1. Cluster-scoped - in this case we create a single informer factory that watches all namespaces
+	//    for the given GVR.
+	// 2. Namespace-scoped - in this case we create a multi-namespace informer that watches only the
+	//    provider namespace and any service namespaces created for the binding.
+	// But in additon to that, for permission claims, we also need to consider label selectors
+	// If one is present, we need to filter the informers using that selector. So we have 4 possible
+	// combinations:
+	// 1A Cluster-scoped, no label selector - single informer factory watching all namespaces
+	// 1B Cluster-scoped, with label selector - single filtered informer factory watching all namespaces
+	// B1 Namespace-scoped, no label selector - multi-namespace informer watching provider + service namespaces
+	// B2 Namespace-scoped, with label selector - multi-namespace filtered informer watching provider + service namespaces
+	// The code below implements this logic. Follow the letters.
+	var defaultProviderInf multinsinformer.GetterInformer // will hold the default provider informer (A<x> or B<x>)
 	if isClusterScoped {
-		factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
+		var factory dynamicinformer.DynamicSharedInformerFactory // Placeholder for A<x>.
+		if claim.Selector.LabelSelector != nil {                 // A2
+			factory = dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30, metav1.NamespaceAll, tweakListOptions)
+		} else { // A1
+			factory = dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
+		}
 		factory.ForResource(claimGVR).Lister() // wire the GVR up in the informer factory
-		providerInf = multinsinformer.GetterInformerWrapper{
+		defaultProviderInf = multinsinformer.GetterInformerWrapper{
 			GVR:      claimGVR,
 			Delegate: factory,
 		}
 	} else {
+		// B<x> case for labels is implemented inside multinsinformer.NewDynamicMultiNamespaceInformer
+		// Logic in there is same as here - if label selector is present, create filtered informer factory
 		var err error
-		providerInf, err = multinsinformer.NewDynamicMultiNamespaceInformer(
+		defaultProviderInf, err = multinsinformer.NewDynamicMultiNamespaceInformer(
 			claimGVR,
 			r.providerNamespace,
 			r.providerConfig,
 			r.serviceNamespaceInformer,
+			claim.Selector.LabelSelector,
 		)
+
 		if err != nil {
 			logger.Info("aborting", "error", err)
 			cancel()
@@ -416,7 +440,7 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 		r.consumerConfig,
 		r.providerConfig,
 		defaultConsumerInf.ForResource(claimGVR),
-		providerInf,
+		defaultProviderInf,
 		r.serviceNamespaceInformer,
 	)
 
@@ -436,8 +460,8 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 		logger.V(2).Info("Synced consumer informers", "consumer", slices.Collect(maps.Keys(consumerSynced)), "key", claimKey)
 
 		// Start provider informer and wait for sync
-		providerInf.Start(ctxWithCancel)
-		providerSynced := providerInf.WaitForCacheSync(ctxWithCancel.Done())
+		defaultProviderInf.Start(ctxWithCancel)
+		providerSynced := defaultProviderInf.WaitForCacheSync(ctxWithCancel.Done())
 		logger.V(2).Info("Synced provider informers", "provider", slices.Collect(maps.Keys(providerSynced)), "key", claimKey)
 
 		// Start the claimed resources controller

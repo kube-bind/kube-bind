@@ -32,6 +32,9 @@ func (k Key) String() string {
 }
 
 func NewKey(exportNamespace, exportName string, suffix ...string) Key {
+	if len(suffix) == 0 {
+		return Key(exportNamespace + "." + exportName)
+	}
 	return Key(exportNamespace + "." + exportName + "." + strings.Join(suffix, "."))
 }
 
@@ -92,13 +95,16 @@ func (c *contextStore) Set(key Key, value SyncContext) {
 }
 
 func (c *contextStore) Delete(key Key) {
+	var cancel func()
 	c.lock.Lock()
-	defer c.lock.Unlock()
-	ctx, ok := c.store[key]
-	if ok {
-		ctx.Cancel()
+	if ctx, ok := c.store[key]; ok {
+		cancel = ctx.Cancel
+		delete(c.store, key)
 	}
-	delete(c.store, key)
+	c.lock.Unlock()
+	if cancel != nil {
+		cancel()
+	}
 }
 
 func (c *contextStore) BulkDeletePrefixed(prefix Key) []SyncContext {

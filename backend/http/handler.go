@@ -382,6 +382,10 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 
 	result := make([]UISchema, 0, len(exportedSchemas))
 	for _, item := range exportedSchemas {
+		if !strings.EqualFold(h.scope.String(), string(item.Spec.Scope)) && h.scope != kubebindv1alpha2.ClusterScope {
+			continue
+		}
+
 		if len(item.Spec.Versions) == 0 {
 			logger.Error(fmt.Errorf("no versions found"), "skipping schema", "name", item.Name)
 			continue

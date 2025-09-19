@@ -51,6 +51,9 @@ type reconciler struct {
 // reconcile syncs downstream objects (metadata and spec) with upstream objects.
 func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructured) error {
 	logger := klog.FromContext(ctx)
+	if r.apiServiceExport == nil { // Should never happen, but we check to make sure we dont regress in the future.
+		panic("apiServiceExport is nil")
+	}
 
 	ns := obj.GetNamespace()
 	if ns != "" {

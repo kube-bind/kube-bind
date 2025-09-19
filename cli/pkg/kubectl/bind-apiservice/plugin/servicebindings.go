@@ -89,7 +89,6 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 						},
 						Namespace: "kube-bind",
 					},
-					PermissionClaims: request.Spec.PermissionClaims,
 				},
 			}, metav1.CreateOptions{})
 			if err != nil {

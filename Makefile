@@ -325,7 +325,7 @@ modules: ## Run go mod tidy to ensure modules are up to date
 .PHONY: verify-modules
 verify-modules: modules  # Verify go modules are up to date
 	@for MOD in $(GOMODS); do \
-		(cd $$MOD; echo "Verifying $$MOD"; if ! git diff --quiet HEAD -- go.mod go.sum; then echo "[$$MOD] go modules are out of date, please run 'make modules'"; exit 1; fi; ) \
+		(cd $$MOD; echo "Verifying $$MOD"; if ! git diff --quiet HEAD -- go.mod go.sum; then git diff -- go.mod go.sum; echo "[$$MOD] go modules are out of date, please run 'make modules'"; exit 1; fi; ) \
 	done
 
 .PHONY: verify

@@ -77,9 +77,10 @@ CODE_GENERATOR_BIN := code-generator
 CODE_GENERATOR := $(TOOLS_GOBIN_DIR)/$(CODE_GENERATOR_BIN)-$(CODE_GENERATOR_VER)
 export CODE_GENERATOR # so hack scripts can use it
 
-KCP_VER := v0.28.0
+KCP_VER := v0.28.1
 KCP_BIN := kcp
 KCP := $(TOOLS_GOBIN_DIR)/$(KCP_BIN)-$(KCP_VER)
+KCP_CMD ?= $(KCP)
 
 DEX_VER := v2.43.1
 DEX_BIN := dex
@@ -131,9 +132,9 @@ build: require-jq require-go require-git verify-go-versions ## Build the project
 	mkdir -p $(GOBIN_DIR)
 	set -x; for W in $(WHAT); do \
 		pushd . && cd $${W%..}; \
-    	GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o  $(GOBIN_DIR) ./...; \
+		GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o  $(GOBIN_DIR) ./...; \
 		popd; \
-    done
+	done
 .PHONY: build
 
 install: WHAT ?= ./cmd/... ./cli/cmd/...
@@ -244,27 +245,28 @@ GO_TEST = $(GOTESTSUM) $(GOTESTSUM_ARGS) --
 endif
 
 COUNT ?= 1
-E2E_PARALLELISM ?= 1
-
-dex:
-		git clone https://github.com/dexidp/dex.git
-dex/bin/dex: dex
-		(cd dex; make)
+NPROC ?= $$(( $(shell nproc) / 2 ))
+E2E_PARALLELISM ?= $$(( $(NPROC) > 1 ? $(NPROC) : 1))
 
 $(DEX):
 	mkdir -p $(TOOLS_DIR)
-	git clone --branch $(DEX_VER) --depth 1 https://github.com/dexidp/dex $(TOOLS_DIR)/dex-clone-$(DEX_VER)
-	cd $(TOOLS_DIR)/dex-clone-$(DEX_VER) && make build
+	git clone --branch $(DEX_VER) --depth 1 https://github.com/dexidp/dex $(TOOLS_DIR)/dex-clone-$(DEX_VER) || true
+	cd $(TOOLS_DIR)/dex-clone-$(DEX_VER) && GOWORK=off make build
 	cp -a $(TOOLS_DIR)/dex-clone-$(DEX_VER)/bin/dex $(DEX)
+	ln -sf $(DEX) $(TOOLS_GOBIN_DIR)/dex
+
+run-dex: $(DEX)
+	$(DEX) serve hack/dex-config-dev.yaml
 
 $(KCP):
 	mkdir -p $(TOOLS_DIR)
 	curl --fail --retry 3 -L "https://github.com/kcp-dev/kcp/releases/download/$(KCP_VER)/kcp_$(KCP_VER:v%=%)_$(OS)_$(ARCH).tar.gz" | \
 	tar xz -C "$(TOOLS_DIR)" --strip-components="1" bin/kcp
 	mv $(TOOLS_DIR)/kcp $(KCP)
+	ln -sf $(KCP) $(TOOLS_GOBIN_DIR)/kcp
 
 run-kcp: $(KCP)
-	$(KCP) start
+	$(KCP_CMD) start --bind-address=127.0.0.1
 
 .PHONY: test-e2e
 ifdef USE_GOTESTSUM
@@ -275,8 +277,8 @@ test-e2e: WORK_DIR ?= .
 test-e2e: WHAT ?= ./test/e2e...
 test-e2e: $(KCP) $(DEX) build ## Run e2e tests
 	mkdir .kcp
-	$(DEX) serve hack/dex-config-dev.yaml 2>&1 & DEX_PID=$$!; \
-	$(KCP) start &>.kcp/kcp.log & KCP_PID=$$!; \
+	$(MAKE) run-dex 2>&1 & DEX_PID=$$!; \
+	$(MAKE) run-kcp &>.kcp/kcp.log & KCP_PID=$$!; \
 	trap 'kill -TERM $$DEX_PID $$KCP_PID; rm -rf .kcp' TERM INT EXIT && \
 	echo "Waiting for kcp to be ready (check .kcp/kcp.log)." && while ! KUBECONFIG=.kcp/admin.kubeconfig kubectl get --raw /readyz &>/dev/null; do sleep 1; echo -n "."; done && echo && \
 	KUBECONFIG=$$PWD/.kcp/admin.kubeconfig GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) $(WHAT) $(TEST_ARGS)

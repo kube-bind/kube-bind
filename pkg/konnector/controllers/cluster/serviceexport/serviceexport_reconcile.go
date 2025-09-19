@@ -332,7 +332,7 @@ func (r *reconciler) ensureControllersForPermissionClaims(
 		}
 
 		// Start new controller for this claim
-		if err := r.ensureControllerForPermissionClaim(ctx, binding, claim, claimGVR, isClusterScoped, claimKey); err != nil {
+		if err := r.ensureControllerForPermissionClaim(ctx, binding, claim, export, claimGVR, isClusterScoped, claimKey); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -354,6 +354,7 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 	ctx context.Context,
 	binding *kubebindv1alpha2.APIServiceBinding,
 	claim kubebindv1alpha2.PermissionClaim,
+	export *kubebindv1alpha2.APIServiceExport,
 	claimGVR runtimeschema.GroupVersionResource,
 	isClusterScoped bool,
 	claimKey contextstore.Key,
@@ -436,6 +437,7 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 	claimedCtrl, err := claimedresources.NewController(
 		claimGVR,
 		claim,
+		export,
 		r.providerNamespace,
 		r.consumerConfig,
 		r.providerConfig,

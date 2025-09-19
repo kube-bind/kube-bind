@@ -40,6 +40,7 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	bindclientset "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
@@ -51,6 +52,7 @@ const (
 func NewController(
 	gvr schema.GroupVersionResource,
 	claim kubebindv1alpha2.PermissionClaim,
+	apiServiceExport *kubebindv1alpha2.APIServiceExport,
 	providerNamespace string,
 	consumerConfig, providerConfig *rest.Config,
 	consumerDynamicInformer informers.GenericInformer,
@@ -73,14 +75,21 @@ func NewController(
 		return nil, err
 	}
 
+	bindClient, err := bindclientset.NewForConfig(providerConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	dynamicConsumerLister := dynamiclister.New(consumerDynamicInformer.Informer().GetIndexer(), gvr)
 	c := &controller{
 		queue: queue,
 
-		claim: claim,
+		claim:            claim,
+		apiServiceExport: apiServiceExport, // used to establish owner references when create happens on the provider side. TODO: Do we really need this?
 
-		consumerClient: consumerClient,
-		providerClient: providerClient,
+		consumerClient:     consumerClient,
+		providerClient:     providerClient,
+		providerBindClient: bindClient,
 
 		consumerDynamicLister:  dynamicConsumerLister,
 		consumerDynamicIndexer: consumerDynamicInformer.Informer().GetIndexer(),
@@ -170,10 +179,12 @@ func NewController(
 type controller struct {
 	queue workqueue.TypedRateLimitingInterface[string]
 
-	claim kubebindv1alpha2.PermissionClaim
+	claim            kubebindv1alpha2.PermissionClaim
+	apiServiceExport *kubebindv1alpha2.APIServiceExport // used to establish owner references when create happens from the consumer side.
 
-	consumerClient dynamicclient.Interface
-	providerClient dynamicclient.Interface
+	consumerClient     dynamicclient.Interface
+	providerClient     dynamicclient.Interface
+	providerBindClient bindclientset.Interface
 
 	consumerDynamicLister  dynamiclister.Lister
 	consumerDynamicIndexer cache.Indexer
@@ -235,17 +246,37 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	if ns != "" {
+	if ns != "" { // Namespaced object.
 		sn, err := c.serviceNamespaceInformer.Lister().APIServiceNamespaces(c.providerNamespace).Get(ns)
 		if err != nil {
-			if !errors.IsNotFound(err) {
-				runtime.HandleError(err)
+			if errors.IsNotFound(err) {
+				// No namespace - create one.
+				// TODO: This is not quite right place for this code...
+				_, err := c.createServiceNamespace(context.TODO(), &kubebindv1alpha2.APIServiceNamespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      ns,
+						Namespace: c.providerNamespace,
+						OwnerReferences: []metav1.OwnerReference{
+							*metav1.NewControllerRef(c.apiServiceExport, kubebindv1alpha2.SchemeGroupVersion.WithKind("APIServiceExport")),
+						},
+					},
+				})
+				if err != nil {
+					runtime.HandleError(fmt.Errorf("failed to create APIServiceNamespace %q: %w", ns, err))
+					return
+				}
+				// Requeue when the APIServiceNamespace is created.
+				logger.V(2).Info("created APIServiceNamespace, requeueing", "namespace", ns)
+				return // not ready yet
 			}
 			return
 		}
+		if sn.Status.Namespace == "" {
+			return // not ready yet
+		}
 		if sn.Namespace == c.providerNamespace && sn.Status.Namespace != "" {
 			key := fmt.Sprintf("%s/%s", sn.Status.Namespace, name)
-			logger.V(2).Info("queueing Unstructured", "key", key)
+			logger.V(2).Info("queueing Unstructured", "key", key, "reason", "Consumer")
 			c.queue.Add(key)
 			return
 		}
@@ -397,11 +428,20 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 func (c *controller) process(ctx context.Context, key string) error {
-	ns, name, err := cache.SplitMetaNamespaceKey(key)
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)
 		return nil // we cannot do anything
 	}
 
-	return c.reconcile(ctx, ns, name)
+	return c.reconcile(ctx, namespace, name)
 }
+
+func (c *controller) createServiceNamespace(ctx context.Context, sns *kubebindv1alpha2.APIServiceNamespace) (*kubebindv1alpha2.APIServiceNamespace, error) {
+	return c.providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(sns.Namespace).Create(ctx, sns, metav1.CreateOptions{})
+}
+
+// configMap test-namespace/test
+// goes into index - indexers.ServiceNamespaceByNamespace with "local name" ->
+
+// providerNamespace/<api-service-namspaces.....>

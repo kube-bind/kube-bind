@@ -91,7 +91,6 @@ type APIServiceExportSpec struct {
 	// PermissionClaims records decisions about permission claims requested by the service provider.
 	// Access is granted per GroupResource.
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="permissionClaims are immutable"
-	// +kubebuilder:validation:XValidation:rule="self.map(c, c.group + \"/\" + c.resource).distinct().size() == self.size()",message="permissionClaims must target unique group/resource pairs"
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 
 	// informerScope is the scope of the APIServiceExport. It can be either Cluster or Namespace.

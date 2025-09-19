@@ -95,111 +95,59 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 				Verbs: []string{"*"},
 			})
 		}
-		if c.scope == kubebindv1alpha2.ClusterScope {
-			role, err := c.getPermissionClaimsClusterRole(ctx, cache, name)
-			if err != nil && !errors.IsNotFound(err) {
-				return fmt.Errorf("failed to get Role %s: %w", name, err)
-			}
-			if role == nil {
-				role = &rbacv1.ClusterRole{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: name,
-					},
-					Rules: permissions,
-				}
-				// Create new ClusterRole
-				if err := client.Create(ctx, role); err != nil {
-					return fmt.Errorf("failed to create ClusterRole %s: %w", name, err)
-				}
-			} else {
-				role.Rules = permissions
-				if err := client.Update(ctx, role); err != nil {
-					return fmt.Errorf("failed to update ClusterRole %s: %w", name, err)
-				}
-			}
 
-			clusterBinding, err := c.getPermissionClaimsClusterRoleBinding(ctx, cache, name)
-			if err != nil && !errors.IsNotFound(err) {
-				return fmt.Errorf("failed to get ClusterRoleBinding %s: %w", name, err)
+		role, err := c.getPermissionClaimsRole(ctx, cache, sns.Status.Namespace, name)
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("failed to get Role %s: %w", name, err)
+		}
+		if role == nil {
+			role := &rbacv1.Role{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: sns.Status.Namespace,
+				},
+				Rules: permissions,
 			}
-			if clusterBinding == nil {
-				clusterBinding = &rbacv1.ClusterRoleBinding{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: name,
-					},
-					Subjects: []rbacv1.Subject{
-						{
-							Kind:      "ServiceAccount",
-							Namespace: sns.Namespace,
-							Name:      kuberesources.ServiceAccountName,
-						},
-					},
-					RoleRef: rbacv1.RoleRef{
-						Kind:     "ClusterRole",
-						Name:     name,
-						APIGroup: "rbac.authorization.k8s.io",
-					},
-				}
-				if err := client.Create(ctx, clusterBinding); err != nil {
-					return fmt.Errorf("failed to create ClusterRoleBinding %s: %w", name, err)
-				}
-			} else {
-				logger.Info("ClusterRoleBinding already exists, update not implemented.", "name", name)
+			// Create new Role
+			if err := client.Create(ctx, role); err != nil {
+				return fmt.Errorf("failed to create Role %s: %w", name, err)
 			}
 		} else {
-			role, err := c.getPermissionClaimsRole(ctx, cache, sns.Status.Namespace, name)
-			if err != nil && !errors.IsNotFound(err) {
-				return fmt.Errorf("failed to get Role %s: %w", name, err)
+			role.Rules = permissions
+			if err := client.Update(ctx, role); err != nil {
+				return fmt.Errorf("failed to update Role %s: %w", name, err)
 			}
-			if role == nil {
-				role := &rbacv1.Role{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      name,
-						Namespace: sns.Status.Namespace,
-					},
-					Rules: permissions,
-				}
-				// Create new Role
-				if err := client.Create(ctx, role); err != nil {
-					return fmt.Errorf("failed to create Role %s: %w", name, err)
-				}
-			} else {
-				role.Rules = permissions
-				if err := client.Update(ctx, role); err != nil {
-					return fmt.Errorf("failed to update Role %s: %w", name, err)
-				}
-			}
+		}
 
-			rolebinding, err := c.getPermissionClaimsRoleBinding(ctx, cache, sns.Status.Namespace, name)
-			if err != nil && !errors.IsNotFound(err) {
-				return fmt.Errorf("failed to get Role %s: %w", name, err)
-			}
+		rolebinding, err := c.getPermissionClaimsRoleBinding(ctx, cache, sns.Status.Namespace, name)
+		if err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("failed to get Role %s: %w", name, err)
+		}
 
-			if rolebinding == nil {
-				rolebinding := &rbacv1.RoleBinding{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      name,
-						Namespace: sns.Status.Namespace,
+		if rolebinding == nil {
+			rolebinding := &rbacv1.RoleBinding{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      name,
+					Namespace: sns.Status.Namespace,
+				},
+				Subjects: []rbacv1.Subject{
+					{
+						Kind:      "ServiceAccount",
+						Namespace: sns.Namespace,
+						Name:      kuberesources.ServiceAccountName,
 					},
-					Subjects: []rbacv1.Subject{
-						{
-							Kind:      "ServiceAccount",
-							Namespace: sns.Namespace,
-							Name:      kuberesources.ServiceAccountName,
-						},
-					},
-					RoleRef: rbacv1.RoleRef{
-						Kind:     "Role",
-						Name:     name,
-						APIGroup: "rbac.authorization.k8s.io",
-					},
-				}
-				if err := client.Create(ctx, rolebinding); err != nil {
-					return fmt.Errorf("failed to create Role %s: %w", name, err)
-				}
-			} else {
-				logger.Info("Role already exists, update not implemented.", "name", name)
+				},
+				RoleRef: rbacv1.RoleRef{
+					Kind:     "Role",
+					Name:     name,
+					APIGroup: "rbac.authorization.k8s.io",
+				},
 			}
+			if err := client.Create(ctx, rolebinding); err != nil {
+				return fmt.Errorf("failed to create Role %s: %w", name, err)
+			}
+		} else {
+			logger.Info("Role already exists, update not implemented.", "name", name)
 		}
 	}
 
@@ -248,15 +196,6 @@ func (c *reconciler) ensureRBACRoleBinding(ctx context.Context, client client.Cl
 	return nil
 }
 
-func (c *reconciler) getPermissionClaimsClusterRole(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error) {
-	var role rbacv1.ClusterRole
-	key := types.NamespacedName{Name: name}
-	if err := cache.Get(ctx, key, &role); err != nil {
-		return nil, err
-	}
-	return &role, nil
-}
-
 func (c *reconciler) getPermissionClaimsRole(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.Role, error) {
 	var role rbacv1.Role
 	key := types.NamespacedName{Namespace: namespace, Name: name}
@@ -264,15 +203,6 @@ func (c *reconciler) getPermissionClaimsRole(ctx context.Context, cache cache.Ca
 		return nil, err
 	}
 	return &role, nil
-}
-
-func (c *reconciler) getPermissionClaimsClusterRoleBinding(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error) {
-	var roleBinding rbacv1.ClusterRoleBinding
-	key := types.NamespacedName{Name: name}
-	if err := cache.Get(ctx, key, &roleBinding); err != nil {
-		return nil, err
-	}
-	return &roleBinding, nil
 }
 
 func (c *reconciler) getPermissionClaimsRoleBinding(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.RoleBinding, error) {

@@ -76,14 +76,19 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
+
+	indexers.AddIfNotPresentOrDie(dynamicServiceNamespaceInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceNamespaceByNamespace: indexers.IndexServiceNamespaceByNamespace,
+	})
+
 	c := &controller{
 		queue: queue,
 
 		serviceExportLister:  serviceExportInformer.Lister(),
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
 
-		serviceNamespaceLister:  serviceNamespaceInformer.Lister(),
-		serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
+		//	serviceNamespaceLister:  serviceNamespaceInformer.Lister(),
+		//serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
 
 		serviceBindingInformer: serviceBindingInformer,
 		crdInformer:            crdInformer,
@@ -119,10 +124,6 @@ func NewController(
 		),
 	}
 
-	indexers.AddIfNotPresentOrDie(serviceNamespaceInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceNamespaceByNamespace: indexers.IndexServiceNamespaceByNamespace,
-	})
-
 	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
 		indexers.ServiceExportByCustomResourceDefinition: indexers.IndexServiceExportByCustomResourceDefinition,
 	})
@@ -154,8 +155,8 @@ type controller struct {
 	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
 
-	serviceNamespaceLister  bindlisters.APIServiceNamespaceLister
-	serviceNamespaceIndexer cache.Indexer
+	// serviceNamespaceLister  bindlisters.APIServiceNamespaceLister
+	// serviceNamespaceIndexer cache.Indexer
 
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister]
 	crdInformer            dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister]

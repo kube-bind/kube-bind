@@ -46,15 +46,15 @@ type readReconciler struct {
 	deleteConsumerObject func(ctx context.Context, ns, name string) error
 }
 
-// reconcile syncs upstream claimed resources to downstream.
-func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string) error {
+// reconcile syncs conmsumer claimed resources to provider.
+func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name string) error {
 	logger := klog.FromContext(ctx)
-	logger = logger.WithValues("name", name, "providerNamespace", providerNS)
+	logger = logger.WithValues("name", name, "providerNamespace", providerNamespace)
 
 	logger.Info("reconciling object")
 	consumerNS := ""
-	if providerNS != "" {
-		sn, err := r.getServiceNamespace(providerNS)
+	if providerNamespace != "" {
+		sn, err := r.getServiceNamespace(providerNamespace)
 		if err != nil && !errors.IsNotFound(err) {
 			return err
 		} else if errors.IsNotFound(err) {
@@ -62,7 +62,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string)
 			return err // hoping the APIServiceNamespace will be created soon. Otherwise, this item goes into backoff.
 		}
 		if sn.Status.Namespace == "" {
-			e := fmt.Errorf("APIServiceNamespace %q has empty status.namespace", providerNS)
+			e := fmt.Errorf("APIServiceNamespace %q has empty status.namespace", providerNamespace)
 			runtime.HandleError(e)
 			return e // hoping the status is set soon.
 		}
@@ -74,7 +74,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string)
 		ctx = klog.NewContext(ctx, logger)
 	}
 
-	providerObj, providerErr := r.getProviderObject(providerNS, name)
+	providerObj, providerErr := r.getProviderObject(providerNamespace, name)
 	if providerErr != nil && !errors.IsNotFound(providerErr) {
 		return providerErr
 	}
@@ -116,7 +116,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string)
 		}
 
 		if errors.IsNotFound(consumerErr) {
-			logger.Info("Creating missing downstream object", "downstreamNamespace", providerNS, "downstreamName", providerObj.GetName())
+			logger.Info("Creating missing downstream object", "downstreamNamespace", providerNamespace, "downstreamName", providerObj.GetName())
 
 			candidate := candidateFromOwnerObj(consumerNS, providerObj)
 			r.makeProviderOwner(candidate)
@@ -147,8 +147,8 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string)
 
 	case kubebindv1alpha2.OwnerConsumer:
 		if errors.IsNotFound(consumerErr) {
-			logger.Info("Owner copy of the object is gone, deleting downstream object", "name", name, "namespace", providerNS)
-			err := r.deleteProviderObject(ctx, providerNS, name)
+			logger.Info("Owner copy of the object is gone, deleting downstream object", "name", name, "namespace", providerNamespace)
+			err := r.deleteProviderObject(ctx, providerNamespace, name)
 			if errors.IsNotFound(err) {
 				return nil
 			}
@@ -164,7 +164,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string)
 			}
 		}
 
-		candidate := candidateFromOwnerObj(providerNS, ownerCandidate)
+		candidate := candidateFromOwnerObj(providerNamespace, ownerCandidate)
 		r.makeConsumerOwner(candidate)
 
 		if errors.IsNotFound(providerErr) {
@@ -172,7 +172,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNS, name string)
 			return r.createProviderObject(ctx, candidate)
 		}
 
-		providerObj := candidateFromOwnerObj(providerNS, providerObj)
+		providerObj := candidateFromOwnerObj(providerNamespace, providerObj)
 		if !equality.Semantic.DeepEqual(providerObj, candidate) {
 			logger.Info("updating consumer owned object at provider")
 			return r.updateProviderObject(ctx, candidate)

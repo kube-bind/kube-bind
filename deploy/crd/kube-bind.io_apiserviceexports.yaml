@@ -582,9 +582,6 @@ spec:
                 x-kubernetes-validations:
                 - message: permissionClaims are immutable
                   rule: self == oldSelf
-                - message: permissionClaims must target unique group/resource pairs
-                  rule: self.map(c, c.group + "/" + c.resource).distinct().size()
-                    == self.size()
               resources:
                 description: resources is a list of resources that should be exported.
                 items:

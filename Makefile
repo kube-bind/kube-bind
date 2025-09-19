@@ -245,11 +245,6 @@ COUNT ?= 1
 NPROC ?= $$(( $(shell nproc) / 2 ))
 E2E_PARALLELISM ?= $$(( $(NPROC) > 1 ? $(NPROC) : 1))
 
-dex:
-		git clone https://github.com/dexidp/dex.git
-dex/bin/dex: dex
-		(cd dex; make)
-
 $(DEX):
 	mkdir -p $(TOOLS_DIR)
 	git clone --branch $(DEX_VER) --depth 1 https://github.com/dexidp/dex $(TOOLS_DIR)/dex-clone-$(DEX_VER) || true

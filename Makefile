@@ -257,6 +257,9 @@ $(DEX):
 	cp -a $(TOOLS_DIR)/dex-clone-$(DEX_VER)/bin/dex $(DEX)
 	ln -sf $(DEX) $(TOOLS_GOBIN_DIR)/dex
 
+run-dex: $(DEX)
+	$(DEX) serve hack/dex-config-dev.yaml
+
 $(KCP):
 	mkdir -p $(TOOLS_DIR)
 	curl --fail --retry 3 -L "https://github.com/kcp-dev/kcp/releases/download/$(KCP_VER)/kcp_$(KCP_VER:v%=%)_$(OS)_$(ARCH).tar.gz" | \
@@ -276,7 +279,7 @@ test-e2e: WORK_DIR ?= .
 test-e2e: WHAT ?= ./test/e2e...
 test-e2e: $(KCP) $(DEX) build ## Run e2e tests
 	mkdir .kcp
-	$(DEX) serve hack/dex-config-dev.yaml 2>&1 & DEX_PID=$$!; \
+	$(MAKE) run-dex 2>&1 & DEX_PID=$$!; \
 	$(MAKE) run-kcp &>.kcp/kcp.log & KCP_PID=$$!; \
 	trap 'kill -TERM $$DEX_PID $$KCP_PID; rm -rf .kcp' TERM INT EXIT && \
 	echo "Waiting for kcp to be ready (check .kcp/kcp.log)." && while ! KUBECONFIG=.kcp/admin.kubeconfig kubectl get --raw /readyz &>/dev/null; do sleep 1; echo -n "."; done && echo && \

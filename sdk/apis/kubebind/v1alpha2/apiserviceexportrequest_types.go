@@ -106,6 +106,12 @@ type APIServiceExportRequestSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceExportRequestResource `json:"resources"`
+
+	// PermissionClaims records decisions about permission claims requested by the service provider.
+	// Access is granted per GroupResource.
+	//
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Permission claim selector is immutable"
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 type APIServiceExportRequestResource struct {
@@ -121,6 +127,20 @@ func (r APIServiceExportRequestResource) ResourceGroupName() string {
 		r.Group = "core"
 	}
 	return fmt.Sprintf("%s.%s", r.Resource, r.Group)
+}
+
+// Selector is a resource selector that selects objects of a GVR.
+//
+// +kubebuilder:validation:XValidation:rule="(has(self.all) && self.all) != (has(self.labelSelector) && self.labelSelector != null)",message="either \"all\" or \"labelSelector\" must be set"
+type Selector struct {
+	// all claims all resources for the given group/resource.
+	// This is mutually exclusive with labelSelector.
+	// +optional
+	All bool `json:"all,omitempty"`
+
+	// LabelSelector is a label selector that selects objects of a GVR.
+	// +optional
+	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
 }
 
 // GroupResource identifies a resource.
@@ -140,6 +160,35 @@ type GroupResource struct {
 	// +required
 	// +kubebuilder:validation:Required
 	Resource string `json:"resource"`
+}
+
+func (r GroupResource) String() string {
+	return fmt.Sprintf("%s.%s", r.Resource, r.Group)
+}
+
+// PermissionClaim selects objects of a GVR that a service provider may
+// request and that a consumer may accept and allow the service provider access to.
+type PermissionClaim struct {
+	GroupResource `json:",inline"`
+
+	// Selector is a resource selector that selects objects of a GVR.
+	// +required
+	// +kubebuilder:validation:Required
+	Selector Selector `json:"selector,omitempty"`
+}
+
+// Owner is the owner of the resource.
+type Owner string
+
+const (
+	// OwnerProvider indicates that the resource is owned by the provider.
+	OwnerProvider Owner = "provider"
+	// OwnerConsumer indicates that the resource is owned by the consumer.
+	OwnerConsumer Owner = "consumer"
+)
+
+func (o Owner) String() string {
+	return string(o)
 }
 
 // APIServiceExportRequestPhase describes the phase of a binding request.

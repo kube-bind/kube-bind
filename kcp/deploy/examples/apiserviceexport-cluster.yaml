@@ -8,4 +8,11 @@ spec:
     resource: sheriffs
     versions:
     - v1alpha1
+  permissionClaims:
+  - group: ""
+    resource: configmaps
+    selector:
+      labelSelector:
+        matchLabels:
+          app: wildwest
 status: {}

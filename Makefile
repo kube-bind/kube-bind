@@ -108,10 +108,13 @@ LDFLAGS := \
 	-X k8s.io/component-base/version.gitMajor=${KUBE_MAJOR_VERSION} \
 	-X k8s.io/component-base/version.gitMinor=${KUBE_MINOR_VERSION} \
 	-X k8s.io/component-base/version.buildDate=${BUILD_DATE}
+
+CONTRIBS ?= $(patsubst contrib/%,%,$(wildcard contrib/*))
+
 all: build
 .PHONY: all
 
-check: verify lint test test-e2e
+check: verify lint test test-e2e test-e2e-contribs
 .PHONY: check
 
 GOMODS := $(shell find . -name 'go.mod' -exec dirname {} \; | grep -v hack/tools)
@@ -123,7 +126,7 @@ ldflags:
 require-%:
 	@if ! command -v $* 1> /dev/null 2>&1; then echo "$* not found in \$$PATH"; exit 1; fi
 
-build: WHAT ?= ./cmd/... ./cli/cmd/... ./kcp/cmd/kcp-init/...
+build: WHAT ?= ./cmd/... ./cli/cmd/... ./contrib/kcp/cmd/kcp-init/...
 build: require-jq require-go require-git verify-go-versions ## Build the project
 	mkdir -p $(GOBIN_DIR)
 	set -x; for W in $(WHAT); do \
@@ -278,6 +281,14 @@ test-e2e: $(KCP) $(DEX) build ## Run e2e tests
 	echo "Waiting for kcp to be ready (check .kcp/kcp.log)." && while ! KUBECONFIG=.kcp/admin.kubeconfig kubectl get --raw /readyz &>/dev/null; do sleep 1; echo -n "."; done && echo && \
 	KUBECONFIG=$$PWD/.kcp/admin.kubeconfig GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) $(WHAT) $(TEST_ARGS)
 
+CONTRIBS_E2E := $(patsubst %,test-e2e-contrib-%,$(CONTRIBS))
+
+.PHONY: test-e2e-contribs $(CONTRIBS_E2E)
+test-e2e-contribs: $(CONTRIBS_E2E) ## Run e2e tests for external integrations
+test-e2e-contrib-kcp: build $(KCP)
+$(CONTRIBS_E2E):
+	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) ./test/e2e/...
+
 .PHONY: test
 ifdef USE_GOTESTSUM
 test: $(GOTESTSUM)
@@ -314,7 +325,7 @@ modules: ## Run go mod tidy to ensure modules are up to date
 .PHONY: verify-modules
 verify-modules: modules  # Verify go modules are up to date
 	@for MOD in $(GOMODS); do \
-		(cd $$MOD; echo "Verifying $$MOD"; if ! git diff --quiet HEAD -- go.mod go.sum; then echo "[$$MOD] go modules are out of date, please run 'make modules'"; exit 1; fi; ) \
+		(cd $$MOD; echo "Verifying $$MOD"; if ! git diff --quiet HEAD -- go.mod go.sum; then git diff -- go.mod go.sum; echo "[$$MOD] go modules are out of date, please run 'make modules'"; exit 1; fi; ) \
 	done
 
 .PHONY: verify

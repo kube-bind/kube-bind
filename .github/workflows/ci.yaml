@@ -32,6 +32,7 @@ jobs:
       with:
         go-version: v1.24.0
     - run: make test-e2e
+    - run: make test-e2e-contribs
 
   go-test:
     name: go-test

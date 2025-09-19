@@ -108,10 +108,13 @@ LDFLAGS := \
 	-X k8s.io/component-base/version.gitMajor=${KUBE_MAJOR_VERSION} \
 	-X k8s.io/component-base/version.gitMinor=${KUBE_MINOR_VERSION} \
 	-X k8s.io/component-base/version.buildDate=${BUILD_DATE}
+
+CONTRIBS ?= $(patsubst contrib/%,%,$(wildcard contrib/*))
+
 all: build
 .PHONY: all
 
-check: verify lint test test-e2e
+check: verify lint test test-e2e test-e2e-contribs
 .PHONY: check
 
 GOMODS := $(shell find . -name 'go.mod' -exec dirname {} \; | grep -v hack/tools)
@@ -277,6 +280,14 @@ test-e2e: $(KCP) $(DEX) build ## Run e2e tests
 	trap 'kill -TERM $$DEX_PID $$KCP_PID; rm -rf .kcp' TERM INT EXIT && \
 	echo "Waiting for kcp to be ready (check .kcp/kcp.log)." && while ! KUBECONFIG=.kcp/admin.kubeconfig kubectl get --raw /readyz &>/dev/null; do sleep 1; echo -n "."; done && echo && \
 	KUBECONFIG=$$PWD/.kcp/admin.kubeconfig GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) $(WHAT) $(TEST_ARGS)
+
+CONTRIBS_E2E := $(patsubst %,test-e2e-contrib-%,$(CONTRIBS))
+
+.PHONY: test-e2e-contribs $(CONTRIBS_E2E)
+test-e2e-contribs: $(CONTRIBS_E2E) ## Run e2e tests for external integrations
+test-e2e-contrib-kcp: build $(KCP)
+$(CONTRIBS_E2E):
+	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) ./test/e2e/...
 
 .PHONY: test
 ifdef USE_GOTESTSUM

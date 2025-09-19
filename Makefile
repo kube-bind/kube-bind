@@ -255,12 +255,14 @@ $(DEX):
 	git clone --branch $(DEX_VER) --depth 1 https://github.com/dexidp/dex $(TOOLS_DIR)/dex-clone-$(DEX_VER) || true
 	cd $(TOOLS_DIR)/dex-clone-$(DEX_VER) && GOWORK=off make build
 	cp -a $(TOOLS_DIR)/dex-clone-$(DEX_VER)/bin/dex $(DEX)
+	ln -sf $(DEX) $(TOOLS_GOBIN_DIR)/dex
 
 $(KCP):
 	mkdir -p $(TOOLS_DIR)
 	curl --fail --retry 3 -L "https://github.com/kcp-dev/kcp/releases/download/$(KCP_VER)/kcp_$(KCP_VER:v%=%)_$(OS)_$(ARCH).tar.gz" | \
 	tar xz -C "$(TOOLS_DIR)" --strip-components="1" bin/kcp
 	mv $(TOOLS_DIR)/kcp $(KCP)
+	ln -sf $(KCP) $(TOOLS_GOBIN_DIR)/kcp
 
 run-kcp: $(KCP)
 	$(KCP_CMD) start --bind-address=127.0.0.1

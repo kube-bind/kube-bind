@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -47,7 +46,6 @@ type reconciler struct {
 }
 
 func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache cache.Cache, sns *kubebindv1alpha2.APIServiceNamespace) error {
-	logger := klog.FromContext(ctx)
 	var ns *corev1.Namespace
 	nsName := sns.Namespace + "-" + sns.Name
 	if sns.Status.Namespace != "" {
@@ -144,7 +142,20 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 					return fmt.Errorf("failed to create ClusterRoleBinding %s: %w", name, err)
 				}
 			} else {
-				logger.Info("ClusterRoleBinding already exists, update not implemented.", "name", name)
+				expectedSubjects := []rbacv1.Subject{{
+					Kind:      "ServiceAccount",
+					Namespace: sns.Namespace,
+					Name:      kuberesources.ServiceAccountName,
+				}}
+				expectedRef := rbacv1.RoleRef{Kind: "ClusterRole", Name: name, APIGroup: "rbac.authorization.k8s.io"}
+				if !reflect.DeepEqual(clusterBinding.Subjects, expectedSubjects) || !reflect.DeepEqual(clusterBinding.RoleRef, expectedRef) {
+					rb := clusterBinding.DeepCopy()
+					rb.Subjects = expectedSubjects
+					rb.RoleRef = expectedRef
+					if err := client.Update(ctx, rb); err != nil {
+						return fmt.Errorf("failed to update ClusterRoleBinding %s: %w", name, err)
+					}
+				}
 			}
 		} else {
 			role, err := c.getPermissionClaimsRole(ctx, cache, sns.Status.Namespace, name)
@@ -172,7 +183,7 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 
 			rolebinding, err := c.getPermissionClaimsRoleBinding(ctx, cache, sns.Status.Namespace, name)
 			if err != nil && !errors.IsNotFound(err) {
-				return fmt.Errorf("failed to get Role %s: %w", name, err)
+				return fmt.Errorf("failed to get RoleBinding %s: %w", name, err)
 			}
 
 			if rolebinding == nil {
@@ -195,10 +206,22 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 					},
 				}
 				if err := client.Create(ctx, rolebinding); err != nil {
-					return fmt.Errorf("failed to create Role %s: %w", name, err)
+					return fmt.Errorf("failed to create RoleBinding %s: %w", name, err)
 				}
 			} else {
-				logger.Info("Role already exists, update not implemented.", "name", name)
+				expectedSubjects := []rbacv1.Subject{{
+					Kind:      "ServiceAccount",
+					Namespace: sns.Namespace,
+					Name:      kuberesources.ServiceAccountName,
+				}}
+				if !reflect.DeepEqual(rolebinding.Subjects, expectedSubjects) || rolebinding.RoleRef.Kind != "Role" || rolebinding.RoleRef.Name != name || rolebinding.RoleRef.APIGroup != "rbac.authorization.k8s.io" {
+					rb := rolebinding.DeepCopy()
+					rb.Subjects = expectedSubjects
+					rb.RoleRef = rbacv1.RoleRef{Kind: "Role", Name: name, APIGroup: "rbac.authorization.k8s.io"}
+					if err := client.Update(ctx, rb); err != nil {
+						return fmt.Errorf("failed to update RoleBinding %s: %w", name, err)
+					}
+				}
 			}
 		}
 	}

@@ -125,7 +125,7 @@ func NewController(
 	}
 
 	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceExportByCustomResourceDefinition: indexers.IndexServiceExportByCustomResourceDefinition,
+		indexers.ServiceExportByBoundSchema: indexers.IndexServiceExportByBoundSchema,
 	})
 
 	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -196,12 +196,10 @@ func (c *controller) enqueueCRD(logger klog.Logger, obj any) {
 		return
 	}
 
-	exports, err := c.serviceExportIndexer.ByIndex(indexers.ServiceExportByCustomResourceDefinition, name)
-	if err != nil && !errors.IsNotFound(err) {
+	exports, err := c.serviceExportIndexer.ByIndex(indexers.ServiceExportByBoundSchema, name)
+	if err != nil {
 		runtime.HandleError(err)
 		return
-	} else if errors.IsNotFound(err) {
-		return // skip this secret
 	}
 
 	for _, obj := range exports {

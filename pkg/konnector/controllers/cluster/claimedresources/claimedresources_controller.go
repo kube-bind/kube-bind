@@ -270,6 +270,8 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 				// Once APIServiceNamespace is created, the informer will pick it up and requeue the objects.
 				return
 			}
+			runtime.HandleError(fmt.Errorf("failed to get APIServiceNamespace %q: %w", ns, err))
+			return
 		}
 		if sn.Status.Namespace == "" {
 			return // not ready yet
@@ -354,8 +356,6 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		return
 	}
 	for _, obj := range objs {
-		logger.Info("enqueueing provider object", "obj", obj)
-
 		key, err := cache.MetaNamespaceKeyFunc(obj)
 		if err != nil {
 			runtime.HandleError(err)
@@ -366,11 +366,21 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 	}
 
 	// We need to list all the object which might not got synced at consumer side too:
-	selector, err := metav1.LabelSelectorAsSelector(c.claim.Selector.LabelSelector)
-	if err != nil {
-		return // cannot happen, we validated this earlier
+	var sel labels.Selector
+	switch v := c.claim.Selector; {
+	case v.All:
+		sel = labels.Everything()
+	case v.LabelSelector != nil:
+		var err error
+		sel, err = metav1.LabelSelectorAsSelector(v.LabelSelector)
+		if err != nil {
+			runtime.HandleError(err)
+			return
+		}
+	default:
+		return // nothing is selected
 	}
-	objects, err := c.consumerDynamicLister.List(selector)
+	objects, err := c.consumerDynamicLister.List(sel)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -381,12 +391,12 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 		if err != nil {
 			runtime.HandleError(err)
-			return
+			continue
 		}
 		_, name, err := cache.SplitMetaNamespaceKey(key)
 		if err != nil {
 			runtime.HandleError(err)
-			return
+			continue
 		}
 		key = fmt.Sprintf("%s/%s", sn.Status.Namespace, name)
 

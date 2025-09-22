@@ -55,6 +55,7 @@ const (
 
 // NewController returns a new controller reconciling downstream objects to upstream.
 func NewController(
+	apiServiceExport *kubebindv1alpha2.APIServiceExport, // used to establish owner references when create happens from the consumer side.
 	gvr schema.GroupVersionResource,
 	providerNamespace string,
 	providerNamespaceUID string,
@@ -99,6 +100,8 @@ func NewController(
 
 		reconciler: reconciler{
 			providerNamespace: providerNamespace,
+			apiServiceExport:  apiServiceExport,
+
 			getServiceNamespace: func(name string) (*kubebindv1alpha2.APIServiceNamespace, error) {
 				return serviceNamespaceInformer.Lister().APIServiceNamespaces(providerNamespace).Get(name)
 			},

@@ -109,6 +109,8 @@ type APIServiceExportRequestSpec struct {
 
 	// PermissionClaims records decisions about permission claims requested by the service provider.
 	// Access is granted per GroupResource.
+	//
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Permission claim selector is immutable"
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
@@ -129,7 +131,7 @@ func (r APIServiceExportRequestResource) ResourceGroupName() string {
 
 // Selector is a resource selector that selects objects of a GVR.
 //
-// +kubebuilder:validation:XValidation:rule="(has(self.all) && self.all) != (has(self.labelSelector) && size(self.labelSelector) > 0)",message="either \"all\" or \"labelSelector\" must be set"
+// +kubebuilder:validation:XValidation:rule="(has(self.all) && self.all) != (has(self.labelSelector) && self.labelSelector != null)",message="either \"all\" or \"labelSelector\" must be set"
 type Selector struct {
 	// all claims all resources for the given group/resource.
 	// This is mutually exclusive with labelSelector.
@@ -170,6 +172,8 @@ type PermissionClaim struct {
 	GroupResource `json:",inline"`
 
 	// Selector is a resource selector that selects objects of a GVR.
+	// +required
+	// +kubebuilder:validation:Required
 	Selector Selector `json:"selector,omitempty"`
 }
 

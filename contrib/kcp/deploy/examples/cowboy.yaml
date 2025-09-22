@@ -3,3 +3,5 @@ kind: Cowboy
 metadata:
   name: my-cowboy
   namespace: default
+spec:
+  intent: "ride into the sunset"

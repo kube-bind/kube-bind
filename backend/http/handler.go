@@ -393,11 +393,23 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 			logger.Error(fmt.Errorf("no versions found"), "skipping schema", "name", item.Name)
 			continue
 		}
+		// pick first served version
+		ver := ""
+		for _, v := range item.Spec.Versions {
+			if v.Served {
+				ver = v.Name
+				break
+			}
+		}
+		if ver == "" {
+			logger.Error(fmt.Errorf("no served versions found"), "skipping schema", "name", item.Name)
+			continue
+		}
 		result = append(result, UISchema{
 			Name:    item.GetName(),
 			Kind:    item.Spec.Names.Kind,
 			Scope:   string(item.Spec.Scope),
-			Version: item.Spec.Versions[0].Name,
+			Version: ver,
 			Group:   item.Spec.Group,
 			// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
 			Resource:  item.Spec.Names.Plural,

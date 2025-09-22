@@ -59,7 +59,7 @@ func NewAPIServiceExportReconciler(
 	opts controller.TypedOptions[mcreconcile.Request],
 ) (*APIServiceExportReconciler, error) {
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByBoundSchema,
-		indexers.IndexServiceExportByBoundSchema); err != nil {
+		indexers.IndexServiceExportByBoundSchemaControllerRuntime); err != nil {
 		return nil, fmt.Errorf("failed to setup ServiceExportByBoundSchema indexer: %w", err)
 	}
 

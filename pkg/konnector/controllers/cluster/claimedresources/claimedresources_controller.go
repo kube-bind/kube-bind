@@ -251,7 +251,7 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 		if err != nil {
 			if errors.IsNotFound(err) {
 				// No namespace - create one.
-				// TODO: This is not quite right place for this code...
+				// TODO: This is not quite right place for this code. We should refactor this to be somewhere else.
 				_, err := c.createServiceNamespace(context.TODO(), &kubebindv1alpha2.APIServiceNamespace{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      ns,
@@ -293,7 +293,7 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 		runtime.HandleError(err)
 		return
 	}
-	ns, name, err := cache.SplitMetaNamespaceKey(upstreamKey)
+	ns, _, err := cache.SplitMetaNamespaceKey(upstreamKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -310,8 +310,7 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 		for _, obj := range sns {
 			sn := obj.(*kubebindv1alpha2.APIServiceNamespace)
 			if sn.Namespace == c.providerNamespace {
-				key := fmt.Sprintf("%s/%s", sn.Name, name)
-				logger.V(2).Info("queueing Unstructured", "key", key)
+				logger.V(2).Info("queueing Unstructured", "key", upstreamKey)
 				c.queue.Add(upstreamKey)
 				return
 			}

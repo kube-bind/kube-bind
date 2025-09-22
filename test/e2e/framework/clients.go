@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	bindclientset "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 )
 
 func DynamicClient(t *testing.T, config *rest.Config) dynamic.Interface {
@@ -48,6 +50,12 @@ func ApiextensionsClient(t *testing.T, config *rest.Config) apiextensionsclient.
 
 func DiscoveryClient(t *testing.T, config *rest.Config) discovery.DiscoveryInterface {
 	c, err := discovery.NewDiscoveryClientForConfig(config)
+	require.NoError(t, err)
+	return c
+}
+
+func BindClient(t *testing.T, config *rest.Config) bindclientset.Interface {
+	c, err := bindclientset.NewForConfig(config)
 	require.NoError(t, err)
 	return c
 }

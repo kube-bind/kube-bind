@@ -88,10 +88,6 @@ type APIServiceBindingSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="kubeconfigSecretRef is immutable"
 	KubeconfigSecretRef ClusterSecretKeyRef `json:"kubeconfigSecretRef"`
-
-	// PermissionClaims records decisions about permission claims requested by the service provider.
-	// Access is granted per GroupResource.
-	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 type APIServiceBindingStatus struct {
@@ -107,6 +103,10 @@ type APIServiceBindingStatus struct {
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	BoundSchemas []BoundSchemaReference `json:"boundSchemas,omitempty"`
+
+	// PermissionClaims records decisions about permission claims requested by the service provider.
+	// Access is granted per GroupResource.
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 // BoundSchemaReference contains a reference to a BoundAPIResourceSchema with status information.

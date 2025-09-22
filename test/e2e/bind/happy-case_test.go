@@ -266,7 +266,6 @@ spec:
 		{
 			name: "establish permission claims namespace",
 			step: func(t *testing.T) {
-
 				// We need to establish namespace only in cluster scope for cluster scoped resources.
 				// Else we can trust sync object namespace as it will be the same.
 				if withPermissionClaims &&

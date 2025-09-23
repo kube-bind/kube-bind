@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250918-24ab10a.apiserviceexportrequests.kube-bind.io
+  name: v250923-ec6651d.apiserviceexportrequests.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -307,7 +307,7 @@ spec:
                 type: object
               type: array
               x-kubernetes-validations:
-              - message: Permission claim selector is immutable
+              - message: permissionClaims are immutable
                 rule: self == oldSelf
             resources:
               description: resources is a list of resources that should be exported.

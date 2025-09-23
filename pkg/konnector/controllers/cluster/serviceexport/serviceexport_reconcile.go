@@ -92,8 +92,8 @@ func (r *reconciler) ensureControllers(ctx context.Context, namespace, name stri
 	if export == nil {
 		// Clean up any controllers associated with this export
 		deleted := r.syncStore.BulkDeletePrefixed(exportKey)
-		for _, k := range deleted {
-			logger.V(1).Info("Stopping APIServiceExport sync", "key", k.Key(), "reason", "NoAPIServiceExport")
+		for _, c := range deleted {
+			logger.V(1).Info("Stopping APIServiceExport sync", "key", c.Key(), "reason", "NoAPIServiceExport")
 		}
 
 		return nil
@@ -362,8 +362,6 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 ) error {
 	logger := klog.FromContext(ctx)
 
-	ctxWithCancel, cancel := context.WithCancel(ctx)
-
 	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
 	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
 
@@ -430,7 +428,6 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 
 		if err != nil {
 			logger.Info("aborting", "error", err)
-			cancel()
 			return err
 		}
 	}
@@ -450,7 +447,6 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 		serviceNamespaceChannel,
 	)
 	if err != nil {
-		cancel()
 		return err
 	}
 
@@ -465,14 +461,15 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 		serviceNamespaceChannel,
 	)
 	if err != nil {
-		cancel()
 		return err
 	}
 
 	logger.Info("creating claim reconciler", "gvr", claimGVR, "key", claimKey)
 
+	ctxWithCancel, cancel := context.WithCancel(ctx)
 	// Start the informers and controllers in a goroutine
 	go func() {
+		defer r.syncStore.Delete(claimKey)
 		defaultConsumerInf.Start(ctxWithCancel.Done())
 
 		// Wait for consumer informers to sync

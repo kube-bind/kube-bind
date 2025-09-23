@@ -110,7 +110,7 @@ type APIServiceExportRequestSpec struct {
 	// PermissionClaims records decisions about permission claims requested by the service provider.
 	// Access is granted per GroupResource.
 	//
-	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="Permission claim selector is immutable"
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="permissionClaims are immutable"
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 

@@ -40,7 +40,7 @@ spec:
   - group: apis.kcp.io
     resource: apiresourceschemas
     verbs:
-    - "*"
+    - '*'
   resources:
   - group: kube-bind.io
     name: apiconversions
@@ -54,7 +54,7 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: apiserviceexportrequests
-    schema: v250918-24ab10a.apiserviceexportrequests.kube-bind.io
+    schema: v250923-ec6651d.apiserviceexportrequests.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io

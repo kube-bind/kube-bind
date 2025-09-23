@@ -46,7 +46,7 @@ type readReconciler struct {
 	deleteConsumerObject func(ctx context.Context, ns, name string) error
 }
 
-// reconcile syncs conmsumer claimed resources to provider.
+// reconcile syncs consumer claimed resources to provider.
 func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name string) error {
 	logger := klog.FromContext(ctx)
 	logger = logger.WithValues("name", name, "providerNamespace", providerNamespace)
@@ -128,7 +128,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 			return nil
 		}
 
-		if providerObj.GetDeletionTimestamp() != nil && !providerObj.GetDeletionTimestamp().IsZero() {
+		if !providerObj.GetDeletionTimestamp().IsZero() {
 			logger.Info("Deleting downstream object because it has been deleted upstream", "downstreamNamespace", consumerNS, "downstreamName", providerObj.GetName())
 			if err := r.deleteConsumerObject(ctx, consumerNS, providerObj.GetName()); err != nil {
 				return err

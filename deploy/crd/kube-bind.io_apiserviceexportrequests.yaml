@@ -311,7 +311,7 @@ spec:
                   type: object
                 type: array
                 x-kubernetes-validations:
-                - message: Permission claim selector is immutable
+                - message: permissionClaims are immutable
                   rule: self == oldSelf
               resources:
                 description: resources is a list of resources that should be exported.

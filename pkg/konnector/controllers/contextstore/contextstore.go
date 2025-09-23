@@ -14,11 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package contextstore
-
 // contextstore allows to manage and track context per controllers, stored at the different levels of the controller hierarchy:
 // APIServiceExport - schemas and permissionClaims - each schema runs its own gvr controller and each permissionClaim runs its own controller.
 // Context are stored at the APIServiceExport level.
+package contextstore
 
 import (
 	"strings"
@@ -95,16 +94,12 @@ func (c *contextStore) Set(key Key, value SyncContext) {
 }
 
 func (c *contextStore) Delete(key Key) {
-	var cancel func()
 	c.lock.Lock()
 	if ctx, ok := c.store[key]; ok {
-		cancel = ctx.Cancel
+		defer ctx.Cancel()
 		delete(c.store, key)
 	}
 	c.lock.Unlock()
-	if cancel != nil {
-		cancel()
-	}
 }
 
 func (c *contextStore) BulkDeletePrefixed(prefix Key) []SyncContext {

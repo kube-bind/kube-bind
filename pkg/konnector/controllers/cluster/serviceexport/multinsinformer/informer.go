@@ -189,9 +189,9 @@ func (inf *DynamicMultiNamespaceInformer) enqueueServiceNamespace(obj any) {
 	logger.V(1).Info("starting dynamic informer", "namespace", sns.Status.Namespace)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	var factory dynamicinformer.DynamicSharedInformerFactory
+	var tweakListOptions func(options *metav1.ListOptions)
 	if inf.labelSelector != nil {
-		tweakListOptions := func(options *metav1.ListOptions) {
+		tweakListOptions = func(options *metav1.ListOptions) {
 			selector, err := metav1.LabelSelectorAsSelector(inf.labelSelector)
 			if err != nil {
 				utilruntime.HandleError(fmt.Errorf("failed to convert label selector: %w", err))
@@ -199,10 +199,9 @@ func (inf *DynamicMultiNamespaceInformer) enqueueServiceNamespace(obj any) {
 			}
 			options.LabelSelector = selector.String()
 		}
-		factory = dynamicinformer.NewFilteredDynamicSharedInformerFactory(inf.providerDynamicClient, time.Minute*30, sns.Status.Namespace, tweakListOptions)
-	} else {
-		factory = dynamicinformer.NewFilteredDynamicSharedInformerFactory(inf.providerDynamicClient, time.Minute*30, sns.Status.Namespace, nil)
 	}
+
+	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(inf.providerDynamicClient, time.Minute*30, sns.Status.Namespace, tweakListOptions)
 	gvrInf := factory.ForResource(inf.gvr)
 	gvrInf.Lister() // to wire the GVR up in the informer factory
 	inf.namespaceCancel[name] = cancel

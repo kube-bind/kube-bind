@@ -117,7 +117,7 @@ func (r *reconciler) getExportedSchemas(ctx context.Context, cl client.Client) (
 		return nil, err
 	}
 
-	var boundSchemas kubebindv1alpha2.ExportedSchemas = make(map[string]*kubebindv1alpha2.BoundSchema, len(list.Items))
+	boundSchemas := make(kubebindv1alpha2.ExportedSchemas, len(list.Items))
 	for _, item := range list.Items {
 		boundSchema, err := helpers.UnstructuredToBoundSchema(item)
 		if err != nil {
@@ -285,7 +285,7 @@ func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebi
 		return fmt.Errorf("no exported schemas found")
 	}
 
-	scopes := make([]apiextensionsv1.ResourceScope, 0, len(exportedSchemas))
+	first := apiextensionsv1.ResourceScope("")
 	for _, res := range req.Spec.Resources {
 		boundSchema, ok := exportedSchemas[res.ResourceGroupName()]
 		if !ok {
@@ -299,23 +299,19 @@ func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebi
 			)
 			return fmt.Errorf("schema %s not found", res.ResourceGroupName())
 		}
-		scopes = append(scopes, boundSchema.Spec.Scope)
-	}
-
-	// Check CRD scopes matches.
-	if len(scopes) > 1 {
-		first := scopes[0]
-		for _, scope := range scopes[1:] {
-			if scope != first {
-				conditions.MarkFalse(req,
-					kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
-					"DifferentScopes",
-					conditionsapi.ConditionSeverityError,
-					"Different scopes found: %v",
-					scopes,
-				)
-				return fmt.Errorf("different scopes found for claimed resources: %v", scopes)
-			}
+		if first == apiextensionsv1.ResourceScope("") {
+			first = boundSchema.Spec.Scope
+			continue
+		}
+		if boundSchema.Spec.Scope != first {
+			conditions.MarkFalse(req,
+				kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
+				"DifferentScopes",
+				conditionsapi.ConditionSeverityError,
+				"Different scopes found: %v",
+				boundSchema.Spec.Scope,
+			)
+			return fmt.Errorf("different scopes found for claimed resources: %v", boundSchema.Name)
 		}
 	}
 

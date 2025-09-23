@@ -555,12 +555,13 @@ func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string)
 		Version: parts[1],
 		Group:   parts[2],
 	}
-	items, err := h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
+	list, err := h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
 	if err != nil {
 		return nil, fmt.Errorf("failed to list resources: %w", err)
 	}
-	var boundSchemas kubebindv1alpha2.ExportedSchemas = make(map[string]*kubebindv1alpha2.BoundSchema, len(items.Items))
-	for _, item := range items.Items {
+
+	boundSchemas := make(kubebindv1alpha2.ExportedSchemas, len(list.Items))
+	for _, item := range list.Items {
 		boundSchema, err := helpers.UnstructuredToBoundSchema(item)
 		if err != nil {
 			return nil, err

@@ -51,7 +51,7 @@ k ws use :root:kube-bind
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
   --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
   --schema-source apiresourceschemas \
-  --consumer-scope=namespaced
+  --consumer-scope=cluster
 ```
 
 
@@ -79,10 +79,9 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim
 
 7. Create CRD in provider:
 ```bash
-kubectl create -f kcp/deploy/examples/apiexport.yaml  
-kubectl create -f kcp/deploy/examples/apiresourceschema-cowboys.yaml
-kubectl create -f kcp/deploy/examples/apiresourceschema-sheriffs.yaml
-# recursive bind
+kubectl create -f contrib/kcp/deploy/examples/apiexport.yaml
+kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
+kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
 kubectl kcp bind apiexport root:provider:cowboys-stable
 ```
 
@@ -91,7 +90,7 @@ kubectl kcp bind apiexport root:provider:cowboys-stable
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/43d7su0lk1bxyaia    
+# cluster   Ready   https://192.168.2.166:6443/clusters/crh63mkto0egdjca    
 ```
 
 9. Now we gonna initiate consumer:
@@ -105,15 +104,15 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/43d7su0lk1bxyaia/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/crh63mkto0egdjca/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind` 
-kubectl get secret kubeconfig-c88q6 -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+kubectl get secret kubeconfig-npp6r -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport-namespaced.yaml  --skip-konnector --remote-namespace kube-bind-tnnfp
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f contrib/kcp/deploy/examples/apiserviceexport-namespaced.yaml  --skip-konnector --remote-namespace kube-bind-w6gs4
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f kcp/deploy/examples/apiserviceexport-cluster.yaml  --skip-konnector --remote-namespace kube-bind-tnnfp
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f contrib/kcp/deploy/examples/apiserviceexport-cluster.yaml  --skip-konnector --remote-namespace kube-bind-t6wg7
 
 
 export KUBECONFIG=.kcp/consumer.kubeconfig
@@ -122,8 +121,8 @@ go run ./cmd/konnector/ --lease-namespace default
 
 Create objects:
 ```
-kubectl apply -f kcp/deploy/examples/cowboy.yaml
-kubectl apply -f kcp/deploy/examples/sheriff.yaml
+kubectl apply -f contrib/kcp/deploy/examples/cowboy.yaml
+kubectl apply -f contrib/kcp/deploy/examples/sheriff.yaml
 ```
 
 

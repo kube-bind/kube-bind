@@ -58,6 +58,7 @@ func NewController(
 	consumerDynamicInformer informers.GenericInformer,
 	providerDynamicInformer multinsinformer.GetterInformer,
 	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister],
+	namespaceCreationNotifyChan <-chan string,
 ) (*controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
@@ -65,6 +66,9 @@ func NewController(
 
 	providerConfig = rest.CopyConfig(providerConfig)
 	providerConfig = rest.AddUserAgent(providerConfig, controllerName)
+
+	consumerConfig = rest.CopyConfig(consumerConfig)
+	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
 
 	providerClient, err := dynamicclient.NewForConfig(providerConfig)
 	if err != nil {
@@ -195,6 +199,9 @@ type controller struct {
 
 	providerNamespace string
 
+	// Channel to receive notifications when new namespaces are created
+	namespaceCreationNotifyChan <-chan string
+
 	readReconciler
 }
 
@@ -240,34 +247,24 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 		runtime.HandleError(err)
 		return
 	}
+
+	c.enqueueConsumerByKey(logger, key)
+}
+
+// enqueueConsumerByKey will enqueue the given namespaced object. This is split from enqueueConsumer
+// so we can accept channel requests from namespace creation watcher.
+func (c *controller) enqueueConsumerByKey(logger klog.Logger, key string) {
 	ns, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
-
 	if ns != "" { // Namespaced object.
 		sn, err := c.serviceNamespaceInformer.Lister().APIServiceNamespaces(c.providerNamespace).Get(ns)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				// No namespace - create one.
-				// TODO: This is not quite right place for this code. We should refactor this to be somewhere else.
-				_, err := c.createServiceNamespace(context.TODO(), &kubebindv1alpha2.APIServiceNamespace{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      ns,
-						Namespace: c.providerNamespace,
-						OwnerReferences: []metav1.OwnerReference{
-							*metav1.NewControllerRef(c.apiServiceExport, kubebindv1alpha2.SchemeGroupVersion.WithKind("APIServiceExport")),
-						},
-					},
-				})
-				if err != nil && !errors.IsAlreadyExists(err) {
-					runtime.HandleError(fmt.Errorf("failed to create APIServiceNamespace %q: %w", ns, err))
-					return
-				}
-				// Requeue when the APIServiceNamespace is created.
-				logger.V(2).Info("created APIServiceNamespace, requeueing", "namespace", ns)
-				// Once APIServiceNamespace is created, the informer will pick it up and requeue the objects.
+				// No APIServiceNamespace - means claimedresourcesnamespaces controller should create it
+				logger.V(2).Info("no APIServiceNamespace found for claimed object. Will retry", "namespace", ns, "object", name)
 				return
 			}
 			runtime.HandleError(fmt.Errorf("failed to get APIServiceNamespace %q: %w", ns, err))
@@ -285,7 +282,7 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	logger.V(2).Info("queueing Unstructured", "key", key)
+	logger.V(2).Info("queueing Unstructured", "key", key, "reason", "Consumer")
 	c.queue.Add(key)
 }
 
@@ -427,6 +424,14 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 		},
 	})
 
+	// Start a goroutine to listen for namespace creation notifications.
+	go func() {
+		for key := range c.namespaceCreationNotifyChan {
+			logger.Info("received namespace creation notification", "namespace", key)
+			c.enqueueConsumerByKey(logger, key)
+		}
+	}()
+
 	for i := 0; i < numThreads; i++ {
 		go wait.UntilWithContext(ctx, c.startWorker, time.Second)
 	}
@@ -450,7 +455,7 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 
 	logger := klog.FromContext(ctx).WithValues("key", key)
 	ctx = klog.NewContext(ctx, logger)
-	logger.V(2).Info("processing key")
+	logger.Info("processing key")
 
 	// No matter what, tell the queue we're done with this key, to unblock
 	// other workers.
@@ -474,12 +479,3 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	return c.reconcile(ctx, namespace, name)
 }
-
-func (c *controller) createServiceNamespace(ctx context.Context, sns *kubebindv1alpha2.APIServiceNamespace) (*kubebindv1alpha2.APIServiceNamespace, error) {
-	return c.providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(sns.Namespace).Create(ctx, sns, metav1.CreateOptions{})
-}
-
-// configMap test-namespace/test
-// goes into index - indexers.ServiceNamespaceByNamespace with "local name" ->
-
-// providerNamespace/<api-service-namspaces.....>

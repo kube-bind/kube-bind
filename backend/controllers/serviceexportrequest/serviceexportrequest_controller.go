@@ -83,10 +83,10 @@ func NewAPIServiceExportRequestReconciler(
 			informerScope:          scope,
 			clusterScopedIsolation: isolation,
 			schemaSource:           schemaSource,
-			getBoundSchema: func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error) {
+			getBoundSchema: func(ctx context.Context, cl client.Client, namespace, name string) (*kubebindv1alpha2.BoundSchema, error) {
 				var schema kubebindv1alpha2.BoundSchema
 				key := types.NamespacedName{Namespace: namespace, Name: name}
-				if err := cache.Get(ctx, key, &schema); err != nil {
+				if err := cl.Get(ctx, key, &schema); err != nil {
 					return nil, err
 				}
 				return &schema, nil

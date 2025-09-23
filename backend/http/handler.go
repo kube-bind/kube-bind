@@ -557,7 +557,7 @@ func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string)
 	}
 	items, err := h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
 	if err != nil {
-		return nil, fmt.Errorf("failed to list crds: %w", err)
+		return nil, fmt.Errorf("failed to list resources: %w", err)
 	}
 	var boundSchemas kubebindv1alpha2.ExportedSchemas = make(map[string]*kubebindv1alpha2.BoundSchema, len(items.Items))
 	for _, item := range items.Items {

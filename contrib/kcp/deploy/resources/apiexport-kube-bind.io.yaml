@@ -40,7 +40,7 @@ spec:
   - group: apis.kcp.io
     resource: apiresourceschemas
     verbs:
-    - '*'
+    - "*"
   resources:
   - group: kube-bind.io
     name: apiconversions

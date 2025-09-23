@@ -37,6 +37,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/claimedresources"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/claimedresourcesnamespaces"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/spec"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/status"
@@ -434,6 +435,8 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 		}
 	}
 
+	serviceNamespaceChannel := make(chan string, 100)
+
 	claimedCtrl, err := claimedresources.NewController(
 		claimGVR,
 		claim,
@@ -444,8 +447,23 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 		defaultConsumerInf.ForResource(claimGVR),
 		defaultProviderInf,
 		r.serviceNamespaceInformer,
+		serviceNamespaceChannel,
 	)
+	if err != nil {
+		cancel()
+		return err
+	}
 
+	claimedNamespacesCtrl, err := claimedresourcesnamespaces.NewController(
+		claimGVR,
+		claim,
+		export,
+		r.providerNamespace,
+		r.providerConfig,
+		defaultConsumerInf.ForResource(claimGVR),
+		r.serviceNamespaceInformer,
+		serviceNamespaceChannel,
+	)
 	if err != nil {
 		cancel()
 		return err
@@ -460,6 +478,12 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 		// Wait for consumer informers to sync
 		consumerSynced := defaultConsumerInf.WaitForCacheSync(ctxWithCancel.Done())
 		logger.V(2).Info("Synced consumer informers", "consumer", slices.Collect(maps.Keys(consumerSynced)), "key", claimKey)
+
+		// IMPORTANT: WE need to start namespaces controller before the claimed resources controller,
+		// as the later depends on the former to ensure service namespaces are present.
+		// Else provider informers will never sync and the controller will not start.
+		// check: claimedresourcesnamespaces/README.md for more details.
+		go claimedNamespacesCtrl.Start(ctxWithCancel, 1)
 
 		// Start provider informer and wait for sync
 		defaultProviderInf.Start(ctxWithCancel)

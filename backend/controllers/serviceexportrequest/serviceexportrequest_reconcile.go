@@ -44,7 +44,7 @@ type reconciler struct {
 	clusterScopedIsolation kubebindv1alpha2.Isolation
 	schemaSource           string
 
-	getBoundSchema    func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
+	getBoundSchema    func(ctx context.Context, cl client.Client, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
 	createBoundSchema func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error
 
 	getServiceExport           func(ctx context.Context, cache cache.Cache, ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
@@ -57,17 +57,17 @@ func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cach
 	// Worst case scenario if validation fails, we will reuse schemas for same consumer once issues are fixed.
 	if err := r.ensureBoundSchemas(ctx, cl, cache, req); err != nil {
 		conditions.SetSummary(req)
-		return err
+		return fmt.Errorf("failed to ensure bound schemas: %w", err)
 	}
 
 	if err := r.validate(ctx, cl, req); err != nil {
 		conditions.SetSummary(req)
-		return err
+		return fmt.Errorf("failed to validate APIServiceExportRequest: %w", err)
 	}
 
 	if err := r.ensureExports(ctx, cl, cache, req); err != nil {
 		conditions.SetSummary(req)
-		return err
+		return fmt.Errorf("failed to ensure exports: %w", err)
 	}
 
 	// TODO(mjudeikis): we could potentially add finallizer to APIServiceExport above or "adopt" boundschemas
@@ -148,8 +148,8 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, c
 				boundSchema.Spec.InformerScope = r.informerScope
 				boundSchema.ResourceVersion = ""
 
-				obj, err := r.getBoundSchema(ctx, cache, boundSchema.Namespace, boundSchema.Name)
-				if err != nil && !apierrors.IsNotFound(err) {
+				obj, err := r.getBoundSchema(ctx, cl, boundSchema.Namespace, boundSchema.Name)
+				if err != nil && !apierrors.IsNotFound(err) && !strings.Contains(err.Error(), "no matches for kind") {
 					return err
 				}
 
@@ -176,7 +176,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 	if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhasePending {
 		for _, res := range req.Spec.Resources {
 			name := res.ResourceGroupName()
-			boundSchema, err := r.getBoundSchema(ctx, cache, req.Namespace, name)
+			boundSchema, err := r.getBoundSchema(ctx, cl, req.Namespace, name)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					conditions.MarkFalse(

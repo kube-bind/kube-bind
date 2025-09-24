@@ -1,13 +1,21 @@
 # APIServiceExports
 
-The APIServiceExport controller watches `APIServiceExports` and the referenced `CustomResourceDefinitions` (CRDs) in the **provider cluster**.
+The APIServiceExport controller watches `APIServiceExports` and the referenced resources in the **provider cluster**.
 
-It is responsible for:
+Starting with v1alpha2, the APIServiceExport has been refactored to use a resource-based model instead of embedded CRD specifications.
+
+## Key Changes in v1alpha2
+
+- **Resource-Based Model**: `APIServiceExportSpec` now uses `Resources []APIServiceExportResource` instead of embedded CRD specs
+- **Multi-Resource Support**: One APIServiceExport can reference multiple CRDs more efficiently
+- **BoundSchema Integration**: Works with the new `BoundSchema` resource type for tracking bound schemas in consumer clusters
+
+## Controller Responsibilities
 
 * Ensuring the existence and validity of `APIServiceExports`.
 * Managing the lifecycle of `APIServiceExports` by starting and stopping spec and status syncers and controllers.
 * Checking `APIServiceBinding` condition and setting `ConsumerInSync` condition in `APIServiceExport`
-* Copying conditions from the referenced CRDs to the `APIServiceExport` status.
+* Managing resource references and their associated schemas.
 
 ## Overview
 

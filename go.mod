@@ -13,7 +13,7 @@ replace (
 replace (
 	github.com/google/cel-go => github.com/google/cel-go v0.22.0
 	github.com/kcp-dev/apimachinery/v2 => github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250728122101-adbf20db3e51
-	github.com/kcp-dev/multicluster-provider => github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250818102159-3d31cbb06ebe
+	github.com/kcp-dev/multicluster-provider => github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250924135430-a1b0eea41697
 	k8s.io/api => k8s.io/api v0.33.0
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.33.0
 	k8s.io/apimachinery => k8s.io/apimachinery v0.33.0
@@ -24,7 +24,7 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.33.0
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.21.0
 	//sigs.k8s.io/multicluster-runtime => sigs.k8s.io/multicluster-runtime v0.20.4-alpha.7
-	sigs.k8s.io/multicluster-runtime => github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250818101434-d8ebc45e169b
+	sigs.k8s.io/multicluster-runtime => github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250924135253-419f38e2cced
 )
 
 require (

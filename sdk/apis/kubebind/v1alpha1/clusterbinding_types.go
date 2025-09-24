@@ -34,8 +34,8 @@ const (
 	ClusterBindingConditionHealthy = "Healthy"
 )
 
-// ClusterBinding represents a bound consumer cluster. It lives in a service
-// provider cluster and is a singleton named "cluster" per namespace.
+// ClusterBinding represents a bound consumer cluster. It lives in a service provider cluster
+// and is a singleton named "cluster".
 //
 // +crd
 // +genclient

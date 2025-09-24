@@ -62,23 +62,28 @@ All the actions shown between the clusters are done by the konnector, except: th
 
 To get familiar with setting up the environment, please check out docs at [kube-bind.io](https://docs.kube-bind.io/main/setup).
 
-## API Changes in coming v0.5.0 release
+## API Changes in v0.5.0 release
 
 Version v0.5.0 includes significant architectural improvements to the API structure:
 
 ### Major Changes
 
-- **API Version Upgrade**: Introduced `v1alpha2` API version with improved stability and features
-- **Service Exposure Refactoring**: Completely refactored the service exposure mechanism to use:
-  - `APIResourceSchema`: Define the schema of exported CRDs, allowing one APIServiceExport to reference multiple CRDs.
-  - `BoundAPIResourceSchema`: Represent bound schemas in consumer clusters and underlying status of synced resources.
+- **API Version Upgrade**: Introduced `v1alpha2` API version alongside existing `v1alpha1`
+- **Service Exposure Refactoring**: Refactored the service exposure mechanism from embedded CRD specifications to a resource-based model:
+  - `APIServiceExportSpec` now uses `Resources []APIServiceExportResource` instead of embedded CRD specs
+  - `BoundSchema`: New resource type in `v1alpha2` that represents bound schemas in consumer clusters and tracks the status of synced resources
+  - This allows one APIServiceExport to reference multiple CRDs more efficiently
+
+### Backend Architecture Improvements
+
+- **MultiCluster Runtime Integration**: The backend now leverages `sigs.k8s.io/multicluster-runtime` for enhanced cluster management capabilities
+- **Provider Support**: Built-in support for multiple backend providers including KCP through `github.com/kcp-dev/multicluster-provider`
+- **Enhanced Cluster Operations**: Improved cluster-aware resource management with dedicated manager architecture for handling multi-cluster scenarios
 
 ### Limitations
 
 These limitations are part of the roadmap and will be addressed in the future.
 
-* Currently we don't support related resources, like ConfigMaps, Secrets
-* Currently CRD resources MUST be installed in the provider cluster, even when APIResourceSchema is used.
-  This is to allow the konnector to sync instances of the CRD to the consumer cluster.
-  This should be removed once we introduce sync policies and object wrappers.
-* Currently we dont support granular permissions, like only allow to read/write certain named resources.
+* Currently we don't support related resources, like ConfigMaps, Secrets.
+* We don't support lifecycle of `BoundSchema` resources, like schema changes.
+* Currently multicluster-runtime dependency is pointing to a fork, we will work on getting the changes merged upstream. See [PR](https://github.com/kubernetes-sigs/multicluster-runtime/pull/62) for details.

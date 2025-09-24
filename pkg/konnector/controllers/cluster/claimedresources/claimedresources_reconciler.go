@@ -133,6 +133,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 			if err := r.deleteConsumerObject(ctx, consumerNS, providerObj.GetName()); err != nil {
 				return err
 			}
+			return nil
 		}
 
 		candidate := candidateFromOwnerObj(consumerNS, providerObj)

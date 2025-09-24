@@ -130,10 +130,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 
 		if !providerObj.GetDeletionTimestamp().IsZero() {
 			logger.Info("Deleting downstream object because it has been deleted upstream", "downstreamNamespace", consumerNS, "downstreamName", providerObj.GetName())
-			if err := r.deleteConsumerObject(ctx, consumerNS, providerObj.GetName()); err != nil {
-				return err
-			}
-			return nil
+			return r.deleteConsumerObject(ctx, consumerNS, providerObj.GetName())
 		}
 
 		candidate := candidateFromOwnerObj(consumerNS, providerObj)

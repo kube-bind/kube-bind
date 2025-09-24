@@ -87,9 +87,6 @@ func NewController(
 		serviceExportLister:  serviceExportInformer.Lister(),
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
 
-		//	serviceNamespaceLister:  serviceNamespaceInformer.Lister(),
-		//serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
-
 		serviceBindingInformer: serviceBindingInformer,
 		crdInformer:            crdInformer,
 
@@ -154,9 +151,6 @@ type controller struct {
 
 	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
-
-	// serviceNamespaceLister  bindlisters.APIServiceNamespaceLister
-	// serviceNamespaceIndexer cache.Indexer
 
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister]
 	crdInformer            dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister]

@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250919-5230589.apiserviceexports.kube-bind.io
+  name: v250926-b973783.apiserviceexports.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -514,11 +514,6 @@ spec:
                     description: Selector is a resource selector that selects objects
                       of a GVR.
                     properties:
-                      all:
-                        description: |-
-                          all claims all resources for the given group/resource.
-                          This is mutually exclusive with labelSelector.
-                        type: boolean
                       labelSelector:
                         description: LabelSelector is a label selector that selects
                           objects of a GVR.
@@ -566,11 +561,29 @@ spec:
                             type: object
                         type: object
                         x-kubernetes-map-type: atomic
+                      namedResource:
+                        description: NamedResource is a shorthand for selecting a
+                          single resource by name and namespace.
+                        items:
+                          description: NamedResource selects a specific resource by
+                            name and namespace.
+                          properties:
+                            name:
+                              description: |-
+                                Name is the name of the resource.
+                                Name matches the metadata.name field of the underlying object.
+                              type: string
+                            namespace:
+                              description: |-
+                                Namespace represents namespace where an object of the given group/resource may be managed.
+                                Namespaces matches against the metadata.namespace field. A value of "*" matches namespaced objects across all namespaces.
+                                Namespaces field is ignored for namespaced isolation mode.
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
                     type: object
-                    x-kubernetes-validations:
-                    - message: either "all" or "labelSelector" must be set
-                      rule: (has(self.all) && self.all) != (has(self.labelSelector)
-                        && self.labelSelector != null)
                 required:
                 - resource
                 - selector

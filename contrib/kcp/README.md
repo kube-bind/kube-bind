@@ -51,7 +51,7 @@ k ws use :root:kube-bind
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
   --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
   --schema-source apiresourceschemas \
-  --consumer-scope=cluster
+  --consumer-scope=namespaced
 ```
 
 

@@ -51,7 +51,7 @@ k ws use :root:kube-bind
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
   --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
   --schema-source apiresourceschemas \
-  --consumer-scope=namespaced
+  --consumer-scope=cluster
 ```
 
 
@@ -90,7 +90,7 @@ kubectl kcp bind apiexport root:provider:cowboys-stable
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/xwhgz3kv8l67wx87    
+# cluster   Ready   https://192.168.2.166:6443/clusters/2es2zlav713acqlr    
 ```
 
 9. Now we gonna initiate consumer:
@@ -104,15 +104,15 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/xwhgz3kv8l67wx87/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/2es2zlav713acqlr/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind` 
-kubectl get secret kubeconfig-ntgtl -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+kubectl get secret kubeconfig-pr2xk -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f contrib/kcp/deploy/examples/apiserviceexport-namespaced.yaml  --skip-konnector --remote-namespace kube-bind-wg2tb
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f contrib/kcp/deploy/examples/apiserviceexport-namespaced.yaml  --skip-konnector --remote-namespace kube-bind-68mqq
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f contrib/kcp/deploy/examples/apiserviceexport-cluster.yaml  --skip-konnector --remote-namespace kube-bind-wg2tb
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f contrib/kcp/deploy/examples/apiserviceexport-cluster.yaml  --skip-konnector --remote-namespace kube-bind-68mqq
 
 
 export KUBECONFIG=.kcp/consumer.kubeconfig
@@ -142,3 +142,11 @@ kubectl label cm provider app=wildwest -n kube-bind-lxj5k-default
 
 kubectl create cm consumer -n default
 kubectl label cm consumer app=wildwest -n default
+
+kubectl create secret generic provider-secret 
+kubectl label secret provider-secret app=wildwest
+
+kubectl create namespace bob
+kubectl create secret generic wildwest-secrets1 -n bob
+kubectl label secret wildwest-secrets1 app=wildwest -n bob
+```

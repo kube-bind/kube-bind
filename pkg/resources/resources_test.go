@@ -1,20 +1,4 @@
-/*
-Copyright 2025 The Kube Bind Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package claimedresources
+package resources
 
 import (
 	"testing"
@@ -25,7 +9,7 @@ import (
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
-func TestSelector_isClaimed(t *testing.T) {
+func TestSelector_IsClaimed(t *testing.T) {
 	tests := []struct {
 		name     string
 		selector kubebindv1alpha2.Selector
@@ -299,18 +283,49 @@ func TestSelector_isClaimed(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name: "label-only-secret test case - should not sync when has label but not in named resource list",
+			selector: kubebindv1alpha2.Selector{
+				LabelSelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						"app": "secrets",
+					},
+				},
+				NamedResource: []kubebindv1alpha2.NamedResource{
+					{
+						Name:      "test-secret",
+						Namespace: "default",
+					},
+					{
+						Name:      "named-secret-1",
+						Namespace: "default",
+					},
+					{
+						Name:      "named-secret-2",
+						Namespace: "default",
+					},
+				},
+			},
+			obj: &unstructured.Unstructured{
+				Object: map[string]any{
+					"metadata": map[string]any{
+						"name":      "label-only-secret",
+						"namespace": "default",
+						"labels": map[string]any{
+							"app": "secrets",
+						},
+					},
+				},
+			},
+			want: false, // Should NOT match because name is not in named resource list
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &controller{
-				claim: kubebindv1alpha2.PermissionClaim{
-					Selector: tt.selector,
-				},
-			}
-			got := c.isClaimed(tt.obj)
+			got := IsClaimed(tt.selector, tt.obj)
 			if got != tt.want {
-				t.Errorf("isClaimed() = %v, want %v", got, tt.want)
+				t.Errorf("IsClaimed() = %v, want %v", got, tt.want)
 			}
 		})
 	}

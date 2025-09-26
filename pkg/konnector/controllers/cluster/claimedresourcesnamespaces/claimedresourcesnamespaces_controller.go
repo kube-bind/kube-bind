@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,6 +34,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
+	"github.com/kube-bind/kube-bind/pkg/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclientset "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
@@ -115,21 +115,7 @@ type controller struct {
 }
 
 func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
-	// Check if obj is selected by label selector
-	if c.claim.Selector.LabelSelector != nil {
-		selector, err := metav1.LabelSelectorAsSelector(c.claim.Selector.LabelSelector)
-		if err != nil {
-			return false
-		}
-		l := obj.GetLabels()
-		if l == nil {
-			l = make(map[string]string)
-		}
-
-		return selector.Matches(labels.Set(l))
-	}
-
-	return false
+	return resources.IsClaimed(c.claim.Selector, obj)
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
@@ -276,6 +262,25 @@ func (c *controller) ensureServiceNamespace(ctx context.Context, ns string) (cre
 	})
 	if err != nil && !errors.IsAlreadyExists(err) {
 		return false, fmt.Errorf("failed to create APIServiceNamespace %q: %w", ns, err)
+	}
+
+	// Wait until the servicenamespace status has been updated.
+	// As this controller does not do anything else, we are ok to block here.
+	err = wait.PollUntilContextCancel(ctx, 500*time.Millisecond, true, func(ctx context.Context) (done bool, err error) {
+		sns, err := c.serviceNamespaceInformer.Lister().APIServiceNamespaces(c.providerNamespace).Get(ns)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil // keep polling
+			}
+			return false, err
+		}
+		if sns.Status.Namespace != "" {
+			return true, nil
+		}
+		return false, nil
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to wait for APIServiceNamespace %q to be ready: %w", ns, err)
 	}
 
 	logger.Info("APIServiceNamespace created successfully")

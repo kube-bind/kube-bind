@@ -15,4 +15,13 @@ spec:
       labelSelector:
         matchLabels:
           app: wildwest
+  - apiGroup: ""
+    resource: secrets
+    selector:
+      labelSelector:
+        matchLabels:
+          app: wildwest
+      namedResource:
+      - name: wildwest-secrets
+        namespace: bob
 status: {}

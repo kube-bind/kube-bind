@@ -39,6 +39,7 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
+	"github.com/kube-bind/kube-bind/pkg/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclientset "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
@@ -104,6 +105,8 @@ func NewController(
 		serviceNamespaceInformer: serviceNamespaceInformer,
 
 		providerNamespace: providerNamespace,
+
+		namespaceCreationNotifyChan: namespaceCreationNotifyChan,
 
 		readReconciler: readReconciler{
 			getServiceNamespace: func(upstreamNamespace string) (*kubebindv1alpha2.APIServiceNamespace, error) {
@@ -207,43 +210,7 @@ type controller struct {
 }
 
 func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
-	// Empty selector selects everything
-	if c.claim.Selector.LabelSelector == nil && len(c.claim.Selector.NamedResource) == 0 {
-		return true
-	}
-
-	// Both label selector and named resources must match if both are specified
-	labelSelectorMatches := true
-	namedResourceMatches := true
-
-	// Check label selector if specified
-	if c.claim.Selector.LabelSelector != nil {
-		selector, err := metav1.LabelSelectorAsSelector(c.claim.Selector.LabelSelector)
-		if err != nil {
-			return false
-		}
-		l := obj.GetLabels()
-		if l == nil {
-			l = make(map[string]string)
-		}
-		labelSelectorMatches = selector.Matches(labels.Set(l))
-	}
-
-	// Check named resources if specified
-	if len(c.claim.Selector.NamedResource) > 0 {
-		namedResourceMatches = false // Default to false, must match at least one
-		for _, nr := range c.claim.Selector.NamedResource {
-			if nr.Namespace != "" && nr.Namespace != obj.GetNamespace() {
-				continue
-			}
-			if nr.Name == obj.GetName() {
-				namedResourceMatches = true
-				break
-			}
-		}
-	}
-
-	return labelSelectorMatches && namedResourceMatches
+	return resources.IsClaimed(c.claim.Selector, obj)
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
@@ -306,6 +273,19 @@ func (c *controller) enqueueConsumerByKey(logger klog.Logger, key string) {
 }
 
 func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
+	// handle tombstones
+	if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+		obj = tombstone.Obj
+	}
+	o, ok := obj.(*unstructured.Unstructured)
+	if !ok {
+		runtime.HandleError(fmt.Errorf("unexpected type %T in enqueueProvider", obj))
+		return
+	}
+	if !c.isClaimed(o) {
+		return
+	}
+
 	providerKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
@@ -372,6 +352,16 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		return
 	}
 	for _, obj := range objs {
+		unstructuredObj, ok := obj.(*unstructured.Unstructured)
+		if !ok {
+			continue
+		}
+
+		// Check if the provider object is actually claimed using the full selector logic.
+		if !c.isClaimed(unstructuredObj) {
+			continue
+		}
+
 		key, err := cache.MetaNamespaceKeyFunc(obj)
 		if err != nil {
 			runtime.HandleError(err)
@@ -402,7 +392,10 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		return
 	}
 	for _, obj := range objects {
-		logger.Info("enqueueing consumer object", "obj", obj)
+		// Check if the object is actually claimed using the full selector logic
+		if !c.isClaimed(obj) {
+			continue
+		}
 
 		key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 		if err != nil {

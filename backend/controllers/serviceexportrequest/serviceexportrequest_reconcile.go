@@ -268,6 +268,9 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 // Validate validates if the APIServiceExportRequest is in a valid state.
 // Currently it validates if all requested schemas are of the same scope and
 // if claimable apis are allowed and valid.
+//
+// TODO: Move this to validatingAdmissionWebhook as this is not really part of reconciliation.
+// https://github.com/kube-bind/kube-bind/issues/325
 func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	exportedSchemas, err := r.getExportedSchemas(ctx, cl)
 	if err != nil {
@@ -326,8 +329,30 @@ func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebi
 				"Resource %s is not a valid claimable API",
 				claim.GroupResource.String(),
 			)
+			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
+			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha2.APIServiceExportConditionPermissionClaim)
 			return fmt.Errorf("resource %s is not a valid claimable API", claim.GroupResource.String())
 		}
+	}
+
+	// Add validation for duplicate group/resource combinations
+	seenGroupResources := make(map[string]bool)
+	for _, claim := range req.Spec.PermissionClaims {
+		key := claim.Group + "/" + claim.Resource
+		if seenGroupResources[key] {
+			conditions.MarkFalse(
+				req,
+				kubebindv1alpha2.APIServiceExportConditionPermissionClaim,
+				"DuplicatePermissionClaim",
+				conditionsapi.ConditionSeverityError,
+				"Duplicate permission claim found for group/resource %s",
+				claim.GroupResource.String(),
+			)
+			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
+			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha2.APIServiceExportConditionPermissionClaim)
+			return fmt.Errorf("duplicate permission claim found for group/resource %s", claim.GroupResource.String())
+		}
+		seenGroupResources[key] = true
 	}
 
 	return nil

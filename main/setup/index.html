@@ -1585,6 +1585,49 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#setup-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup Options
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Setup Options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#standard-kubernetes-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Standard Kubernetes Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#advanced-multi-cluster-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Multi-Cluster Setup
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Architecture Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#quickstart" class="md-nav__link">
     <span class="md-ellipsis">
       Quickstart
@@ -1592,8 +1635,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#local-kube-bind-with-kind" class="md-nav__link">
     <span class="md-ellipsis">
       Local kube-bind with kind
@@ -1601,8 +1644,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#installation-with-helm" class="md-nav__link">
     <span class="md-ellipsis">
       Installation with Helm
@@ -1610,13 +1653,18 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#kubectl-plugins" class="md-nav__link">
     <span class="md-ellipsis">
       kubectl Plugins
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1639,6 +1687,32 @@
 
 
 <h1 id="setting-up-kube-bind">Setting Up kube-bind</h1>
+<p>kube-bind supports multiple deployment scenarios and backend providers to meet different requirements.</p>
+<h2 id="setup-options">Setup Options</h2>
+<h3 id="standard-kubernetes-setup">Standard Kubernetes Setup</h3>
+<ul>
+<li><strong><a href="quickstart/">Quickstart</a></strong>: Get started quickly with the default provider</li>
+<li><strong><a href="helm/">Helm Deployment</a></strong>: Production deployment using Helm charts</li>
+<li><strong><a href="local-setup-with-kind/">Local Setup with Kind</a></strong>: Local development environment</li>
+<li><strong><a href="kubectl-plugin/">kubectl Plugin</a></strong>: Install and use the kubectl-bind plugin</li>
+</ul>
+<h3 id="advanced-multi-cluster-setup">Advanced Multi-Cluster Setup</h3>
+<ul>
+<li><strong><a href="kcp-setup/">KCP Integration</a></strong>: Advanced multi-tenant setup with kcp workspaces and APIExports</li>
+</ul>
+<h2 id="architecture-overview">Architecture Overview</h2>
+<p>Starting with v0.5.0, kube-bind uses a multicluster-runtime architecture that supports:</p>
+<ul>
+<li><strong>Multiple Providers</strong>: Choose between standard Kubernetes or KCP backends</li>
+<li><strong>Enhanced API</strong>: v1alpha2 API with resource-based exports and BoundSchema support</li>
+<li><strong>Flexible Deployment</strong>: Support for various cluster topologies and requirements</li>
+</ul>
+<p>Choose the setup that best fits your use case:</p>
+<ul>
+<li>Use <strong>Quickstart</strong> or <strong>Local Setup with Kind</strong> for development and testing</li>
+<li>Use <strong>Helm Deployment</strong> for production environments with standard Kubernetes</li>
+<li>Use <strong>KCP Integration</strong> for advanced multi-tenant scenarios with workspace isolation</li>
+</ul>
 <h3 id="quickstart"><a href="../setup/quickstart/">Quickstart</a></h3>
 <p>Get started with kube bind.</p>
 <h3 id="local-kube-bind-with-kind"><a href="../setup/local-setup-with-kind/">Local kube-bind with kind</a></h3>

@@ -1578,6 +1578,113 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Components
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#supported-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Supported Providers
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#provider-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Provider Configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Provider Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kcp-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      KCP Provider
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#default-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Default Provider
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      API Changes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controllers" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controllers
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1595,6 +1702,58 @@
 
 
 <h1 id="backend">Backend</h1>
+<p>The kube-bind backend provides service export and binding capabilities for single Kubernetes clusters acting as backend or many clusters with support for multiple cluster providers through the multicluster-runtime architecture.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Starting with v0.5.0, the backend leverages <code>sigs.k8s.io/multicluster-runtime</code> for enhanced cluster management capabilities.</p>
+<h3 id="key-components">Key Components</h3>
+<ul>
+<li><strong>MultiCluster Runtime Integration</strong>: Built on <code>sigs.k8s.io/multicluster-runtime</code> for provider-agnostic cluster operations</li>
+<li><strong>Provider Support</strong>: Extensible provider system supporting different backend implementations</li>
+<li><strong>Manager Architecture</strong>: Uses <code>mcmanager.Manager</code> for cluster-aware resource management</li>
+</ul>
+<h3 id="supported-providers">Supported Providers</h3>
+<ul>
+<li><strong>Default Provider</strong>: Standard Kubernetes cluster support</li>
+<li><strong>KCP Provider</strong>: Integration with <a href="https://github.com/kcp-dev/kcp">kcp</a> through <code>github.com/kcp-dev/multicluster-provider</code></li>
+</ul>
+<h2 id="configuration">Configuration</h2>
+<p>The backend can be configured to use different providers:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./bin/backend<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--multicluster-runtime-provider<span class="w"> </span>kcp<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--server-url<span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>apiexportendpointslice<span class="w"> </span>kube-bind.io<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s2">&quot;{.status.endpoints[0].url}&quot;</span><span class="k">)</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="c1"># ... other options</span>
+</code></pre></div>
+<h3 id="provider-configuration">Provider Configuration</h3>
+<h4 id="kcp-provider">KCP Provider</h4>
+<p>When using the KCP provider (<code>--multicluster-runtime-provider kcp</code>), the backend:</p>
+<ul>
+<li>Connects to kcp workspaces through APIExports</li>
+<li>Manages resources across logical clusters  </li>
+<li>Supports advanced multi-tenancy features</li>
+<li>Enables workspace-based isolation</li>
+</ul>
+<h4 id="default-provider">Default Provider</h4>
+<p>The default provider works with standard Kubernetes clusters and provides:</p>
+<ul>
+<li>Direct cluster connectivity</li>
+<li>Namespace-based isolation</li>
+<li>Standard RBAC integration</li>
+</ul>
+<h2 id="api-changes">API Changes</h2>
+<p>The backend now supports the v1alpha2 API with significant architectural improvements:</p>
+<ul>
+<li><strong>Resource-Based Exports</strong>: APIServiceExport now uses resource references instead of embedded CRDs</li>
+<li><strong>BoundSchema Support</strong>: Integration with BoundSchema resources for better schema management</li>
+<li><strong>Multi-Resource Support</strong>: Single exports can reference multiple CRDs efficiently</li>
+</ul>
+<h2 id="controllers">Controllers</h2>
+<p>The backend includes several controllers for managing the export/binding lifecycle:</p>
+<ul>
+<li><strong>ClusterBinding Controller</strong>: Manages cluster binding lifecycle</li>
+<li><strong>ServiceExport Controller</strong>: Handles APIServiceExport resources</li>
+<li><strong>ServiceExportRequest Controller</strong>: Processes export requests</li>
+<li><strong>ServiceNamespace Controller</strong>: Manages namespace isolation</li>
+</ul>
 
 
 

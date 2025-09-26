@@ -1179,6 +1179,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#key-changes-in-v1alpha2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Changes in v1alpha2
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controller-responsibilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controller Responsibilities
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       Overview
@@ -1634,6 +1652,24 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#key-changes-in-v1alpha2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Changes in v1alpha2
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controller-responsibilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controller Responsibilities
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       Overview
@@ -1661,13 +1697,20 @@
 
 
 <h1 id="apiserviceexports">APIServiceExports</h1>
-<p>The APIServiceExport controller watches <code>APIServiceExports</code> and the referenced <code>CustomResourceDefinitions</code> (CRDs) in the <strong>provider cluster</strong>.</p>
-<p>It is responsible for:</p>
+<p>The APIServiceExport controller watches <code>APIServiceExports</code> and the referenced resources in the <strong>provider cluster</strong>.</p>
+<p>Starting with v1alpha2, the APIServiceExport has been refactored to use a resource-based model instead of embedded CRD specifications.</p>
+<h2 id="key-changes-in-v1alpha2">Key Changes in v1alpha2</h2>
+<ul>
+<li><strong>Resource-Based Model</strong>: <code>APIServiceExportSpec</code> now uses <code>Resources []APIServiceExportResource</code> instead of embedded CRD specs</li>
+<li><strong>Multi-Resource Support</strong>: One APIServiceExport can reference multiple CRDs more efficiently</li>
+<li><strong>BoundSchema Integration</strong>: Works with the new <code>BoundSchema</code> resource type for tracking bound schemas in consumer clusters</li>
+</ul>
+<h2 id="controller-responsibilities">Controller Responsibilities</h2>
 <ul>
 <li>Ensuring the existence and validity of <code>APIServiceExports</code>.</li>
 <li>Managing the lifecycle of <code>APIServiceExports</code> by starting and stopping spec and status syncers and controllers.</li>
 <li>Checking <code>APIServiceBinding</code> condition and setting <code>ConsumerInSync</code> condition in <code>APIServiceExport</code></li>
-<li>Copying conditions from the referenced CRDs to the <code>APIServiceExport</code> status.</li>
+<li>Managing resource references and their associated schemas.</li>
 </ul>
 <h2 id="overview">Overview</h2>
 <pre class="mermaid"><code>flowchart TD

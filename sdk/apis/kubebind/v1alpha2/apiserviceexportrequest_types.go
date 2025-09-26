@@ -130,8 +130,8 @@ func (r APIServiceExportRequestResource) ResourceGroupName() string {
 }
 
 // Selector is a resource selector that selects objects of a GVR.
+// Selectors are ANDed together if multiple are specified.
 type Selector struct {
-
 	// NamedResource is a shorthand for selecting a single resource by name and namespace.
 	// +optional
 	NamedResource []NamedResource `json:"namedResource,omitempty"`

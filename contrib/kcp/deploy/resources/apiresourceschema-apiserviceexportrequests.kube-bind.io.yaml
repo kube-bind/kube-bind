@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250926-b973783.apiserviceexportrequests.kube-bind.io
+  name: v250926-8b1b3a8.apiserviceexportrequests.kube-bind.io
 spec:
   conversion:
     strategy: None

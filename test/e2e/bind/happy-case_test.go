@@ -170,6 +170,20 @@ spec:
 										"app": "secrets",
 									},
 								},
+								NamedResource: []kubebindv1alpha2.NamedResource{
+									{
+										Name:      "test-secret",
+										Namespace: consumerNS,
+									},
+									{
+										Name:      "named-secret-1",
+										Namespace: consumerNS,
+									},
+									{
+										Name:      "named-secret-2",
+										Namespace: consumerNS,
+									},
+								},
 							},
 						},
 					}
@@ -263,6 +277,69 @@ spec:
 				}
 				_, err = consumerCoreClient.Secrets(consumerNS).Create(ctx, secret, metav1.CreateOptions{})
 				require.NoError(t, err)
+
+				t.Logf("Creating named secrets on consumer side")
+
+				// Create the first named secret (matches BOTH label AND named resource)
+				namedSecret1 := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "named-secret-1",
+						Namespace: consumerNS,
+						Labels: map[string]string{
+							"app": "secrets", // Matches the label selector
+						},
+					},
+					Data: map[string][]byte{
+						"key1": []byte("value1"),
+					},
+				}
+				_, err = consumerCoreClient.Secrets(consumerNS).Create(ctx, namedSecret1, metav1.CreateOptions{})
+				require.NoError(t, err)
+
+				// Create the second named secret (matches BOTH label AND named resource)
+				namedSecret2 := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "named-secret-2",
+						Namespace: consumerNS,
+						Labels: map[string]string{
+							"app": "secrets", // Matches the label selector
+						},
+					},
+					Data: map[string][]byte{
+						"key2": []byte("value2"),
+					},
+				}
+				_, err = consumerCoreClient.Secrets(consumerNS).Create(ctx, namedSecret2, metav1.CreateOptions{})
+				require.NoError(t, err)
+
+				// Create a secret that has the correct label BUT is not in the named resource list (should NOT sync)
+				labelOnlySecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "label-only-secret",
+						Namespace: consumerNS,
+						Labels: map[string]string{
+							"app": "secrets", // Matches label but not in named list
+						},
+					},
+					Data: map[string][]byte{
+						"labelonly": []byte("should-not-sync"),
+					},
+				}
+				_, err = consumerCoreClient.Secrets(consumerNS).Create(ctx, labelOnlySecret, metav1.CreateOptions{})
+				require.NoError(t, err)
+
+				// Create a secret that should NOT be synced (neither label nor named resource match)
+				nonSyncedSecret := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "other-secret",
+						Namespace: consumerNS,
+					},
+					Data: map[string][]byte{
+						"key3": []byte("value3"),
+					},
+				}
+				_, err = consumerCoreClient.Secrets(consumerNS).Create(ctx, nonSyncedSecret, metav1.CreateOptions{})
+				require.NoError(t, err)
 			},
 		},
 		{
@@ -323,6 +400,36 @@ spec:
 				providerSecret, err := providerCoreClient.Secrets(providerNS).Get(ctx, "test-secret", metav1.GetOptions{})
 				require.NoError(t, err)
 				require.Equal(t, []byte("secret-password"), providerSecret.Data["password"])
+
+				t.Logf("Waiting for named secrets to be synced to provider side")
+
+				// Verify first named secret is synced
+				require.Eventually(t, func() bool {
+					_, err := providerCoreClient.Secrets(providerNS).Get(ctx, "named-secret-1", metav1.GetOptions{})
+					return err == nil
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for named-secret-1 to be synced to provider side")
+
+				// Verify second named secret is synced
+				require.Eventually(t, func() bool {
+					_, err := providerCoreClient.Secrets(providerNS).Get(ctx, "named-secret-2", metav1.GetOptions{})
+					return err == nil
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for named-secret-2 to be synced to provider side")
+
+				// Verify data integrity of named secrets
+				providerNamedSecret1, err := providerCoreClient.Secrets(providerNS).Get(ctx, "named-secret-1", metav1.GetOptions{})
+				require.NoError(t, err)
+				require.Equal(t, []byte("value1"), providerNamedSecret1.Data["key1"])
+
+				providerNamedSecret2, err := providerCoreClient.Secrets(providerNS).Get(ctx, "named-secret-2", metav1.GetOptions{})
+				require.NoError(t, err)
+				require.Equal(t, []byte("value2"), providerNamedSecret2.Data["key2"])
+
+				// Verify that secrets that don't match BOTH conditions are NOT synced
+				_, err = providerCoreClient.Secrets(providerNS).Get(ctx, "label-only-secret", metav1.GetOptions{})
+				require.True(t, errors.IsNotFound(err), "label-only-secret should not be synced (not in named resource list)")
+
+				_, err = providerCoreClient.Secrets(providerNS).Get(ctx, "other-secret", metav1.GetOptions{})
+				require.True(t, errors.IsNotFound(err), "other-secret should not be synced (neither label nor named resource match)")
 			},
 		},
 		{
@@ -352,6 +459,33 @@ spec:
 					_, err := providerCoreClient.Secrets(providerNS).Get(ctx, "test-secret", metav1.GetOptions{})
 					return errors.IsNotFound(err)
 				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for secret to be deleted from provider side")
+
+				t.Logf("Deleting named secrets from consumer side")
+
+				err = consumerCoreClient.Secrets(consumerNS).Delete(ctx, "named-secret-1", metav1.DeleteOptions{})
+				require.NoError(t, err)
+
+				err = consumerCoreClient.Secrets(consumerNS).Delete(ctx, "named-secret-2", metav1.DeleteOptions{})
+				require.NoError(t, err)
+
+				t.Logf("Cleaning up additional test secrets from consumer side")
+				err = consumerCoreClient.Secrets(consumerNS).Delete(ctx, "label-only-secret", metav1.DeleteOptions{})
+				require.NoError(t, err)
+
+				err = consumerCoreClient.Secrets(consumerNS).Delete(ctx, "other-secret", metav1.DeleteOptions{})
+				require.NoError(t, err)
+
+				t.Logf("Waiting for named secrets to be deleted from provider side")
+
+				require.Eventually(t, func() bool {
+					_, err := providerCoreClient.Secrets(providerNS).Get(ctx, "named-secret-1", metav1.GetOptions{})
+					return errors.IsNotFound(err)
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for named-secret-1 to be deleted from provider side")
+
+				require.Eventually(t, func() bool {
+					_, err := providerCoreClient.Secrets(providerNS).Get(ctx, "named-secret-2", metav1.GetOptions{})
+					return errors.IsNotFound(err)
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for named-secret-2 to be deleted from provider side")
 			},
 		},
 		{

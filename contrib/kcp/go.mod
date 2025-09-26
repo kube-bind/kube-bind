@@ -10,7 +10,7 @@ replace github.com/kube-bind/kube-bind/cli => ../../cli
 
 require (
 	github.com/kcp-dev/client-go v0.0.0-20250728134101-0355faa9361b
-	github.com/kcp-dev/kcp v0.28.1
+	github.com/kcp-dev/kcp v0.28.2
 	github.com/kcp-dev/kcp/sdk v0.28.1
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5
 	github.com/spf13/pflag v1.0.7

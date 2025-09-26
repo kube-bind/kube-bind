@@ -74,7 +74,7 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: clusterbindings
-    schema: v250809-5ed76a1.clusterbindings.kube-bind.io
+    schema: v250925-56669b8.clusterbindings.kube-bind.io
     storage:
       crd: {}
 status: {}

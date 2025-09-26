@@ -21,7 +21,7 @@ set -o xtrace
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 
-CONTAINER_ENGINE=${CONTAINER_ENGINE:-podman}
+CONTAINER_ENGINE=${CONTAINER_ENGINE:-docker}
 CRD_DOCS_GENERATOR_VERSION=0.10.0
 
 #TODO(ncdc): i18n

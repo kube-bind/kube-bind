@@ -168,7 +168,6 @@ type APIServiceExportVersion struct {
 	// +required
 	// +kubebuilder:validation:Required
 	Storage bool `json:"storage"`
-
 	//nolint:gocritic // deprecatedComment: the proper format is
 	// deprecated indicates this version of the custom resource API is deprecated.
 	// When set to true, API requests to this version receive a warning header in the server response.

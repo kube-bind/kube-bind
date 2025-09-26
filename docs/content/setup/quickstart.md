@@ -11,11 +11,18 @@ description: >
 
 ## Start with Kube-Bind
 
-This section allows you to run local kube-bind backend and konnector.
-The main challenge when running it locally is to have multiple clusters available and accessible.
+This section allows you to run local kube-bind backend and konnector with the standard Kubernetes provider.
 
-For this we use [kcp](https://github.com/kcp-dev/kcp) to create a local clusters under single kcp instance.
-By having a single kcp instance, we can have multiple clusters available and accessible via same url.
+Starting with v0.5.0, kube-bind supports multiple backend providers through multicluster-runtime:
+
+- **Standard Provider** (default): Works with regular Kubernetes clusters
+- **KCP Provider**: Advanced multi-tenant setup with kcp workspaces (see [KCP Setup Guide](kcp-setup.md))
+
+This quickstart uses the default provider. For kcp integration, see the [KCP Setup Guide](kcp-setup.md).
+
+### Using KCP for Local Development
+
+For local development, we use [kcp](https://github.com/kcp-dev/kcp) to create multiple logical clusters under a single kcp instance, making them available and accessible via the same URL.
 
 To run kcp, you need to have a kcp binary.
 

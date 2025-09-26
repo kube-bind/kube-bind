@@ -130,17 +130,32 @@ func (r APIServiceExportRequestResource) ResourceGroupName() string {
 }
 
 // Selector is a resource selector that selects objects of a GVR.
-//
-// +kubebuilder:validation:XValidation:rule="(has(self.all) && self.all) != (has(self.labelSelector) && self.labelSelector != null)",message="either \"all\" or \"labelSelector\" must be set"
 type Selector struct {
-	// all claims all resources for the given group/resource.
-	// This is mutually exclusive with labelSelector.
+
+	// NamedResource is a shorthand for selecting a single resource by name and namespace.
 	// +optional
-	All bool `json:"all,omitempty"`
+	NamedResource []NamedResource `json:"namedResource,omitempty"`
 
 	// LabelSelector is a label selector that selects objects of a GVR.
 	// +optional
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
+}
+
+// NamedResource selects a specific resource by name and namespace.
+type NamedResource struct {
+	// Name is the name of the resource.
+	// Name matches the metadata.name field of the underlying object.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Name string `json:"name,omitempty"`
+
+	// Namespace represents namespace where an object of the given group/resource may be managed.
+	// Namespaces matches against the metadata.namespace field. A value of "*" matches namespaced objects across all namespaces.
+	// Namespaces field is ignored for namespaced isolation mode.
+	//
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // GroupResource identifies a resource.

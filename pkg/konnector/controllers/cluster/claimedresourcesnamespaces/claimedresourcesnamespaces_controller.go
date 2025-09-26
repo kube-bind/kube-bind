@@ -115,10 +115,6 @@ type controller struct {
 }
 
 func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
-	if c.claim.Selector.All {
-		return true
-	}
-
 	// Check if obj is selected by label selector
 	if c.claim.Selector.LabelSelector != nil {
 		selector, err := metav1.LabelSelectorAsSelector(c.claim.Selector.LabelSelector)

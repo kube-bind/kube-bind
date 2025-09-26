@@ -50,6 +50,7 @@ const (
 
 // NewController returns a new controller reconciling downstream objects to upstream.
 func NewController(
+	//	scope kubebindv1alpha2.InformerScope,
 	gvr schema.GroupVersionResource,
 	claim kubebindv1alpha2.PermissionClaim,
 	apiServiceExport *kubebindv1alpha2.APIServiceExport,
@@ -206,11 +207,16 @@ type controller struct {
 }
 
 func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
-	if c.claim.Selector.All {
+	// Empty selector selects everything
+	if c.claim.Selector.LabelSelector == nil && len(c.claim.Selector.NamedResource) == 0 {
 		return true
 	}
 
-	// Check if obj is selected by label selector
+	// Both label selector and named resources must match if both are specified
+	labelSelectorMatches := true
+	namedResourceMatches := true
+
+	// Check label selector if specified
 	if c.claim.Selector.LabelSelector != nil {
 		selector, err := metav1.LabelSelectorAsSelector(c.claim.Selector.LabelSelector)
 		if err != nil {
@@ -220,11 +226,24 @@ func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
 		if l == nil {
 			l = make(map[string]string)
 		}
-
-		return selector.Matches(labels.Set(l))
+		labelSelectorMatches = selector.Matches(labels.Set(l))
 	}
 
-	return false
+	// Check named resources if specified
+	if len(c.claim.Selector.NamedResource) > 0 {
+		namedResourceMatches = false // Default to false, must match at least one
+		for _, nr := range c.claim.Selector.NamedResource {
+			if nr.Namespace != "" && nr.Namespace != obj.GetNamespace() {
+				continue
+			}
+			if nr.Name == obj.GetName() {
+				namedResourceMatches = true
+				break
+			}
+		}
+	}
+
+	return labelSelectorMatches && namedResourceMatches
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
@@ -287,12 +306,12 @@ func (c *controller) enqueueConsumerByKey(logger klog.Logger, key string) {
 }
 
 func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
-	upstreamKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	providerKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
-	ns, _, err := cache.SplitMetaNamespaceKey(upstreamKey)
+	ns, _, err := cache.SplitMetaNamespaceKey(providerKey)
 	if err != nil {
 		runtime.HandleError(err)
 		return
@@ -309,16 +328,16 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 		for _, obj := range sns {
 			sn := obj.(*kubebindv1alpha2.APIServiceNamespace)
 			if sn.Namespace == c.providerNamespace {
-				logger.V(2).Info("queueing Unstructured", "key", upstreamKey)
-				c.queue.Add(upstreamKey)
+				logger.V(2).Info("queueing Unstructured", "key", providerKey)
+				c.queue.Add(providerKey)
 				return
 			}
 		}
 		return
 	}
 
-	logger.V(2).Info("queueing Unstructured", "key", upstreamKey)
-	c.queue.Add(upstreamKey)
+	logger.V(2).Info("queueing Unstructured", "key", providerKey)
+	c.queue.Add(providerKey)
 }
 
 func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}) {
@@ -365,7 +384,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 	// We need to list all the object which might not got synced at consumer side too:
 	var sel labels.Selector
 	switch v := c.claim.Selector; {
-	case v.All:
+	case v.LabelSelector == nil && len(v.NamedResource) == 0:
 		sel = labels.Everything()
 	case v.LabelSelector != nil:
 		var err error

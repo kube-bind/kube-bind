@@ -33,6 +33,7 @@ import (
 
 type reconciler struct {
 	providerNamespace string
+	apiServiceExport  *kubebindv1alpha2.APIServiceExport // used to establish owner references when create happens from the consumer side.
 
 	getServiceNamespace    func(name string) (*kubebindv1alpha2.APIServiceNamespace, error)
 	createServiceNamespace func(ctx context.Context, sn *kubebindv1alpha2.APIServiceNamespace) (*kubebindv1alpha2.APIServiceNamespace, error)
@@ -50,6 +51,9 @@ type reconciler struct {
 // reconcile syncs downstream objects (metadata and spec) with upstream objects.
 func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructured) error {
 	logger := klog.FromContext(ctx)
+	if r.apiServiceExport == nil { // Should never happen, but we check to make sure we dont regress in the future.
+		return fmt.Errorf("internal error: apiServiceExport is nil")
+	}
 
 	ns := obj.GetNamespace()
 	if ns != "" {
@@ -62,6 +66,9 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      ns,
 					Namespace: r.providerNamespace,
+					OwnerReferences: []metav1.OwnerReference{
+						*metav1.NewControllerRef(r.apiServiceExport, kubebindv1alpha2.SchemeGroupVersion.WithKind("APIServiceExport")),
+					},
 				},
 			})
 			if err != nil {

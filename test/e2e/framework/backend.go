@@ -70,7 +70,7 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	)
 	require.NoError(t, err)
 
-	fs := pflag.NewFlagSet("example-backend", pflag.ContinueOnError)
+	fs := pflag.NewFlagSet("backend", pflag.ContinueOnError)
 	opts := options.NewOptions()
 	opts.AddFlags(fs)
 	err = fs.Parse(args)

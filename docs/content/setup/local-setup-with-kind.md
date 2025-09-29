@@ -3,7 +3,7 @@
 This guide will walk you through setting up kube-bind between two Kubernetes clusters, where
 
 * **Backend cluster**:
-  * Deploys dex, cert-manager and kube-bind/example-backend
+  * Deploys dex, cert-manager and kube-bind/backend
   * Provides kube-bind compatible backend for MangoDB resources
 * **App cluster**:
   * Provides an application consuming MangoDBs
@@ -161,9 +161,9 @@ kubectl create clusterrolebinding backend-admin --clusterrole cluster-admin --se
 # Create a new Deployment for the MangoDB backend.
 kubectl --namespace backend \
     create deployment mangodb \
-    --image ghcr.io/kube-bind/example-backend:v0.4.6 \
+    --image ghcr.io/kube-bind/backend:v0.5.0 \
     --port 8080 \
-    -- /ko-app/example-backend \
+    -- /ko-app/backend \
         --listen-address 0.0.0.0:8080 \
         --external-address "${BACKEND_KUBE_API_EXTERNAL_ADDRESS}" \
         --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \

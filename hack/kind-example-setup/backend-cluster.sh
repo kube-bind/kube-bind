@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-DEFAULT_EXAMPLE_BACKEND_IMAGE="ghcr.io/kube-bind/example-backend:v0.4.6"
+DEFAULT_EXAMPLE_BACKEND_IMAGE="ghcr.io/kube-bind/backend:v0.5.0"
 
 if [[ -z "${HOST_IP:-}" ]]; then
   source "$(dirname "$0")/host-ip.sh"
@@ -130,7 +130,7 @@ kubectl --namespace backend \
     create deployment mangodb \
     --image ${example_backend_image} \
     --port 8080 \
-    -- /ko-app/example-backend \
+    -- /ko-app/backend \
         --listen-address 0.0.0.0:8080 \
         --external-address "${BACKEND_KUBE_API_EXTERNAL_ADDRESS}" \
         --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \

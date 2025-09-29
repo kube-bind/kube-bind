@@ -143,14 +143,17 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 		logger.Error(err, "failed to parse version %q", componentbaseversion.Get().GitVersion)
 		ver = "v0.0.0"
 	}
-
+	prettyName := h.providerPrettyName
+	if prettyName == "" {
+		prettyName = "backend"
+	}
 	provider := &kubebindv1alpha2.BindingProvider{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha2.GroupVersion,
 			Kind:       "BindingProvider",
 		},
 		Version:            ver,
-		ProviderPrettyName: "example-backend",
+		ProviderPrettyName: prettyName,
 		AuthenticationMethods: []kubebindv1alpha2.AuthenticationMethod{
 			{
 				Method: "OAuth2CodeGrant",

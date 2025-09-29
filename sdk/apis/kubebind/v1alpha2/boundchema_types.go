@@ -28,7 +28,7 @@ import (
 )
 
 // ExportedSchemas are the schemas exported by the current backend.
-// Keys are resource.version.group string for quick resolve.
+// Keys are "resource.group" for quick resolve (version is not part of the key).
 type ExportedSchemas map[string]*BoundSchema
 
 // BoundSchema

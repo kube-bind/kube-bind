@@ -116,7 +116,7 @@ func (r *reconciler) ensureValidServiceExport(_ context.Context, binding *kubebi
 func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding) error {
 	var errs []error
 
-	export, err := r.getServiceExport(binding.Name)
+	exportOriginal, err := r.getServiceExport(binding.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
@@ -130,6 +130,8 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 		)
 		return nil // nothing we can do here
 	}
+
+	export := exportOriginal.DeepCopy()
 
 	// Get all BoundSchema objects referenced by the export
 	schemas, err := r.getSchemasFromExport(ctx, export)

@@ -151,7 +151,7 @@ type NamedResource struct {
 	Name string `json:"name,omitempty"`
 
 	// Namespace represents namespace where an object of the given group/resource may be managed.
-	// Namespaces matches against the metadata.namespace field. A value of "*" matches namespaced objects across all namespaces.
+	// Namespaces matches against the metadata.namespace field. If not provided, the object is assumed to be cluster-scoped.
 	// Namespaces field is ignored for namespaced isolation mode.
 	//
 	// +optional

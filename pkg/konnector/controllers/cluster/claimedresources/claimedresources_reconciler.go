@@ -116,7 +116,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 		}
 
 		if errors.IsNotFound(consumerErr) {
-			logger.Info("Creating missing downstream object", "downstreamNamespace", providerNamespace, "downstreamName", providerObj.GetName())
+			logger.Info("Creating missing consumer object", "consumerNamespace", consumerNS, "consumerName", providerObj.GetName())
 
 			candidate := candidateFromOwnerObj(consumerNS, providerObj)
 			r.makeProviderOwner(candidate)
@@ -129,14 +129,14 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 		}
 
 		if !providerObj.GetDeletionTimestamp().IsZero() {
-			logger.Info("Deleting downstream object because it has been deleted upstream", "downstreamNamespace", consumerNS, "downstreamName", providerObj.GetName())
+			logger.Info("Deleting consumer object because it has been deleted upstream", "consumerNamespace", consumerNS, "consumerName", providerObj.GetName())
 			return r.deleteConsumerObject(ctx, consumerNS, providerObj.GetName())
 		}
 
 		candidate := candidateFromOwnerObj(consumerNS, providerObj)
 		current := candidateFromOwnerObj(consumerNS, consumerObj)
 		if !equality.Semantic.DeepEqual(candidate, current) {
-			logger.Info("Updating downstream object data", "downstreamNamespace", consumerNS, "downstreamName", consumerObj.GetName())
+			logger.Info("Updating consumer object data", "consumerNamespace", consumerNS, "consumerName", consumerObj.GetName())
 			if _, err := r.updateConsumerObject(ctx, candidate); err != nil {
 				logger.Error(err, "error updating consumer object")
 				return err

@@ -34,12 +34,12 @@ func TestCreateNamespace(t *testing.T) {
 	_ = corev1.AddToScheme(scheme)
 
 	tests := []struct {
-		name                 string
-		generateName         string
-		id                   string
-		wantErr              bool
-		wantNameGenerated    bool
-		wantAnnotations      map[string]string
+		name              string
+		generateName      string
+		id                string
+		wantErr           bool
+		wantNameGenerated bool
+		wantAnnotations   map[string]string
 	}{
 		{
 			name:              "create new namespace with generateName",

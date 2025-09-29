@@ -384,12 +384,12 @@ image-local:
 		-t $(REV) \
 		./cmd/konnector
 
-	@echo "Building example-backend image locally..."
+	@echo "Building backend image locally..."
 	KO_DOCKER_REPO=$(KO_DOCKER_REPO) ko build \
 		--local \
 		-B \
 		-t $(REV) \
-		./cmd/example-backend
+		./cmd/backend
 
 	@echo "Successfully built local images with tag $(REV)"
 
@@ -397,7 +397,7 @@ image-local:
 kind-load:
 	@echo "Loading images into kind cluster '$(KIND_CLUSTER)'"
 	kind load docker-image $(KO_DOCKER_REPO)/konnector:$(REV) --name $(KIND_CLUSTER)
-	kind load docker-image $(KO_DOCKER_REPO)/example-backend:$(REV) --name $(KIND_CLUSTER)
+	kind load docker-image $(KO_DOCKER_REPO)/backend:$(REV) --name $(KIND_CLUSTER)
 	@echo "Successfully loaded images into kind cluster '$(KIND_CLUSTER)'"
 
 include Makefile.venv

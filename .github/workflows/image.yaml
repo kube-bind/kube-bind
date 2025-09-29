@@ -47,13 +47,13 @@ jobs:
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
 
-    - name: Publish and sign example-backend image
+    - name: Publish and sign backend image
       env:
-        KO_DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/example-backend
+        KO_DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/backend
         COSIGN_EXPERIMENTAL: 'true'
       run: |
         echo "${{ github.token }}" | ko login ghcr.io --username "${{ github.actor }}" --password-stdin
-        img=$(ko build --bare --platform=all -t latest -t ${{ github.sha }} -t ${{github.ref_name}} ./cmd/example-backend)
+        img=$(ko build --bare --platform=all -t latest -t ${{ github.sha }} -t ${{github.ref_name}} ./cmd/backend)
         echo "built ${img}"
         cosign sign ${img} \
             --yes \

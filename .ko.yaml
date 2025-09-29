@@ -6,7 +6,7 @@ builds:
   dir: ./cmd/konnector
   ldflags:
   - "{{ .Env.LDFLAGS }}"
-- id: example-backend
-  dir: ./cmd/example-backend
+- id: backend
+  dir: ./cmd/backend
   ldflags:
   - "{{ .Env.LDFLAGS }}"

@@ -1930,7 +1930,7 @@
 <p>This guide will walk you through setting up kube-bind between two Kubernetes clusters, where</p>
 <ul>
 <li><strong>Backend cluster</strong>:</li>
-<li>Deploys dex, cert-manager and kube-bind/example-backend</li>
+<li>Deploys dex, cert-manager and kube-bind/backend</li>
 <li>Provides kube-bind compatible backend for MangoDB resources</li>
 <li><strong>App cluster</strong>:</li>
 <li>Provides an application consuming MangoDBs</li>
@@ -2061,9 +2061,9 @@
 <a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># Create a new Deployment for the MangoDB backend.</span>
 <a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>kubectl<span class="w"> </span>--namespace<span class="w"> </span>backend<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">    </span>create<span class="w"> </span>deployment<span class="w"> </span>mangodb<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span>--image<span class="w"> </span>ghcr.io/kube-bind/example-backend:v0.4.6<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span>--image<span class="w"> </span>ghcr.io/kube-bind/backend:v0.5.0<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">    </span>--port<span class="w"> </span><span class="m">8080</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">    </span>--<span class="w"> </span>/ko-app/example-backend<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">    </span>--<span class="w"> </span>/ko-app/backend<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">        </span>--listen-address<span class="w"> </span><span class="m">0</span>.0.0.0:8080<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">        </span>--external-address<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">BACKEND_KUBE_API_EXTERNAL_ADDRESS</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">        </span>--oidc-issuer-client-secret<span class="o">=</span>ZXhhbXBsZS1hcHAtc2VjcmV0<span class="w"> </span><span class="se">\</span>

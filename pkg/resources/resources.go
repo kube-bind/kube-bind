@@ -26,6 +26,9 @@ import (
 
 // IsClaimed returns true if the given object matches the given selector and named resources.
 func IsClaimed(selector kubebindv1alpha2.Selector, obj *unstructured.Unstructured) bool {
+	if obj == nil {
+		return false
+	}
 	// Empty selector selects everything
 	if selector.LabelSelector == nil && len(selector.NamedResource) == 0 {
 		return true

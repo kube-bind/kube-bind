@@ -152,9 +152,10 @@ spec:
 								Resource: "configmaps",
 							},
 							Selector: kubebindv1alpha2.Selector{
-								LabelSelector: &metav1.LabelSelector{
-									MatchLabels: map[string]string{
-										"app": "configmaps",
+								NamedResource: []kubebindv1alpha2.NamedResource{
+									{
+										Name:      "named-configmap-only",
+										Namespace: consumerNS,
 									},
 								},
 							},
@@ -244,21 +245,19 @@ spec:
 					return
 				}
 
-				t.Logf("Creating configmap on consumer side")
-				configMapData := map[string]string{
-					"config.yaml": "test: value",
+				t.Logf("Creating named-only configmap on consumer side")
+				namedConfigMapData := map[string]string{
+					"named-config.yaml": "named: value",
 				}
-				configMap := &corev1.ConfigMap{
+				namedConfigMap := &corev1.ConfigMap{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "test-configmap",
+						Name:      "named-configmap-only",
 						Namespace: consumerNS,
-						Labels: map[string]string{
-							"app": "configmaps",
-						},
+						// Note: No "app" label - this should only be captured by NamedResource
 					},
-					Data: configMapData,
+					Data: namedConfigMapData,
 				}
-				_, err := consumerCoreClient.ConfigMaps(consumerNS).Create(ctx, configMap, metav1.CreateOptions{})
+				_, err := consumerCoreClient.ConfigMaps(consumerNS).Create(ctx, namedConfigMap, metav1.CreateOptions{})
 				require.NoError(t, err)
 
 				t.Logf("Creating secret on consumer side")
@@ -379,11 +378,11 @@ spec:
 					return
 				}
 
-				t.Logf("Waiting for configmap to be synced to provider side")
+				t.Logf("Waiting for named-only configmap to be synced to provider side")
 				require.Eventually(t, func() bool {
-					_, err := providerCoreClient.ConfigMaps(providerNS).Get(ctx, "test-configmap", metav1.GetOptions{})
+					_, err := providerCoreClient.ConfigMaps(providerNS).Get(ctx, "named-configmap-only", metav1.GetOptions{})
 					return err == nil
-				}, 10*time.Minute, time.Millisecond*100, "waiting for configmap to be synced to provider side")
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for named-only configmap to be synced to provider side")
 
 				t.Logf("Waiting for secret to be synced to provider side")
 				require.Eventually(t, func() bool {
@@ -391,10 +390,10 @@ spec:
 					return err == nil
 				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for secret to be synced to provider side")
 
-				t.Logf("Verifying configmap data is correct")
-				providerConfigMap, err := providerCoreClient.ConfigMaps(providerNS).Get(ctx, "test-configmap", metav1.GetOptions{})
+				t.Logf("Verifying named-only configmap data is correct")
+				providerNamedConfigMap, err := providerCoreClient.ConfigMaps(providerNS).Get(ctx, "named-configmap-only", metav1.GetOptions{})
 				require.NoError(t, err)
-				require.Equal(t, "test: value", providerConfigMap.Data["config.yaml"])
+				require.Equal(t, "named: value", providerNamedConfigMap.Data["named-config.yaml"])
 
 				t.Logf("Verifying secret data is correct")
 				providerSecret, err := providerCoreClient.Secrets(providerNS).Get(ctx, "test-secret", metav1.GetOptions{})
@@ -440,19 +439,19 @@ spec:
 					return
 				}
 
-				t.Logf("Deleting configmap from consumer side")
-				err := consumerCoreClient.ConfigMaps(consumerNS).Delete(ctx, "test-configmap", metav1.DeleteOptions{})
+				t.Logf("Deleting named-only configmap from consumer side")
+				err := consumerCoreClient.ConfigMaps(consumerNS).Delete(ctx, "named-configmap-only", metav1.DeleteOptions{})
 				require.NoError(t, err)
 
 				t.Logf("Deleting secret from consumer side")
 				err = consumerCoreClient.Secrets(consumerNS).Delete(ctx, "test-secret", metav1.DeleteOptions{})
 				require.NoError(t, err)
 
-				t.Logf("Waiting for configmap to be deleted from provider side")
+				t.Logf("Waiting for named-only configmap to be deleted from provider side")
 				require.Eventually(t, func() bool {
-					_, err := providerCoreClient.ConfigMaps(providerNS).Get(ctx, "test-configmap", metav1.GetOptions{})
+					_, err := providerCoreClient.ConfigMaps(providerNS).Get(ctx, "named-configmap-only", metav1.GetOptions{})
 					return errors.IsNotFound(err)
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for configmap to be deleted from provider side")
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for named-only configmap to be deleted from provider side")
 
 				t.Logf("Waiting for secret to be deleted from provider side")
 				require.Eventually(t, func() bool {

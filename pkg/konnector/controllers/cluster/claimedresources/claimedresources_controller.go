@@ -383,6 +383,32 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 			runtime.HandleError(err)
 			return
 		}
+	case len(v.NamedResource) > 0:
+		// namedResource-only: fetch specific objects from cache and enqueue
+		for _, nr := range v.NamedResource {
+			// Build consumer cache key; empty namespace implies cluster-scoped
+			key := nr.Name
+			if nr.Namespace != "" {
+				key = fmt.Sprintf("%s/%s", nr.Namespace, nr.Name)
+			}
+			obj, exists, err := c.consumerDynamicIndexer.GetByKey(key)
+			if err != nil {
+				runtime.HandleError(err)
+				continue
+			}
+			if !exists {
+				continue
+			}
+			u, ok := obj.(*unstructured.Unstructured)
+			if !ok || !c.isClaimed(u) {
+				continue
+			}
+			// Re-map to provider namespace key
+			provKey := fmt.Sprintf("%s/%s", sn.Status.Namespace, nr.Name)
+			logger.V(2).Info("queueing Unstructured", "key", provKey, "reason", "APIServiceNamespace", "ConsumerObject", key)
+			c.queue.Add(provKey)
+		}
+		return
 	default:
 		return // nothing is selected
 	}

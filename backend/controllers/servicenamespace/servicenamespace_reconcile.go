@@ -83,7 +83,7 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 	}
 
 	for _, export := range apiServiceExports.Items {
-		name := "kube-binder-export-" + export.Name // unique name for the service export related permissions
+		name := fmt.Sprintf("kube-binder-%s-export-%s", sns.Name, export.Name) // per-sns unique name
 		permissions := []rbacv1.PolicyRule{}
 		for _, claim := range export.Spec.PermissionClaims {
 			permissions = append(permissions, rbacv1.PolicyRule{
@@ -96,7 +96,7 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 		if c.scope == kubebindv1alpha2.ClusterScope {
 			role, err := c.getPermissionClaimsClusterRole(ctx, cache, name)
 			if err != nil && !errors.IsNotFound(err) {
-				return fmt.Errorf("failed to get Role %s: %w", name, err)
+				return fmt.Errorf("failed to get ClusterRole %s: %w", name, err)
 			}
 			if role == nil {
 				role = &rbacv1.ClusterRole{

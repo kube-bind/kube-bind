@@ -63,18 +63,7 @@ kube-bind has 3 go modules, and a unique tag is needed for each module every tim
 If this is the first release of a new minor version (e.g. the last release was v0.7.x, and you are releasing the first
 0.8.x version), follow the following steps.
 
-Otherwise, you can skip to [Generate release notes](#generate-release-notes)
-
-### Create a Release Branch
-
-Set `REMOTE`, `REF`, and `VERSION` as appropriate.
-
-```shell
-REMOTE=upstream
-REF="$REMOTE/main"
-VERSION=1.2
-git checkout -b "release-$VERSION" "$REF"
-git push "$REMOTE" "release-$VERSION"
+Otherwise, you can skip to [Generate release notes](#generate-release-notes).
 ```
 
 ## Generate Release Notes

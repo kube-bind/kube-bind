@@ -18,6 +18,7 @@ package framework
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -60,4 +61,12 @@ func RestToKubeconfig(config *rest.Config, namespace string) clientcmdapi.Config
 			},
 		},
 	}
+}
+
+func WriteKubeconfig(t testing.TB, config clientcmdapi.Config, name string) string {
+	t.Helper()
+	p := filepath.Join(t.TempDir(), name)
+	err := clientcmd.WriteToFile(config, p)
+	require.NoError(t, err, "error writing kubeconfig to %q", p)
+	return p
 }

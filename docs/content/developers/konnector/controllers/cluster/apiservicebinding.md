@@ -20,12 +20,21 @@ flowchart TD
     set_apiservicebinding_condition_connected_to_true(["Set condition 'Connected' to true"])
     set_apiservicebinding_condition_connected_to_false(["Set condition 'Connected' to false"])
     set_apiservicebinding_condition_schemainsync_to_true(["Set condition 'SchemaInSync' to true"])
-    set_apiservicebinding_condition_schemainsync_to_false(["Set condition 'SchemaInSync' to false"])
 
     get_apiserviceexport(["Get APIServiceExport"])
-    convert_apiserviceexport_to_crd(["Convert APIServiceExport to CRD"])
     is_apiserviceexport_present{"export<br>exists?"}
-    is_apiserviceexport_valid{"export<br>valid?"}
+
+    get_bound_schemas(["Get all referenced
+    BoundSchemas from
+    APIServiceExport"])
+    bound_schema_fetch_successful(["Fetching BoundSchemas
+    succeed?"])
+    reference_bound_schema(["Reference BoundSchema
+    in APIServiceBinding
+    status"])
+    convert_boundschema_to_crd(["Convert BoundSchema
+    to CRD"])
+
 
     get_crd(["Get CRD"])
     create_crd(["Create CRD"])
@@ -42,29 +51,29 @@ flowchart TD
 
     is_apiservicebinding_owned --> |yes| get_apiserviceexport
     get_apiserviceexport --> is_apiserviceexport_present
-    is_apiserviceexport_present --> |yes| set_apiservicebinding_condition_connected_to_true
+    is_apiserviceexport_present --> |yes| get_bound_schemas
     is_apiserviceexport_present --> |no| set_apiservicebinding_condition_connected_to_false
-    set_apiservicebinding_condition_connected_to_true --> convert_apiserviceexport_to_crd
+    get_bound_schemas --> bound_schema_fetch_successful
+    bound_schema_fetch_successful --> |yes| reference_bound_schema
+    bound_schema_fetch_successful --> |no| set_apiservicebinding_condition_connected_to_false
+    reference_bound_schema --> convert_boundschema_to_crd
     set_apiservicebinding_condition_connected_to_false --> stop
 
-    convert_apiserviceexport_to_crd --> is_apiserviceexport_valid
-    is_apiserviceexport_valid --> |yes| get_crd
-    is_apiserviceexport_valid --> |no| set_apiservicebinding_condition_schemainsync_to_false
+    convert_boundschema_to_crd -->  get_crd
 
     get_crd --> is_crd_present
     is_crd_present --> |no| create_crd
     is_crd_present --> |yes| is_crd_owned
-    update_crd --> set_apiservicebinding_condition_schemainsync_to_true
-    create_crd --> set_apiservicebinding_condition_schemainsync_to_true
+    create_crd --> update_crd
+
+    update_crd --> set_apiservicebinding_condition_connected_to_true
+    set_apiservicebinding_condition_connected_to_true --> set_apiservicebinding_condition_schemainsync_to_true
 
     is_crd_owned --> |yes| update_crd
-    is_crd_owned --> |no| set_apiservicebinding_condition_schemainsync_to_false
+    is_crd_owned --> |no| set_apiservicebinding_condition_connected_to_false
 
     set_apiservicebinding_condition_schemainsync_to_true --> get_clusterbinding
-    set_apiservicebinding_condition_schemainsync_to_false --> get_clusterbinding
-
     get_clusterbinding --> set_apiservicebinding_provider_name
-
     is_apiservicebinding_owned --> |no| stop
     set_apiservicebinding_provider_name --> stop
 ```

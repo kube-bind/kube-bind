@@ -131,7 +131,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 
 	for _, res := range export.Spec.Resources {
 		name := res.ResourceGroupName()
-		// Fetch the APIResourceSchema
+		// Fetch the BoundSchema
 		schema, err := r.getRemoteBoundSchema(ctx, name)
 		if err != nil {
 			if errors.IsNotFound(err) {

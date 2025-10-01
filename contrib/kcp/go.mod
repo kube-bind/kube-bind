@@ -2,11 +2,11 @@ module github.com/kube-bind/kube-bind/kcp
 
 go 1.24.0
 
-replace github.com/kube-bind/kube-bind => ../../
-
-replace github.com/kube-bind/kube-bind/sdk => ../../sdk
-
-replace github.com/kube-bind/kube-bind/cli => ../../cli
+replace (
+	github.com/kube-bind/kube-bind => ../../
+	github.com/kube-bind/kube-bind/cli => ../../cli
+	github.com/kube-bind/kube-bind/sdk => ../../sdk
+)
 
 require (
 	github.com/kcp-dev/client-go v0.0.0-20250728134101-0355faa9361b
@@ -145,7 +145,3 @@ replace (
 	k8s.io/sample-cli-plugin => github.com/kcp-dev/kubernetes/staging/src/k8s.io/sample-cli-plugin v0.0.0-20250816165010-ffe1d7c8649b
 	k8s.io/sample-controller => github.com/kcp-dev/kubernetes/staging/src/k8s.io/sample-controller v0.0.0-20250816165010-ffe1d7c8649b
 )
-
-replace sigs.k8s.io/multicluster-runtime => github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250818101434-d8ebc45e169b
-
-replace github.com/kcp-dev/multicluster-provider => github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250818102159-3d31cbb06ebe

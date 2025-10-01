@@ -15,11 +15,3 @@ limitations under the License.
 */
 
 package provider
-
-import "sigs.k8s.io/multicluster-runtime/pkg/multicluster"
-
-// MultiClusterProvider is an interface that combines multicluster.Provider and multicluster.ProviderRunnable.
-type MultiClusterProvider interface {
-	multicluster.Provider
-	multicluster.ProviderRunnable
-}

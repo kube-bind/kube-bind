@@ -35,10 +35,10 @@ import (
 	ctrlconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
 	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/backend/options"
-	"github.com/kube-bind/kube-bind/backend/provider"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
@@ -46,7 +46,7 @@ import (
 type Config struct {
 	Options *options.CompletedOptions
 
-	Provider                 provider.MultiClusterProvider
+	Provider                 multicluster.Provider
 	ExternalAddressGenerator kuberesources.ExternalAddreesGeneratorFunc
 	Manager                  mcmanager.Manager
 	Scheme                   *runtime.Scheme

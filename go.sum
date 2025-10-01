@@ -163,10 +163,10 @@ github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWE
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/mdp/qrterminal/v3 v3.2.0 h1:qteQMXO3oyTK4IHwj2mWsKYYRBOp1Pj2WRYFYYNTCdk=
 github.com/mdp/qrterminal/v3 v3.2.0/go.mod h1:XGGuua4Lefrl7TLEsSONiD+UEjQXJZ4mPzF+gWYIJkk=
-github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250924135430-a1b0eea41697 h1:JD5KZQ2Wgd1YpMkHZHjWnY1vN7Tum2mS21hFalsluTs=
-github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250924135430-a1b0eea41697/go.mod h1:Z+mhTzOrNasK0Tcb3dryZAm8Qen16X8ExCGlHAe21cw=
-github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250924135253-419f38e2cced h1:QQeHizakPBEsphr3NomO+SPRIU8V3IgpSGr/V4Ttuy0=
-github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250924135253-419f38e2cced/go.mod h1:CpBzLMLQKdm+UCchd2FiGPiDdCxM5dgCCPKuaQ6Fsv0=
+github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250818102159-3d31cbb06ebe h1:rSMxNO43EhRCu49OxJrcueT3x8QJdtDgg9QNsjj8UCI=
+github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250818102159-3d31cbb06ebe/go.mod h1:AQbVcrm76lpSFQ/8Gkbf0ev1eTqbk+dynDw6IW8oprA=
+github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250818101434-d8ebc45e169b h1:rWXhKkj+BFmR08VYCRVW1/5n+PgKAzcrueYVPjN3K/g=
+github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250818101434-d8ebc45e169b/go.mod h1:CpBzLMLQKdm+UCchd2FiGPiDdCxM5dgCCPKuaQ6Fsv0=
 github.com/moby/term v0.5.0 h1:xt8Q1nalod/v7BqbG21f8mQPqH+xAaC9C3N3wfWbVP0=
 github.com/moby/term v0.5.0/go.mod h1:8FzsFHVUBGZdbDsJw/ot+X+d5HLUbvklYLJ9uGfcI3Y=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=

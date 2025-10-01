@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/headzoo/surf"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/headzoo/surf.v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

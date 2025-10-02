@@ -42,9 +42,7 @@ import (
 
 func StartBackend(t *testing.T, clientConfig *rest.Config, args ...string) (net.Addr, *backend.Server) {
 	signingKey := securecookie.GenerateRandomKey(32)
-	if len(signingKey) == 0 {
-		panic("error creating signing key")
-	}
+	require.NotEmpty(t, signingKey, "error creating signing key")
 
 	return StartBackendWithoutDefaultArgs(t, clientConfig, append([]string{
 		"--oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0",

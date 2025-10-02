@@ -19,17 +19,12 @@ package framework
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"net"
 	"testing"
-	"time"
 
-	dexapi "github.com/dexidp/dex/api/v2"
 	"github.com/gorilla/securecookie"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	grpcinsecure "google.golang.org/grpc/credentials/insecure"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -85,7 +80,7 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	require.NoError(t, err)
 
 	opts.OIDC.IssuerClientID = "kube-bind-" + port
-	createDexClient(t, addr)
+	CreateDexClient(t, addr)
 
 	opts.ExtraOptions.TestingSkipNameValidation = true
 	opts.ExtraOptions.SchemaSource = options.CustomResourceDefinitionSource.String()
@@ -104,36 +99,4 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	t.Logf("backend listening on %s", addr)
 
 	return addr, server
-}
-
-func createDexClient(t *testing.T, addr net.Addr) {
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
-	_, port, err := net.SplitHostPort(addr.String())
-	require.NoError(t, err)
-	conn, err := grpc.NewClient("127.0.0.1:5557", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
-	require.NoError(t, err)
-	defer conn.Close()
-	client := dexapi.NewDexClient(conn)
-
-	_, err = client.CreateClient(ctx, &dexapi.CreateClientReq{
-		Client: &dexapi.Client{
-			Id:           "kube-bind-" + port,
-			Secret:       "ZXhhbXBsZS1hcHAtc2VjcmV0",
-			RedirectUris: []string{fmt.Sprintf("http://%s/callback", addr)},
-			Public:       true,
-			Name:         "kube-bind on port " + port,
-		},
-	})
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		ctx, cancel := context.WithDeadline(context.Background(), metav1.Now().Add(10*time.Second))
-		defer cancel()
-		conn, err := grpc.NewClient("127.0.0.1:5557", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
-		require.NoError(t, err)
-		_, err = dexapi.NewDexClient(conn).DeleteClient(ctx, &dexapi.DeleteClientReq{Id: "kube-bind-" + port})
-		require.NoError(t, err)
-	})
 }

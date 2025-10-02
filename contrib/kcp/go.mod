@@ -1,4 +1,4 @@
-module github.com/kube-bind/kube-bind/kcp
+module github.com/kube-bind/kube-bind/contrib/kcp
 
 go 1.24.0
 

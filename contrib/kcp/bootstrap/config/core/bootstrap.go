@@ -25,7 +25,7 @@ import (
 	"github.com/kcp-dev/logicalcluster/v3"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"github.com/kube-bind/kube-bind/kcp/bootstrap/config/core/resources"
+	"github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/config/core/resources"
 )
 
 var (

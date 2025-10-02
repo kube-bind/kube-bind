@@ -9,24 +9,6 @@ replace (
 	github.com/kube-bind/kube-bind/sdk => ./sdk
 )
 
-// Matches multicluster-runtime v0.21.0-alpha.8
-replace (
-	github.com/google/cel-go => github.com/google/cel-go v0.22.0
-	github.com/kcp-dev/apimachinery/v2 => github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250728122101-adbf20db3e51
-	github.com/kcp-dev/multicluster-provider => github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250818102159-3d31cbb06ebe
-	k8s.io/api => k8s.io/api v0.33.0
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.33.0
-	k8s.io/apimachinery => k8s.io/apimachinery v0.33.0
-	k8s.io/apiserver => k8s.io/apiserver v0.33.0
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.33.0
-	k8s.io/client-go => k8s.io/client-go v0.33.0
-	k8s.io/code-generator => k8s.io/code-generator v0.33.0
-	k8s.io/component-base => k8s.io/component-base v0.33.0
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.21.0
-	//sigs.k8s.io/multicluster-runtime => sigs.k8s.io/multicluster-runtime v0.20.4-alpha.7
-	sigs.k8s.io/multicluster-runtime => github.com/mjudeikis/sigs-multicluster-runtime v0.0.0-20250818101434-d8ebc45e169b
-)
-
 require (
 	github.com/coreos/go-oidc/v3 v3.15.0
 	github.com/dexidp/dex/api/v2 v2.3.0
@@ -37,7 +19,7 @@ require (
 	github.com/headzoo/surf v1.0.1
 	github.com/kcp-dev/code-generator/v3 v3.0.0-20250707080944-4094fb87e20f
 	github.com/kcp-dev/kcp/pkg/apis v0.11.0
-	github.com/kcp-dev/kcp/sdk v0.28.0
+	github.com/kcp-dev/kcp/sdk v0.28.1
 	github.com/kcp-dev/multicluster-provider v0.1.0
 	github.com/kube-bind/kube-bind/cli v0.0.0-20250515145715-d9f20e7c840d
 	github.com/kube-bind/kube-bind/sdk v0.4.1
@@ -49,18 +31,18 @@ require (
 	golang.org/x/oauth2 v0.29.0
 	google.golang.org/grpc v1.70.0
 	k8s.io/api v0.33.3
-	k8s.io/apiextensions-apiserver v0.33.0
+	k8s.io/apiextensions-apiserver v0.33.3
 	k8s.io/apimachinery v0.33.3
-	k8s.io/apiserver v0.33.0
+	k8s.io/apiserver v0.33.3
 	k8s.io/cli-runtime v0.32.0
 	k8s.io/client-go v0.33.3
-	k8s.io/code-generator v0.33.0
-	k8s.io/component-base v0.33.0
+	k8s.io/code-generator v0.33.3
+	k8s.io/component-base v0.33.3
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/controller-tools v0.16.1
-	sigs.k8s.io/multicluster-runtime v0.21.0-alpha.8
+	sigs.k8s.io/multicluster-runtime v0.21.0-alpha.9.0.20251002124257-36facc7fbe82
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -108,7 +90,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250512171935-ebb573a40077 // indirect
+	github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250728122101-adbf20db3e51 // indirect
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
@@ -149,16 +131,16 @@ require (
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.37.0 // indirect
+	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/mod v0.24.0 // indirect
-	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/sync v0.13.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/term v0.31.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/term v0.32.0 // indirect
+	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
-	golang.org/x/tools v0.32.0 // indirect
+	golang.org/x/tools v0.33.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect

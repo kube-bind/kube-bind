@@ -14,18 +14,34 @@ flowchart TD
     start@{ shape: start }
     stop@{ shape: stop }
 
-    enqueue_reconcile(["Enqueue reconcile call for APIServiceBinding"])
+    enqueue_reconcile(["Enqueue reconcile call
+    for APIServiceBinding"])
 
     is_apiservicebinding_owned{"binding<br>owned?"}
-    set_apiservicebinding_condition_connected_to_true(["Set condition 'Connected' to true"])
-    set_apiservicebinding_condition_connected_to_false(["Set condition 'Connected' to false"])
-    set_apiservicebinding_condition_schemainsync_to_true(["Set condition 'SchemaInSync' to true"])
+    set_apiservicebinding_condition_connected_to_true(["Set condition
+    'Connected'
+    to true"])
+    set_apiservicebinding_condition_connected_to_true2(["Set condition 'Connected'
+    to true"])
 
-    get_apiserviceexport(["Get APIServiceExport"])
+    set_apiservicebinding_condition_connected_to_false(["Set condition 'Connected'
+    to false"])
+    set_apiservicebinding_condition_connected_to_false2(["Set condition 'Connected'
+    to false"])
+
+    set_apiservicebinding_condition_schemainsync_to_true(["Set condition 'SchemaInSync'
+    to true"])
+
+    get_apiserviceexport(["Get provider
+    APIServiceExport"])
     is_apiserviceexport_present{"export<br>exists?"}
 
-    get_bound_schemas(["Get all referenced
-    BoundSchemas from
+    get_apiserviceexportrequest(["Get provider
+     APIServiceExportRequest"])
+    is_apiserviceexportrequest_in_failed_state{"Is APIServiceExportRequest<br>in failed state?"}
+
+    get_bound_schemas(["Get provider
+    BoundSchemas referenced in
     APIServiceExport"])
     bound_schema_fetch_successful(["Fetching BoundSchemas
     succeed?"])
@@ -51,8 +67,14 @@ flowchart TD
 
     is_apiservicebinding_owned --> |yes| get_apiserviceexport
     get_apiserviceexport --> is_apiserviceexport_present
-    is_apiserviceexport_present --> |yes| get_bound_schemas
-    is_apiserviceexport_present --> |no| set_apiservicebinding_condition_connected_to_false
+    is_apiserviceexport_present --> |yes| set_apiservicebinding_condition_connected_to_true2
+    is_apiserviceexport_present --> |no| get_apiserviceexportrequest
+    get_apiserviceexportrequest --> is_apiserviceexportrequest_in_failed_state
+    is_apiserviceexportrequest_in_failed_state --> |yes| set_apiservicebinding_condition_connected_to_false2
+    is_apiserviceexportrequest_in_failed_state --> |no| set_apiservicebinding_condition_connected_to_false2
+
+    set_apiservicebinding_condition_connected_to_false2 --> stop
+    set_apiservicebinding_condition_connected_to_true2 --> get_bound_schemas
     get_bound_schemas --> bound_schema_fetch_successful
     bound_schema_fetch_successful --> |yes| reference_bound_schema
     bound_schema_fetch_successful --> |no| set_apiservicebinding_condition_connected_to_false

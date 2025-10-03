@@ -288,7 +288,7 @@ CONTRIBS_E2E := $(patsubst %,test-e2e-contrib-%,$(CONTRIBS))
 test-e2e-contribs: $(CONTRIBS_E2E) ## Run e2e tests for external integrations
 test-e2e-contrib-kcp: build $(DEX) $(KCP)
 $(CONTRIBS_E2E):
-	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) ./test/e2e/...
+	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && $(GO_TEST) -v -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) ./test/e2e/...
 
 .PHONY: test
 ifdef USE_GOTESTSUM

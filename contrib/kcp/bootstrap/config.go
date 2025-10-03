@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/kube-bind/kube-bind/kcp/bootstrap/options"
+	"github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/options"
 )
 
 type Config struct {

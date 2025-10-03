@@ -26,8 +26,8 @@ import (
 	logsv1 "k8s.io/component-base/logs/api/v1"
 	"k8s.io/klog/v2"
 
-	bootstrap "github.com/kube-bind/kube-bind/kcp/bootstrap"
-	"github.com/kube-bind/kube-bind/kcp/bootstrap/options"
+	bootstrap "github.com/kube-bind/kube-bind/contrib/kcp/bootstrap"
+	"github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/options"
 )
 
 func main() {

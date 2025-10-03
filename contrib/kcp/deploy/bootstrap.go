@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2"
 
-	"github.com/kube-bind/kube-bind/kcp/bootstrap/config/kcp/resources"
+	"github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/config/kcp/resources"
 )
 
 var (

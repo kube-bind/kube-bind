@@ -22,9 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/klog/v2"
 
-	bootstrapconfig "github.com/kube-bind/kube-bind/kcp/bootstrap/config/config"
-	bootstrapcore "github.com/kube-bind/kube-bind/kcp/bootstrap/config/core"
-	bootstrapkubebind "github.com/kube-bind/kube-bind/kcp/bootstrap/config/kcp"
+	bootstrapconfig "github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/config/config"
+	bootstrapcore "github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/config/core"
+	bootstrapkubebind "github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/config/kcp"
 )
 
 type Server struct {

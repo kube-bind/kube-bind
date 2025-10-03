@@ -131,7 +131,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 		return nil // nothing we can do here
 	}
 
-	// Get all APIResourceSchema objects referenced by the export
+	// Get all BoundSchema objects referenced by the export
 	schemas, err := r.getSchemasFromExport(ctx, export)
 	if err != nil {
 		conditions.MarkFalse(
@@ -148,7 +148,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 
 	// Process each schema
 	for _, schema := range schemas {
-		if err := r.referenceBoundAPIResourceSchema(ctx, binding, schema.Name); err != nil {
+		if err := r.referenceBoundSchema(ctx, binding, schema.Name); err != nil {
 			errs = append(errs, err)
 		}
 
@@ -166,7 +166,7 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) referenceBoundAPIResourceSchema(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding, name string) error {
+func (r *reconciler) referenceBoundSchema(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding, name string) error {
 	boundSchema, err := r.getBoundSchema(ctx, name)
 	if err != nil && !errors.IsNotFound(err) {
 		return fmt.Errorf("failed to get BoundSchema %s: %w", name, err)

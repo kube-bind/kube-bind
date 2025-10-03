@@ -59,6 +59,8 @@ func testHappyCase(t *testing.T, resourceScope apiextensionsv1.ResourceScope, in
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
+	framework.StartDex(t)
+
 	t.Logf("Creating provider workspace")
 	providerConfig, providerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithGenerateName("test-happy-case-provider"))
 

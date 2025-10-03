@@ -26,7 +26,6 @@ import (
 	htmltemplate "html/template"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 	"time"
 
@@ -34,7 +33,6 @@ import (
 	"github.com/gorilla/securecookie"
 	"golang.org/x/oauth2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -47,6 +45,7 @@ import (
 	"github.com/kube-bind/kube-bind/backend/template"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
 )
 
 var (
@@ -377,57 +376,45 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiResourceSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
+	exportedSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
 	if err != nil {
 		logger.Error(err, "failed to get dynamic resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	var result []UISchema
-	for _, item := range apiResourceSchemas.Items {
-		scope := item.UnstructuredContent()["spec"].(map[string]interface{})["scope"]
-		if scope == nil {
-			scope = "-"
-		}
-
-		// TODO(mjudeikis): This logic is very brittle, needs rework.
-		// This will be improved in the permissionClaims PR.
-		if !strings.EqualFold(h.scope.String(), scope.(string)) && h.scope != kubebindv1alpha2.ClusterScope {
+	result := make([]UISchema, 0, len(exportedSchemas))
+	for _, item := range exportedSchemas {
+		if !strings.EqualFold(h.scope.String(), string(item.Spec.Scope)) && h.scope != kubebindv1alpha2.ClusterScope {
 			continue
 		}
 
-		group := item.UnstructuredContent()["spec"].(map[string]interface{})["group"]
-		if group == nil {
-			group = "-"
+		if len(item.Spec.Versions) == 0 {
+			logger.Error(fmt.Errorf("no versions found"), "skipping schema", "name", item.Name)
+			continue
 		}
-		resource := item.UnstructuredContent()["spec"].(map[string]interface{})["names"].(map[string]interface{})["plural"]
-		if resource == nil {
-			resource = "-"
+		// pick first served version
+		ver := ""
+		for _, v := range item.Spec.Versions {
+			if v.Served {
+				ver = v.Name
+				break
+			}
 		}
-
-		kind := item.UnstructuredContent()["spec"].(map[string]interface{})["names"].(map[string]interface{})["kind"]
-		if kind == nil {
-			kind = "-"
+		if ver == "" {
+			logger.Error(fmt.Errorf("no served versions found"), "skipping schema", "name", item.Name)
+			continue
 		}
-
-		versions := item.UnstructuredContent()["spec"].(map[string]interface{})["versions"]
-		if versions == nil {
-			versions = []interface{}{""}
-		}
-		for _, v := range versions.([]interface{}) {
-			version := v.(map[string]interface{})["name"]
-			result = append(result, UISchema{
-				Name:    item.GetName(),
-				Kind:    kind.(string),
-				Scope:   scope.(string),
-				Version: version.(string),
-				Group:   group.(string),
-				// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
-				Resource:  resource.(string),
-				SessionID: sessionID,
-			})
-		}
+		result = append(result, UISchema{
+			Name:    item.GetName(),
+			Kind:    item.Spec.Names.Kind,
+			Scope:   string(item.Spec.Scope),
+			Version: ver,
+			Group:   item.Spec.Group,
+			// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
+			Resource:  item.Spec.Names.Plural,
+			SessionID: sessionID,
+		})
 	}
 
 	bs := bytes.Buffer{}
@@ -556,7 +543,7 @@ func mustRead(f func(name string) ([]byte, error), name string) string {
 	return string(bs)
 }
 
-func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string) (*unstructured.UnstructuredList, error) {
+func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string) (kubebindv1alpha2.ExportedSchemas, error) {
 	labelSelector := labels.Set{
 		resources.ExportedCRDsLabel: "true",
 	}
@@ -571,12 +558,19 @@ func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string)
 		Version: parts[1],
 		Group:   parts[2],
 	}
-	apiResourceSchemas, err := h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
+	list, err := h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
 	if err != nil {
-		return nil, fmt.Errorf("failed to list crds: %w", err)
+		return nil, fmt.Errorf("failed to list resources: %w", err)
 	}
-	sort.SliceStable(apiResourceSchemas.Items, func(i, j int) bool {
-		return apiResourceSchemas.Items[i].GetName() < apiResourceSchemas.Items[j].GetName()
-	})
-	return apiResourceSchemas, nil
+
+	boundSchemas := make(kubebindv1alpha2.ExportedSchemas, len(list.Items))
+	for _, item := range list.Items {
+		boundSchema, err := helpers.UnstructuredToBoundSchema(item)
+		if err != nil {
+			return nil, err
+		}
+		boundSchemas[boundSchema.ResourceGroupName()] = boundSchema
+	}
+
+	return boundSchemas, nil
 }

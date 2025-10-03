@@ -307,6 +307,108 @@ spec:
                   - type
                   type: object
                 type: array
+              permissionClaims:
+                description: |-
+                  PermissionClaims records decisions about permission claims requested by the service provider.
+                  Access is granted per GroupResource.
+                items:
+                  description: |-
+                    PermissionClaim selects objects of a GVR that a service provider may
+                    request and that a consumer may accept and allow the service provider access to.
+                  properties:
+                    group:
+                      default: ""
+                      description: |-
+                        group is the name of an API group.
+                        For core groups this is the empty string '""'.
+                      pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
+                      type: string
+                    resource:
+                      description: |-
+                        resource is the name of the resource.
+                        Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+                        not provided by an service binding export.
+                      pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                      type: string
+                    selector:
+                      description: Selector is a resource selector that selects objects
+                        of a GVR.
+                      properties:
+                        labelSelector:
+                          description: LabelSelector is a label selector that selects
+                            objects of a GVR.
+                          properties:
+                            matchExpressions:
+                              description: matchExpressions is a list of label selector
+                                requirements. The requirements are ANDed.
+                              items:
+                                description: |-
+                                  A label selector requirement is a selector that contains values, a key, and an operator that
+                                  relates the key and values.
+                                properties:
+                                  key:
+                                    description: key is the label key that the selector
+                                      applies to.
+                                    type: string
+                                  operator:
+                                    description: |-
+                                      operator represents a key's relationship to a set of values.
+                                      Valid operators are In, NotIn, Exists and DoesNotExist.
+                                    type: string
+                                  values:
+                                    description: |-
+                                      values is an array of string values. If the operator is In or NotIn,
+                                      the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                      the values array must be empty. This array is replaced during a strategic
+                                      merge patch.
+                                    items:
+                                      type: string
+                                    type: array
+                                    x-kubernetes-list-type: atomic
+                                required:
+                                - key
+                                - operator
+                                type: object
+                              type: array
+                              x-kubernetes-list-type: atomic
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              description: |-
+                                matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                                map is equivalent to an element of matchExpressions, whose key field is "key", the
+                                operator is "In", and the values array contains only "value". The requirements are ANDed.
+                              type: object
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        namedResource:
+                          description: NamedResource is a shorthand for selecting
+                            a single resource by name and namespace.
+                          items:
+                            description: NamedResource selects a specific resource
+                              by name and namespace.
+                            properties:
+                              name:
+                                description: |-
+                                  Name is the name of the resource.
+                                  Name matches the metadata.name field of the underlying object.
+                                type: string
+                              namespace:
+                                description: |-
+                                  Namespace represents namespace where an object of the given group/resource may be managed.
+                                  Namespaces matches against the metadata.namespace field. If not provided, the object is assumed to be cluster-scoped.
+                                  Namespaces field is ignored for namespaced isolation mode.
+                                type: string
+                            required:
+                            - name
+                            type: object
+                          type: array
+                      type: object
+                  required:
+                  - resource
+                  - selector
+                  type: object
+                type: array
               providerPrettyName:
                 description: |-
                   providerPrettyName is the pretty name of the service provider cluster. This

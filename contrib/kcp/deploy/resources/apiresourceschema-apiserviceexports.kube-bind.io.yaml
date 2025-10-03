@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250902-878858c.apiserviceexports.kube-bind.io
+  name: v250929-62fc678.apiserviceexports.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -487,6 +487,111 @@ spec:
               x-kubernetes-validations:
               - message: informerScope is immutable
                 rule: self == oldSelf
+            permissionClaims:
+              description: |-
+                PermissionClaims records decisions about permission claims requested by the service provider.
+                Access is granted per GroupResource.
+              items:
+                description: |-
+                  PermissionClaim selects objects of a GVR that a service provider may
+                  request and that a consumer may accept and allow the service provider access to.
+                properties:
+                  group:
+                    default: ""
+                    description: |-
+                      group is the name of an API group.
+                      For core groups this is the empty string '""'.
+                    pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
+                    type: string
+                  resource:
+                    description: |-
+                      resource is the name of the resource.
+                      Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+                      not provided by an service binding export.
+                    pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                    type: string
+                  selector:
+                    description: Selector is a resource selector that selects objects
+                      of a GVR.
+                    properties:
+                      labelSelector:
+                        description: LabelSelector is a label selector that selects
+                          objects of a GVR.
+                        properties:
+                          matchExpressions:
+                            description: matchExpressions is a list of label selector
+                              requirements. The requirements are ANDed.
+                            items:
+                              description: |-
+                                A label selector requirement is a selector that contains values, a key, and an operator that
+                                relates the key and values.
+                              properties:
+                                key:
+                                  description: key is the label key that the selector
+                                    applies to.
+                                  type: string
+                                operator:
+                                  description: |-
+                                    operator represents a key's relationship to a set of values.
+                                    Valid operators are In, NotIn, Exists and DoesNotExist.
+                                  type: string
+                                values:
+                                  description: |-
+                                    values is an array of string values. If the operator is In or NotIn,
+                                    the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                                    the values array must be empty. This array is replaced during a strategic
+                                    merge patch.
+                                  items:
+                                    type: string
+                                  type: array
+                                  x-kubernetes-list-type: atomic
+                              required:
+                              - key
+                              - operator
+                              type: object
+                            type: array
+                            x-kubernetes-list-type: atomic
+                          matchLabels:
+                            additionalProperties:
+                              type: string
+                            description: |-
+                              matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                              map is equivalent to an element of matchExpressions, whose key field is "key", the
+                              operator is "In", and the values array contains only "value". The requirements are ANDed.
+                            type: object
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      namedResource:
+                        description: NamedResource is a shorthand for selecting a
+                          single resource by name and namespace.
+                        items:
+                          description: NamedResource selects a specific resource by
+                            name and namespace.
+                          properties:
+                            name:
+                              description: |-
+                                Name is the name of the resource.
+                                Name matches the metadata.name field of the underlying object.
+                              type: string
+                            namespace:
+                              description: |-
+                                Namespace represents namespace where an object of the given group/resource may be managed.
+                                Namespaces matches against the metadata.namespace field. If not provided, the object is assumed to be cluster-scoped.
+                                Namespaces field is ignored for namespaced isolation mode.
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                    type: object
+                required:
+                - resource
+                - selector
+                type: object
+              type: array
+              x-kubernetes-validations:
+              - message: permissionClaims are immutable
+                rule: self == oldSelf
             resources:
               description: resources is a list of resources that should be exported.
               items:
@@ -527,53 +632,6 @@ spec:
         status:
           description: status contains reconciliation information for the resource.
           properties:
-            acceptedNames:
-              description: |-
-                acceptedNames are the names that are actually being used to serve discovery.
-                They may be different than the names in spec.
-              properties:
-                categories:
-                  description: |-
-                    categories is a list of grouped resources this custom resource belongs to (e.g. 'all').
-                    This is published in API discovery documents, and used by clients to support invocations like
-                    `kubectl get all`.
-                  items:
-                    type: string
-                  type: array
-                  x-kubernetes-list-type: atomic
-                kind:
-                  description: |-
-                    kind is the serialized kind of the resource. It is normally CamelCase and singular.
-                    Custom resource instances will use this value as the `kind` attribute in API calls.
-                  type: string
-                listKind:
-                  description: listKind is the serialized kind of the list for this
-                    resource. Defaults to "`kind`List".
-                  type: string
-                plural:
-                  description: |-
-                    plural is the plural name of the resource to serve.
-                    The custom resources are served under `/apis/<group>/<version>/.../<plural>`.
-                    Must match the name of the CustomResourceDefinition (in the form `<names.plural>.<group>`).
-                    Must be all lowercase.
-                  type: string
-                shortNames:
-                  description: |-
-                    shortNames are short names for the resource, exposed in API discovery documents,
-                    and used by clients to support invocations like `kubectl get <shortname>`.
-                    It must be all lowercase.
-                  items:
-                    type: string
-                  type: array
-                  x-kubernetes-list-type: atomic
-                singular:
-                  description: singular is the singular name of the resource. It must
-                    be all lowercase. Defaults to lowercased `kind`.
-                  type: string
-              required:
-              - kind
-              - plural
-              type: object
             conditions:
               description: |-
                 conditions is a list of conditions that apply to the APIServiceExport. It is
@@ -620,17 +678,6 @@ spec:
                 - status
                 - type
                 type: object
-              type: array
-            storedVersions:
-              description: |-
-                storedVersions lists all versions of CustomResources that were ever persisted. Tracking these
-                versions allows a migration path for stored versions in etcd. The field is mutable
-                so a migration controller can finish a migration to another version (ensuring
-                no old objects are left in storage), and then remove the rest of the
-                versions from this list.
-                Versions may not be removed from `spec.versions` while they exist in this list.
-              items:
-                type: string
               type: array
           type: object
       required:

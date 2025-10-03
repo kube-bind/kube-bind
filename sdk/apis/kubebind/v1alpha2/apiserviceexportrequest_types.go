@@ -106,6 +106,12 @@ type APIServiceExportRequestSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceExportRequestResource `json:"resources"`
+
+	// PermissionClaims records decisions about permission claims requested by the service provider.
+	// Access is granted per GroupResource.
+	//
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="permissionClaims are immutable"
+	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 }
 
 type APIServiceExportRequestResource struct {
@@ -121,6 +127,35 @@ func (r APIServiceExportRequestResource) ResourceGroupName() string {
 		r.Group = "core"
 	}
 	return fmt.Sprintf("%s.%s", r.Resource, r.Group)
+}
+
+// Selector is a resource selector that selects objects of a GVR.
+// Selectors are ANDed together if multiple are specified.
+type Selector struct {
+	// NamedResource is a shorthand for selecting a single resource by name and namespace.
+	// +optional
+	NamedResource []NamedResource `json:"namedResource,omitempty"`
+
+	// LabelSelector is a label selector that selects objects of a GVR.
+	// +optional
+	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
+}
+
+// NamedResource selects a specific resource by name and namespace.
+type NamedResource struct {
+	// Name is the name of the resource.
+	// Name matches the metadata.name field of the underlying object.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Name string `json:"name,omitempty"`
+
+	// Namespace represents namespace where an object of the given group/resource may be managed.
+	// Namespaces matches against the metadata.namespace field. If not provided, the object is assumed to be cluster-scoped.
+	// Namespaces field is ignored for namespaced isolation mode.
+	//
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // GroupResource identifies a resource.
@@ -140,6 +175,35 @@ type GroupResource struct {
 	// +required
 	// +kubebuilder:validation:Required
 	Resource string `json:"resource"`
+}
+
+func (r GroupResource) String() string {
+	return fmt.Sprintf("%s.%s", r.Resource, r.Group)
+}
+
+// PermissionClaim selects objects of a GVR that a service provider may
+// request and that a consumer may accept and allow the service provider access to.
+type PermissionClaim struct {
+	GroupResource `json:",inline"`
+
+	// Selector is a resource selector that selects objects of a GVR.
+	// +required
+	// +kubebuilder:validation:Required
+	Selector Selector `json:"selector,omitempty"`
+}
+
+// Owner is the owner of the resource.
+type Owner string
+
+const (
+	// OwnerProvider indicates that the resource is owned by the provider.
+	OwnerProvider Owner = "provider"
+	// OwnerConsumer indicates that the resource is owned by the consumer.
+	OwnerConsumer Owner = "consumer"
+)
+
+func (o Owner) String() string {
+	return string(o)
 }
 
 // APIServiceExportRequestPhase describes the phase of a binding request.

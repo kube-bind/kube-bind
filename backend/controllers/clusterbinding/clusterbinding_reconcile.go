@@ -158,6 +158,11 @@ func (r *reconciler) ensureRBACClusterRole(ctx context.Context, client client.Cl
 				Resources: []string{"boundschemas"},
 				Verbs:     []string{"get", "list", "watch"},
 			},
+			{
+				APIGroups: []string{kubebindv1alpha2.GroupName},
+				Resources: []string{"boundschemas/status"},
+				Verbs:     []string{"get", "update", "patch"},
+			},
 		}}
 	for _, export := range exports {
 		// Collect unique GroupResources and sort for stable rule ordering.

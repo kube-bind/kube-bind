@@ -8,4 +8,20 @@ spec:
     resource: cowboys
     versions:
     - v1alpha1
+  permissionClaims:
+  - apiGroup: ""
+    resource: configmaps
+    selector:
+      labelSelector:
+        matchLabels:
+          app: wildwest
+  - apiGroup: ""
+    resource: secrets
+    selector:
+      labelSelector:
+        matchLabels:
+          app: wildwest
+      namedResource:
+      - name: wildwest-secrets
+        namespace: bob
 status: {}

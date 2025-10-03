@@ -1802,19 +1802,20 @@
     for APIServiceExport"])
     is_apiserviceexport_present{"APIServiceExport&lt;br&gt;exists?"}
 
-    get_crd(["Get referenced
-    CustomResourceDefinition"])
-    get_crd2(["Get referenced
-    CustomResourceDefinition"])
-
-    is_crd_present{"CRD&lt;br&gt;exists?"}
-    is_crd_present2{"CRD&lt;br&gt;exists?"}
+    get_bound_schemas(["Get referenced
+    BoundSchemas"])
+    get_bound_schemas2(["Get referenced
+    BoundSchemas"])
+    is_bound_schema_present{"BoundSchema&lt;br&gt;exists?"}
+    update_bound_schema(["Update BoundSchema
+    status"])
 
     stop_apiserviceexport_sync(["Stop APIServiceExport sync"])
 
     get_binding(["Get referenced
     APIServiceBinding"])
-    get_binding2(["Get referenced APIServiceBinding"])
+    get_binding2(["Get referenced
+    APIServiceBinding"])
 
     is_binding_present{"APIServiceBinding&lt;br&gt;exists?"}
     is_binding_present2{"APIServiceBinding&lt;br&gt;exists?"}
@@ -1832,6 +1833,8 @@ to false"])
     set_apiserviceexport_condition_consumerinsync_to_false(["Set condition
     'ConsumerInSync' to false"])
 
+    get_crd(["Get referenced
+    CustomResourceDefinition"])
     copy_crd_conditions(["Copy CRD conditions
     to APIServiceExport
     conditions"])
@@ -1844,15 +1847,16 @@ to false"])
     start --&gt; enqueue_reconcile
     enqueue_reconcile --&gt; is_apiserviceexport_present
     is_apiserviceexport_present --&gt; |no| stop
-    is_apiserviceexport_present --&gt; |yes| get_crd
-    get_crd --&gt; is_crd_present
-    is_crd_present --&gt; |yes| get_binding
-    is_crd_present --&gt; |no| stop_apiserviceexport_sync
-    stop_apiserviceexport_sync --&gt; stop
+    is_apiserviceexport_present --&gt; |yes| get_binding
 
     get_binding --&gt; is_binding_present
-    is_binding_present --&gt; |yes| start_new_syncer
+    is_binding_present --&gt; |yes| get_bound_schemas
     is_binding_present --&gt; |no| stop_apiserviceexport_sync
+    stop_apiserviceexport_sync --&gt; stop
+
+    get_bound_schemas --&gt; is_bound_schema_present
+    is_bound_schema_present --&gt; |yes| start_new_syncer
+    is_bound_schema_present --&gt; |no| stop_apiserviceexport_sync
     stop_apiserviceexport_sync --&gt; stop
 
     start_new_syncer --&gt; get_binding2
@@ -1862,15 +1866,15 @@ to false"])
     set_apiserviceexport_condition_connected_to_false --&gt; set_apiserviceexport_condition_consumerinsync_to_false
     set_apiserviceexport_condition_connected_to_true --&gt; is_binding_schemainsync
     is_binding_schemainsync --&gt; |yes| set_apiserviceexport_condition_consumerinsync_to_true
-    set_apiserviceexport_condition_consumerinsync_to_true --&gt; get_crd2
+    set_apiserviceexport_condition_consumerinsync_to_true --&gt; get_bound_schemas2
     is_binding_schemainsync --&gt; |no| set_apiserviceexport_condition_consumerinsync_to_false
-    set_apiserviceexport_condition_consumerinsync_to_false --&gt; get_crd2
+    set_apiserviceexport_condition_consumerinsync_to_false --&gt; get_bound_schemas2
 
-    get_crd2 --&gt; is_crd_present2
-    is_crd_present2 --&gt; |no| stop
-    is_crd_present2 --&gt; |yes| copy_crd_conditions
+    get_bound_schemas2 --&gt; get_crd
+    get_crd --&gt; copy_crd_conditions
     copy_crd_conditions --&gt; set_summary_condition
-    set_summary_condition --&gt; stop</code></pre>
+    set_summary_condition --&gt; update_bound_schema
+    update_bound_schema --&gt; stop</code></pre>
 
 
 

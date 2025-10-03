@@ -1752,18 +1752,43 @@
     start@{ shape: start }
     stop@{ shape: stop }
 
-    enqueue_reconcile(["Enqueue reconcile call for APIServiceBinding"])
+    enqueue_reconcile(["Enqueue reconcile call
+    for APIServiceBinding"])
 
     is_apiservicebinding_owned{"binding&lt;br&gt;owned?"}
-    set_apiservicebinding_condition_connected_to_true(["Set condition 'Connected' to true"])
-    set_apiservicebinding_condition_connected_to_false(["Set condition 'Connected' to false"])
-    set_apiservicebinding_condition_schemainsync_to_true(["Set condition 'SchemaInSync' to true"])
-    set_apiservicebinding_condition_schemainsync_to_false(["Set condition 'SchemaInSync' to false"])
+    set_apiservicebinding_condition_connected_to_true(["Set condition
+    'Connected'
+    to true"])
+    set_apiservicebinding_condition_connected_to_true2(["Set condition 'Connected'
+    to true"])
 
-    get_apiserviceexport(["Get APIServiceExport"])
-    convert_apiserviceexport_to_crd(["Convert APIServiceExport to CRD"])
+    set_apiservicebinding_condition_connected_to_false(["Set condition 'Connected'
+    to false"])
+    set_apiservicebinding_condition_connected_to_false2(["Set condition 'Connected'
+    to false"])
+
+    set_apiservicebinding_condition_schemainsync_to_true(["Set condition 'SchemaInSync'
+    to true"])
+
+    get_apiserviceexport(["Get provider
+    APIServiceExport"])
     is_apiserviceexport_present{"export&lt;br&gt;exists?"}
-    is_apiserviceexport_valid{"export&lt;br&gt;valid?"}
+
+    get_apiserviceexportrequest(["Get provider
+     APIServiceExportRequest"])
+    is_apiserviceexportrequest_in_failed_state{"Is APIServiceExportRequest&lt;br&gt;in failed state?"}
+
+    get_bound_schemas(["Get provider
+    BoundSchemas referenced in
+    APIServiceExport"])
+    bound_schema_fetch_successful(["Fetching BoundSchemas
+    succeed?"])
+    reference_bound_schema(["Reference BoundSchema
+    in APIServiceBinding
+    status"])
+    convert_boundschema_to_crd(["Convert BoundSchema
+    to CRD"])
+
 
     get_crd(["Get CRD"])
     create_crd(["Create CRD"])
@@ -1780,29 +1805,35 @@
 
     is_apiservicebinding_owned --&gt; |yes| get_apiserviceexport
     get_apiserviceexport --&gt; is_apiserviceexport_present
-    is_apiserviceexport_present --&gt; |yes| set_apiservicebinding_condition_connected_to_true
-    is_apiserviceexport_present --&gt; |no| set_apiservicebinding_condition_connected_to_false
-    set_apiservicebinding_condition_connected_to_true --&gt; convert_apiserviceexport_to_crd
+    is_apiserviceexport_present --&gt; |yes| set_apiservicebinding_condition_connected_to_true2
+    is_apiserviceexport_present --&gt; |no| get_apiserviceexportrequest
+    get_apiserviceexportrequest --&gt; is_apiserviceexportrequest_in_failed_state
+    is_apiserviceexportrequest_in_failed_state --&gt; |yes| set_apiservicebinding_condition_connected_to_false2
+    is_apiserviceexportrequest_in_failed_state --&gt; |no| set_apiservicebinding_condition_connected_to_false2
+
+    set_apiservicebinding_condition_connected_to_false2 --&gt; stop
+    set_apiservicebinding_condition_connected_to_true2 --&gt; get_bound_schemas
+    get_bound_schemas --&gt; bound_schema_fetch_successful
+    bound_schema_fetch_successful --&gt; |yes| reference_bound_schema
+    bound_schema_fetch_successful --&gt; |no| set_apiservicebinding_condition_connected_to_false
+    reference_bound_schema --&gt; convert_boundschema_to_crd
     set_apiservicebinding_condition_connected_to_false --&gt; stop
 
-    convert_apiserviceexport_to_crd --&gt; is_apiserviceexport_valid
-    is_apiserviceexport_valid --&gt; |yes| get_crd
-    is_apiserviceexport_valid --&gt; |no| set_apiservicebinding_condition_schemainsync_to_false
+    convert_boundschema_to_crd --&gt;  get_crd
 
     get_crd --&gt; is_crd_present
     is_crd_present --&gt; |no| create_crd
     is_crd_present --&gt; |yes| is_crd_owned
-    update_crd --&gt; set_apiservicebinding_condition_schemainsync_to_true
-    create_crd --&gt; set_apiservicebinding_condition_schemainsync_to_true
+    create_crd --&gt; update_crd
+
+    update_crd --&gt; set_apiservicebinding_condition_connected_to_true
+    set_apiservicebinding_condition_connected_to_true --&gt; set_apiservicebinding_condition_schemainsync_to_true
 
     is_crd_owned --&gt; |yes| update_crd
-    is_crd_owned --&gt; |no| set_apiservicebinding_condition_schemainsync_to_false
+    is_crd_owned --&gt; |no| set_apiservicebinding_condition_connected_to_false
 
     set_apiservicebinding_condition_schemainsync_to_true --&gt; get_clusterbinding
-    set_apiservicebinding_condition_schemainsync_to_false --&gt; get_clusterbinding
-
     get_clusterbinding --&gt; set_apiservicebinding_provider_name
-
     is_apiservicebinding_owned --&gt; |no| stop
     set_apiservicebinding_provider_name --&gt; stop</code></pre>
 

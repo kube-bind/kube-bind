@@ -29,7 +29,7 @@ kube-bind has 3 go modules, and a unique tag is needed for each module every tim
 
     ```shell
     REF=upstream/main
-    TAG=v0.5.0-rc2
+    TAG=v0.5.1
     git tag --sign --message "$TAG" "$TAG" "$REF"
     ```
 
@@ -37,7 +37,7 @@ kube-bind has 3 go modules, and a unique tag is needed for each module every tim
 
    ```shell
       REF=upstream/main
-      TAG=v0.5.0-rc2
+      TAG=v0.5.1
       git tag --sign --message "sdk/$TAG" "sdk/$TAG" "$REF"
    ```
     
@@ -45,7 +45,7 @@ kube-bind has 3 go modules, and a unique tag is needed for each module every tim
 
     ```shell
     REF=upstream/main
-    TAG=v0.5.0-rc2
+    TAG=v0.5.1
     git tag --sign --message "cli/$TAG" "cli/$TAG" "$REF"
     ```
 
@@ -53,7 +53,7 @@ kube-bind has 3 go modules, and a unique tag is needed for each module every tim
 
    ```shell
    REMOTE=upstream
-   TAG=v0.5.0-rc2
+   TAG=v0.5.1
    git push "$REMOTE" "$TAG" "sdk/$TAG" "cli/$TAG"
    ```
 

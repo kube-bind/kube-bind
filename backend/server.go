@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
-	"os"
 
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
@@ -200,16 +199,6 @@ func (s *Server) Addr() net.Addr {
 
 func (s *Server) Run(ctx context.Context) error {
 	logger := klog.FromContext(ctx)
-
-	if s.Config.Provider != nil {
-		logger.Info("Starting provider")
-		go func() {
-			if err := s.Config.Provider.Start(ctx, s.Config.Manager); err != nil {
-				logger.Error(err, "unable to run provider")
-				os.Exit(1)
-			}
-		}()
-	}
 
 	// start controller-runtime manager after bootstrap completes
 	go func() {

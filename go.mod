@@ -48,7 +48,6 @@ require (
 	github.com/vmihailenco/msgpack/v4 v4.3.12
 	golang.org/x/oauth2 v0.29.0
 	google.golang.org/grpc v1.70.0
-	gopkg.in/headzoo/surf.v1 v1.0.1
 	k8s.io/api v0.33.3
 	k8s.io/apiextensions-apiserver v0.33.0
 	k8s.io/apimachinery v0.33.3

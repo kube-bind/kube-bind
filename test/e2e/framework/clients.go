@@ -28,31 +28,31 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func DynamicClient(t *testing.T, config *rest.Config) dynamic.Interface {
+func DynamicClient(t testing.TB, config *rest.Config) dynamic.Interface {
 	c, err := dynamic.NewForConfig(config)
 	require.NoError(t, err)
 	return c
 }
 
-func KubeClient(t *testing.T, config *rest.Config) kubernetes.Interface {
+func KubeClient(t testing.TB, config *rest.Config) kubernetes.Interface {
 	c, err := kubernetes.NewForConfig(config)
 	require.NoError(t, err)
 	return c
 }
 
-func ApiextensionsClient(t *testing.T, config *rest.Config) apiextensionsclient.Interface {
+func ApiextensionsClient(t testing.TB, config *rest.Config) apiextensionsclient.Interface {
 	c, err := apiextensionsclient.NewForConfig(config)
 	require.NoError(t, err)
 	return c
 }
 
-func DiscoveryClient(t *testing.T, config *rest.Config) discovery.DiscoveryInterface {
+func DiscoveryClient(t testing.TB, config *rest.Config) discovery.DiscoveryInterface {
 	c, err := discovery.NewDiscoveryClientForConfig(config)
 	require.NoError(t, err)
 	return c
 }
 
-func NewRESTConfig(t *testing.T, kubeconfig string) *rest.Config {
+func NewRESTConfig(t testing.TB, kubeconfig string) *rest.Config {
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	require.NoError(t, err, "Failed to build config from kubeconfig file")
 	return config

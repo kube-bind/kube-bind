@@ -35,26 +35,10 @@ import (
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
-func StartBackend(t *testing.T, clientConfig *rest.Config, args ...string) (net.Addr, *backend.Server) {
-	signingKey := securecookie.GenerateRandomKey(32)
-	require.NotEmpty(t, signingKey, "error creating signing key")
-	encryptionKey := securecookie.GenerateRandomKey(32)
-	require.NotEmpty(t, encryptionKey, "error creating encryption key")
-
-	return StartBackendWithoutDefaultArgs(t, clientConfig, append([]string{
-		"--oidc-issuer-url=http://127.0.0.1:5556/dex",
-		"--cookie-signing-key=" + base64.StdEncoding.EncodeToString(signingKey),
-		"--cookie-encryption-key=" + base64.StdEncoding.EncodeToString(encryptionKey),
-	}, args...)...)
-}
-
-func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, args ...string) (net.Addr, *backend.Server) {
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
+func InstallKubebindCRDs(t testing.TB, clientConfig *rest.Config) {
 	crdClient, err := apiextensionsclient.NewForConfig(clientConfig)
 	require.NoError(t, err)
-	err = crd.Create(ctx,
+	err = crd.Create(t.Context(),
 		crdClient.ApiextensionsV1().CustomResourceDefinitions(),
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "clusterbindings"},
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiserviceexports"},
@@ -63,11 +47,29 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "boundschemas"},
 	)
 	require.NoError(t, err)
+}
+
+func StartBackend(t testing.TB, args ...string) (net.Addr, *backend.Server) {
+	signingKey := securecookie.GenerateRandomKey(32)
+	require.NotEmpty(t, signingKey, "error creating signing key")
+	encryptionKey := securecookie.GenerateRandomKey(32)
+	require.NotEmpty(t, encryptionKey, "error creating encryption key")
+
+	return StartBackendWithoutDefaultArgs(t, append([]string{
+		"--oidc-issuer-url=http://127.0.0.1:5556/dex",
+		"--cookie-signing-key=" + base64.StdEncoding.EncodeToString(signingKey),
+		"--cookie-encryption-key=" + base64.StdEncoding.EncodeToString(encryptionKey),
+	}, args...)...)
+}
+
+func StartBackendWithoutDefaultArgs(t testing.TB, args ...string) (net.Addr, *backend.Server) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 
 	fs := pflag.NewFlagSet("backend", pflag.ContinueOnError)
 	opts := options.NewOptions()
 	opts.AddFlags(fs)
-	err = fs.Parse(args)
+	err := fs.Parse(args)
 	require.NoError(t, err)
 
 	// use a random port via an explicit listener. Then add a kube-bind-<port> client to dex
@@ -79,12 +81,16 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	dexId, dexSecret := CreateDexClient(t, addr)
 	opts.OIDC.IssuerClientID = dexId
 	opts.OIDC.IssuerClientSecret = dexSecret
+	opts.OIDC.CallbackURL = "http://" + addr.String() + "/callback"
 
+	// Skip name conflict validation - when run in-process with multiple
+	// controllers they all will register the same metric names, which
+	// causes subsequent controllers to fail.
 	opts.ExtraOptions.TestingSkipNameValidation = true
-	opts.ExtraOptions.SchemaSource = options.CustomResourceDefinitionSource.String()
 
 	completed, err := opts.Complete()
 	require.NoError(t, err)
+	require.NoError(t, completed.Validate())
 
 	config, err := backend.NewConfig(completed)
 	require.NoError(t, err)

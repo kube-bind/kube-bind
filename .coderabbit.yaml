@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+
+# CodeRabbit Configuration Template
+# Complete reference: https://docs.coderabbit.ai/reference/configuration
+# Copy this file to .coderabbit.yaml in your repository root
+
+# =============================================================================
+# GLOBAL SETTINGS
+# These settings apply to your entire CodeRabbit configuration
+# =============================================================================
+
+# Set the language for reviews by using the corresponding ISO language code.
+# Options: de, de-DE, de-AT, de-CH, en, en-US, en-AU, en-GB, en-CA, en-NZ, en-ZA, es, es-AR, fr, fr-CA, fr-CH, fr-BE, nl, nl-BE, pt-AO, pt, pt-BR, pt-MZ, pt-PT, ar, ast-ES, ast, be-BY, be, br-FR, br, ca-ES, ca, ca-ES-valencia, ca-ES-balear, da-DK, da, de-DE-x-simple-language, el-GR, el, eo, fa, ga-IE, ga, gl-ES, gl, it, ja-JP, ja, km-KH, km, ko-KR, ko, pl-PL, pl, ro-RO, ro, ru-RU, ru, sk-SK, sk, sl-SI, sl, sv, ta-IN, ta, tl-PH, tl, tr, uk-UA, uk, zh-CN, zh, crh-UA, crh, cs-CZ, cs, nb, no, nl-NL, de-DE-x-simple-language-DE, es-ES, it-IT, fa-IR, sv-SE, de-LU, fr-FR, bg-BG, bg, he-IL, he, hi-IN, hi, vi-VN, vi, th-TH, th, bn-BD, bn
+# Default: "en-US"
+language: "en-US"
+
+# Set the tone of reviews and chat. Example: 'You must use talk like Mr. T. I pity the fool who doesn't!'
+# Default: ""
+tone_instructions: "be professional and concise, avoid humor, no familiar language"
+early_access: false
+enable_free_tier: true
+
+reviews:
+  profile: "chill"
+
+  # Generate walkthrough in a markdown collapsible section.
+  # Default: false
+  collapse_walkthrough: true
+
+  # Specify file patterns to include or exclude in a review using glob patterns (e.g., !dist/**, src/**). These patterns also apply to 'git sparse-checkout', including specified patterns and ignoring excluded ones (starting with '!') when cloning the repository.
+  # Default: []
+  path_filters: [
+   sdk/client/**,
+   '**.yaml',
+  ]
+
+  # Configuration for auto review
+  # Default: {}
+  auto_review:
+    # List of labels to control which PRs/MRs to review. Labels starting with '!' are negative matches. Examples: ['bug', 'feature'] - reviews PRs with 'bug' OR 'feature' label. ['!wip'] - reviews all PRs except those with 'wip' label. ['bug', '!wip'] - reviews PRs with 'bug' label but not if they have 'wip' label.
+    # Default: []
+    labels: [
+      "ai-code-review",
+    ]

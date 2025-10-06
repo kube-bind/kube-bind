@@ -31,7 +31,7 @@ reviews:
   # Default: []
   path_filters: [
    sdk/client/**,
-   '**.yaml',
+   '**/*.yaml',
   ]
 
   # Configuration for auto review

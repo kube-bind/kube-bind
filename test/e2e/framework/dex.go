@@ -18,6 +18,7 @@ package framework
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"net"
 	"net/http"
@@ -39,6 +40,16 @@ import (
 
 var dexOnce sync.Once
 
+var dexKill = func(t testing.TB, cmd *exec.Cmd) {
+	t.Helper()
+	// Do nothing. Without a suite setup and teardown we cannot
+	// determine when to kill dex and Pdeathsig is only supported on
+	// Linux.
+	// On macOS (and Windows) the process will continue to run.
+	// Which per se isn't a problem for development.
+	cmd.SysProcAttr = &syscall.SysProcAttr{}
+}
+
 func StartDex(t testing.TB) {
 	t.Helper()
 
@@ -56,12 +67,8 @@ func StartDex(t testing.TB) {
 			dexConfig,
 		)
 
-		// Ensures that dex is killed when the process ends.
-		dexCmd.SysProcAttr = &syscall.SysProcAttr{
-			Pdeathsig: syscall.SIGKILL,
-			Setpgid:   true,
-			Pgid:      0,
-		}
+		// Set os-dependend killing
+		dexKill(t, dexCmd)
 
 		require.NoError(t, dexCmd.Start())
 	})
@@ -80,7 +87,7 @@ func StartDex(t testing.TB) {
 	t.Log("Dex is ready")
 }
 
-func CreateDexClient(t testing.TB, addr net.Addr) {
+func CreateDexClient(t testing.TB, addr net.Addr) (string, string) {
 	t.Helper()
 
 	_, port, err := net.SplitHostPort(addr.String())
@@ -90,10 +97,13 @@ func CreateDexClient(t testing.TB, addr net.Addr) {
 	defer conn.Close()
 	client := dexapi.NewDexClient(conn)
 
+	secret := rand.Text()
+	id := "kube-bind-" + port
+
 	_, err = client.CreateClient(t.Context(), &dexapi.CreateClientReq{
 		Client: &dexapi.Client{
-			Id:           "kube-bind-" + port,
-			Secret:       "ZXhhbXBsZS1hcHAtc2VjcmV0",
+			Id:           id,
+			Secret:       secret,
 			RedirectUris: []string{fmt.Sprintf("http://%s/callback", addr)},
 			Public:       true,
 			Name:         "kube-bind on port " + port,
@@ -106,7 +116,9 @@ func CreateDexClient(t testing.TB, addr net.Addr) {
 		defer cancel()
 		conn, err := grpc.NewClient("127.0.0.1:5557", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
 		require.NoError(t, err)
-		_, err = dexapi.NewDexClient(conn).DeleteClient(ctx, &dexapi.DeleteClientReq{Id: "kube-bind-" + port})
+		_, err = dexapi.NewDexClient(conn).DeleteClient(ctx, &dexapi.DeleteClientReq{Id: id})
 		require.NoError(t, err)
 	})
+
+	return id, secret
 }

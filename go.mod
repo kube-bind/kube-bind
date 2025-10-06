@@ -5,7 +5,6 @@ go 1.24.0
 replace (
 	github.com/kube-bind/kube-bind => ./
 	github.com/kube-bind/kube-bind/cli => ./cli
-	github.com/kube-bind/kube-bind/contrib => ./contrib
 	github.com/kube-bind/kube-bind/sdk => ./sdk
 )
 
@@ -20,7 +19,7 @@ require (
 	github.com/kcp-dev/code-generator/v3 v3.0.0-20250707080944-4094fb87e20f
 	github.com/kcp-dev/kcp/pkg/apis v0.11.0
 	github.com/kcp-dev/kcp/sdk v0.28.1
-	github.com/kcp-dev/multicluster-provider v0.1.0
+	github.com/kcp-dev/multicluster-provider v0.2.1-0.20251002133408-9a8d21dc2872
 	github.com/kube-bind/kube-bind/cli v0.0.0-20250515145715-d9f20e7c840d
 	github.com/kube-bind/kube-bind/sdk v0.4.1
 	github.com/martinlindhe/base36 v1.1.1
@@ -30,6 +29,7 @@ require (
 	github.com/vmihailenco/msgpack/v4 v4.3.12
 	golang.org/x/oauth2 v0.29.0
 	google.golang.org/grpc v1.70.0
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.33.3
 	k8s.io/apiextensions-apiserver v0.33.3
 	k8s.io/apimachinery v0.33.3
@@ -150,7 +150,6 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/gengo/v2 v2.0.0-20250207200755-1244d31929d7 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	rsc.io/qr v0.2.0 // indirect

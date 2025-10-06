@@ -77,7 +77,7 @@ CODE_GENERATOR_BIN := code-generator
 CODE_GENERATOR := $(TOOLS_GOBIN_DIR)/$(CODE_GENERATOR_BIN)-$(CODE_GENERATOR_VER)
 export CODE_GENERATOR # so hack scripts can use it
 
-KCP_VER := v0.28.0
+KCP_VER := v0.28.3
 KCP_BIN := kcp
 KCP := $(TOOLS_GOBIN_DIR)/$(KCP_BIN)-$(KCP_VER)
 KCP_CMD ?= $(KCP)
@@ -286,7 +286,7 @@ CONTRIBS_E2E := $(patsubst %,test-e2e-contrib-%,$(CONTRIBS))
 
 .PHONY: test-e2e-contribs $(CONTRIBS_E2E)
 test-e2e-contribs: $(CONTRIBS_E2E) ## Run e2e tests for external integrations
-test-e2e-contrib-kcp: build $(KCP)
+test-e2e-contrib-kcp: $(DEX) $(KCP)
 $(CONTRIBS_E2E):
 	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) ./test/e2e/...
 

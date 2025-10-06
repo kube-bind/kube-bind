@@ -22,6 +22,8 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 func init() {
@@ -34,4 +36,8 @@ func init() {
 	if err := logsv1.ValidateAndApply(logs, nil); err != nil {
 		panic(err)
 	}
+
+	// prevent warnings from controller-runtime about loggers not being
+	// configured
+	log.SetLogger(zap.New(zap.UseDevMode(true)))
 }

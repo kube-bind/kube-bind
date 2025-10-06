@@ -23,9 +23,23 @@ It will do the following:
 
 # How to run
 
+## Preparation
+
 1. Start dex
+
+```bash
+make run-dex
+```
+
 2. Start kcp
-3. Bootstrap kcp:
+
+```bash
+make run-kcp
+```
+
+## Backend
+
+2. Bootstrap kcp:
 ```bash
 cp .kcp/admin.kubeconfig .kcp/backend.kubeconfig
 export KUBECONFIG=.kcp/backend.kubeconfig
@@ -49,18 +63,22 @@ k ws use :root:kube-bind
   --schema-source apiresourceschemas
 ```
 
+This process will keep running, so open a new terminal.
+
+## Provider
 
 5. Copy the kubeconfig to the provider and create provider workspace:
 ```bash
 cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
 export KUBECONFIG=.kcp/provider.kubeconfig
 k ws use :root
-kubectl ws create provider --enter
+kubectl create-workspace provider --enter
 ```
 
 6. Bind the APIExport to the provider workspace
 ```bash
-kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
+kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
+  --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
   --accept-permission-claim clusterroles.rbac.authorization.k8s.io \
   --accept-permission-claim customresourcedefinitions.apiextensions.k8s.io \
   --accept-permission-claim serviceaccounts.core \
@@ -77,7 +95,6 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim
 kubectl create -f contrib/kcp/deploy/examples/apiexport.yaml
 kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
 kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
-# recursive bind
 kubectl kcp bind apiexport root:provider:cowboys-stable
 ```
 
@@ -86,8 +103,10 @@ kubectl kcp bind apiexport root:provider:cowboys-stable
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/1d5vpxvdpy0opbj1 
+# cluster   Ready   https://192.168.2.166:6443/clusters/1d5vpxvdpy0opbj1
 ```
+
+## Consumer
 
 9. Now we gonna initiate consumer:
 ```bash
@@ -104,15 +123,24 @@ kubectl ws create consumer --enter
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind`
-kubectl get secret kubeconfig-hxwlc -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+kubectl get secrets -n kube-bind -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d > remote.kubeconfig
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f contrib/kcp/deploy/examples/apiserviceexport-namespaced.yaml  --skip-konnector --remote-namespace kube-bind-697cb
+namespace=$(yq '.contexts[0].context.namespace' remote.kubeconfig)
 
-export KUBECONFIG=.kcp/consumer.kubeconfig
-go run ./cmd/konnector/ --lease-namespace default
+./bin/kubectl-bind apiservice -v 6 --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace "$namespace"
+```
 
+This will keep running, so switch to a new terminal.
 
-11. (Optional) Add second consumer to test
+### Consumer Konnector
+
+Start konnector:
+
+```bash
+./bin/konnector --lease-namespace default --kubeconfig .kcp/consumer.kubeconfig
+```
+
+Optionally add second consumer to test
 
 ```bash
 cp .kcp/admin.kubeconfig .kcp/consumer2.kubeconfig
@@ -121,27 +149,53 @@ kubectl ws use :root
 kubectl ws create consumer2 --enter
 
 ./bin/kubectl-bind http://127.0.0.1:8080/clusters/2vgrh380y0cq38du/exports --dry-run -o yaml > apiserviceexport2.yaml
-kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote2.kubeconfig
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote2.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
+kubectl get secrets -n kube-bind -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d > remote2.kubeconfig
 
+./bin/kubectl-bind apiservice -v 6 --remote-kubeconfig remote2.kubeconfig -f apiserviceexport2.yaml  --skip-konnector --remote-namespace "$(yq '.contexts[0].context.namespace' remote2.kubeconfig)"
 
-export KUBECONFIG=.kcp/consumer2.kubeconfig
-go run ./cmd/konnector/ --lease-namespace default --server-address :8091
+./bin/konnector --lease-namespace default --kubeconfig .kcp/consumer2.kubeconfig --server-address :8091
 ```
+
+This will keep running, so switch to a new terminal.
+
+## Testing
 
 Create objects:
 ```
+export KUBECONFIG=.kcp/consumer.kubeconfig
 kubectl apply -f contrib/kcp/deploy/examples/cowboy.yaml
+kubectl apply -f contrib/kcp/deploy/examples/sheriff.yaml
 ```
 
 
 ## Debug
 
 ```bash
+
 cp .kcp/admin.kubeconfig .kcp/debug.kubeconfig
 export KUBECONFIG=.kcp/debug.kubeconfig
 k ws use :root:kube-bind
 
-k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" api-resources
-k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*"  get crd
+k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath='{.status.endpoints[0].url}')/clusters/*" api-resources
+
+k -s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath='{.status.endpoints[0].url}')/clusters/*" get crd
+
+namespace=$(yq '.contexts[0].context.namespace' remote.kubeconfig)
+
+# some claimed objects
+
+kubectl create cm provider -n "$namespace-default"
+kubectl label cm provider app=wildwest -n "$namespace-default"
+
+kubectl create cm consumer -n default
+kubectl label cm consumer app=wildwest -n default
+
+kubectl create secret generic provider-secret
+kubectl label secret provider-secret app=wildwest
+
+kubectl create namespace bob
+kubectl create secret generic wildwest-secrets1 -n bob
+kubectl label secret wildwest-secrets1 app=wildwest -n bob
+
+```

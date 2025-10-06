@@ -74,9 +74,9 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io --accept-permission-claim
 
 7. Create CRD in provider:
 ```bash
-kubectl create -f kcp/deploy/examples/apiexport.yaml
-kubectl create -f kcp/deploy/examples/apiresourceschema-cowboys.yaml
-kubectl create -f kcp/deploy/examples/apiresourceschema-sheriffs.yaml
+kubectl create -f contrib/kcp/deploy/examples/apiexport.yaml
+kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
+kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
 # recursive bind
 kubectl kcp bind apiexport root:provider:cowboys-stable
 ```
@@ -86,7 +86,7 @@ kubectl kcp bind apiexport root:provider:cowboys-stable
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/2xh2v3gzjhn4tmve
+# cluster   Ready   https://192.168.2.166:6443/clusters/1d5vpxvdpy0opbj1 
 ```
 
 9. Now we gonna initiate consumer:
@@ -100,13 +100,13 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/2vgrh380y0cq38du/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/1d5vpxvdpy0opbj1/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind`
-kubectl get secret kubeconfig-wvvsb -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
+kubectl get secret kubeconfig-hxwlc -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
 
-./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace kube-bind-m5zx4
+./bin/kubectl-bind apiservice --remote-kubeconfig remote.kubeconfig -f contrib/kcp/deploy/examples/apiserviceexport-namespaced.yaml  --skip-konnector --remote-namespace kube-bind-697cb
 
 export KUBECONFIG=.kcp/consumer.kubeconfig
 go run ./cmd/konnector/ --lease-namespace default
@@ -132,7 +132,7 @@ go run ./cmd/konnector/ --lease-namespace default --server-address :8091
 
 Create objects:
 ```
-kubectl apply -f kcp/deploy/examples/cowboy.yaml
+kubectl apply -f contrib/kcp/deploy/examples/cowboy.yaml
 ```
 
 

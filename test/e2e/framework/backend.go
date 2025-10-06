@@ -38,10 +38,13 @@ import (
 func StartBackend(t *testing.T, clientConfig *rest.Config, args ...string) (net.Addr, *backend.Server) {
 	signingKey := securecookie.GenerateRandomKey(32)
 	require.NotEmpty(t, signingKey, "error creating signing key")
+	encryptionKey := securecookie.GenerateRandomKey(32)
+	require.NotEmpty(t, encryptionKey, "error creating encryption key")
 
 	return StartBackendWithoutDefaultArgs(t, clientConfig, append([]string{
 		"--oidc-issuer-url=http://127.0.0.1:5556/dex",
 		"--cookie-signing-key=" + base64.StdEncoding.EncodeToString(signingKey),
+		"--cookie-encryption-key=" + base64.StdEncoding.EncodeToString(encryptionKey),
 	}, args...)...)
 }
 

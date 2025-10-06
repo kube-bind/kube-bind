@@ -40,6 +40,16 @@ import (
 
 var dexOnce sync.Once
 
+var dexKill = func(t testing.TB, cmd *exec.Cmd) {
+	t.Helper()
+	// Do nothing. Without a suite setup and teardown we cannot
+	// determine when to kill dex and Pdeathsig is only supported on
+	// Linux.
+	// On macOS (and Windows) the process will continue to run.
+	// Which per se isn't a problem for development.
+	cmd.SysProcAttr = &syscall.SysProcAttr{}
+}
+
 func StartDex(t testing.TB) {
 	t.Helper()
 
@@ -57,12 +67,8 @@ func StartDex(t testing.TB) {
 			dexConfig,
 		)
 
-		// Ensures that dex is killed when the process ends.
-		dexCmd.SysProcAttr = &syscall.SysProcAttr{
-			Pdeathsig: syscall.SIGKILL,
-			Setpgid:   true,
-			Pgid:      0,
-		}
+		// Set os-dependend killing
+		dexKill(t, dexCmd)
 
 		require.NoError(t, dexCmd.Start())
 	})

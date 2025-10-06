@@ -40,8 +40,6 @@ func StartBackend(t *testing.T, clientConfig *rest.Config, args ...string) (net.
 	require.NotEmpty(t, signingKey, "error creating signing key")
 
 	return StartBackendWithoutDefaultArgs(t, clientConfig, append([]string{
-		"--oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0",
-		"--oidc-issuer-client-id=kube-bind",
 		"--oidc-issuer-url=http://127.0.0.1:5556/dex",
 		"--cookie-signing-key=" + base64.StdEncoding.EncodeToString(signingKey),
 	}, args...)...)
@@ -74,11 +72,10 @@ func StartBackendWithoutDefaultArgs(t *testing.T, clientConfig *rest.Config, arg
 	opts.Serve.Listener, err = net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
 	addr := opts.Serve.Listener.Addr()
-	_, port, err := net.SplitHostPort(addr.String())
-	require.NoError(t, err)
 
-	opts.OIDC.IssuerClientID = "kube-bind-" + port
-	CreateDexClient(t, addr)
+	dexId, dexSecret := CreateDexClient(t, addr)
+	opts.OIDC.IssuerClientID = dexId
+	opts.OIDC.IssuerClientSecret = dexSecret
 
 	opts.ExtraOptions.TestingSkipNameValidation = true
 	opts.ExtraOptions.SchemaSource = options.CustomResourceDefinitionSource.String()

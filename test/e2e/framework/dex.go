@@ -18,6 +18,7 @@ package framework
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"net"
 	"net/http"
@@ -80,7 +81,7 @@ func StartDex(t testing.TB) {
 	t.Log("Dex is ready")
 }
 
-func CreateDexClient(t testing.TB, addr net.Addr) {
+func CreateDexClient(t testing.TB, addr net.Addr) (string, string) {
 	t.Helper()
 
 	_, port, err := net.SplitHostPort(addr.String())
@@ -90,10 +91,13 @@ func CreateDexClient(t testing.TB, addr net.Addr) {
 	defer conn.Close()
 	client := dexapi.NewDexClient(conn)
 
+	secret := rand.Text()
+	id := "kube-bind-" + port
+
 	_, err = client.CreateClient(t.Context(), &dexapi.CreateClientReq{
 		Client: &dexapi.Client{
-			Id:           "kube-bind-" + port,
-			Secret:       "ZXhhbXBsZS1hcHAtc2VjcmV0",
+			Id:           id,
+			Secret:       secret,
 			RedirectUris: []string{fmt.Sprintf("http://%s/callback", addr)},
 			Public:       true,
 			Name:         "kube-bind on port " + port,
@@ -106,7 +110,9 @@ func CreateDexClient(t testing.TB, addr net.Addr) {
 		defer cancel()
 		conn, err := grpc.NewClient("127.0.0.1:5557", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
 		require.NoError(t, err)
-		_, err = dexapi.NewDexClient(conn).DeleteClient(ctx, &dexapi.DeleteClientReq{Id: "kube-bind-" + port})
+		_, err = dexapi.NewDexClient(conn).DeleteClient(ctx, &dexapi.DeleteClientReq{Id: id})
 		require.NoError(t, err)
 	})
+
+	return id, secret
 }

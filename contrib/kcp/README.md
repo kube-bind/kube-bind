@@ -60,7 +60,8 @@ k ws use :root:kube-bind
   --namespace-prefix="kube-bind-" \
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
   --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
-  --schema-source apiresourceschemas
+  --schema-source apiresourceschemas \
+  --consumer-scope=cluster
 ```
 
 This process will keep running, so open a new terminal.
@@ -197,5 +198,4 @@ kubectl label secret provider-secret app=wildwest
 kubectl create namespace bob
 kubectl create secret generic wildwest-secrets1 -n bob
 kubectl label secret wildwest-secrets1 app=wildwest -n bob
-
 ```

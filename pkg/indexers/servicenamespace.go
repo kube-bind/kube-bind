@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	ServiceNamespaceByNamespace = "ServiceNamespaceByNamespace"
+	ServiceNamespaceByNamespace = "serviceNamespaceByNamespace"
 )
 
 func IndexServiceNamespaceByNamespace(obj any) ([]string, error) {
@@ -31,6 +31,7 @@ func IndexServiceNamespaceByNamespace(obj any) ([]string, error) {
 	if !ok || sn.Status.Namespace == "" {
 		return nil, nil
 	}
+
 	return []string{sn.Status.Namespace}, nil
 }
 

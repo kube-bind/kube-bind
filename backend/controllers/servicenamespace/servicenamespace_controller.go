@@ -230,7 +230,7 @@ func (r *APIServiceNamespaceReconciler) Reconcile(ctx context.Context, req mcrec
 
 	// Fetch the APIServiceNamespace instance
 	apiServiceNamespace := &kubebindv1alpha2.APIServiceNamespace{}
-	if err := client.Get(ctx, req.NamespacedName, apiServiceNamespace); err != nil {
+	if err := cache.Get(ctx, req.NamespacedName, apiServiceNamespace); err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Handle deletion logic here

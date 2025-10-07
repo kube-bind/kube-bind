@@ -28,8 +28,30 @@ import (
 )
 
 const (
-	IdentityAnnotationKey = "example-backend.kube-bind.io/identity"
+	IdentityAnnotationKey       = "backend.kube-bind.io/identity"
+	legacyIdentityAnnotationKey = "example-backend.kube-bind.io/identity"
 )
+
+func handleLegacyAnnotations(ctx context.Context, cl client.Client, namespace *corev1.Namespace, id string) error {
+	if namespace.Annotations == nil {
+		return nil
+	}
+
+	legacyValue, hasLegacy := namespace.Annotations[legacyIdentityAnnotationKey]
+	currentValue, hasCurrent := namespace.Annotations[IdentityAnnotationKey]
+
+	if hasLegacy && (!hasCurrent || currentValue != id) && legacyValue == id {
+		original := namespace.DeepCopy()
+		if namespace.Annotations == nil {
+			namespace.Annotations = map[string]string{}
+		}
+		namespace.Annotations[IdentityAnnotationKey] = id
+		delete(namespace.Annotations, legacyIdentityAnnotationKey)
+		return cl.Patch(ctx, namespace, client.MergeFrom(original))
+	}
+
+	return nil
+}
 
 func CreateNamespace(ctx context.Context, client client.Client, generateName, id string) (*corev1.Namespace, error) {
 	if !strings.HasSuffix(generateName, "-") {
@@ -52,8 +74,13 @@ func CreateNamespace(ctx context.Context, client client.Client, generateName, id
 		if err != nil {
 			return nil, err
 		}
-		if namespace.Annotations[IdentityAnnotationKey] != id {
+
+		if namespace.Annotations[IdentityAnnotationKey] != id && namespace.Annotations[legacyIdentityAnnotationKey] != id {
 			return nil, errors.NewAlreadyExists(corev1.Resource("namespace"), namespace.Name)
+		}
+
+		if err := handleLegacyAnnotations(ctx, client, namespace, id); err != nil {
+			return nil, err
 		}
 	}
 

@@ -44,7 +44,7 @@ type reconciler struct {
 	clusterScopedIsolation kubebindv1alpha2.Isolation
 	schemaSource           string
 
-	getBoundSchema    func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
+	getBoundSchema    func(ctx context.Context, cl client.Client, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
 	createBoundSchema func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error
 
 	getServiceExport           func(ctx context.Context, cache cache.Cache, ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
@@ -53,14 +53,21 @@ type reconciler struct {
 }
 
 func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	// We must ensure schemas are created in form of boundSchemas first for the validation.
+	// Worst case scenario if validation fails, we will reuse schemas for same consumer once issues are fixed.
 	if err := r.ensureBoundSchemas(ctx, cl, cache, req); err != nil {
 		conditions.SetSummary(req)
-		return err
+		return fmt.Errorf("failed to ensure bound schemas: %w", err)
+	}
+
+	if err := r.validate(ctx, cl, req); err != nil {
+		conditions.SetSummary(req)
+		return fmt.Errorf("failed to validate APIServiceExportRequest: %w", err)
 	}
 
 	if err := r.ensureExports(ctx, cl, cache, req); err != nil {
 		conditions.SetSummary(req)
-		return err
+		return fmt.Errorf("failed to ensure exports: %w", err)
 	}
 
 	// TODO(mjudeikis): we could potentially add finallizer to APIServiceExport above or "adopt" boundschemas
@@ -72,104 +79,77 @@ func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cach
 	return nil
 }
 
+// getExportedSchemas will list all schemas, exported by current backend.
+// Important: getExportedSchemas is using client.Client to list resources, not cache.
+// This is due to fact we use dynamic client and unstructured.Unstructured to get schemas and it
+// does not quite work with dynamic cache informers:
+// failed to get informer for *unstructured.UnstructuredList apis.kcp.io/v1alpha1, Kind=APIResourceSchemaList: failed to find newly started informer for apis.kcp.io/v1alpha1, Kind=APIResourceSchema"}.
+func (r *reconciler) getExportedSchemas(ctx context.Context, cl client.Client) (kubebindv1alpha2.ExportedSchemas, error) {
+	parts := strings.SplitN(r.schemaSource, ".", 3)
+	if len(parts) != 3 { // We check this in validation, but just in case.
+		return nil, fmt.Errorf("malformed schema source: %q", r.schemaSource)
+	}
+
+	gvk := schema.GroupVersionKind{
+		Kind:    parts[0],
+		Version: parts[1],
+		Group:   parts[2],
+	}
+
+	// Ensure we have the List kind
+	listGVK := gvk
+	if !strings.HasSuffix(listGVK.Kind, "List") {
+		listGVK.Kind += "List"
+	}
+
+	list := &unstructured.UnstructuredList{}
+	list.SetGroupVersionKind(listGVK)
+
+	// TODO(mjudeikis): This is hardcoded here and in handlers.go for now.
+	labelSelector := labels.Set{
+		resources.ExportedCRDsLabel: "true",
+	}
+
+	listOpts := []client.ListOption{}
+	listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelector.AsSelector()})
+
+	if err := cl.List(ctx, list, listOpts...); err != nil {
+		return nil, err
+	}
+
+	boundSchemas := make(kubebindv1alpha2.ExportedSchemas, len(list.Items))
+	for _, item := range list.Items {
+		boundSchema, err := helpers.UnstructuredToBoundSchema(item)
+		if err != nil {
+			return nil, err
+		}
+		boundSchemas[boundSchema.ResourceGroupName()] = boundSchema
+	}
+
+	return boundSchemas, nil
+}
+
 func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	exportedSchemas, err := r.getExportedSchemas(ctx, cl)
+	if err != nil {
+		return err
+	}
+
 	// Ensure all bound schemas exist
 	for _, res := range req.Spec.Resources {
-		parts := strings.SplitN(r.schemaSource, ".", 3)
-		if len(parts) != 3 { // We check this in validation, but just in case.
-			return fmt.Errorf("malformed schema source: %q", r.schemaSource)
+		if len(res.Versions) == 0 {
+			continue
 		}
 
-		gvk := schema.GroupVersionKind{
-			Kind:    parts[0],
-			Version: parts[1],
-			Group:   parts[2],
-		}
-
-		// Ensure we have the List kind
-		listGVK := gvk
-		if !strings.HasSuffix(listGVK.Kind, "List") {
-			listGVK.Kind += "List"
-		}
-
-		list := &unstructured.UnstructuredList{}
-		list.SetGroupVersionKind(listGVK)
-
-		// TODO(mjudeikis): This is hardcoded here and in handlers.go for now.
-		labelSelector := labels.Set{
-			resources.ExportedCRDsLabel: "true",
-		}
-
-		listOpts := []client.ListOption{}
-		listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelector.AsSelector()})
-
-		if err := cl.List(ctx, list, listOpts...); err != nil {
-			return err
-		}
-
-		for _, item := range list.Items {
-			var schemaFailed bool
-			obj := item.UnstructuredContent()
-			group, ok, err := unstructured.NestedString(obj, "spec", "group")
-			if !ok || err != nil || group == "" {
-				klog.FromContext(ctx).Error(err, "Skipping invalid schema: missing group", "ns", item.GetNamespace(), "name", item.GetName())
-				schemaFailed = true
-			}
-			plural, ok, err := unstructured.NestedString(obj, "spec", "names", "plural")
-			if !ok || err != nil || plural == "" {
-				klog.FromContext(ctx).Error(err, "Skipping invalid schema: missing names.plural", "ns", item.GetNamespace(), "name", item.GetName())
-				schemaFailed = true
-			}
-
-			scope, ok, err := unstructured.NestedString(obj, "spec", "scope")
-			if !ok || err != nil || scope == "" {
-				klog.FromContext(ctx).Error(err, "Skipping invalid schema: missing scope", "ns", item.GetNamespace(), "name", item.GetName())
-				schemaFailed = true
-			}
-
-			if schemaFailed {
-				conditions.MarkFalse(
-					req,
-					kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
-					"APIServiceExportRequestInvalid",
-					conditionsapi.ConditionSeverityError,
-					"APIServiceExportRequest %s is invalid: resource %s/%s has invalid schema",
-					req.Name, group, plural,
-				)
-				req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
-				return fmt.Errorf("resource %s/%s is invalid", group, plural)
-			}
-
-			if group == res.Group && plural == res.Resource {
-				// Important: This checks if the resource are correctly scoped. If consumer is namespaced, we can't allow this.
-				// We terminate early to prevent triggering other controllers.
-				if r.informerScope.String() != scope && r.informerScope != kubebindv1alpha2.ClusterScope {
-					conditions.MarkFalse(
-						req,
-						kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
-						"APIServiceExportRequestInvalid",
-						conditionsapi.ConditionSeverityError,
-						"APIServiceExportRequest %s is invalid: resource %s/%s has scope %q which is incompatible with backend informer scope %q",
-						req.Name, group, plural, scope, r.informerScope,
-					)
-					req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
-					req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha2.APIServiceExportRequestConditionExportsReady)
-					// We can't proceed with this request.
-					return fmt.Errorf("resource %s/%s has scope %q which is incompatible with backend informer scope %q", group, plural, scope, r.informerScope)
-				}
-
-				// https://github.com/kube-bind/kube-bind/issues/297 to fix.
-				boundSchema, err := helpers.UnstructuredToBoundSchema(item)
-				if err != nil {
-					return err
-				}
+		for _, boundSchema := range exportedSchemas {
+			if boundSchema.Spec.Group == res.Group && boundSchema.Spec.Names.Plural == res.Resource {
 				boundSchema.Name = res.ResourceGroupName()
 				boundSchema.Namespace = req.Namespace
 				boundSchema.Spec.InformerScope = r.informerScope
 				boundSchema.ResourceVersion = ""
 
-				obj, err := r.getBoundSchema(ctx, cache, boundSchema.Namespace, boundSchema.Name)
-				if err != nil && !apierrors.IsNotFound(err) {
+				obj, err := r.getBoundSchema(ctx, cl, boundSchema.Namespace, boundSchema.Name)
+				if err != nil && !apierrors.IsNotFound(err) && !strings.Contains(err.Error(), "no matches for kind") {
 					return err
 				}
 
@@ -196,7 +176,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 	if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhasePending {
 		for _, res := range req.Spec.Resources {
 			name := res.ResourceGroupName()
-			boundSchema, err := r.getBoundSchema(ctx, cache, req.Namespace, name)
+			boundSchema, err := r.getBoundSchema(ctx, cl, req.Namespace, name)
 			if err != nil {
 				if apierrors.IsNotFound(err) {
 					conditions.MarkFalse(
@@ -258,6 +238,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 				Versions: res.Versions,
 			})
 		}
+		export.Spec.PermissionClaims = req.Spec.PermissionClaims
 
 		logger.V(1).Info("Creating APIServiceExport", "name", export.Name, "namespace", export.Namespace)
 		if err := r.createServiceExport(ctx, cl, export); err != nil {
@@ -282,4 +263,107 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 	}
 
 	return nil
+}
+
+// Validate validates if the APIServiceExportRequest is in a valid state.
+// Currently it validates if all requested schemas are of the same scope and
+// if claimable apis are allowed and valid.
+//
+// TODO: Move this to validatingAdmissionWebhook as this is not really part of reconciliation.
+// https://github.com/kube-bind/kube-bind/issues/325
+func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	exportedSchemas, err := r.getExportedSchemas(ctx, cl)
+	if err != nil {
+		return err
+	}
+
+	if len(exportedSchemas) == 0 {
+		conditions.MarkFalse(
+			req,
+			kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
+			"SchemaNotFound",
+			conditionsapi.ConditionSeverityError,
+			"Schema not found",
+		)
+		return fmt.Errorf("no exported schemas found")
+	}
+
+	first := apiextensionsv1.ResourceScope("")
+	for _, res := range req.Spec.Resources {
+		boundSchema, ok := exportedSchemas[res.ResourceGroupName()]
+		if !ok {
+			conditions.MarkFalse(
+				req,
+				kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
+				"SchemaNotFound",
+				conditionsapi.ConditionSeverityError,
+				"Schema %s not found",
+				res.ResourceGroupName(),
+			)
+			return fmt.Errorf("schema %s not found", res.ResourceGroupName())
+		}
+		if first == apiextensionsv1.ResourceScope("") {
+			first = boundSchema.Spec.Scope
+			continue
+		}
+		if boundSchema.Spec.Scope != first {
+			conditions.MarkFalse(req,
+				kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
+				"DifferentScopes",
+				conditionsapi.ConditionSeverityError,
+				"Different scopes found: %v",
+				boundSchema.Spec.Scope,
+			)
+			return fmt.Errorf("different scopes found for claimed resources: %v", boundSchema.Name)
+		}
+	}
+
+	// Add validation if claimable apis are valid here
+	for _, claim := range req.Spec.PermissionClaims {
+		if !isClaimableAPI(claim) {
+			conditions.MarkFalse(
+				req,
+				kubebindv1alpha2.APIServiceExportConditionPermissionClaim,
+				"InvalidPermissionClaim",
+				conditionsapi.ConditionSeverityError,
+				"Resource %s is not a valid claimable API",
+				claim.GroupResource.String(),
+			)
+			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
+			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha2.APIServiceExportConditionPermissionClaim)
+			return fmt.Errorf("resource %s is not a valid claimable API", claim.GroupResource.String())
+		}
+	}
+
+	// Add validation for duplicate group/resource combinations
+	seenGroupResources := make(map[string]bool)
+	for _, claim := range req.Spec.PermissionClaims {
+		key := claim.Group + "/" + claim.Resource
+		if seenGroupResources[key] {
+			conditions.MarkFalse(
+				req,
+				kubebindv1alpha2.APIServiceExportConditionPermissionClaim,
+				"DuplicatePermissionClaim",
+				conditionsapi.ConditionSeverityError,
+				"Duplicate permission claim found for group/resource %s",
+				claim.GroupResource.String(),
+			)
+			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
+			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha2.APIServiceExportConditionPermissionClaim)
+			return fmt.Errorf("duplicate permission claim found for group/resource %s", claim.GroupResource.String())
+		}
+		seenGroupResources[key] = true
+	}
+
+	return nil
+}
+
+// isClaimableAPI checks if a permission claim is for a claimable API.
+func isClaimableAPI(claim kubebindv1alpha2.PermissionClaim) bool {
+	for _, api := range kubebindv1alpha2.ClaimableAPIs {
+		if claim.Group == api.GroupVersionResource.Group && claim.Resource == api.Names.Plural {
+			return true
+		}
+	}
+	return false
 }

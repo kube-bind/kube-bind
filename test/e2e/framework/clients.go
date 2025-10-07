@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	bindclientset "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 )
 
 func DynamicClient(t testing.TB, config *rest.Config) dynamic.Interface {
@@ -52,7 +54,13 @@ func DiscoveryClient(t testing.TB, config *rest.Config) discovery.DiscoveryInter
 	return c
 }
 
-func NewRESTConfig(t testing.TB, kubeconfig string) *rest.Config {
+func BindClient(t *testing.T, config *rest.Config) bindclientset.Interface {
+	c, err := bindclientset.NewForConfig(config)
+	require.NoError(t, err)
+	return c
+}
+
+func NewRESTConfig(t *testing.T, kubeconfig string) *rest.Config {
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
 	require.NoError(t, err, "Failed to build config from kubeconfig file")
 	return config

@@ -19,8 +19,9 @@ package serviceexport
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
-	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -35,9 +36,12 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/claimedresources"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/claimedresourcesnamespaces"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/spec"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/status"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/contextstore"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
@@ -53,8 +57,7 @@ type reconciler struct {
 
 	consumerConfig, providerConfig *rest.Config
 
-	lock        sync.Mutex
-	syncContext map[string]syncContext // by CRD name
+	syncStore contextstore.Store // by APIServiceExport name. This includes same ctx for resourc claims and crds.
 
 	getCRD               func(name string) (*apiextensionsv1.CustomResourceDefinition, error)
 	getServiceBinding    func(name string) (*kubebindv1alpha2.APIServiceBinding, error)
@@ -63,15 +66,10 @@ type reconciler struct {
 	updateRemoteBoundSchema func(ctx context.Context, boundSchema *kubebindv1alpha2.BoundSchema) error
 }
 
-type syncContext struct {
-	generation int64
-	cancel     func()
-}
-
-func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebindv1alpha2.APIServiceExport) error {
+func (r *reconciler) reconcile(ctx context.Context, namespace, name string, export *kubebindv1alpha2.APIServiceExport) error {
 	errs := []error{}
 
-	if err := r.ensureControllers(ctx, name, export); err != nil {
+	if err := r.ensureControllers(ctx, namespace, name, export); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -87,22 +85,17 @@ func (r *reconciler) reconcile(ctx context.Context, name string, export *kubebin
 	return utilerrors.NewAggregate(errs)
 }
 
-func (r *reconciler) ensureControllers(ctx context.Context, name string, export *kubebindv1alpha2.APIServiceExport) error {
+func (r *reconciler) ensureControllers(ctx context.Context, namespace, name string, export *kubebindv1alpha2.APIServiceExport) error {
 	logger := klog.FromContext(ctx)
+	exportKey := contextstore.Key(namespace + "." + name) // Key for the export
 
 	if export == nil {
-		// stop dangling syncers on delete
-		r.lock.Lock()
-		defer r.lock.Unlock()
-
 		// Clean up any controllers associated with this export
-		for key, c := range r.syncContext {
-			if strings.HasSuffix(key, "."+name) {
-				logger.V(1).Info("Stopping APIServiceExport sync", "key", key, "reason", "APIServiceExport deleted")
-				c.cancel()
-				delete(r.syncContext, key)
-			}
+		deleted := r.syncStore.BulkDeletePrefixed(exportKey)
+		for _, c := range deleted {
+			logger.V(1).Info("Stopping APIServiceExport sync", "key", c.Key(), "reason", "NoAPIServiceExport")
 		}
+
 		return nil
 	}
 
@@ -113,14 +106,9 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	}
 	if binding == nil {
 		// Stop all controllers for this export
-		r.lock.Lock()
-		defer r.lock.Unlock()
-		for key, c := range r.syncContext {
-			if strings.HasSuffix(key, "."+export.Name) {
-				logger.V(1).Info("Stopping APIServiceExport sync", "key", key, "reason", "NoAPIServiceBinding")
-				c.cancel()
-				delete(r.syncContext, key)
-			}
+		deleted := r.syncStore.BulkDeletePrefixed(exportKey)
+		for _, k := range deleted {
+			logger.V(1).Info("Stopping APIServiceExport sync", "key", k.Key(), "reason", "NoAPIServiceBinding")
 		}
 		return nil
 	}
@@ -128,6 +116,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 	// Process each resource referenced by the export
 	var errs []error
 	processedSchemas := make(map[string]bool)
+	var isClusterScoped bool
 
 	for _, res := range export.Spec.Resources {
 		name := res.ResourceGroupName()
@@ -135,15 +124,12 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 		schema, err := r.getRemoteBoundSchema(ctx, name)
 		if err != nil {
 			if errors.IsNotFound(err) {
-				// Stop the controller for this schema if it exists
-				r.lock.Lock()
-				key := name + "." + export.Name
-				if c, found := r.syncContext[key]; found {
-					logger.V(1).Info("Stopping APIServiceExport resource sync", "key", key, "reason", "BoundSchema not found")
-					c.cancel()
-					delete(r.syncContext, key)
+				// Stop the controller for this schema if it does not exists.
+				key := contextstore.NewKey(namespace, name, name)
+				deleted := r.syncStore.BulkDeletePrefixed(key)
+				for _, k := range deleted {
+					logger.V(1).Info("Stopping APIServiceExport sync", "key", k.Key(), "reason", "BoundSchema not found")
 				}
-				r.lock.Unlock()
 				continue
 			}
 			errs = append(errs, err)
@@ -155,44 +141,48 @@ func (r *reconciler) ensureControllers(ctx context.Context, name string, export 
 			errs = append(errs, err)
 		}
 
-		processedSchemas[name] = true
+		processedSchemas[name] = true // This is only schemas names (suffix)
+		isClusterScoped = schema.Spec.Scope == apiextensionsv1.ClusterScoped || schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope
 	}
 
-	// Stop controllers for schemas that are no longer referenced
-	r.lock.Lock()
-	for key, c := range r.syncContext {
-		parts := strings.Split(key, ".")
-		if len(parts) == 2 && parts[1] == export.Name {
-			schemaName := parts[0]
-			if !processedSchemas[schemaName] {
-				logger.V(1).Info("Stopping APIServiceExport resource sync", "key", key, "reason", "Schema no longer referenced")
-				c.cancel()
-				delete(r.syncContext, key)
-			}
+	// Ensure controller for permission claims
+	if err := r.ensureControllersForPermissionClaims(ctx, export, binding, isClusterScoped); err != nil {
+		errs = append(errs, err)
+	}
+
+	// Stop controllers for schemas that are no longer referenced.
+	// This will be `exportNamespace.exportName.<schemaName>`
+	contexts := r.syncStore.ListPrefixed(exportKey)
+	for _, c := range contexts {
+		schemaName := strings.TrimPrefix(string(c.Key()), string(exportKey)+".") // schemaName will be processed schema names.
+		// Skip permission claim controllers - they are handled separately in ensureControllersForPermissionClaims
+		if strings.HasPrefix(schemaName, "claim.") {
+			continue
+		}
+		if !processedSchemas[schemaName] {
+			logger.V(1).Info("Stopping APIServiceExport resource sync", "key", c.Key(), "reason", "Schema no longer referenced")
+			r.syncStore.Delete(c.Key())
 		}
 	}
-	r.lock.Unlock()
 
 	return utilerrors.NewAggregate(errs)
 }
 
 func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kubebindv1alpha2.APIServiceExport, schema *kubebindv1alpha2.BoundSchema) error {
 	logger := klog.FromContext(ctx)
-	key := schema.Name + "." + export.Name
+	key := contextstore.NewKey(export.Namespace, export.Name, schema.Name)
 
-	r.lock.Lock()
-	c, found := r.syncContext[key]
+	c, found := r.syncStore.Get(key)
 	if found {
-		if c.generation == export.Generation {
-			r.lock.Unlock()
+		if c.Generation == export.Generation {
 			return nil // all as expected
 		}
 
 		logger.V(1).Info("Stopping APIServiceExport resource sync", "key", key, "reason", "GenerationChanged", "generation", schema.Generation)
-		c.cancel()
-		delete(r.syncContext, key)
+		r.syncStore.Delete(key)
 	}
-	r.lock.Unlock()
+
+	// At this point we dont have a controller for this schema.
 
 	// start a new syncer
 	var syncVersion string
@@ -243,6 +233,7 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 			r.providerNamespace,
 			r.providerConfig,
 			r.serviceNamespaceInformer,
+			nil, // no label selector
 		)
 		if err != nil {
 			return err
@@ -250,6 +241,7 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 	}
 
 	specCtrl, err := spec.NewController(
+		export, // pass the export to establish owner references on ServiceNamespace creation
 		gvr,
 		r.providerNamespace,
 		providerNamespaceUID,
@@ -288,24 +280,225 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 	go func() {
 		// to not block the main thread
 		consumerSynced := consumerInf.WaitForCacheSync(ctxWithCancel.Done())
-		logger.V(2).Info("Synced informers", "key", key, "consumer", consumerSynced)
+		logger.V(2).Info("Synced informers", "key", key, "consumer", slices.Collect(maps.Keys(consumerSynced)))
 
 		providerSynced := providerInf.WaitForCacheSync(ctxWithCancel.Done())
-		logger.V(2).Info("Synced informers", "key", key, "provider", providerSynced)
+		logger.V(2).Info("Synced informers", "key", key, "provider", slices.Collect(maps.Keys(providerSynced)))
 
 		go specCtrl.Start(ctxWithCancel, 1)
 		go statusCtrl.Start(ctxWithCancel, 1)
 	}()
 
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	if c, found := r.syncContext[key]; found {
-		c.cancel()
+	r.syncStore.Set(key, contextstore.SyncContext{
+		Generation: export.Generation,
+		Cancel:     cancel,
+	})
+
+	return nil
+}
+
+func (r *reconciler) ensureControllersForPermissionClaims(
+	ctx context.Context,
+	export *kubebindv1alpha2.APIServiceExport,
+	binding *kubebindv1alpha2.APIServiceBinding,
+	isClusterScoped bool, // schema.Spec.Scope == apiextensionsv1.ClusterScoped || schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope
+) error {
+	logger := klog.FromContext(ctx)
+
+	// Track processed claims for cleanup
+	processedClaims := make(map[string]bool)
+	var errs []error
+
+	// Process each permission claim
+	for _, claim := range binding.Status.PermissionClaims {
+		claimGVR, err := kubebindv1alpha2.ResolveClaimableAPI(claim)
+		if err != nil {
+			logger.Info("skipping unsupported claim", "claim", claim, "error", err)
+			continue
+		}
+
+		// Create unique key for this claim controller
+		claimKey := contextstore.NewKey(export.Namespace, export.Name, "claim", claimGVR.String())
+		processedClaims[claimKey.String()] = true
+
+		// Check if controller already exists with correct generation
+		c, found := r.syncStore.Get(claimKey)
+		if found {
+			if c.Generation == binding.Generation {
+				continue // controller is up to date
+			}
+			// Generation changed, stop old controller
+			logger.V(1).Info("Stopping permission claim controller", "key", claimKey, "reason", "GenerationChanged")
+			r.syncStore.Delete(claimKey)
+		}
+
+		// Start new controller for this claim
+		if err := r.ensureControllerForPermissionClaim(ctx, binding, claim, export, claimGVR, isClusterScoped, claimKey); err != nil {
+			errs = append(errs, err)
+		}
 	}
-	r.syncContext[key] = syncContext{
-		generation: schema.Generation,
-		cancel:     cancel,
+
+	// Cleanup controllers for claims that are no longer present
+	claimPrefix := contextstore.NewKey(export.Namespace, export.Name, "claim")
+	contexts := r.syncStore.ListPrefixed(claimPrefix)
+	for _, c := range contexts {
+		if !processedClaims[c.Key().String()] {
+			logger.V(1).Info("Stopping permission claim controller", "key", c.Key(), "reason", "Claim no longer present")
+			r.syncStore.Delete(c.Key())
+		}
 	}
+
+	return utilerrors.NewAggregate(errs)
+}
+
+func (r *reconciler) ensureControllerForPermissionClaim(
+	ctx context.Context,
+	binding *kubebindv1alpha2.APIServiceBinding,
+	claim kubebindv1alpha2.PermissionClaim,
+	export *kubebindv1alpha2.APIServiceExport,
+	claimGVR runtimeschema.GroupVersionResource,
+	isClusterScoped bool,
+	claimKey contextstore.Key,
+) error {
+	logger := klog.FromContext(ctx)
+
+	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
+	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
+
+	// Precompute label selector string if present
+	var selectorStr string
+	if claim.Selector.LabelSelector != nil {
+		selector, err := metav1.LabelSelectorAsSelector(claim.Selector.LabelSelector)
+		if err != nil {
+			return fmt.Errorf("failed to convert label selector: %w", err)
+		}
+		selectorStr = selector.String()
+		logger.V(2).Info("Using label selector for informer", "selector", selectorStr, "resource", claim.Resource)
+	}
+
+	tweakListOptions := func(options *metav1.ListOptions) {
+		if selectorStr != "" {
+			options.LabelSelector = selectorStr
+		}
+	}
+
+	// Create consumer informer factory
+	var defaultConsumerInf dynamicinformer.DynamicSharedInformerFactory
+	if claim.Selector.LabelSelector != nil {
+		defaultConsumerInf = dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30, metav1.NamespaceAll, tweakListOptions)
+	} else {
+		defaultConsumerInf = dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
+	}
+
+	// Now if you reading this and thinking "What is happening here...", this is why this comment exists :)
+	// Provider informers can operate in 2 modes:
+	// 1. Cluster-scoped - in this case we create a single informer factory that watches all namespaces
+	//    for the given GVR.
+	// 2. Namespace-scoped - in this case we create a multi-namespace informer that watches only the
+	//    provider namespace and any service namespaces created for the binding.
+	// But in additon to that, for permission claims, we also need to consider label selectors
+	// If one is present, we need to filter the informers using that selector. So we have 4 possible
+	// combinations:
+	// 1A Cluster-scoped, no label selector - single informer factory watching all namespaces
+	// 1B Cluster-scoped, with label selector - single filtered informer factory watching all namespaces
+	// B1 Namespace-scoped, no label selector - multi-namespace informer watching provider + service namespaces
+	// B2 Namespace-scoped, with label selector - multi-namespace filtered informer watching provider + service namespaces
+	// The code below implements this logic. Follow the letters.
+	var defaultProviderInf multinsinformer.GetterInformer // will hold the default provider informer (A<x> or B<x>)
+	if isClusterScoped {
+		var factory dynamicinformer.DynamicSharedInformerFactory // Placeholder for A<x>.
+		if claim.Selector.LabelSelector != nil {                 // A2
+			factory = dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30, metav1.NamespaceAll, tweakListOptions)
+		} else { // A1
+			factory = dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
+		}
+		factory.ForResource(claimGVR).Lister() // wire the GVR up in the informer factory
+		defaultProviderInf = multinsinformer.GetterInformerWrapper{
+			GVR:      claimGVR,
+			Delegate: factory,
+		}
+	} else {
+		// B<x> case for labels is implemented inside multinsinformer.NewDynamicMultiNamespaceInformer
+		// Logic in there is same as here - if label selector is present, create filtered informer factory
+		var err error
+		defaultProviderInf, err = multinsinformer.NewDynamicMultiNamespaceInformer(
+			claimGVR,
+			r.providerNamespace,
+			r.providerConfig,
+			r.serviceNamespaceInformer,
+			claim.Selector.LabelSelector,
+		)
+
+		if err != nil {
+			logger.Info("aborting", "error", err)
+			return err
+		}
+	}
+
+	serviceNamespaceChannel := make(chan string, 100)
+
+	claimedCtrl, err := claimedresources.NewController(
+		claimGVR,
+		claim,
+		export,
+		r.providerNamespace,
+		r.consumerConfig,
+		r.providerConfig,
+		defaultConsumerInf.ForResource(claimGVR),
+		defaultProviderInf,
+		r.serviceNamespaceInformer,
+		serviceNamespaceChannel,
+	)
+	if err != nil {
+		return err
+	}
+
+	claimedNamespacesCtrl, err := claimedresourcesnamespaces.NewController(
+		claimGVR,
+		claim,
+		export,
+		r.providerNamespace,
+		r.providerConfig,
+		defaultConsumerInf.ForResource(claimGVR),
+		r.serviceNamespaceInformer,
+		serviceNamespaceChannel,
+	)
+	if err != nil {
+		return err
+	}
+
+	logger.Info("creating claim reconciler", "gvr", claimGVR, "key", claimKey)
+
+	ctxWithCancel, cancel := context.WithCancel(ctx)
+	// Start the informers and controllers in a goroutine
+	go func() {
+		defer r.syncStore.Delete(claimKey)
+		defaultConsumerInf.Start(ctxWithCancel.Done())
+
+		// Wait for consumer informers to sync
+		consumerSynced := defaultConsumerInf.WaitForCacheSync(ctxWithCancel.Done())
+		logger.V(2).Info("Synced consumer informers", "consumer", slices.Collect(maps.Keys(consumerSynced)), "key", claimKey)
+
+		// IMPORTANT: WE need to start namespaces controller before the claimed resources controller,
+		// as the later depends on the former to ensure service namespaces are present.
+		// Else provider informers will never sync and the controller will not start.
+		// check: claimedresourcesnamespaces/README.md for more details.
+		go claimedNamespacesCtrl.Start(ctxWithCancel, 1)
+
+		// Start provider informer and wait for sync
+		defaultProviderInf.Start(ctxWithCancel)
+		providerSynced := defaultProviderInf.WaitForCacheSync(ctxWithCancel.Done())
+		logger.V(2).Info("Synced provider informers", "provider", slices.Collect(maps.Keys(providerSynced)), "key", claimKey)
+
+		// Start the claimed resources controller
+		claimedCtrl.Start(ctxWithCancel, 1)
+	}()
+
+	// Store the controller context for tracking
+	r.syncStore.Set(claimKey, contextstore.SyncContext{
+		Generation: binding.Generation,
+		Cancel:     cancel,
+	})
 
 	return nil
 }
@@ -371,11 +564,11 @@ func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context,
 
 		if err := r.updateRemoteBoundSchema(ctx, boundSchema); err != nil {
 			errs = append(errs, err)
-			allValid = false // at least one BoundAPIResourceSchema is not valid
+			allValid = false // at least one BoundSchemas is not valid
 		}
 	}
 
-	// Set APIServiceExport Ready condition based on all BoundAPIResourceSchemas
+	// Set APIServiceExport Ready condition based on all BoundSchemas
 	if allValid {
 		conditions.MarkTrue(
 			export,
@@ -385,9 +578,9 @@ func (r *reconciler) ensureCRDConditionsCopiedToBoundSchema(ctx context.Context,
 		conditions.MarkFalse(
 			export,
 			kubebindv1alpha2.APIServiceExportConditionConnected,
-			"BoundAPIResourceSchemasNotValid",
+			"BoundSchemasNotValid",
 			conditionsapi.ConditionSeverityWarning,
-			"One or more BoundAPIResourceSchemas are not valid",
+			"One or more BoundSchemas are not valid",
 		)
 	}
 

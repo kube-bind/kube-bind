@@ -118,7 +118,7 @@ all: build
 check: verify lint test test-e2e test-e2e-contribs
 .PHONY: check
 
-GOMODS := $(shell find . -name 'go.mod' -exec dirname {} \; | grep -v hack/tools)
+GOMODS := $(shell find . -name 'go.mod' -exec dirname {} \; | grep -v hack/tools | grep -v ./dex)
 
 ldflags:
 	@echo $(LDFLAGS)
@@ -245,8 +245,12 @@ GO_TEST = $(GOTESTSUM) $(GOTESTSUM_ARGS) --
 endif
 
 COUNT ?= 1
-NPROC ?= $$(( $(shell nproc) / 2 ))
-E2E_PARALLELISM ?= $$(( $(NPROC) > 1 ? $(NPROC) : 1))
+# Only set parallelism if user specified E2E_PARALLELISM
+ifdef E2E_PARALLELISM
+E2E_PARALLELISM_FLAG := -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM)
+else
+E2E_PARALLELISM_FLAG :=
+endif
 
 $(DEX):
 	mkdir -p $(TOOLS_DIR)
@@ -280,7 +284,7 @@ test-e2e: $(KCP) $(DEX) build ## Run e2e tests
 	$(MAKE) run-kcp &>.kcp/kcp.log & KCP_PID=$$!; \
 	trap 'kill -TERM $$KCP_PID; rm -rf .kcp' TERM INT EXIT && \
 	echo "Waiting for kcp to be ready (check .kcp/kcp.log)." && while ! KUBECONFIG=.kcp/admin.kubeconfig kubectl get --raw /readyz &>/dev/null; do sleep 1; echo -n "."; done && echo && \
-	KUBECONFIG=$$PWD/.kcp/admin.kubeconfig GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) $(WHAT) $(TEST_ARGS)
+	KUBECONFIG=$$PWD/.kcp/admin.kubeconfig GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) $(E2E_PARALLELISM_FLAG) $(WHAT) $(TEST_ARGS)
 
 CONTRIBS_E2E := $(patsubst %,test-e2e-contrib-%,$(CONTRIBS))
 
@@ -288,7 +292,7 @@ CONTRIBS_E2E := $(patsubst %,test-e2e-contrib-%,$(CONTRIBS))
 test-e2e-contribs: $(CONTRIBS_E2E) ## Run e2e tests for external integrations
 test-e2e-contrib-kcp: $(DEX) $(KCP)
 $(CONTRIBS_E2E):
-	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && $(GO_TEST) -race -count $(COUNT) -p $(E2E_PARALLELISM) -parallel $(E2E_PARALLELISM) ./test/e2e/...
+	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && $(GO_TEST) -race -count $(COUNT) $(E2E_PARALLELISM_FLAG) ./test/e2e/...
 
 .PHONY: test
 ifdef USE_GOTESTSUM

@@ -116,7 +116,7 @@ func (r *reconciler) ensureValidServiceExport(_ context.Context, binding *kubebi
 func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding) error {
 	var errs []error
 
-	export, err := r.getServiceExport(binding.Name)
+	exportOriginal, err := r.getServiceExport(binding.Name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
@@ -130,6 +130,8 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 		)
 		return nil // nothing we can do here
 	}
+
+	export := exportOriginal.DeepCopy()
 
 	// Get all BoundSchema objects referenced by the export
 	schemas, err := r.getSchemasFromExport(ctx, export)
@@ -149,6 +151,10 @@ func (r *reconciler) ensureCRDs(ctx context.Context, binding *kubebindv1alpha2.A
 	// Process each schema
 	for _, schema := range schemas {
 		if err := r.referenceBoundSchema(ctx, binding, schema.Name); err != nil {
+			errs = append(errs, err)
+		}
+
+		if err := r.referencePermissionClaims(ctx, binding, export); err != nil {
 			errs = append(errs, err)
 		}
 
@@ -199,6 +205,11 @@ func (r *reconciler) referenceBoundSchema(ctx context.Context, binding *kubebind
 			},
 		})
 
+	return nil
+}
+
+func (r *reconciler) referencePermissionClaims(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding, export *kubebindv1alpha2.APIServiceExport) error {
+	binding.Status.PermissionClaims = export.Spec.PermissionClaims
 	return nil
 }
 
@@ -283,11 +294,10 @@ func (r *reconciler) ensurePrettyName(ctx context.Context, binding *kubebindv1al
 func (r *reconciler) getSchemasFromExport(ctx context.Context, export *kubebindv1alpha2.APIServiceExport) ([]*kubebindv1alpha2.BoundSchema, error) {
 	schemas := make([]*kubebindv1alpha2.BoundSchema, 0, len(export.Spec.Resources))
 
-	for _, res := range export.Spec.Resources {
-		schema, err := r.getBoundSchema(ctx, res.ResourceGroupName())
+	for _, ref := range export.Spec.Resources {
+		schema, err := r.getBoundSchema(ctx, ref.ResourceGroupName())
 		if err != nil {
-			return nil, fmt.Errorf("failed to get Schema %s: %w",
-				res.ResourceGroupName(), err)
+			return nil, fmt.Errorf("failed to get Schema %s: %w", ref.ResourceGroupName(), err)
 		}
 
 		schemas = append(schemas, schema)

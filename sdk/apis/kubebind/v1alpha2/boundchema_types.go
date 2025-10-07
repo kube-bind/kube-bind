@@ -18,6 +18,7 @@ package v1alpha2
 
 import (
 	"encoding/json"
+	"fmt"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +26,10 @@ import (
 
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
+
+// ExportedSchemas are the schemas exported by the current backend.
+// Keys are "resource.group" for quick resolve (version is not part of the key).
+type ExportedSchemas map[string]*BoundSchema
 
 // BoundSchema
 // +crd
@@ -39,6 +44,13 @@ type BoundSchema struct {
 
 	Spec   BoundSchemaSpec   `json:"spec"`
 	Status BoundSchemaStatus `json:"status,omitempty"`
+}
+
+// ResourceGroupName returns the group name of the resource.
+//
+// Important: If you change this, change one for APIServiceExportRequestResource too.
+func (b *BoundSchema) ResourceGroupName() string {
+	return fmt.Sprintf("%s.%s", b.Spec.Names.Plural, b.Spec.Group)
 }
 
 // InformerScope is the scope of the Api.
@@ -246,12 +258,12 @@ const (
 	BoundSchemaDriftDetected BoundSchemaConditionReason = "DriftDetected"
 )
 
-func (in *BoundSchema) GetConditions() conditionsapi.Conditions {
-	return in.Status.Conditions
+func (b *BoundSchema) GetConditions() conditionsapi.Conditions {
+	return b.Status.Conditions
 }
 
-func (in *BoundSchema) SetConditions(conditions conditionsapi.Conditions) {
-	in.Status.Conditions = conditions
+func (b *BoundSchema) SetConditions(conditions conditionsapi.Conditions) {
+	b.Status.Conditions = conditions
 }
 
 // BoundSchemaStatus defines the observed state of the BoundSchema.

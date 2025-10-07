@@ -35,6 +35,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/committer"
 	"github.com/kube-bind/kube-bind/pkg/indexers"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/contextstore"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
@@ -75,14 +76,16 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
+
+	indexers.AddIfNotPresentOrDie(dynamicServiceNamespaceInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceNamespaceByNamespace: indexers.IndexServiceNamespaceByNamespace,
+	})
+
 	c := &controller{
 		queue: queue,
 
 		serviceExportLister:  serviceExportInformer.Lister(),
 		serviceExportIndexer: serviceExportInformer.Informer().GetIndexer(),
-
-		serviceNamespaceLister:  serviceNamespaceInformer.Lister(),
-		serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
 
 		serviceBindingInformer: serviceBindingInformer,
 		crdInformer:            crdInformer,
@@ -94,7 +97,7 @@ func NewController(
 			consumerConfig:           consumerConfig,
 			providerConfig:           providerConfig,
 
-			syncContext: map[string]syncContext{},
+			syncStore: contextstore.New(),
 
 			getServiceBinding: func(name string) (*kubebindv1alpha2.APIServiceBinding, error) {
 				return serviceBindingInformer.Lister().Get(name)
@@ -118,8 +121,8 @@ func NewController(
 		),
 	}
 
-	indexers.AddIfNotPresentOrDie(serviceNamespaceInformer.Informer().GetIndexer(), cache.Indexers{
-		indexers.ServiceNamespaceByNamespace: indexers.IndexServiceNamespaceByNamespace,
+	indexers.AddIfNotPresentOrDie(serviceExportInformer.Informer().GetIndexer(), cache.Indexers{
+		indexers.ServiceExportByBoundSchema: indexers.IndexServiceExportByBoundSchema,
 	})
 
 	if _, err := serviceExportInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -148,9 +151,6 @@ type controller struct {
 
 	serviceExportLister  bindlisters.APIServiceExportLister
 	serviceExportIndexer cache.Indexer
-
-	serviceNamespaceLister  bindlisters.APIServiceNamespaceLister
-	serviceNamespaceIndexer cache.Indexer
 
 	serviceBindingInformer dynamic.Informer[bindlisters.APIServiceBindingLister]
 	crdInformer            dynamic.Informer[apiextensionslisters.CustomResourceDefinitionLister]
@@ -184,15 +184,28 @@ func (c *controller) enqueueServiceBinding(logger klog.Logger, obj any) {
 }
 
 func (c *controller) enqueueCRD(logger klog.Logger, obj any) {
-	crdKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+	name, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 	if err != nil {
 		runtime.HandleError(err)
 		return
 	}
 
-	key := c.providerNamespace + "/" + crdKey
-	logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "APIServiceExport", "APIServiceExportKey", crdKey)
-	c.queue.Add(key)
+	exports, err := c.serviceExportIndexer.ByIndex(indexers.ServiceExportByBoundSchema, name)
+	if err != nil {
+		runtime.HandleError(err)
+		return
+	}
+
+	for _, obj := range exports {
+		export := obj.(*kubebindv1alpha2.APIServiceExport)
+		key, err := cache.MetaNamespaceKeyFunc(export)
+		if err != nil {
+			runtime.HandleError(err)
+			return
+		}
+		logger.V(2).Info("queueing APIServiceExport", "key", key, "reason", "CustomResourceDefinition", "name", name)
+		c.queue.Add(key)
+	}
 }
 
 // Start starts the controller, which stops when ctx.Done() is closed.
@@ -268,7 +281,7 @@ func (c *controller) processNextWorkItem(ctx context.Context) bool {
 }
 
 func (c *controller) process(ctx context.Context, key string) error {
-	ns, name, err := cache.SplitMetaNamespaceKey(key)
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)
 		return nil // we cannot do anything
@@ -276,19 +289,19 @@ func (c *controller) process(ctx context.Context, key string) error {
 
 	logger := klog.FromContext(ctx)
 
-	obj, err := c.serviceExportLister.APIServiceExports(ns).Get(name)
+	obj, err := c.serviceExportLister.APIServiceExports(namespace).Get(name)
 	if err != nil && !errors.IsNotFound(err) {
 		return err
 	} else if errors.IsNotFound(err) {
 		logger.Error(err, "APIServiceExport disappeared")
-		return c.reconcile(ctx, name, nil)
+		return c.reconcile(ctx, namespace, name, nil)
 	}
 
 	old := obj
 	obj = obj.DeepCopy()
 
 	var errs []error
-	if err := c.reconcile(ctx, name, obj); err != nil {
+	if err := c.reconcile(ctx, namespace, name, obj); err != nil {
 		errs = append(errs, err)
 	}
 

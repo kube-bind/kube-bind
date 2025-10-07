@@ -37,7 +37,7 @@ func IndexServiceExportByCustomResourceDefinition(obj any) ([]string, error) {
 }
 
 // IndexServiceExportByBoundSchema is a controller-runtime compatible indexer function.
-func IndexServiceExportByBoundSchema(obj client.Object) []string {
+func IndexServiceExportByBoundSchemaControllerRuntime(obj client.Object) []string {
 	export, ok := obj.(*v1alpha2.APIServiceExport)
 	if !ok {
 		return nil
@@ -47,6 +47,19 @@ func IndexServiceExportByBoundSchema(obj client.Object) []string {
 	for _, res := range export.Spec.Resources {
 		names = append(names, res.ResourceGroupName())
 	}
-
 	return names
+}
+
+// IndexServiceExportByBoundSchema is a controller-runtime compatible indexer function.
+func IndexServiceExportByBoundSchema(obj any) ([]string, error) {
+	export, ok := obj.(*v1alpha2.APIServiceExport)
+	if !ok {
+		return nil, nil
+	}
+
+	names := make([]string, 0, len(export.Spec.Resources))
+	for _, res := range export.Spec.Resources {
+		names = append(names, res.ResourceGroupName())
+	}
+	return names, nil
 }

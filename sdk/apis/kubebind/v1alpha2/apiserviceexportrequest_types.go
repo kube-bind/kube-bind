@@ -104,6 +104,9 @@ type APIServiceExportRequestSpec struct {
 	// +required
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:XListType=map
+	// +kubebuilder:validation:XListMapKey=resource
+	// +kubebuilder:validation:XListMapKey=group
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="resources are immutable"
 	Resources []APIServiceExportRequestResource `json:"resources"`
 

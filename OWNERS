@@ -1,7 +1,12 @@
 approvers:
 - moadqassem
-- pkbhowmick
 - s-urbaniak
 - sttts
-- lhaendler
 - mjudeikis
+- cnvergence
+- xrstf
+- ntnn
+
+emeritus_approvers:
+- pkbhowmick
+- lhaendler

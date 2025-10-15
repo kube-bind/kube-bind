@@ -1,0 +1,32 @@
+apiVersion: catalog.kube-bind.io/v1alpha1
+kind: Module
+metadata:
+  name: cowboys
+  namespace: default
+spec:
+  resources:
+  - group: wildwest.dev
+    versions: 
+    - v1alpha1
+    resource: cowboys
+  permissionClaims:
+  - group: ""
+    resource: secrets
+    selector:
+      namedResources:
+      - name: cowboy-credentials
+      - name: cowboy-config
+      labelSelector:
+        matchLabels:
+          app: cowboy
+          env: production
+  - group: ""
+    resource: configmaps
+    selector:
+      namedResources:
+      - name: cowboy-settings
+      - name: cowboy-environment
+      labelSelector:
+        matchLabels:
+          app: cowboy
+          component: config

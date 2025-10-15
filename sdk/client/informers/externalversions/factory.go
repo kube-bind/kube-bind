@@ -24,6 +24,7 @@ import (
 	time "time"
 
 	versioned "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
+	catalog "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/catalog"
 	internalinterfaces "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/internalinterfaces"
 	kubebind "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -254,7 +255,12 @@ type SharedInformerFactory interface {
 	// client.
 	InformerFor(obj runtime.Object, newFunc internalinterfaces.NewInformerFunc) cache.SharedIndexInformer
 
+	Catalog() catalog.Interface
 	KubeBind() kubebind.Interface
+}
+
+func (f *sharedInformerFactory) Catalog() catalog.Interface {
+	return catalog.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) KubeBind() kubebind.Interface {

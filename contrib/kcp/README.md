@@ -97,6 +97,10 @@ kubectl create -f contrib/kcp/deploy/examples/apiexport.yaml
 kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
 kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
 kubectl kcp bind apiexport root:provider:cowboys-stable
+# these are UI contract to enable listing in the UI to be nicer.
+kubectl create -f contrib/kcp/deploy/examples/module-cowboys.yaml
+kubectl create -f contrib/kcp/deploy/examples/module-sheriffs.yaml
+kubectl create -f contrib/kcp/deploy/examples/collection-wildwest.yaml
 ```
 
 8. Get LogicalCluster:
@@ -104,7 +108,7 @@ kubectl kcp bind apiexport root:provider:cowboys-stable
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/1d5vpxvdpy0opbj1
+# cluster   Ready   https://192.168.2.166:6443/clusters/1tjr92pohm0gnt3x
 ```
 
 ## Consumer
@@ -120,7 +124,7 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/1d5vpxvdpy0opbj1/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/1tjr92pohm0gnt3x/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind`

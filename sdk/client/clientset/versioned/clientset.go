@@ -22,6 +22,7 @@ import (
 	fmt "fmt"
 	http "net/http"
 
+	catalogv1alpha1 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/catalog/v1alpha1"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha2"
 	discovery "k8s.io/client-go/discovery"
@@ -31,6 +32,7 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
+	CatalogV1alpha1() catalogv1alpha1.CatalogV1alpha1Interface
 	KubeBindV1alpha1() kubebindv1alpha1.KubeBindV1alpha1Interface
 	KubeBindV1alpha2() kubebindv1alpha2.KubeBindV1alpha2Interface
 }
@@ -38,8 +40,14 @@ type Interface interface {
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
+	catalogV1alpha1  *catalogv1alpha1.CatalogV1alpha1Client
 	kubeBindV1alpha1 *kubebindv1alpha1.KubeBindV1alpha1Client
 	kubeBindV1alpha2 *kubebindv1alpha2.KubeBindV1alpha2Client
+}
+
+// CatalogV1alpha1 retrieves the CatalogV1alpha1Client
+func (c *Clientset) CatalogV1alpha1() catalogv1alpha1.CatalogV1alpha1Interface {
+	return c.catalogV1alpha1
 }
 
 // KubeBindV1alpha1 retrieves the KubeBindV1alpha1Client
@@ -96,6 +104,10 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
+	cs.catalogV1alpha1, err = catalogv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	if err != nil {
+		return nil, err
+	}
 	cs.kubeBindV1alpha1, err = kubebindv1alpha1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
@@ -125,6 +137,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
+	cs.catalogV1alpha1 = catalogv1alpha1.New(c)
 	cs.kubeBindV1alpha1 = kubebindv1alpha1.New(c)
 	cs.kubeBindV1alpha2 = kubebindv1alpha2.New(c)
 

@@ -1,0 +1,10 @@
+apiVersion: catalog.kube-bind.io/v1alpha1
+kind: Collection
+metadata:
+  name: wildwest
+  namespace: default
+spec:
+  description: "A collection of Wild West service definitions including Cowboys and Sheriffs for frontier management"
+  modules:
+  - name: cowboys
+  - name: sheriffs

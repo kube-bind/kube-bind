@@ -95,7 +95,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 		{
 			name: "named resource selector should match exact name and namespace",
 			selector: kubebindv1alpha2.Selector{
-				NamedResource: []kubebindv1alpha2.NamedResource{
+				NamedResources: []kubebindv1alpha2.NamedResource{
 					{
 						Name:      "test-obj",
 						Namespace: "test-ns",
@@ -115,7 +115,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 		{
 			name: "named resource selector should match name when namespace is empty",
 			selector: kubebindv1alpha2.Selector{
-				NamedResource: []kubebindv1alpha2.NamedResource{
+				NamedResources: []kubebindv1alpha2.NamedResource{
 					{
 						Name:      "test-obj",
 						Namespace: "",
@@ -135,7 +135,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 		{
 			name: "named resource selector should not match different name",
 			selector: kubebindv1alpha2.Selector{
-				NamedResource: []kubebindv1alpha2.NamedResource{
+				NamedResources: []kubebindv1alpha2.NamedResource{
 					{
 						Name:      "other-obj",
 						Namespace: "test-ns",
@@ -155,7 +155,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 		{
 			name: "named resource selector should not match different namespace",
 			selector: kubebindv1alpha2.Selector{
-				NamedResource: []kubebindv1alpha2.NamedResource{
+				NamedResources: []kubebindv1alpha2.NamedResource{
 					{
 						Name:      "test-obj",
 						Namespace: "other-ns",
@@ -175,7 +175,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 		{
 			name: "named resource selector should match one of multiple resources",
 			selector: kubebindv1alpha2.Selector{
-				NamedResource: []kubebindv1alpha2.NamedResource{
+				NamedResources: []kubebindv1alpha2.NamedResource{
 					{
 						Name:      "other-obj",
 						Namespace: "test-ns",
@@ -223,7 +223,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 						"app": "test",
 					},
 				},
-				NamedResource: []kubebindv1alpha2.NamedResource{
+				NamedResources: []kubebindv1alpha2.NamedResource{
 					{
 						Name:      "test-obj",
 						Namespace: "test-ns",
@@ -251,7 +251,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 						"app": "different",
 					},
 				},
-				NamedResource: []kubebindv1alpha2.NamedResource{
+				NamedResources: []kubebindv1alpha2.NamedResource{
 					{
 						Name:      "test-obj",
 						Namespace: "test-ns",
@@ -279,7 +279,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 						"app": "test",
 					},
 				},
-				NamedResource: []kubebindv1alpha2.NamedResource{
+				NamedResources: []kubebindv1alpha2.NamedResource{
 					{
 						Name:      "other-obj",
 						Namespace: "test-ns",
@@ -307,7 +307,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 						"app": "secrets",
 					},
 				},
-				NamedResource: []kubebindv1alpha2.NamedResource{
+				NamedResources: []kubebindv1alpha2.NamedResource{
 					{
 						Name:      "test-secret",
 						Namespace: "default",

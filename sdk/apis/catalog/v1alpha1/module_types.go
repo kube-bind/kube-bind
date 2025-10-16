@@ -28,10 +28,10 @@ import (
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
+// +kubebuilder:resource:scope=Cluster,categories=kube-bind
 // +kubebuilder:subresource:status
-// +kubebuilder:printcolumn:name="Resources",type="integer",JSONPath=`.spec.resources[*]`
-// +kubebuilder:printcolumn:name="Permission Claims",type="integer",JSONPath=`.spec.permissionClaims[*]`
+// +kubebuilder:printcolumn:name="Resources",type="string",JSONPath=`.spec.resources[*].group`
+// +kubebuilder:printcolumn:name="PermissionClaims",type="string",JSONPath=`.spec.permissionClaims[*].resource`
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
 type Module struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -56,6 +56,11 @@ func (in *Module) SetConditions(conditions conditionsapi.Conditions) {
 
 // ModuleSpec defines the desired state of Module.
 type ModuleSpec struct {
+	// scope defines the scope of the resources in this module.
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=Namespaced;Cluster
+	Scope kubebindv1alpha2.InformerScope `json:"scope,omitempty"`
 	// resources defines the CRDs that are part of this module.
 	//
 	// +required

@@ -2,17 +2,17 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v251015-07ea718.collections.catalog.kube-bind.io
+  name: v251016-4ed96ab.collections.catalog.kube-bind.io
 spec:
   group: catalog.kube-bind.io
   names:
     categories:
-    - kube-bindings
+    - kube-bind
     kind: Collection
     listKind: CollectionList
     plural: collections
     singular: collection
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.description

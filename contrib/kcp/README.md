@@ -93,14 +93,14 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
 
 7. Create CRD in provider:
 ```bash
-kubectl create -f contrib/kcp/deploy/examples/apiexport.yaml
-kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
-kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
+kubectl apply -f contrib/kcp/deploy/examples/apiexport.yaml
+kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
+kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
 kubectl kcp bind apiexport root:provider:cowboys-stable
 # these are UI contract to enable listing in the UI to be nicer.
-kubectl create -f contrib/kcp/deploy/examples/module-cowboys.yaml
-kubectl create -f contrib/kcp/deploy/examples/module-sheriffs.yaml
-kubectl create -f contrib/kcp/deploy/examples/collection-wildwest.yaml
+kubectl apply -f contrib/kcp/deploy/examples/module-cowboys.yaml
+kubectl apply -f contrib/kcp/deploy/examples/module-sheriffs.yaml
+kubectl apply -f contrib/kcp/deploy/examples/collection-wildwest.yaml
 ```
 
 8. Get LogicalCluster:

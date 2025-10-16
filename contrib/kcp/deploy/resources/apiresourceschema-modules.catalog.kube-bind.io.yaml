@@ -2,25 +2,25 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v251015-dfb188c.modules.catalog.kube-bind.io
+  name: v251016-4ed96ab.modules.catalog.kube-bind.io
 spec:
   group: catalog.kube-bind.io
   names:
     categories:
-    - kube-bindings
+    - kube-bind
     kind: Module
     listKind: ModuleList
     plural: modules
     singular: module
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.resources[*]
+    - jsonPath: .spec.resources[*].group
       name: Resources
-      type: integer
-    - jsonPath: .spec.permissionClaims[*]
-      name: Permission Claims
-      type: integer
+      type: string
+    - jsonPath: .spec.permissionClaims[*].resource
+      name: PermissionClaims
+      type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
@@ -181,8 +181,19 @@ spec:
                 type: object
               minItems: 1
               type: array
+            scope:
+              allOf:
+              - enum:
+                - Cluster
+                - Namespaced
+              - enum:
+                - Namespaced
+                - Cluster
+              description: scope defines the scope of the resources in this module.
+              type: string
           required:
           - resources
+          - scope
           type: object
         status:
           description: status contains reconciliation information for the module.

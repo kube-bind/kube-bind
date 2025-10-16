@@ -2,8 +2,8 @@ apiVersion: catalog.kube-bind.io/v1alpha1
 kind: Module
 metadata:
   name: sheriffs
-  namespace: default
 spec:
+  scope: Cluster
   resources:
   - group: wildwest.dev
     versions: 

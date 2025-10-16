@@ -27,7 +27,7 @@ import (
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
+// +kubebuilder:resource:scope=Cluster,categories=kube-bind
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Description",type="string",JSONPath=`.spec.description`
 // +kubebuilder:printcolumn:name="Modules",type="integer",JSONPath=`.spec.modules[*]`

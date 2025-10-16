@@ -2,8 +2,8 @@ apiVersion: catalog.kube-bind.io/v1alpha1
 kind: Module
 metadata:
   name: cowboys
-  namespace: default
 spec:
+  scope: Namespaced
   resources:
   - group: wildwest.dev
     versions: 

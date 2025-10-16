@@ -74,12 +74,12 @@ spec:
       crd: {}
   - group: catalog.kube-bind.io
     name: collections
-    schema: v251015-07ea718.collections.catalog.kube-bind.io
+    schema: v251016-4ed96ab.collections.catalog.kube-bind.io
     storage:
       crd: {}
   - group: catalog.kube-bind.io
     name: modules
-    schema: v251015-dfb188c.modules.catalog.kube-bind.io
+    schema: v251016-4ed96ab.modules.catalog.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io

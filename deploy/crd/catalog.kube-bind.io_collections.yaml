@@ -9,12 +9,12 @@ spec:
   group: catalog.kube-bind.io
   names:
     categories:
-    - kube-bindings
+    - kube-bind
     kind: Collection
     listKind: CollectionList
     plural: collections
     singular: collection
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.description

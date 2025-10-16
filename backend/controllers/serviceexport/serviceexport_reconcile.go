@@ -23,7 +23,6 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
@@ -32,8 +31,7 @@ import (
 )
 
 type reconciler struct {
-	getBoundSchema      func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
-	deleteServiceExport func(ctx context.Context, client client.Client, namespace, name string) error
+	getBoundSchema func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
 }
 
 func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, export *kubebindv1alpha2.APIServiceExport) error {

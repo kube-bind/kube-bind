@@ -22,7 +22,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -74,14 +73,6 @@ func NewAPIServiceExportReconciler(
 					return nil, err
 				}
 				return &schema, nil
-			},
-			deleteServiceExport: func(ctx context.Context, cl client.Client, ns, name string) error {
-				return cl.Delete(ctx, &kubebindv1alpha2.APIServiceExport{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: ns,
-						Name:      name,
-					},
-				})
 			},
 		},
 	}

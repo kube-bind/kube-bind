@@ -39,6 +39,7 @@ import (
 
 	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/backend/options"
+	catalogv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/catalog/v1alpha1"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
@@ -87,6 +88,9 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	}
 	if err := kubebindv1alpha2.AddToScheme(scheme); err != nil {
 		return nil, fmt.Errorf("error adding kubebind scheme: %w", err)
+	}
+	if err := catalogv1alpha1.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("error adding catalog scheme: %w", err)
 	}
 
 	config.Scheme = scheme

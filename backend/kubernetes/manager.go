@@ -33,6 +33,7 @@ import (
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
 	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
+	catalogv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/catalog/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -163,6 +164,38 @@ func (m *Manager) ListCustomResourceDefinitions(ctx context.Context, cluster str
 	}
 
 	return &crds, nil
+}
+
+func (m *Manager) ListCollections(ctx context.Context, cluster string) (*catalogv1alpha1.CollectionList, error) {
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	c := cl.GetClient()
+
+	var collections catalogv1alpha1.CollectionList
+	err = c.List(ctx, &collections)
+	if err != nil {
+		return nil, err
+	}
+
+	return &collections, nil
+}
+
+func (m *Manager) GetModule(ctx context.Context, cluster, name string) (*catalogv1alpha1.Module, error) {
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	c := cl.GetClient()
+
+	var module catalogv1alpha1.Module
+	err = c.Get(ctx, types.NamespacedName{Name: name}, &module)
+	if err != nil {
+		return nil, err
+	}
+
+	return &module, nil
 }
 
 func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk schema.GroupVersionKind, selector labels.Selector) (*unstructured.UnstructuredList, error) {

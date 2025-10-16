@@ -33,19 +33,16 @@ import (
 	"github.com/gorilla/securecookie"
 	"golang.org/x/oauth2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
-	"github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/backend/session"
 	"github.com/kube-bind/kube-bind/backend/template"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
+	catalogv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/catalog/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
-	"github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2/helpers"
 )
 
 var (
@@ -346,12 +343,13 @@ func createSessionState(authCode *AuthCode, token *oauth2.Token) (*session.State
 }
 
 type UISchema struct {
-	Name     string
-	Version  string
-	Group    string
-	Kind     string
-	Scope    string // "Namespaced" or "Cluster"
-	Resource string
+	Scope string // "Namespaced" or "Cluster"
+
+	Name        string
+	Description string
+
+	Resources        []kubebindv1alpha2.APIServiceExportResource
+	PermissionClaims []kubebindv1alpha2.PermissionClaim
 
 	// SessionID
 	SessionID string
@@ -376,44 +374,25 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	exportedSchemas, err := h.getBackendDynamicResource(r.Context(), providerCluster)
+	modules, err := h.listCollectionModules(r.Context(), providerCluster)
 	if err != nil {
 		logger.Error(err, "failed to get dynamic resources")
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 
-	result := make([]UISchema, 0, len(exportedSchemas))
-	for _, item := range exportedSchemas {
+	result := make([]UISchema, 0, len(modules.Items))
+	for _, item := range modules.Items {
 		if !strings.EqualFold(h.scope.String(), string(item.Spec.Scope)) && h.scope != kubebindv1alpha2.ClusterScope {
 			continue
 		}
 
-		if len(item.Spec.Versions) == 0 {
-			logger.Error(fmt.Errorf("no versions found"), "skipping schema", "name", item.Name)
-			continue
-		}
-		// pick first served version
-		ver := ""
-		for _, v := range item.Spec.Versions {
-			if v.Served {
-				ver = v.Name
-				break
-			}
-		}
-		if ver == "" {
-			logger.Error(fmt.Errorf("no served versions found"), "skipping schema", "name", item.Name)
-			continue
-		}
 		result = append(result, UISchema{
-			Name:    item.GetName(),
-			Kind:    item.Spec.Names.Kind,
-			Scope:   string(item.Spec.Scope),
-			Version: ver,
-			Group:   item.Spec.Group,
-			// Important: This MUST be used as UI button class in the url, so tests can 'click it' based on it.
-			Resource:  item.Spec.Names.Plural,
-			SessionID: sessionID,
+			Name:             item.GetName(),
+			Scope:            string(item.Spec.Scope),
+			PermissionClaims: item.Spec.PermissionClaims,
+			Resources:        item.Spec.Resources,
+			SessionID:        sessionID,
 		})
 	}
 
@@ -436,9 +415,7 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	logger := getLogger(r)
-	group := r.URL.Query().Get("group")
-	resource := r.URL.Query().Get("resource")
-	version := r.URL.Query().Get("version")
+	moduleName := r.URL.Query().Get("module")
 	providerCluster := mux.Vars(r)["cluster"]
 
 	prepareNoCache(w)
@@ -466,24 +443,25 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Module consist of many resources and permissionClaims. Read it and translate to
+	module, err := h.kubeManager.GetModule(r.Context(), providerCluster, moduleName)
+	if err != nil {
+		logger.Error(err, "failed to get module")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
 	request := kubebindv1alpha2.APIServiceExportRequestResponse{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
 			Kind:       "APIServiceExportRequest",
 		},
 		ObjectMeta: kubebindv1alpha2.NameObjectMeta{
-			// this is good for one resource. If there are more (in the future),
-			// we need a better name heuristic. Note: it does not have to be unique.
-			// But pretty is better.
-			Name: resource + "." + group,
+			Name: moduleName,
 		},
 		Spec: kubebindv1alpha2.APIServiceExportRequestSpec{
-			Resources: []kubebindv1alpha2.APIServiceExportRequestResource{
-				{
-					GroupResource: kubebindv1alpha2.GroupResource{Group: group, Resource: resource},
-					Versions:      []string{version},
-				},
-			},
+			Resources:        module.Spec.Resources,
+			PermissionClaims: module.Spec.PermissionClaims,
 		},
 	}
 
@@ -543,34 +521,27 @@ func mustRead(f func(name string) ([]byte, error), name string) string {
 	return string(bs)
 }
 
-func (h *handler) getBackendDynamicResource(ctx context.Context, cluster string) (kubebindv1alpha2.ExportedSchemas, error) {
-	labelSelector := labels.Set{
-		resources.ExportedCRDsLabel: "true",
-	}
-
-	parts := strings.SplitN(h.schemaSource, ".", 3)
-	if len(parts) != 3 { // We check this in validation, but just in case.
-		return nil, fmt.Errorf("invalid schema source: %q", h.schemaSource)
-	}
-
-	gvk := schema.GroupVersionKind{
-		Kind:    parts[0],
-		Version: parts[1],
-		Group:   parts[2],
-	}
-	list, err := h.kubeManager.ListDynamicResources(ctx, cluster, gvk, labelSelector.AsSelector())
+// listCollectionModules fetches the list of Collections from the backend cluster.
+// Flow is:
+// 1. List Collection and check what modules we are targeting
+// 2. Get modules from the backend cluster and consutruct shallow-bound schemas (no crd content)
+func (h *handler) listCollectionModules(ctx context.Context, cluster string) (*catalogv1alpha1.ModuleList, error) {
+	collections, err := h.kubeManager.ListCollections(ctx, cluster)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list resources: %w", err)
+
+		return nil, fmt.Errorf("failed to list collections: %w", err)
 	}
 
-	boundSchemas := make(kubebindv1alpha2.ExportedSchemas, len(list.Items))
-	for _, item := range list.Items {
-		boundSchema, err := helpers.UnstructuredToBoundSchema(item)
-		if err != nil {
-			return nil, err
+	modules := &catalogv1alpha1.ModuleList{}
+	for _, collection := range collections.Items {
+		for _, m := range collection.Spec.Modules {
+			module, err := h.kubeManager.GetModule(ctx, cluster, m.Name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get module %q: %w", m.Name, err)
+			}
+			modules.Items = append(modules.Items, *module)
 		}
-		boundSchemas[boundSchema.ResourceGroupName()] = boundSchema
 	}
 
-	return boundSchemas, nil
+	return modules, nil
 }

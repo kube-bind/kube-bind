@@ -19,6 +19,7 @@ limitations under the License.
 package fake
 
 import (
+	catalogv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/catalog/v1alpha1"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +33,7 @@ var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
 
 var localSchemeBuilder = runtime.SchemeBuilder{
+	catalogv1alpha1.AddToScheme,
 	kubebindv1alpha1.AddToScheme,
 	kubebindv1alpha2.AddToScheme,
 }

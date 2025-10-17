@@ -35,7 +35,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/indexers"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/clusterbinding"
-	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/namespacedeletion"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/namespacelifecycle"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/servicebinding"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
@@ -115,8 +115,9 @@ func NewController(
 	if err != nil {
 		return nil, err
 	}
-	namespacedeletionCtrl, err := namespacedeletion.NewController(
+	namespacelifecycleCtrl, err := namespacelifecycle.NewController(
 		providerConfig,
+		consumerConfig,
 		providerNamespace,
 		providerBindInformers.KubeBind().V1alpha2().APIServiceNamespaces(),
 		namespaceInformer,
@@ -167,7 +168,7 @@ func NewController(
 		serviceBindingIndexer: serviceBindingInformer.Informer().GetIndexer(),
 
 		clusterbindingCtrl:         clusterbindingCtrl,
-		namespacedeletionCtrl:      namespacedeletionCtrl,
+		namespacelifecycleCtrl:     namespacelifecycleCtrl,
 		servicebindingCtrl:         servicebindingCtrl,
 		serviceresourcebindingCtrl: serviceexportCtrl,
 	}, nil
@@ -194,7 +195,7 @@ type controller struct {
 	factories []SharedInformerFactory
 
 	clusterbindingCtrl         GenericController
-	namespacedeletionCtrl      GenericController
+	namespacelifecycleCtrl     GenericController
 	servicebindingCtrl         GenericController
 	serviceresourcebindingCtrl GenericController
 }
@@ -248,7 +249,7 @@ func (c *controller) Start(ctx context.Context) {
 	})
 
 	go c.clusterbindingCtrl.Start(ctx, 2)
-	go c.namespacedeletionCtrl.Start(ctx, 2)
+	go c.namespacelifecycleCtrl.Start(ctx, 2)
 	go c.servicebindingCtrl.Start(ctx, 2)
 	go c.serviceresourcebindingCtrl.Start(ctx, 2)
 

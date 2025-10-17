@@ -20,6 +20,8 @@ package fake
 
 import (
 	clientset "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
+	catalogv1alpha1 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/catalog/v1alpha1"
+	fakecatalogv1alpha1 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/catalog/v1alpha1/fake"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha1"
 	fakekubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha1/fake"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned/typed/kubebind/v1alpha2"
@@ -89,6 +91,11 @@ var (
 	_ clientset.Interface = &Clientset{}
 	_ testing.FakeClient  = &Clientset{}
 )
+
+// CatalogV1alpha1 retrieves the CatalogV1alpha1Client
+func (c *Clientset) CatalogV1alpha1() catalogv1alpha1.CatalogV1alpha1Interface {
+	return &fakecatalogv1alpha1.FakeCatalogV1alpha1{Fake: &c.Fake}
+}
 
 // KubeBindV1alpha1 retrieves the KubeBindV1alpha1Client
 func (c *Clientset) KubeBindV1alpha1() kubebindv1alpha1.KubeBindV1alpha1Interface {

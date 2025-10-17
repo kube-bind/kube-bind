@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250929-62fc678.apiserviceexportrequests.kube-bind.io
+  name: v251017-d84f782.apiserviceexportrequests.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -208,6 +208,25 @@ spec:
             spec specifies how an API service from a service provider should be bound in the
             local consumer cluster.
           properties:
+            namespaces:
+              description: |-
+                namespaces specifies the namespaces, we should bootstrap as part of this request.
+                When objects originate from provider side, consumer does not always know the nessesary details.
+                This field allows provider to pre-heat the necessary namespaces on provider side by creating
+                APIServiceNamespace objects attached to the APISericeExport. More namespaces can be created later by the consumer.
+              items:
+                properties:
+                  name:
+                    description: name is the name of the namespace to create on provider
+                      side.
+                    type: string
+                required:
+                - name
+                type: object
+              type: array
+              x-kubernetes-validations:
+              - message: namespaces are immutable
+                rule: self == oldSelf
             parameters:
               description: |-
                 parameters holds service provider specific parameters for this binding
@@ -291,7 +310,7 @@ spec:
                             type: object
                         type: object
                         x-kubernetes-map-type: atomic
-                      namedResource:
+                      namedResources:
                         description: NamedResource is a shorthand for selecting a
                           single resource by name and namespace.
                         items:

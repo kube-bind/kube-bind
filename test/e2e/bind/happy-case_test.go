@@ -155,7 +155,7 @@ spec:
 								Resource: "configmaps",
 							},
 							Selector: kubebindv1alpha2.Selector{
-								NamedResource: []kubebindv1alpha2.NamedResource{
+								NamedResources: []kubebindv1alpha2.NamedResource{
 									{
 										Name:      "named-configmap-only",
 										Namespace: consumerNS,
@@ -174,7 +174,7 @@ spec:
 										"app": "secrets",
 									},
 								},
-								NamedResource: []kubebindv1alpha2.NamedResource{
+								NamedResources: []kubebindv1alpha2.NamedResource{
 									{
 										Name:      "test-secret",
 										Namespace: consumerNS,

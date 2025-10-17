@@ -147,6 +147,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	s.ServiceExport, err = serviceexport.NewAPIServiceExportReconciler(
 		ctx,
 		s.Config.Manager,
+		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		opts,
 	)
 	if err != nil {

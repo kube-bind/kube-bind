@@ -24,6 +24,10 @@ import (
 
 const (
 	SourceSpecHashAnnotationKey = "kube-bind.io/source-spec-hash"
+
+	// Label is used to indicate which side owns the resource. By changing the label value,
+	// ownership can be transferred.
+	ObjectOwnerLabel = "kube-bind.io/owner"
 )
 
 const (

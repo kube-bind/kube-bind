@@ -106,7 +106,7 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 					Rules: permissions,
 				}
 				// Create new ClusterRole
-				if err := client.Create(ctx, role); err != nil {
+				if err := client.Create(ctx, role); !errors.IsAlreadyExists(err) {
 					return fmt.Errorf("failed to create ClusterRole %s: %w", name, err)
 				}
 			} else {

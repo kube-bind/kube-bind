@@ -25,6 +25,6 @@ const (
 	KubeconfigSecretName          = "kubeconfig"
 	ClusterBindingName            = "cluster"
 
-	// TODO(MQ): maybe think of a better label name.
+	// TODO(mjudeikis): maybe think of a better label name.
 	ExportedCRDsLabel = "kube-bind.io/exported"
 )

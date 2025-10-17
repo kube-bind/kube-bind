@@ -37,6 +37,7 @@ import (
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/yaml"
 
+	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	clusterscoped "github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/cluster-scoped"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	providerfixtures "github.com/kube-bind/kube-bind/test/e2e/bind/fixtures/provider"
@@ -148,6 +149,12 @@ spec:
 					var request kubebindv1alpha2.APIServiceExportRequest
 					err := json.Unmarshal(inv.Stdin, &request)
 					require.NoError(t, err)
+					// Pre-seed provider side namespaces for secret management
+					request.Spec.Namespaces = []kubebindv1alpha2.Namespaces{
+						{
+							Name: "consumer-secrets-ns",
+						},
+					}
 					request.Spec.PermissionClaims = []kubebindv1alpha2.PermissionClaim{
 						{
 							GroupResource: kubebindv1alpha2.GroupResource{
@@ -371,6 +378,93 @@ spec:
 					providerNS = namespaces.Items[0].Status.Namespace
 					require.NotEmpty(t, providerNS, "No cluster namespaces found")
 				}
+			},
+		},
+		{
+			name: "verify provider side namespace pre-seeding and RBAC management",
+			step: func(t *testing.T) {
+				if !withPermissionClaims {
+					t.Skip("Skipping provider side namespace test when permission claims are disabled")
+					return
+				}
+
+				t.Logf("Verifying APIServiceNamespace was created from pre-seeded namespace spec")
+				var foundPreSeededNamespace bool
+				require.Eventually(t, func() bool {
+					namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(providerNS).List(ctx, metav1.ListOptions{})
+					if err != nil {
+						return false
+					}
+					for _, ns := range namespaces.Items {
+						if ns.Name == "consumer-secrets-ns" && ns.Status.Namespace != "" {
+							foundPreSeededNamespace = true
+							return true
+						}
+					}
+					return false
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for pre-seeded APIServiceNamespace to be created on provider side")
+				require.True(t, foundPreSeededNamespace, "Pre-seeded namespace 'consumer-secrets-ns' should be created via APIServiceExportRequest.Spec.Namespaces")
+
+				t.Logf("Verifying provider side physical namespace exists for pre-seeded namespace")
+				var actualProviderNamespace string
+				namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(providerNS).List(ctx, metav1.ListOptions{})
+				require.NoError(t, err)
+				for _, ns := range namespaces.Items {
+					if ns.Name == "consumer-secrets-ns" {
+						actualProviderNamespace = ns.Status.Namespace
+						break
+					}
+				}
+				require.NotEmpty(t, actualProviderNamespace, "Pre-seeded namespace should have a physical namespace assigned")
+
+				providerCoreClient := framework.KubeClient(t, providerConfig).CoreV1()
+				_, err = providerCoreClient.Namespaces().Get(ctx, actualProviderNamespace, metav1.GetOptions{})
+				require.NoError(t, err, "Physical provider side namespace should exist")
+
+				if informerScope == kubebindv1alpha2.ClusterScope {
+					t.Logf("Verifying RBAC resources were created for secret management in cluster scope")
+					rbacClient := framework.KubeClient(t, providerConfig).RbacV1()
+
+					clusterRoles, err := rbacClient.ClusterRoles().List(ctx, metav1.ListOptions{})
+					require.NoError(t, err)
+
+					var foundSecretClusterRole bool
+					for _, cr := range clusterRoles.Items {
+						if strings.Contains(cr.Name, "kube-binder-") && strings.Contains(cr.Name, "-export-") {
+							for _, rule := range cr.Rules {
+								for _, resource := range rule.Resources {
+									if resource == "secrets" {
+										foundSecretClusterRole = true
+										require.Contains(t, rule.Verbs, "*", "ClusterRole should have * permissions for secrets")
+										require.Contains(t, rule.APIGroups, "", "ClusterRole should target core API group")
+										break
+									}
+								}
+							}
+						}
+					}
+					require.True(t, foundSecretClusterRole, "ClusterRole for secrets should be created")
+
+					t.Logf("Verifying ClusterRoleBinding was created for pre-seeded namespace secret access")
+					clusterRoleBindings, err := rbacClient.ClusterRoleBindings().List(ctx, metav1.ListOptions{})
+					require.NoError(t, err)
+
+					var foundSecretClusterRoleBinding bool
+					for _, crb := range clusterRoleBindings.Items {
+						if strings.Contains(crb.Name, "kube-binder-") && strings.Contains(crb.Name, "-export-") {
+							for _, subject := range crb.Subjects {
+								if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
+									foundSecretClusterRoleBinding = true
+									require.Equal(t, "ClusterRole", crb.RoleRef.Kind, "Should reference ClusterRole")
+									break
+								}
+							}
+						}
+					}
+					require.True(t, foundSecretClusterRoleBinding, "ClusterRoleBinding for ServiceAccount should be created")
+				}
+
+				t.Logf("Provider side namespace pre-seeding and secret management RBAC verified successfully")
 			},
 		},
 		{

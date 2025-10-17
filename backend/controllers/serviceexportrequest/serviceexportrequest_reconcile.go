@@ -70,6 +70,11 @@ func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cach
 		return fmt.Errorf("failed to ensure exports: %w", err)
 	}
 
+	if err := r.ensureAPIServiceNamespaces(ctx, cl, cache, req); err != nil {
+		conditions.SetSummary(req)
+		return fmt.Errorf("failed to ensure APIServiceNamespaces: %w", err)
+	}
+
 	// TODO(mjudeikis): we could potentially add finallizer to APIServiceExport above or "adopt" boundschemas
 	// with owner references once export is created.
 	// https://github.com/kube-bind/kube-bind/issues/297
@@ -366,4 +371,35 @@ func isClaimableAPI(claim kubebindv1alpha2.PermissionClaim) bool {
 		}
 	}
 	return false
+}
+
+func (r *reconciler) ensureAPIServiceNamespaces(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	logger := klog.FromContext(ctx)
+
+	// TODO(mjudeikis): We have this object above already, pass it down to avoid extra get.
+	export := &kubebindv1alpha2.APIServiceExport{}
+	if err := cl.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.Name}, export); err != nil {
+		return fmt.Errorf("failed to get APIServiceExport %s/%s: %w", req.Namespace, req.Name, err)
+	}
+
+	for _, ns := range req.Spec.Namespaces {
+		apiServiceNamespace := helpers.APIServiceNamespaceFromExport(export, ns.Name)
+		currentAPIServiceNamespace := &kubebindv1alpha2.APIServiceNamespace{}
+		err := cache.Get(ctx, client.ObjectKey{Namespace: apiServiceNamespace.Namespace, Name: apiServiceNamespace.Name}, currentAPIServiceNamespace)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				logger.V(1).Info("Creating APIServiceNamespace", "name", apiServiceNamespace.Name, "namespace", apiServiceNamespace.Namespace)
+				if err := cl.Create(ctx, apiServiceNamespace); err != nil {
+					if apierrors.IsAlreadyExists(err) {
+						continue
+					}
+					return err
+				}
+			} else {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

@@ -72,6 +72,14 @@ type ModuleSpec struct {
 	//
 	// +optional
 	PermissionClaims []kubebindv1alpha2.PermissionClaim `json:"permissionClaims,omitempty"`
+
+	// namespaces specifies the namespaces that should be bootstrapped as part of this module.
+	// When objects originate from provider side, consumer does not always know the necessary details.
+	// This field allows provider to pre-heat the necessary namespaces on provider side by creating
+	// APIServiceNamespace objects attached to the APIServiceExport. More namespaces can be created later by the consumer.
+	//
+	// +optional
+	Namespaces []kubebindv1alpha2.Namespaces `json:"namespaces,omitempty"`
 }
 
 // ModuleStatus stores status information about a Module.

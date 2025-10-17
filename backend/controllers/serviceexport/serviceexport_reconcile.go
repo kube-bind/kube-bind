@@ -31,6 +31,7 @@ import (
 )
 
 type reconciler struct {
+	scope          kubebindv1alpha2.InformerScope
 	getBoundSchema func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
 }
 
@@ -39,6 +40,12 @@ func (r *reconciler) reconcile(ctx context.Context, cache cache.Cache, export *k
 
 	if err := r.ensureSchema(ctx, cache, export); err != nil {
 		errs = append(errs, err)
+	}
+
+	if r.scope == kubebindv1alpha2.ClusterScope {
+		if err := r.ensureClusterPermissions(ctx, cache, export); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
 	return utilerrors.NewAggregate(errs)
@@ -84,5 +91,14 @@ func (r *reconciler) ensureSchema(ctx context.Context, cache cache.Cache, export
 
 	conditions.MarkTrue(export, kubebindv1alpha2.APIServiceExportConditionProviderInSync)
 
+	return nil
+}
+
+// ensureClusterPermissions ensures that the necessary cluster-wide permissions are in place for the exported APIs.
+// This runs only when backend is operating in ClusterScope. In this scenario, there might not yet be a namespace so
+// APIServiceNamespace reconciliation cannot be used.
+func (r *reconciler) ensureClusterPermissions(ctx context.Context, cache cache.Cache, export *kubebindv1alpha2.APIServiceExport) error {
+	// TODO(mjudeikis): implement this for cluster scoped resources.
+	// https://github.com/kube-bind/kube-bind/issues/344
 	return nil
 }

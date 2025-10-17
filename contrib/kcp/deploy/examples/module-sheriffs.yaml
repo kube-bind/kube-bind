@@ -30,3 +30,6 @@ spec:
         matchLabels:
           app: sheriff
           component: enforcement
+  namespaces:
+  - name: sheriff-operations
+  - name: sheriff-intelligence

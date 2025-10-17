@@ -204,6 +204,16 @@
                 {{end}}
               </li>
               {{end}}
+              {{if $schema.Namespaces}}
+              <li class="list-group-item">
+                <strong>Namespaces ({{len $schema.Namespaces}}):</strong>
+                <div class="mt-1">
+                {{range $schema.Namespaces}}
+                <span class="item-tag">{{.Name}}</span>
+                {{end}}
+                </div>
+              </li>
+              {{end}}
             </ul>
             <div class="card-body">
               <a href="{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?s={{$schema.SessionID}}&module={{$schema.Name}}" class="btn bind-btn {{$schema.Name}}">

@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v251016-4ed96ab.modules.catalog.kube-bind.io
+  name: v251017-d84f782.modules.catalog.kube-bind.io
 spec:
   group: catalog.kube-bind.io
   names:
@@ -49,6 +49,22 @@ spec:
         spec:
           description: spec specifies the module.
           properties:
+            namespaces:
+              description: |-
+                namespaces specifies the namespaces that should be bootstrapped as part of this module.
+                When objects originate from provider side, consumer does not always know the necessary details.
+                This field allows provider to pre-heat the necessary namespaces on provider side by creating
+                APIServiceNamespace objects attached to the APIServiceExport. More namespaces can be created later by the consumer.
+              items:
+                properties:
+                  name:
+                    description: name is the name of the namespace to create on provider
+                      side.
+                    type: string
+                required:
+                - name
+                type: object
+              type: array
             permissionClaims:
               description: permissionClaims defines the permission claims required
                 by this module.

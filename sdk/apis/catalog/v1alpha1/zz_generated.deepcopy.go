@@ -226,6 +226,11 @@ func (in *ModuleSpec) DeepCopyInto(out *ModuleSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.Namespaces != nil {
+		in, out := &in.Namespaces, &out.Namespaces
+		*out = make([]v1alpha2.Namespaces, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

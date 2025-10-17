@@ -350,6 +350,7 @@ type UISchema struct {
 
 	Resources        []kubebindv1alpha2.APIServiceExportResource
 	PermissionClaims []kubebindv1alpha2.PermissionClaim
+	Namespaces       []kubebindv1alpha2.Namespaces
 
 	// SessionID
 	SessionID string
@@ -392,6 +393,7 @@ func (h *handler) handleResources(w http.ResponseWriter, r *http.Request) {
 			Scope:            string(item.Spec.Scope),
 			PermissionClaims: item.Spec.PermissionClaims,
 			Resources:        item.Spec.Resources,
+			Namespaces:       item.Spec.Namespaces,
 			SessionID:        sessionID,
 		})
 	}
@@ -462,6 +464,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		Spec: kubebindv1alpha2.APIServiceExportRequestSpec{
 			Resources:        module.Spec.Resources,
 			PermissionClaims: module.Spec.PermissionClaims,
+			Namespaces:       module.Spec.Namespaces,
 		},
 	}
 
@@ -524,11 +527,10 @@ func mustRead(f func(name string) ([]byte, error), name string) string {
 // listCollectionModules fetches the list of Collections from the backend cluster.
 // Flow is:
 // 1. List Collection and check what modules we are targeting
-// 2. Get modules from the backend cluster and consutruct shallow-bound schemas (no crd content)
+// 2. Get modules from the backend cluster and consutruct shallow-bound schemas (no crd content).
 func (h *handler) listCollectionModules(ctx context.Context, cluster string) (*catalogv1alpha1.ModuleList, error) {
 	collections, err := h.kubeManager.ListCollections(ctx, cluster)
 	if err != nil {
-
 		return nil, fmt.Errorf("failed to list collections: %w", err)
 	}
 

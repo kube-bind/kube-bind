@@ -62,6 +62,14 @@ All the actions shown between the clusters are done by the konnector, except: th
 
 To get familiar with setting up the environment, please check out docs at [kube-bind.io](https://docs.kube-bind.io/main/setup).
 
+## API Changes in v0.6.0 release
+
+Addition of `PermissionClaims` to APIServiceExportSpec. It allows service provider to specify what additional resources are needed by the service consumer to effectively use the exported API. In example of a database service, the service consumer might need to create Secrets for database credentials, or ConfigMaps for configuration settings.
+
+Because objects are namespaced on provider and consumer side, to establish correct RBAC `APIServiceNamespace` controller now creates Roles and RoleBindings.
+There is caviate that if backend operates in `ClusterScope` mode, the necessary cluster-wide permissions are created. 
+Importnat: If provider wants to iniciate object, like `ConfigMap` or `Secret`, the provider needs to create `APIServiceNamespace` first, so that the necessary Roles and RoleBindings are created. This will 
+
 ## API Changes in v0.5.0 release
 
 Version v0.5.0 includes significant architectural improvements to the API structure:

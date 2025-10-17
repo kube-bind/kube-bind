@@ -55,6 +55,7 @@ type APIServiceExportReconciler struct {
 func NewAPIServiceExportReconciler(
 	ctx context.Context,
 	mgr mcmanager.Manager,
+	scope kubebindv1alpha2.InformerScope,
 	opts controller.TypedOptions[mcreconcile.Request],
 ) (*APIServiceExportReconciler, error) {
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByBoundSchema,
@@ -66,6 +67,7 @@ func NewAPIServiceExportReconciler(
 		manager: mgr,
 		opts:    opts,
 		reconciler: reconciler{
+			scope: scope,
 			getBoundSchema: func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error) {
 				var schema kubebindv1alpha2.BoundSchema
 				key := types.NamespacedName{Namespace: namespace, Name: name}

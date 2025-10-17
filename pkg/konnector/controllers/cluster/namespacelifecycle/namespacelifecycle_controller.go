@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package namespacedeletion
+package namespacelifecycle
 
 import (
 	"context"
@@ -41,12 +41,13 @@ import (
 )
 
 const (
-	controllerName = "kube-bind-konnector-namespacedeletion"
+	controllerName = "kube-bind-konnector-namespacelifecycle"
 )
 
-// NewController returns a new controller deleting old ServiceNamespaces.
+// NewController returns a new controller lifecycle for ServiceNamespaces and Namespaces.
 func NewController(
-	config *rest.Config,
+	providerConfig *rest.Config,
+	consumerConfig *rest.Config,
 	providerNamespace string,
 	serviceNamespaceInformer bindinformers.APIServiceNamespaceInformer,
 	namespaceInformer dynamic.Informer[corelisters.NamespaceLister],
@@ -55,14 +56,17 @@ func NewController(
 
 	logger := klog.Background().WithValues("controller", controllerName)
 
-	config = rest.CopyConfig(config)
-	config = rest.AddUserAgent(config, controllerName)
+	providerConfig = rest.CopyConfig(providerConfig)
+	providerConfig = rest.AddUserAgent(providerConfig, controllerName)
 
-	bindClient, err := bindclient.NewForConfig(config)
+	consumerConfig = rest.CopyConfig(consumerConfig)
+	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
+
+	bindClient, err := bindclient.NewForConfig(providerConfig)
 	if err != nil {
 		return nil, err
 	}
-	kubeClient, err := kubernetesclient.NewForConfig(config)
+	consumerKubeClient, err := kubernetesclient.NewForConfig(consumerConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -70,8 +74,8 @@ func NewController(
 	c := &controller{
 		queue: queue,
 
-		bindClient: bindClient,
-		kubeClient: kubeClient,
+		providerBindClient: bindClient,
+		consumerKubeClient: consumerKubeClient,
 
 		serviceNamespaceLister:  serviceNamespaceInformer.Lister(),
 		serviceNamespaceIndexer: serviceNamespaceInformer.Informer().GetIndexer(),
@@ -112,8 +116,8 @@ func NewController(
 type controller struct {
 	queue workqueue.TypedRateLimitingInterface[string]
 
-	bindClient bindclient.Interface
-	kubeClient kubernetesclient.Interface
+	providerBindClient bindclient.Interface
+	consumerKubeClient kubernetesclient.Interface
 
 	namespaceInformer dynamic.Informer[corelisters.NamespaceLister]
 
@@ -217,14 +221,87 @@ func (c *controller) process(ctx context.Context, key string) error {
 		return nil // we cannot do anything
 	}
 
-	if _, err := c.getNamespace(name); err != nil && !errors.IsNotFound(err) {
+	current, err := c.getServiceNamespace(snsNamespace, name)
+	if err != nil && !errors.IsNotFound(err) {
 		return err
-	} else if errors.IsNotFound(err) {
-		if err := c.deleteServiceNamespace(ctx, snsNamespace, name); err != nil && !errors.IsNotFound(err) {
-			return err
-		}
-		return nil
 	}
 
+	switch {
+	case errors.IsNotFound(err):
+		return c.handleNamespaceDeletion(ctx, snsNamespace, name)
+	default:
+		return c.handleNamespaceLifecycle(ctx, current)
+	}
+}
+
+// handleNamespaceDeletion ensures that when an APIServiceNamespace is deleted,
+// the corresponding Namespace is also deleted, does not matter who owns it.
+func (c *controller) handleNamespaceDeletion(ctx context.Context, snsNamespace, name string) error {
+	logger := klog.FromContext(ctx).WithValues("APIServiceNamespace", fmt.Sprintf("%s/%s", snsNamespace, name))
+	logger.Info("handling deletion of APIServiceNamespace")
+
+	_, err := c.getNamespace(name)
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	} else if errors.IsNotFound(err) {
+		// Namespace already deleted, lets check who owns
+		return nil
+	}
+	// We should not delete namespaces in this case as we can't be sure who owns it.
+	// This might leave hanging namespaces, but it's safer than deleting something we don't own.
+	logger.Info("not deleting Namespace as we can't be sure who owns it")
 	return nil
+}
+
+func (c *controller) handleNamespaceLifecycle(ctx context.Context, current *kubebindv1alpha2.APIServiceNamespace) error {
+	logger := klog.FromContext(ctx).WithValues("APIServiceNamespace", fmt.Sprintf("%s/%s", current.Namespace, current.Name))
+	logger.Info("handling creation of APIServiceNamespace")
+
+	// At this point we know that the APIServiceNamespace exists, and we need to see who owns it and
+	// act accordingly.
+	// If provider owned, ensure Namespace exists. If consumer owned, and local namespace exists, delete it.
+	consumerOwned := isConsumerOwned(current)
+
+	switch consumerOwned {
+	case true:
+		// Consumer owned, ensure Namespace is deleted if exists
+		_, err := c.getNamespace(current.Name)
+		if errors.IsNotFound(err) {
+			// No local namespace - delete APIServiceNamespace if exists.
+			return c.deleteServiceNamespace(ctx, current.Namespace, current.Name)
+		} else if err != nil {
+			return err
+		}
+	case false:
+		_, err := c.getNamespace(current.Name)
+		if errors.IsNotFound(err) {
+			ns := &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: current.Name,
+					Labels: map[string]string{
+						kubebindv1alpha2.ObjectOwnerLabel: kubebindv1alpha2.OwnerProvider.String(),
+					},
+				},
+			}
+			if _, err := c.consumerKubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
+				return err
+			}
+			logger.Info("created Namespace for APIServiceNamespace")
+			return nil
+		} else if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// isConsumerOwned checks if the APIServiceNamespace is owned by consumer.
+// If the label is missing, it is considered consumer owned.
+func isConsumerOwned(sns *kubebindv1alpha2.APIServiceNamespace) bool {
+	switch sns.Labels[kubebindv1alpha2.ObjectOwnerLabel] {
+	case kubebindv1alpha2.OwnerProvider.String():
+		return false
+	default:
+		return true
+	}
 }

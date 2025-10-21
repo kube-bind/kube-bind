@@ -46,32 +46,33 @@ import (
 
 func TestClusterScoped(t *testing.T) {
 	t.Parallel()
-	testHappyCase(t, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope, false)
-	testHappyCase(t, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope, true)
+	// name & test type defined by letters - cc - cluster-cluster so its easier to identify failures in the logs.
+	testHappyCase(t, "cc", apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope)
 }
 
 func TestNamespacedScoped(t *testing.T) {
 	t.Parallel()
 
-	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope, false)
-	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope, true)
-	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope, false)
-	testHappyCase(t, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope, true)
+	testHappyCase(t, "nn", apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope)
+	testHappyCase(t, "nc", apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope)
 }
 
 func testHappyCase(
 	t *testing.T,
+	name string,
 	resourceScope apiextensionsv1.ResourceScope,
 	informerScope kubebindv1alpha2.InformerScope,
-	withPermissionClaims bool,
 ) {
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
+	// t.Cleanup(cancel) // Commented out to prevent cleanup of kcp assets
+	_ = cancel // Prevent unused variable warning
 
 	framework.StartDex(t)
 
+	suffix := framework.RandomString(4)
+
 	t.Logf("Creating provider workspace")
-	providerConfig, providerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithGenerateName("test-happy-case-provider"))
+	providerConfig, providerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithName("%s-provider-%s", name, suffix))
 
 	t.Logf("Installing kubebind CRDs")
 	framework.InstallKubebindCRDs(t, providerConfig)
@@ -83,7 +84,7 @@ func testHappyCase(
 	providerfixtures.Bootstrap(t, framework.DiscoveryClient(t, providerConfig), framework.DynamicClient(t, providerConfig), nil)
 
 	t.Logf("Creating consumer workspace and starting konnector")
-	consumerConfig, consumerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithGenerateName("test-happy-case-consumer"))
+	consumerConfig, consumerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithName("%s-consumer-%s", name, suffix))
 	framework.StartKonnector(t, consumerConfig, "--kubeconfig="+consumerKubeconfig)
 
 	serviceGVR := schema.GroupVersionResource{Group: "mangodb.com", Version: "v1alpha1", Resource: "mangodbs"}
@@ -144,64 +145,64 @@ spec:
 				inv := <-invocations
 				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
 
-				// If we are in permissions claims mode - add configmaps & secrets
-				if withPermissionClaims {
-					var request kubebindv1alpha2.APIServiceExportRequest
-					err := json.Unmarshal(inv.Stdin, &request)
-					require.NoError(t, err)
-					// Pre-seed provider side namespaces for secret management
-					request.Spec.Namespaces = []kubebindv1alpha2.Namespaces{
-						{
-							Name: "consumer-secrets-ns",
-						},
-					}
-					request.Spec.PermissionClaims = []kubebindv1alpha2.PermissionClaim{
-						{
-							GroupResource: kubebindv1alpha2.GroupResource{
-								Group:    "",
-								Resource: "configmaps",
-							},
-							Selector: kubebindv1alpha2.Selector{
-								NamedResource: []kubebindv1alpha2.NamedResource{
-									{
-										Name:      "named-configmap-only",
-										Namespace: consumerNS,
-									},
-								},
-							},
-						},
-						{
-							GroupResource: kubebindv1alpha2.GroupResource{
-								Group:    "",
-								Resource: "secrets",
-							},
-							Selector: kubebindv1alpha2.Selector{
-								LabelSelector: &metav1.LabelSelector{
-									MatchLabels: map[string]string{
-										"app": "secrets",
-									},
-								},
-								NamedResource: []kubebindv1alpha2.NamedResource{
-									{
-										Name:      "test-secret",
-										Namespace: consumerNS,
-									},
-									{
-										Name:      "named-secret-1",
-										Namespace: consumerNS,
-									},
-									{
-										Name:      "named-secret-2",
-										Namespace: consumerNS,
-									},
-								},
-							},
-						},
-					}
-					payload, err := json.Marshal(request)
-					require.NoError(t, err)
-					inv.Stdin = payload
+				var request kubebindv1alpha2.APIServiceExportRequest
+				err := json.Unmarshal(inv.Stdin, &request)
+				require.NoError(t, err)
+				// Pre-seed provider side namespaces for secret management
+				request.Spec.Namespaces = []kubebindv1alpha2.Namespaces{
+					{
+						Name: "consumer-secrets-ns",
+					},
 				}
+
+				// If we are in permissions claims mode - add configmaps & secrets
+				request.Spec.PermissionClaims = []kubebindv1alpha2.PermissionClaim{
+					{
+						GroupResource: kubebindv1alpha2.GroupResource{
+							Group:    "",
+							Resource: "configmaps",
+						},
+						Selector: kubebindv1alpha2.Selector{
+							NamedResource: []kubebindv1alpha2.NamedResource{
+								{
+									Name:      "named-configmap-only",
+									Namespace: consumerNS,
+								},
+							},
+						},
+					},
+					{
+						GroupResource: kubebindv1alpha2.GroupResource{
+							Group:    "",
+							Resource: "secrets",
+						},
+						Selector: kubebindv1alpha2.Selector{
+							LabelSelector: &metav1.LabelSelector{
+								MatchLabels: map[string]string{
+									"app": "secrets",
+								},
+							},
+							NamedResource: []kubebindv1alpha2.NamedResource{
+								{
+									Name:      "test-secret",
+									Namespace: consumerNS,
+								},
+								{
+									Name:      "named-secret-1",
+									Namespace: consumerNS,
+								},
+								{
+									Name:      "named-secret-2",
+									Namespace: consumerNS,
+								},
+							},
+						},
+					},
+				}
+
+				payload, err := json.Marshal(request)
+				require.NoError(t, err)
+				inv.Stdin = payload
 
 				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
 
@@ -241,20 +242,132 @@ spec:
 
 				// these are used everywhere further down
 				providerNS = instances.Items[0].GetNamespace()
-				if resourceScope == apiextensionsv1.ClusterScoped {
-					clusterNs, _ = clusterscoped.ExtractClusterNs(&instances.Items[0])
-					clusterScopedUpInsName = clusterscoped.Prepend("test", clusterNs)
+				// Cluster namespace represent binding contract namespace, and is stored on every object.
+				clusterNs, _ = clusterscoped.ExtractClusterNs(&instances.Items[0])
+				clusterScopedUpInsName = clusterscoped.Prepend("test", clusterNs)
+			},
+		},
+		// Request included namespace, so we check it first
+		{
+			name: "verify provider side namespace pre-seeding and RBAC management",
+			step: func(t *testing.T) {
+				t.Logf("Verifying APIServiceNamespace was created from pre-seeded namespace spec")
+				var foundPreSeededNamespace bool
+				var actualProviderNamespace string
+				require.Eventually(t, func() bool {
+					// If are operating namespaced resources - namespace will be set, if cluster - we need to use
+					// extraced one from the cluster-scoped object.
+					namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(clusterNs).List(ctx, metav1.ListOptions{})
+					if err != nil {
+						return false
+					}
+
+					for _, ns := range namespaces.Items {
+						if ns.Name == "consumer-secrets-ns" && ns.Status.Namespace != "" {
+							actualProviderNamespace = ns.Status.Namespace
+							foundPreSeededNamespace = true
+							return true
+						}
+					}
+					return false
+				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for pre-seeded APIServiceNamespace to be created on provider side")
+				require.True(t, foundPreSeededNamespace, "Pre-seeded namespace 'consumer-secrets-ns' should be created via APIServiceExportRequest.Spec.Namespaces")
+
+				providerCoreClient := framework.KubeClient(t, providerConfig).CoreV1()
+				_, err := providerCoreClient.Namespaces().Get(ctx, actualProviderNamespace, metav1.GetOptions{})
+				require.NoError(t, err, "Physical provider side namespace should exist")
+
+				switch informerScope {
+				case kubebindv1alpha2.ClusterScope:
+					t.Logf("Verifying RBAC resources were created for secret management in cluster scope")
+					rbacClient := framework.KubeClient(t, providerConfig).RbacV1()
+
+					clusterRoles, err := rbacClient.ClusterRoles().List(ctx, metav1.ListOptions{})
+					require.NoError(t, err)
+
+					var foundSecretClusterRole bool
+					for _, cr := range clusterRoles.Items {
+						if strings.Contains(cr.Name, "kube-binder-") && strings.Contains(cr.Name, "-export-") {
+							for _, rule := range cr.Rules {
+								for _, resource := range rule.Resources {
+									if resource == "secrets" {
+										foundSecretClusterRole = true
+										require.Contains(t, rule.Verbs, "*", "ClusterRole should have * permissions for secrets")
+										require.Contains(t, rule.APIGroups, "", "ClusterRole should target core API group")
+										break
+									}
+								}
+							}
+						}
+					}
+					require.True(t, foundSecretClusterRole, "ClusterRole for secrets should be created")
+
+					t.Logf("Verifying ClusterRoleBinding was created for pre-seeded namespace secret access")
+					clusterRoleBindings, err := rbacClient.ClusterRoleBindings().List(ctx, metav1.ListOptions{})
+					require.NoError(t, err)
+
+					var foundSecretClusterRoleBinding bool
+					for _, crb := range clusterRoleBindings.Items {
+						if strings.Contains(crb.Name, "kube-binder-export") {
+							for _, subject := range crb.Subjects {
+								if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
+									foundSecretClusterRoleBinding = true
+									require.Equal(t, "ClusterRole", crb.RoleRef.Kind, "Should reference ClusterRole")
+									break
+								}
+							}
+						}
+					}
+					require.True(t, foundSecretClusterRoleBinding, "ClusterRoleBinding for ServiceAccount should be created")
+				case kubebindv1alpha2.NamespacedScope:
+					t.Logf("Verifying RBAC resources were created for secret management in namespace scope")
+					rbacClient := framework.KubeClient(t, providerConfig).RbacV1()
+
+					roles, err := rbacClient.Roles(providerNS).List(ctx, metav1.ListOptions{})
+					require.NoError(t, err)
+
+					var foundSecretRole bool
+					for _, cr := range roles.Items {
+						if strings.Contains(cr.Name, "kube-binder-export") {
+							for _, rule := range cr.Rules {
+								for _, resource := range rule.Resources {
+									if resource == "secrets" {
+										foundSecretRole = true
+										require.Contains(t, rule.Verbs, "*", "Role should have * permissions for secrets")
+										require.Contains(t, rule.APIGroups, "", "Role should target core API group")
+										break
+									}
+								}
+							}
+						}
+					}
+					require.True(t, foundSecretRole, "Role for secrets should be created")
+
+					t.Logf("Verifying RoleBinding was created for pre-seeded namespace secret access")
+					roleBindings, err := rbacClient.RoleBindings(providerNS).List(ctx, metav1.ListOptions{})
+					require.NoError(t, err)
+
+					var foundSecretRoleBinding bool
+					for _, crb := range roleBindings.Items {
+						if strings.Contains(crb.Name, "kube-binder-") && strings.Contains(crb.Name, "-export-") {
+							for _, subject := range crb.Subjects {
+								if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
+									foundSecretRoleBinding = true
+									require.Equal(t, "Role", crb.RoleRef.Kind, "Should reference Role")
+									break
+								}
+							}
+						}
+					}
+					require.True(t, foundSecretRoleBinding, "RoleBinding for ServiceAccount should be created")
 				}
+
+				t.Logf("Provider side namespace pre-seeding and secret management RBAC verified successfully")
 			},
 		},
 		{
 			name: "create secrets and configmaps if permission claims enabled",
 			step: func(t *testing.T) {
-				if !withPermissionClaims {
-					t.Skip("Skipping permission claims test when permission claims are disabled")
-					return
-				}
-
 				t.Logf("Creating named-only configmap on consumer side")
 				namedConfigMapData := map[string]string{
 					"named-config.yaml": "named: value",
@@ -356,125 +469,36 @@ spec:
 			step: func(t *testing.T) {
 				// We need to establish namespace only in cluster scope for cluster scoped resources.
 				// Else we can trust sync object namespace as it will be the same.
-				if withPermissionClaims &&
-					informerScope == kubebindv1alpha2.ClusterScope &&
+				if informerScope == kubebindv1alpha2.ClusterScope &&
 					resourceScope == apiextensionsv1.ClusterScoped {
 					if providerNS == "unknown" {
 						t.Fatal("providerNS is not set. Programming error in the test.")
 					}
 
-					var namespaces *kubebindv1alpha2.APIServiceNamespaceList
-					t.Logf("Waiting for APIServiceNamespace to be created on provider side")
+					t.Logf("Waiting for APIServiceNamespace to be created on provider side: %s", clusterNs)
 					require.Eventually(t, func() bool {
 						var err error
-						namespaces, err = providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(providerNS).List(ctx, metav1.ListOptions{})
+						namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(clusterNs).List(ctx, metav1.ListOptions{})
 						if err != nil {
 							return false
 						}
 
-						return len(namespaces.Items) == 1 && namespaces.Items[0].Status.Namespace != ""
-					}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for APIServiceNamespace to be created on provider side")
+						for _, namespace := range namespaces.Items {
+							if strings.Contains(namespace.Name, consumerNS) && namespace.Status.Namespace != "" {
+								providerNS = namespace.Status.Namespace
+								return true
+							}
+						}
 
-					providerNS = namespaces.Items[0].Status.Namespace
+						return false
+					}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for APIServiceNamespace to be created on provider side")
 					require.NotEmpty(t, providerNS, "No cluster namespaces found")
 				}
 			},
 		},
 		{
-			name: "verify provider side namespace pre-seeding and RBAC management",
-			step: func(t *testing.T) {
-				if !withPermissionClaims {
-					t.Skip("Skipping provider side namespace test when permission claims are disabled")
-					return
-				}
-
-				t.Logf("Verifying APIServiceNamespace was created from pre-seeded namespace spec")
-				var foundPreSeededNamespace bool
-				require.Eventually(t, func() bool {
-					namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(providerNS).List(ctx, metav1.ListOptions{})
-					if err != nil {
-						return false
-					}
-					for _, ns := range namespaces.Items {
-						if ns.Name == "consumer-secrets-ns" && ns.Status.Namespace != "" {
-							foundPreSeededNamespace = true
-							return true
-						}
-					}
-					return false
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for pre-seeded APIServiceNamespace to be created on provider side")
-				require.True(t, foundPreSeededNamespace, "Pre-seeded namespace 'consumer-secrets-ns' should be created via APIServiceExportRequest.Spec.Namespaces")
-
-				t.Logf("Verifying provider side physical namespace exists for pre-seeded namespace")
-				var actualProviderNamespace string
-				namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(providerNS).List(ctx, metav1.ListOptions{})
-				require.NoError(t, err)
-				for _, ns := range namespaces.Items {
-					if ns.Name == "consumer-secrets-ns" {
-						actualProviderNamespace = ns.Status.Namespace
-						break
-					}
-				}
-				require.NotEmpty(t, actualProviderNamespace, "Pre-seeded namespace should have a physical namespace assigned")
-
-				providerCoreClient := framework.KubeClient(t, providerConfig).CoreV1()
-				_, err = providerCoreClient.Namespaces().Get(ctx, actualProviderNamespace, metav1.GetOptions{})
-				require.NoError(t, err, "Physical provider side namespace should exist")
-
-				if informerScope == kubebindv1alpha2.ClusterScope {
-					t.Logf("Verifying RBAC resources were created for secret management in cluster scope")
-					rbacClient := framework.KubeClient(t, providerConfig).RbacV1()
-
-					clusterRoles, err := rbacClient.ClusterRoles().List(ctx, metav1.ListOptions{})
-					require.NoError(t, err)
-
-					var foundSecretClusterRole bool
-					for _, cr := range clusterRoles.Items {
-						if strings.Contains(cr.Name, "kube-binder-") && strings.Contains(cr.Name, "-export-") {
-							for _, rule := range cr.Rules {
-								for _, resource := range rule.Resources {
-									if resource == "secrets" {
-										foundSecretClusterRole = true
-										require.Contains(t, rule.Verbs, "*", "ClusterRole should have * permissions for secrets")
-										require.Contains(t, rule.APIGroups, "", "ClusterRole should target core API group")
-										break
-									}
-								}
-							}
-						}
-					}
-					require.True(t, foundSecretClusterRole, "ClusterRole for secrets should be created")
-
-					t.Logf("Verifying ClusterRoleBinding was created for pre-seeded namespace secret access")
-					clusterRoleBindings, err := rbacClient.ClusterRoleBindings().List(ctx, metav1.ListOptions{})
-					require.NoError(t, err)
-
-					var foundSecretClusterRoleBinding bool
-					for _, crb := range clusterRoleBindings.Items {
-						if strings.Contains(crb.Name, "kube-binder-") && strings.Contains(crb.Name, "-export-") {
-							for _, subject := range crb.Subjects {
-								if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
-									foundSecretClusterRoleBinding = true
-									require.Equal(t, "ClusterRole", crb.RoleRef.Kind, "Should reference ClusterRole")
-									break
-								}
-							}
-						}
-					}
-					require.True(t, foundSecretClusterRoleBinding, "ClusterRoleBinding for ServiceAccount should be created")
-				}
-
-				t.Logf("Provider side namespace pre-seeding and secret management RBAC verified successfully")
-			},
-		},
-		{
 			name: "verify secrets and configmaps are synced to provider",
 			step: func(t *testing.T) {
-				if !withPermissionClaims {
-					t.Skip("Skipping permission claims test when permission claims are disabled")
-					return
-				}
-
 				t.Logf("Waiting for named-only configmap to be synced to provider side")
 				require.Eventually(t, func() bool {
 					_, err := providerCoreClient.ConfigMaps(providerNS).Get(ctx, "named-configmap-only", metav1.GetOptions{})
@@ -531,11 +555,6 @@ spec:
 		{
 			name: "verify secrets and configmaps are deleted when removed from consumer",
 			step: func(t *testing.T) {
-				if !withPermissionClaims {
-					t.Skip("Skipping permission claims test when permission claims are disabled")
-					return
-				}
-
 				t.Logf("Deleting named-only configmap from consumer side")
 				err := consumerCoreClient.ConfigMaps(consumerNS).Delete(ctx, "named-configmap-only", metav1.DeleteOptions{})
 				require.NoError(t, err)

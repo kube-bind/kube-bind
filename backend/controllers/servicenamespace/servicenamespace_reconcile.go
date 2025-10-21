@@ -83,7 +83,7 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 	}
 
 	for _, export := range apiServiceExports.Items {
-		name := fmt.Sprintf("kube-binder-%s-export-%s", sns.Name, export.Name) // per-sns unique name
+		name := fmt.Sprintf("kube-binder-export-%s-%s", sns.Name, export.Name) // per-sns unique name
 		permissions := []rbacv1.PolicyRule{}
 		for _, claim := range export.Spec.PermissionClaims {
 			permissions = append(permissions, rbacv1.PolicyRule{
@@ -106,7 +106,7 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 					Rules: permissions,
 				}
 				// Create new ClusterRole
-				if err := client.Create(ctx, role); !errors.IsAlreadyExists(err) {
+				if err := client.Create(ctx, role); err != nil && !errors.IsAlreadyExists(err) {
 					return fmt.Errorf("failed to create ClusterRole %s: %w", name, err)
 				}
 			} else {

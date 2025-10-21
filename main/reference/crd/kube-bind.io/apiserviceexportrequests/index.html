@@ -2266,6 +2266,58 @@ local consumer cluster.</p>
 
 <div class="property depth-1">
 <div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.namespaces">.spec.namespaces</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>namespaces specifies the namespaces to bootstrap as part of this request.
+When objects originate from provider side, the consumer does not always know the necessary details.
+This field allows provider to pre-heat the necessary namespaces on provider side by creating
+APIServiceNamespace objects attached to the APIServiceExport. More namespaces can be created later by the consumer.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.namespaces[*]">.spec.namespaces[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.namespaces[*].name">.spec.namespaces[*].name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>name is the name of the namespace to create on provider side.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
 <h3 class="property-path" id="v1alpha2-.spec.parameters">.spec.parameters</h3>
 </div>
 <div class="property-body">

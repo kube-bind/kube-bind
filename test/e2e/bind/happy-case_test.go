@@ -64,8 +64,7 @@ func testHappyCase(
 	informerScope kubebindv1alpha2.InformerScope,
 ) {
 	ctx, cancel := context.WithCancel(context.Background())
-	// t.Cleanup(cancel) // Commented out to prevent cleanup of kcp assets
-	_ = cancel // Prevent unused variable warning
+	t.Cleanup(cancel) // Commented out to prevent cleanup of kcp assets
 
 	framework.StartDex(t)
 

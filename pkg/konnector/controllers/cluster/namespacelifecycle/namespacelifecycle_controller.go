@@ -221,15 +221,11 @@ func (c *controller) process(ctx context.Context, key string) error {
 		return nil // we cannot do anything
 	}
 
-	current, err := c.getServiceNamespace(snsNamespace, name)
-	if err != nil && !errors.IsNotFound(err) {
-		return err
-	}
-
-	switch {
-	case errors.IsNotFound(err):
+	if current, err := c.getServiceNamespace(snsNamespace, name); errors.IsNotFound(err) {
 		return c.handleNamespaceDeletion(ctx, snsNamespace, name)
-	default:
+	} else if err != nil {
+		return err
+	} else {
 		return c.handleNamespaceLifecycle(ctx, current)
 	}
 }
@@ -262,8 +258,7 @@ func (c *controller) handleNamespaceLifecycle(ctx context.Context, current *kube
 	// If provider owned, ensure Namespace exists. If consumer owned, and local namespace exists, delete it.
 	consumerOwned := isConsumerOwned(current)
 
-	switch consumerOwned {
-	case true:
+	if consumerOwned {
 		// Consumer owned, ensure Namespace is deleted if exists
 		_, err := c.getNamespace(current.Name)
 		if errors.IsNotFound(err) {
@@ -272,7 +267,7 @@ func (c *controller) handleNamespaceLifecycle(ctx context.Context, current *kube
 		} else if err != nil {
 			return err
 		}
-	case false:
+	} else {
 		_, err := c.getNamespace(current.Name)
 		if errors.IsNotFound(err) {
 			ns := &corev1.Namespace{
@@ -298,10 +293,5 @@ func (c *controller) handleNamespaceLifecycle(ctx context.Context, current *kube
 // isConsumerOwned checks if the APIServiceNamespace is owned by consumer.
 // If the label is missing, it is considered consumer owned.
 func isConsumerOwned(sns *kubebindv1alpha2.APIServiceNamespace) bool {
-	switch sns.Labels[kubebindv1alpha2.ObjectOwnerLabel] {
-	case kubebindv1alpha2.OwnerProvider.String():
-		return false
-	default:
-		return true
-	}
+	return sns.Labels[kubebindv1alpha2.ObjectOwnerLabel] != kubebindv1alpha2.OwnerProvider.String()
 }

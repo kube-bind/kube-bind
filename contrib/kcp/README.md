@@ -104,7 +104,7 @@ kubectl kcp bind apiexport root:provider:cowboys-stable
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/1f4roigyt6meiaf8 
+# cluster   Ready   https://192.168.2.166:6443/clusters/1f4roigyt6meiaf8
 ```
 
 ## Consumer
@@ -168,9 +168,6 @@ export KUBECONFIG=.kcp/consumer.kubeconfig
 kubectl apply -f contrib/kcp/deploy/examples/cowboy.yaml
 kubectl apply -f contrib/kcp/deploy/examples/sheriff.yaml
 ```
-
-
-
 
 ## Debug
 

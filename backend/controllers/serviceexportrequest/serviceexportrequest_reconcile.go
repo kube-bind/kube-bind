@@ -378,14 +378,14 @@ func (r *reconciler) ensureAPIServiceNamespaces(ctx context.Context, cl client.C
 
 	// TODO(mjudeikis): We have this object above already, pass it down to avoid extra get.
 	export := &kubebindv1alpha2.APIServiceExport{}
-	if err := cl.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: req.Name}, export); err != nil {
+	if err := cl.Get(ctx, client.ObjectKeyFromObject(req), export); err != nil {
 		return fmt.Errorf("failed to get APIServiceExport %s/%s: %w", req.Namespace, req.Name, err)
 	}
 
 	for _, ns := range req.Spec.Namespaces {
 		apiServiceNamespace := helpers.APIServiceNamespaceFromExport(export, ns.Name)
 		currentAPIServiceNamespace := &kubebindv1alpha2.APIServiceNamespace{}
-		err := cache.Get(ctx, client.ObjectKey{Namespace: apiServiceNamespace.Namespace, Name: apiServiceNamespace.Name}, currentAPIServiceNamespace)
+		err := cache.Get(ctx, client.ObjectKeyFromObject(apiServiceNamespace), currentAPIServiceNamespace)
 		if err != nil {
 			if apierrors.IsNotFound(err) {
 				logger.V(1).Info("Creating APIServiceNamespace", "name", apiServiceNamespace.Name, "namespace", apiServiceNamespace.Namespace)

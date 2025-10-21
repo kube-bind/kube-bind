@@ -22,7 +22,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -56,6 +55,7 @@ type APIServiceExportReconciler struct {
 func NewAPIServiceExportReconciler(
 	ctx context.Context,
 	mgr mcmanager.Manager,
+	scope kubebindv1alpha2.InformerScope,
 	opts controller.TypedOptions[mcreconcile.Request],
 ) (*APIServiceExportReconciler, error) {
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExport{}, indexers.ServiceExportByBoundSchema,
@@ -67,6 +67,7 @@ func NewAPIServiceExportReconciler(
 		manager: mgr,
 		opts:    opts,
 		reconciler: reconciler{
+			scope: scope,
 			getBoundSchema: func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error) {
 				var schema kubebindv1alpha2.BoundSchema
 				key := types.NamespacedName{Namespace: namespace, Name: name}
@@ -74,14 +75,6 @@ func NewAPIServiceExportReconciler(
 					return nil, err
 				}
 				return &schema, nil
-			},
-			deleteServiceExport: func(ctx context.Context, cl client.Client, ns, name string) error {
-				return cl.Delete(ctx, &kubebindv1alpha2.APIServiceExport{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: ns,
-						Name:      name,
-					},
-				})
 			},
 		},
 	}

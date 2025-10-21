@@ -229,7 +229,10 @@ func mapAPIResourceSchema(clusterName string, cl cluster.Cluster) handler.TypedE
 		return []mcreconcile.Request{
 			{
 				Request: reconcile.Request{
-					NamespacedName: client.ObjectKeyFromObject(serviceExport),
+					NamespacedName: types.NamespacedName{
+						Namespace: serviceExport.GetNamespace(),
+						Name:      "cluster",
+					},
 				},
 				ClusterName: clusterName,
 			},

@@ -129,7 +129,12 @@ func NewController(
 			},
 			createProviderObject: func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 				if ns := obj.GetNamespace(); ns != "" {
-					return providerClient.Resource(gvr).Namespace(obj.GetNamespace()).Create(ctx, obj, metav1.CreateOptions{})
+					copy := obj.DeepCopy()
+					err := clusterscoped.InjectClusterNs(copy, providerNamespace, providerNamespaceUID)
+					if err != nil {
+						return nil, err
+					}
+					return providerClient.Resource(gvr).Namespace(copy.GetNamespace()).Create(ctx, copy, metav1.CreateOptions{})
 				}
 				err := clusterscoped.TranslateFromDownstream(obj, providerNamespace, providerNamespaceUID)
 				if err != nil {

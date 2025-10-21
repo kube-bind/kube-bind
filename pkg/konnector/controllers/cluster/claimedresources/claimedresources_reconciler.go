@@ -31,8 +31,6 @@ import (
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
-const label = "kube-bind.io/owner"
-
 type readReconciler struct {
 	getServiceNamespace  func(upstreamNamespace string) (*kubebindv1alpha2.APIServiceNamespace, error)
 	getProviderObject    func(ns, name string) (*unstructured.Unstructured, error)
@@ -185,7 +183,7 @@ func (r readReconciler) makeConsumerOwner(obj *unstructured.Unstructured) {
 	if a == nil {
 		a = map[string]string{}
 	}
-	a[label] = string(kubebindv1alpha2.OwnerConsumer)
+	a[kubebindv1alpha2.ObjectOwnerLabel] = string(kubebindv1alpha2.OwnerConsumer)
 	obj.SetLabels(a)
 }
 
@@ -194,7 +192,7 @@ func (r readReconciler) makeProviderOwner(obj *unstructured.Unstructured) {
 	if a == nil {
 		a = map[string]string{}
 	}
-	a[label] = string(kubebindv1alpha2.OwnerProvider)
+	a[kubebindv1alpha2.ObjectOwnerLabel] = string(kubebindv1alpha2.OwnerProvider)
 	obj.SetLabels(a)
 }
 
@@ -237,7 +235,7 @@ func candidateFromOwnerObj(downstreamNS string, obj *unstructured.Unstructured) 
 // consumer or provider side.
 func determineOwner(providerObj, consumerObj *unstructured.Unstructured) (kubebindv1alpha2.Owner, error) {
 	if providerObj != nil {
-		ownerLabel := providerObj.GetLabels()[label]
+		ownerLabel := providerObj.GetLabels()[kubebindv1alpha2.ObjectOwnerLabel]
 		switch ownerLabel {
 		case kubebindv1alpha2.OwnerProvider.String():
 			return kubebindv1alpha2.OwnerProvider, nil
@@ -250,7 +248,7 @@ func determineOwner(providerObj, consumerObj *unstructured.Unstructured) (kubebi
 	}
 
 	if consumerObj != nil {
-		ownerLabel := consumerObj.GetLabels()[label]
+		ownerLabel := consumerObj.GetLabels()[kubebindv1alpha2.ObjectOwnerLabel]
 		switch ownerLabel {
 		case kubebindv1alpha2.OwnerProvider.String():
 			return kubebindv1alpha2.OwnerProvider, nil

@@ -63,6 +63,13 @@ func WithName(s string, formatArgs ...any) ClusterWorkspaceOption {
 	}
 }
 
+func RandomString(length int) string {
+	token := make([]byte, length)
+	rand.Read(token) //nolint:errcheck
+	base36hash := strings.ToLower(base36.EncodeBytes(token))
+	return base36hash[:length+1]
+}
+
 func WithGenerateName(s string, formatArgs ...any) ClusterWorkspaceOption {
 	return func(ws *tenancyv1alpha1.Workspace) {
 		s = fmt.Sprintf(s, formatArgs...)

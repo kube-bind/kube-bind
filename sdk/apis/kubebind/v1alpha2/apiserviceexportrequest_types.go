@@ -115,6 +115,23 @@ type APIServiceExportRequestSpec struct {
 	//
 	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="permissionClaims are immutable"
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
+
+	// namespaces specifies the namespaces to bootstrap as part of this request.
+	// When objects originate from provider side, the consumer does not always know the necessary details.
+	// This field allows provider to pre-heat the necessary namespaces on provider side by creating
+	// APIServiceNamespace objects attached to the APIServiceExport. More namespaces can be created later by the consumer.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="namespaces are immutable"
+	// +optional
+	// +kubebuilder:validation:Optional
+	Namespaces []Namespaces `json:"namespaces,omitempty"`
+}
+
+type Namespaces struct {
+	// name is the name of the namespace to create on provider side.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
 }
 
 type APIServiceExportRequestResource struct {

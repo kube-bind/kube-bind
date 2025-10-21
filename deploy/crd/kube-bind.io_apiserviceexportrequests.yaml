@@ -212,6 +212,25 @@ spec:
               spec specifies how an API service from a service provider should be bound in the
               local consumer cluster.
             properties:
+              namespaces:
+                description: |-
+                  namespaces specifies the namespaces to bootstrap as part of this request.
+                  When objects originate from provider side, the consumer does not always know the necessary details.
+                  This field allows provider to pre-heat the necessary namespaces on provider side by creating
+                  APIServiceNamespace objects attached to the APIServiceExport. More namespaces can be created later by the consumer.
+                items:
+                  properties:
+                    name:
+                      description: name is the name of the namespace to create on
+                        provider side.
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+                x-kubernetes-validations:
+                - message: namespaces are immutable
+                  rule: self == oldSelf
               parameters:
                 description: |-
                   parameters holds service provider specific parameters for this binding

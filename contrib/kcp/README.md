@@ -93,10 +93,14 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
 
 7. Create CRD in provider:
 ```bash
-kubectl create -f contrib/kcp/deploy/examples/apiexport.yaml
-kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
-kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
+kubectl apply -f contrib/kcp/deploy/examples/apiexport.yaml
+kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
+kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
 kubectl kcp bind apiexport root:provider:cowboys-stable
+
+kubectl apply -f contrib/kcp/deploy/examples/template-cowboys.yaml
+kubectl apply -f contrib/kcp/deploy/examples/template-sheriffs.yaml
+kubectl apply -f contrib/kcp/deploy/examples/collection-wildwest.yaml
 ```
 
 8. Get LogicalCluster:
@@ -104,7 +108,7 @@ kubectl kcp bind apiexport root:provider:cowboys-stable
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/1f4roigyt6meiaf8
+# cluster   Ready   https://192.168.2.166:6443/clusters/2cc89nxsuivawooq
 ```
 
 ## Consumer
@@ -120,7 +124,7 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/1f4roigyt6meiaf8/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080/clusters/2cc89nxsuivawooq/exports --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind`

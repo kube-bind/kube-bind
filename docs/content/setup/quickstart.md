@@ -73,6 +73,9 @@ kubectl ws create provider --enter
    ```shell
    kubectl apply -f deploy/examples/crd-mangodb.yaml
    kubectl apply -f deploy/examples/crd-foo.yaml
+   kubectl apply -f deploy/examples/template-mangodb.yaml
+   kubectl apply -f deploy/examples/template-foo.yaml
+   kubectl apply -f deploy/examples/collection.yaml
    ```
 
 * start the backend binary with the right flags:

@@ -33,14 +33,14 @@ import (
 	"github.com/kube-bind/kube-bind/test/e2e/framework"
 )
 
-func performBindingWithBrowser(t *testing.T, backendAddr string, clusterID string, consumerCfg *rest.Config, consumerKubeconfig, resource string) {
+func performBindingWithBrowser(t *testing.T, backendAddr string, clusterID string, consumerCfg *rest.Config, consumerKubeconfig, resource, template string) {
 	bindURL := fmt.Sprintf("http://%s/clusters/%s/exports", backendAddr, clusterID)
 	t.Logf("Bind URL: %s", bindURL)
 
 	// Test binding dry run first (similar to happy-case test)
 	t.Run("Service is bound dry run", func(t *testing.T) {
 		authURLDryRunCh := make(chan string, 1)
-		go simulateKCPBrowser(t, authURLDryRunCh, resource)
+		go simulateKCPBrowser(t, authURLDryRunCh, template)
 
 		iostreams, _, bufOut, _ := genericclioptions.NewTestIOStreams()
 		framework.Bind(t, iostreams, authURLDryRunCh, nil, bindURL, "--kubeconfig", consumerKubeconfig, "--dry-run")
@@ -51,7 +51,7 @@ func performBindingWithBrowser(t *testing.T, backendAddr string, clusterID strin
 	// Perform actual binding (similar to happy-case test)
 	t.Run("Service is bound", func(t *testing.T) {
 		authURLCh := make(chan string, 1)
-		go simulateKCPBrowser(t, authURLCh, resource)
+		go simulateKCPBrowser(t, authURLCh, template)
 
 		iostreams, _, _, _ := genericclioptions.NewTestIOStreams()
 		invocations := make(chan framework.SubCommandInvocation, 1)
@@ -78,8 +78,8 @@ func performBindingWithBrowser(t *testing.T, backendAddr string, clusterID strin
 	})
 }
 
-// simulateKCPBrowser simulates browser interaction for KCP binding.
-func simulateKCPBrowser(t *testing.T, authURLCh chan string, resource string) {
+// simulateKCPBrowser simulates browser interaction for KCP binding using templates.
+func simulateKCPBrowser(t *testing.T, authURLCh chan string, template string) {
 	browser := surf.NewBrowser()
 	authURL := <-authURLCh
 
@@ -90,9 +90,9 @@ func simulateKCPBrowser(t *testing.T, authURLCh chan string, resource string) {
 	t.Logf("Waiting for browser to be at /resources")
 	framework.BrowserEventuallyAtPath(t, browser, "/resources")
 
-	t.Logf("Clicking %s resource", resource)
-	err = browser.Click("a." + resource)
-	require.NoError(t, err, "Failed to click resource link")
+	t.Logf("Clicking %s template", template)
+	err = browser.Click("a." + template)
+	require.NoError(t, err, "Failed to click template link")
 
 	t.Logf("Waiting for browser to be forwarded to client")
 	framework.BrowserEventuallyAtPath(t, browser, "/callback")

@@ -36,6 +36,8 @@ type Interface interface {
 	BoundSchemas() BoundSchemaInformer
 	// ClusterBindings returns a ClusterBindingInformer.
 	ClusterBindings() ClusterBindingInformer
+	// Collections returns a CollectionInformer.
+	Collections() CollectionInformer
 }
 
 type version struct {
@@ -77,4 +79,9 @@ func (v *version) BoundSchemas() BoundSchemaInformer {
 // ClusterBindings returns a ClusterBindingInformer.
 func (v *version) ClusterBindings() ClusterBindingInformer {
 	return &clusterBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Collections returns a CollectionInformer.
+func (v *version) Collections() CollectionInformer {
+	return &collectionInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

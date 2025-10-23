@@ -11,6 +11,13 @@ kube-bind is a prototype project that aims to provide better support for service
 - The service provider does not inject controllers/operators into the service consumer's cluster.
 - A single vendor-neutral, OpenSource agent per consumer cluster connects it with the requested services.
 
+## Key Features
+
+- **Catalog API**: Organize exported services using Collections (folders) and Modules (service definitions)
+- **Provider-side Namespace Management**: Automatic namespace provisioning and RBAC setup on provider clusters
+- **Enhanced Permission Claims**: Granular resource access with both label selectors and named resource support
+- **Multi-backend Support**: Works with standard Kubernetes and KCP backends through multicluster-runtime
+
 ## Quickstart
 
 To get started with trying out kube-bind on your local system, check out our [Quickstart](./setup/quickstart.md) instructions.

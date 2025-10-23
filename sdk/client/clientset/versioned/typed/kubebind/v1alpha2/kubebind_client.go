@@ -34,6 +34,7 @@ type KubeBindV1alpha2Interface interface {
 	APIServiceNamespacesGetter
 	BoundSchemasGetter
 	ClusterBindingsGetter
+	CollectionsGetter
 }
 
 // KubeBindV1alpha2Client is used to interact with features provided by the kube-bind.io group.
@@ -63,6 +64,10 @@ func (c *KubeBindV1alpha2Client) BoundSchemas(namespace string) BoundSchemaInter
 
 func (c *KubeBindV1alpha2Client) ClusterBindings(namespace string) ClusterBindingInterface {
 	return newClusterBindings(c, namespace)
+}
+
+func (c *KubeBindV1alpha2Client) Collections(namespace string) CollectionInterface {
+	return newCollections(c, namespace)
 }
 
 // NewForConfig creates a new KubeBindV1alpha2Client for the given config.

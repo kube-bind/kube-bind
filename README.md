@@ -62,6 +62,28 @@ All the actions shown between the clusters are done by the konnector, except: th
 
 To get familiar with setting up the environment, please check out docs at [kube-bind.io](https://docs.kube-bind.io/main/setup).
 
+## API Changes in v0.6.0 release
+
+### Catalog API
+Introduction of new `Collection` and `APIServiceExportTemplate` CRDs for better service organization:
+- **Collections**: Function as folders in the UI, grouping related modules
+- **APIServiceExportTemplate**: Group multiple CRDs with their related resources and permission claims and creates `APIServiceExportRequest`
+
+### Enhanced Permission Claims
+Major improvements to `PermissionClaims` in APIServiceExportSpec:
+- **NamedResources**: Specify exact resources by name and namespace
+- **Combined Selectors**: Use both label selectors AND named resources (both must match)
+- **Granular Control**: More precise access control for service resources
+
+### Provider-side Namespace Management
+Enhanced namespace management on the provider side:
+- **APIServiceNamespace Controller**: Automatically creates Roles and RoleBindings
+- **Namespace Isolation**: Each consumer gets isolated provider-side namespaces  
+- **RBAC Automation**: Proper permissions created based on scope (namespaced vs cluster-scoped)
+- **Namespace Pre-provisioning**: Providers can pre-create namespaces for better UX
+
+**Important**: When `ClusterScope` mode is used, cluster-wide permissions are created instead of namespaced ones. 
+
 ## API Changes in v0.5.0 release
 
 Version v0.5.0 includes significant architectural improvements to the API structure:

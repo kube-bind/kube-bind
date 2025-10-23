@@ -60,6 +60,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ClusterBindingList{},
 		&BindingProvider{},
 		&BindingResponse{},
+		&APIServiceExportTemplate{},
+		&APIServiceExportTemplateList{},
+		&Collection{},
+		&CollectionList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

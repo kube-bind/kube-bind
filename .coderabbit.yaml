@@ -30,8 +30,8 @@ reviews:
   # Specify file patterns to include or exclude in a review using glob patterns (e.g., !dist/**, src/**). These patterns also apply to 'git sparse-checkout', including specified patterns and ignoring excluded ones (starting with '!') when cloning the repository.
   # Default: []
   path_filters: [
-   sdk/client/**,
-   '**/*.yaml',
+   '!sdk/client/**',
+   '!**/*.yaml',
   ]
 
   # Configuration for auto review

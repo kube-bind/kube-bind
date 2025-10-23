@@ -29,3 +29,5 @@ type APIServiceNamespaceExpansion interface{}
 type BoundSchemaExpansion interface{}
 
 type ClusterBindingExpansion interface{}
+
+type CollectionExpansion interface{}

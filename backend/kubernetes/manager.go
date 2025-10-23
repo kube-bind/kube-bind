@@ -165,6 +165,38 @@ func (m *Manager) ListCustomResourceDefinitions(ctx context.Context, cluster str
 	return &crds, nil
 }
 
+func (m *Manager) ListCollections(ctx context.Context, cluster string) (*kubebindv1alpha2.CollectionList, error) {
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	c := cl.GetClient()
+
+	var collections kubebindv1alpha2.CollectionList
+	err = c.List(ctx, &collections)
+	if err != nil {
+		return nil, err
+	}
+
+	return &collections, nil
+}
+
+func (m *Manager) GetTemplates(ctx context.Context, cluster, name string) (*kubebindv1alpha2.APIServiceExportTemplate, error) {
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	c := cl.GetClient()
+
+	var template kubebindv1alpha2.APIServiceExportTemplate
+	err = c.Get(ctx, types.NamespacedName{Name: name}, &template)
+	if err != nil {
+		return nil, err
+	}
+
+	return &template, nil
+}
+
 func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk schema.GroupVersionKind, selector labels.Selector) (*unstructured.UnstructuredList, error) {
 	cl, err := m.manager.GetCluster(ctx, cluster)
 	if err != nil {

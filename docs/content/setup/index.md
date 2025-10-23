@@ -29,4 +29,12 @@ Choose the setup that best fits your use case:
 - Use **Helm Deployment** for production environments with standard Kubernetes
 - Use **KCP Integration** for advanced multi-tenant scenarios with workspace isolation
 
+## Next Steps
+
+After completing your setup, explore these guides:
+
+- **[Usage Guide](../usage/index.md)**: Learn common workflows and the new Catalog API
+- **[Migration Guide](../usage/migration.md)**: Upgrade from previous versions
+- **[Developer Documentation](../developers/index.md)**: Understand the architecture and contribute
+
 {% include "partials/section-overview.html" %}

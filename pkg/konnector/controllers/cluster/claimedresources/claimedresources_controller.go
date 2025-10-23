@@ -374,7 +374,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 	// We need to list all the object which might not got synced at consumer side too:
 	var sel labels.Selector
 	switch v := c.claim.Selector; {
-	case v.LabelSelector == nil && len(v.NamedResource) == 0:
+	case v.LabelSelector == nil && len(v.NamedResources) == 0:
 		sel = labels.Everything()
 	case v.LabelSelector != nil:
 		var err error
@@ -383,9 +383,9 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 			runtime.HandleError(err)
 			return
 		}
-	case len(v.NamedResource) > 0:
+	case len(v.NamedResources) > 0:
 		// namedResource-only: fetch specific objects from cache and enqueue
-		for _, nr := range v.NamedResource {
+		for _, nr := range v.NamedResources {
 			// Build consumer cache key; empty namespace implies cluster-scoped
 			key := nr.Name
 			if nr.Namespace != "" {

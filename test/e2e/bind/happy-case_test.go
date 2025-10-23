@@ -18,7 +18,6 @@ package bind
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -144,65 +143,6 @@ spec:
 				inv := <-invocations
 				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
 
-				var request kubebindv1alpha2.APIServiceExportRequest
-				err := json.Unmarshal(inv.Stdin, &request)
-				require.NoError(t, err)
-				// Pre-seed provider side namespaces for secret management
-				request.Spec.Namespaces = []kubebindv1alpha2.Namespaces{
-					{
-						Name: "consumer-secrets-ns",
-					},
-				}
-
-				// If we are in permissions claims mode - add configmaps & secrets
-				request.Spec.PermissionClaims = []kubebindv1alpha2.PermissionClaim{
-					{
-						GroupResource: kubebindv1alpha2.GroupResource{
-							Group:    "",
-							Resource: "configmaps",
-						},
-						Selector: kubebindv1alpha2.Selector{
-							NamedResource: []kubebindv1alpha2.NamedResource{
-								{
-									Name:      "named-configmap-only",
-									Namespace: consumerNS,
-								},
-							},
-						},
-					},
-					{
-						GroupResource: kubebindv1alpha2.GroupResource{
-							Group:    "",
-							Resource: "secrets",
-						},
-						Selector: kubebindv1alpha2.Selector{
-							LabelSelector: &metav1.LabelSelector{
-								MatchLabels: map[string]string{
-									"app": "secrets",
-								},
-							},
-							NamedResource: []kubebindv1alpha2.NamedResource{
-								{
-									Name:      "test-secret",
-									Namespace: consumerNS,
-								},
-								{
-									Name:      "named-secret-1",
-									Namespace: consumerNS,
-								},
-								{
-									Name:      "named-secret-2",
-									Namespace: consumerNS,
-								},
-							},
-						},
-					},
-				}
-
-				payload, err := json.Marshal(request)
-				require.NoError(t, err)
-				inv.Stdin = payload
-
 				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
 
 				t.Logf("Waiting for %s CRD to be created on consumer side", serviceGVR.Resource)
@@ -262,7 +202,7 @@ spec:
 					}
 
 					for _, ns := range namespaces.Items {
-						if ns.Name == "consumer-secrets-ns" && ns.Status.Namespace != "" {
+						if ns.Name == "consumer-configuration-ns" && ns.Status.Namespace != "" {
 							actualProviderNamespace = ns.Status.Namespace
 							foundPreSeededNamespace = true
 							return true
@@ -270,7 +210,7 @@ spec:
 					}
 					return false
 				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for pre-seeded APIServiceNamespace to be created on provider side")
-				require.True(t, foundPreSeededNamespace, "Pre-seeded namespace 'consumer-secrets-ns' should be created via APIServiceExportRequest.Spec.Namespaces")
+				require.True(t, foundPreSeededNamespace, "Pre-seeded namespace 'consumer-configuration-ns' should be created via APIServiceExportRequest.Spec.Namespaces")
 
 				providerCoreClient := framework.KubeClient(t, providerConfig).CoreV1()
 				_, err := providerCoreClient.Namespaces().Get(ctx, actualProviderNamespace, metav1.GetOptions{})
@@ -286,7 +226,7 @@ spec:
 
 					var foundSecretClusterRole bool
 					for _, cr := range clusterRoles.Items {
-						if strings.Contains(cr.Name, "kube-binder-") && strings.Contains(cr.Name, "-export-") {
+						if strings.Contains(cr.Name, "kube-binder-export") {
 							for _, rule := range cr.Rules {
 								for _, resource := range rule.Resources {
 									if resource == "secrets" {
@@ -808,8 +748,17 @@ func simulateBrowser(t *testing.T, authURLCh chan string, resource string) {
 	t.Logf("Waiting for browser to be at /resources")
 	framework.BrowserEventuallyAtPath(t, browser, "/resources")
 
-	t.Logf("Clicking %s", resource)
-	err = browser.Click("a." + resource)
+	// Convert resource name to template name
+	var templateName string
+	switch resource {
+	case "mangodbs":
+		templateName = "mangodb"
+	case "foos":
+		templateName = "foo"
+	}
+
+	t.Logf("Clicking template %s", templateName)
+	err = browser.Click("a." + templateName)
 	require.NoError(t, err)
 
 	t.Logf("Waiting for browser to be forwarded to client")

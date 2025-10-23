@@ -61,3 +61,11 @@ type ClusterBindingListerExpansion interface{}
 // ClusterBindingNamespaceListerExpansion allows custom methods to be added to
 // ClusterBindingNamespaceLister.
 type ClusterBindingNamespaceListerExpansion interface{}
+
+// CollectionListerExpansion allows custom methods to be added to
+// CollectionLister.
+type CollectionListerExpansion interface{}
+
+// CollectionNamespaceListerExpansion allows custom methods to be added to
+// CollectionNamespaceLister.
+type CollectionNamespaceListerExpansion interface{}

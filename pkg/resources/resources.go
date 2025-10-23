@@ -30,7 +30,7 @@ func IsClaimed(selector kubebindv1alpha2.Selector, obj *unstructured.Unstructure
 		return false
 	}
 	// Empty selector selects everything
-	if selector.LabelSelector == nil && len(selector.NamedResource) == 0 {
+	if selector.LabelSelector == nil && len(selector.NamedResources) == 0 {
 		return true
 	}
 
@@ -52,9 +52,9 @@ func IsClaimed(selector kubebindv1alpha2.Selector, obj *unstructured.Unstructure
 	}
 
 	// Check named resources if specified
-	if len(selector.NamedResource) > 0 {
+	if len(selector.NamedResources) > 0 {
 		namedResourceMatches = false // Default to false, must match at least one
-		for _, nr := range selector.NamedResource {
+		for _, nr := range selector.NamedResources {
 			if nr.Namespace != "" && nr.Namespace != obj.GetNamespace() {
 				continue
 			}

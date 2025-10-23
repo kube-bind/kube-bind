@@ -564,7 +564,7 @@ spec:
                               type: object
                           type: object
                           x-kubernetes-map-type: atomic
-                        namedResource:
+                        namedResources:
                           description: NamedResource is a shorthand for selecting
                             a single resource by name and namespace.
                           items:

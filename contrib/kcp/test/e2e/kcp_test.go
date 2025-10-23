@@ -101,12 +101,15 @@ func testKcpIntegration(t *testing.T, scope kubebindv1alpha2.InformerScope) {
 		),
 	)
 
-	t.Log("Applying example APIExport and APIResourceSchemas to provider workspace")
+	t.Log("Applying example APIExport, APIResourceSchemas and templates to provider workspace")
 	framework.ApplyFiles(t,
 		providerCfg,
 		"../../deploy/examples/apiexport.yaml",
 		"../../deploy/examples/apiresourceschema-cowboys.yaml",  // namespaced
 		"../../deploy/examples/apiresourceschema-sheriffs.yaml", // cluster scoped
+		"../../deploy/examples/template-cowboys.yaml",           // template for cowboys
+		"../../deploy/examples/template-sheriffs.yaml",          // template for sheriffs
+		"../../deploy/examples/collection-wildwest.yaml",
 	)
 
 	t.Log("Bind the APIExport locally")
@@ -138,18 +141,20 @@ func testKcpIntegration(t *testing.T, scope kubebindv1alpha2.InformerScope) {
 
 	// kube-bind process
 	t.Log("Perform binding process with browser")
-	var kind, resource string
+	var kind, resource, template string
 	switch scope {
 	case kubebindv1alpha2.ClusterScope:
 		kind = "Sheriff"
 		resource = "sheriffs"
+		template = "sheriffs"
 	case kubebindv1alpha2.NamespacedScope:
 		kind = "Cowboy"
 		resource = "cowboys"
+		template = "cowboys"
 	default:
 		require.Fail(t, "unhandled scope %q", scope)
 	}
-	performBindingWithBrowser(t, backendAddr, providerClusterID, consumerCfg, consumerKubeconfig, resource)
+	performBindingWithBrowser(t, backendAddr, providerClusterID, consumerCfg, consumerKubeconfig, resource, template)
 
 	t.Log("Testing resource creation and synchronization...")
 	testKCPResourceSync(t, consumerCfg, providerCfg, scope, kind, resource)

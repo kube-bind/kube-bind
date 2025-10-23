@@ -182,6 +182,7 @@ func getBoundSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedE
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexportrequests/finalizers,verbs=update
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiresourceschemas,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=resources=apiservicenamespaces,verbs=get;list;watch;create
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

@@ -1,0 +1,33 @@
+apiVersion: kube-bind.io/v1alpha2
+kind: APIServiceExportTemplate
+metadata:
+  name: mangodb
+spec:
+  scope: Namespaced
+  resources:
+  - group: mangodb.com
+    versions: 
+    - v1alpha1
+    resource: mangodbs
+  permissionClaims:
+  - group: ""
+    resource: configmaps
+    selector:
+      namedResources:
+      - name: named-configmap-only
+        namespace: default
+  - group: ""
+    resource: secrets
+    selector:
+      labelSelector:
+        matchLabels:
+          app: secrets
+      namedResources:
+      - name: test-secret
+        namespace: default
+      - name: named-secret-1
+        namespace: default
+      - name: named-secret-2
+        namespace: default
+  namespaces:
+  - name: consumer-configuration-ns

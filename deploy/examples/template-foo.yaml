@@ -1,0 +1,33 @@
+apiVersion: kube-bind.io/v1alpha2
+kind: APIServiceExportTemplate
+metadata:
+  name: foo
+spec:
+  scope: Cluster
+  resources:
+  - group: bar.io
+    versions: 
+    - v1alpha1
+    resource: foos
+  permissionClaims:
+  - group: ""
+    resource: configmaps
+    selector:
+      namedResources:
+      - name: named-configmap-only
+        namespace: foo-secrets-ns
+  - group: ""
+    resource: secrets
+    selector:
+      labelSelector:
+        matchLabels:
+          app: secrets
+      namedResources:
+      - name: test-secret
+        namespace: foo-secrets-ns
+      - name: named-secret-1
+        namespace: foo-secrets-ns
+      - name: named-secret-2
+        namespace: foo-secrets-ns
+  namespaces:
+  - name: foo-secrets-ns

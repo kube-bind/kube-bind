@@ -78,6 +78,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().BoundSchemas().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("clusterbindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().ClusterBindings().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("collections"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().Collections().Informer()}, nil
 
 	}
 

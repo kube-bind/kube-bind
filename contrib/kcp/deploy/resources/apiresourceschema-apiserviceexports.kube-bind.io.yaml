@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250929-62fc678.apiserviceexports.kube-bind.io
+  name: v251015-f561c7c.apiserviceexports.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -561,7 +561,7 @@ spec:
                             type: object
                         type: object
                         x-kubernetes-map-type: atomic
-                      namedResource:
+                      namedResources:
                         description: NamedResource is a shorthand for selecting a
                           single resource by name and namespace.
                         items:

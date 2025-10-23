@@ -291,7 +291,7 @@ func (c *controller) handleNamespaceLifecycle(ctx context.Context, current *kube
 }
 
 // isConsumerOwned checks if the APIServiceNamespace is owned by consumer.
-// If the label is missing, it is considered consumer owned.
+// to prevent the controller from creating namespaces unless explicitly requested).
 func isConsumerOwned(sns *kubebindv1alpha2.APIServiceNamespace) bool {
 	return sns.Labels[kubebindv1alpha2.ObjectOwnerLabel] != kubebindv1alpha2.OwnerProvider.String()
 }

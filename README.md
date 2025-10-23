@@ -67,7 +67,7 @@ To get familiar with setting up the environment, please check out docs at [kube-
 ### Catalog API
 Introduction of new `Collection` and `APIServiceExportTemplate` CRDs for better service organization:
 - **Collections**: Function as folders in the UI, grouping related modules
-- **APIServiceExportTemplate**: Group multiple CRDs with their related resources and permission claims and creates `APIServiceExportRequest`
+- **APIServiceExportTemplate**: Group multiple CRDs with their related resources and permission claims that can be used to create a `APIServiceExportRequest`
 
 ### Enhanced Permission Claims
 Major improvements to `PermissionClaims` in APIServiceExportSpec:

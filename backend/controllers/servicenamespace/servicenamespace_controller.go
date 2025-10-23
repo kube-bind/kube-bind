@@ -206,11 +206,11 @@ func getServiceExportMapper(clusterName string, cl cluster.Cluster) handler.Type
 	})
 }
 
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiservicenamespaces,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiservicenamespaces/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiservicenamespaces/finalizers,verbs=update
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=clusterbindings,verbs=get;list;watch
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports,verbs=get;list;watch
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiservicenamespaces,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiservicenamespaces/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiservicenamespaces/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kube-bind.io,resources=clusterbindings,verbs=get;list;watch
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiserviceexports,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 

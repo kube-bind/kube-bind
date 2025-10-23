@@ -177,12 +177,12 @@ func getBoundSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedE
 	})
 }
 
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexportrequests,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexportrequests/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexportrequests/finalizers,verbs=update
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiresourceschemas,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=resources=apiservicenamespaces,verbs=get;list;watch;create
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiserviceexportrequests,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiserviceexportrequests/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiserviceexportrequests/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiserviceexports,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiresourceschemas,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiservicenamespaces,verbs=get;list;watch;create
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

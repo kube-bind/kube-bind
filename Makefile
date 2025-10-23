@@ -290,9 +290,25 @@ CONTRIBS_E2E := $(patsubst %,test-e2e-contrib-%,$(CONTRIBS))
 
 .PHONY: test-e2e-contribs $(CONTRIBS_E2E)
 test-e2e-contribs: $(CONTRIBS_E2E) ## Run e2e tests for external integrations
+
+.PHONY: test-e2e-contrib-kcp
 test-e2e-contrib-kcp: $(DEX) $(KCP)
 $(CONTRIBS_E2E):
 	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && $(GO_TEST) -race -count $(COUNT) $(E2E_PARALLELISM_FLAG) ./test/e2e/...
+
+DESTROY_KIND_CLUSTER ?= true
+REUSE_KIND_CLUSTER_SUFFIX ?= ""
+KIND_CLUSTER_NAME ?= kube-bind
+
+.PHONY: test-e2e-kind
+test-e2e-kind: build image-local
+	echo "Running kube-bind e2e tests"
+	KUBE_BIND_BACKEND_IMAGE=$(KO_DOCKER_REPO)/backend:$(REV) \
+	KUBE_BIND_KONNECTOR_IMAGE=$(KO_DOCKER_REPO)/konnector:$(REV) \
+	$(GO_TEST) -v ./test/e2e-kind/... \
+		-destroy-kind-cluster=$(DESTROY_KIND_CLUSTER) \
+		-collect-logs=true 
+	echo "Kube-bind e2e tests completed"
 
 .PHONY: test
 ifdef USE_GOTESTSUM

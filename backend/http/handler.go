@@ -205,7 +205,7 @@ func (h *handler) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		ProviderClusterID: providerCluster, // used in multicluster-runtime providers
 	}
 	if callbackPort != "" && code.RedirectURL == "" {
-		code.RedirectURL = fmt.Sprintf("http://localhost:%s/callback", callbackPort)
+		code.RedirectURL = fmt.Sprintf("http://127.0.0.1:%s/callback", callbackPort)
 	}
 
 	if code.RedirectURL == "" || code.SessionID == "" || code.ClusterID == "" {

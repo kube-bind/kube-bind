@@ -147,10 +147,12 @@ func NewClusterBindingReconciler(
 	return r, nil
 }
 
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=clusterbindings,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=clusterbindings/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=clusterbindings/finalizers,verbs=update
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports,verbs=get;list;watch
+//+kubebuilder:rbac:groups=kube-bind.io,resources=clusterbindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kube-bind.io,resources=clusterbindings/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=kube-bind.io,resources=clusterbindings/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiserviceexports,verbs=get;list;watch
+//+kubebuilder:rbac:groups=kube-bind.io,resources=collections,verbs=get;list;watch
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiserviceexporttemplates,verbs=get;list;watch
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete

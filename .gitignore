@@ -14,5 +14,5 @@ coverage.*
 /dex
 /bin
 docs/generators/cli-doc/cli-doc
-dex/
 apiserviceexport.yaml
+*.prod

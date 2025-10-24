@@ -35,6 +35,20 @@ cd sdk/apis
     webhook \
     paths="./..." \
     output:crd:artifacts:config=../../deploy/crd
+
+../../${CONTROLLER_GEN} \
+    crd \
+    rbac:roleName=manager-role \
+    webhook \
+    paths="./..." \
+    output:crd:artifacts:config=../../deploy/charts/backend/crds
+
+# Generate RBAC manifests for Helm chart from backend controllers
+../../${CONTROLLER_GEN} \
+    rbac:roleName=kube-bind-role \
+    paths="../../backend/controllers/..." \
+    output:rbac:artifacts:config=../../deploy/charts/backend/templates
+
 cd -
 
 cd deploy/crd

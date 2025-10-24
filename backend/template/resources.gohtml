@@ -10,7 +10,7 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
 
-    <title>Modules - Kube Bind</title>
+    <title>Services - Kube Bind</title>
     <style>
       body {
         background: #f8f9fa;
@@ -36,7 +36,7 @@
         margin: 0;
       }
       
-      .module-card {
+      .service-card {
         border: 1px solid #dee2e6;
         border-radius: 6px;
         background: white;
@@ -44,17 +44,17 @@
         margin-bottom: 1rem;
       }
       
-      .module-card:hover {
+      .service-card:hover {
         border-color: #007bff;
       }
       
-      .module-card .card-header {
+      .service-card .card-header {
         background: #f8f9fa;
         border-bottom: 1px solid #dee2e6;
         padding: 0.75rem 1rem;
       }
       
-      .module-card .card-header h5 {
+      .service-card .card-header h5 {
         margin: 0;
         font-size: 1.1rem;
         font-weight: 500;
@@ -135,14 +135,14 @@
   <body>
     <div class="container">
       <div class="page-header">
-        <h2>Available Modules</h2>
-        <p>Select a module to bind its resources and permissions</p>
+        <h2>Available Services</h2>
+        <p>Select a service to bind its resources and permissions</p>
       </div>
       
       <div class="row">
-        {{range $moduleIdx, $schema := .Schemas}}
+        {{range $serviceIdx, $schema := .Schemas}}
         <div class="col-lg-6 col-md-12 mb-3">
-          <div class="card module-card">
+          <div class="card service-card">
             <div class="card-header">
               <h5>{{$schema.Name}}</h5>
               {{if $schema.Description}}<small class="text-muted">{{$schema.Description}}</small>{{end}}
@@ -171,10 +171,10 @@
                   </span>
                   {{if or $claim.Selector.NamedResources $claim.Selector.LabelSelector}}
                   <br>
-                  <a class="btn details-btn mt-1" data-toggle="collapse" href="#claim-{{$moduleIdx}}-{{$i}}" role="button" aria-expanded="false">
+                  <a class="btn details-btn mt-1" data-toggle="collapse" href="#claim-{{$serviceIdx}}-{{$i}}" role="button" aria-expanded="false">
                     Details
                   </a>
-                  <div class="collapse mt-2" id="claim-{{$moduleIdx}}-{{$i}}">
+                  <div class="collapse mt-2" id="claim-{{$serviceIdx}}-{{$i}}">
                     {{if $claim.Selector.NamedResources}}
                     <div class="detail-card p-2 mb-2">
                       <strong>Named:</strong>
@@ -217,7 +217,7 @@
             </ul>
             <div class="card-body">
               <a href="{{if $.Cluster}}/clusters/{{$.Cluster}}{{end}}/bind?s={{$schema.SessionID}}&template={{$schema.Name}}" class="btn bind-btn {{$schema.Name}}">
-                Bind Module
+                Bind Service
               </a>
             </div>
           </div>

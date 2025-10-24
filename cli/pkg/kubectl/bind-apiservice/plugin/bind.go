@@ -143,39 +143,72 @@ func (b *BindAPIServiceOptions) Validate() error {
 
 // Run starts the binding process.
 func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
+	fmt.Fprintf(b.Options.ErrOut, "🔧 Starting binding process...\n")
+
+	fmt.Fprintf(b.Options.ErrOut, "📋 Step 1: Getting client config...\n")
 	config, err := b.Options.ClientConfig.ClientConfig()
 	if err != nil {
+		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to get client config: %v\n", err)
 		return err
 	}
+	fmt.Fprintf(b.Options.ErrOut, "✅ Client config obtained successfully\n")
 
+	fmt.Fprintf(b.Options.ErrOut, "📋 Step 2: Getting remote kubeconfig...\n")
 	remoteKubeconfig, remoteNamespace, remoteConfig, err := b.getRemoteKubeconfig(ctx, config)
 	if err != nil {
+		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to get remote kubeconfig: %v\n", err)
 		return err
 	}
+	fmt.Fprintf(b.Options.ErrOut, "✅ Remote kubeconfig obtained, namespace: %s\n", remoteNamespace)
+
+	fmt.Fprintf(b.Options.ErrOut, "📋 Step 3: Getting request manifest...\n")
 	bs, err := b.getRequestManifest()
 	if err != nil {
+		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to get request manifest: %v\n", err)
 		return err
 	}
+	fmt.Fprintf(b.Options.ErrOut, "✅ Request manifest obtained (%d bytes)\n", len(bs))
+
+	fmt.Fprintf(b.Options.ErrOut, "📋 Step 4: Unmarshaling manifest...\n")
 	request, err := b.unmarshalManifest(bs)
 	if err != nil {
+		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to unmarshal manifest: %v\n", err)
 		return err
 	}
+	fmt.Fprintf(b.Options.ErrOut, "✅ Manifest unmarshaled successfully\n")
+
+	fmt.Fprintf(b.Options.ErrOut, "📋 Step 5: Creating service export request...\n")
 	result, err := b.createServiceExportRequest(ctx, remoteConfig, remoteNamespace, request)
 	if err != nil {
+		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to create service export request: %v\n", err)
 		return err
 	}
+	fmt.Fprintf(b.Options.ErrOut, "✅ Service export request created successfully\n")
+
+	fmt.Fprintf(b.Options.ErrOut, "📋 Step 6: Deploying konnector...\n")
 	if err := b.deployKonnector(ctx, config); err != nil {
+		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to deploy konnector: %v\n", err)
 		return err
 	}
+	fmt.Fprintf(b.Options.ErrOut, "✅ Konnector deployed successfully\n")
+
+	fmt.Fprintf(b.Options.ErrOut, "📋 Step 7: Creating kubeconfig secret...\n")
 	secretName, err := b.createKubeconfigSecret(ctx, config, remoteConfig.Host, remoteNamespace, remoteKubeconfig)
 	if err != nil {
+		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to create kubeconfig secret: %v\n", err)
 		return err
 	}
+	fmt.Fprintf(b.Options.ErrOut, "✅ Kubeconfig secret created: %s\n", secretName)
+
+	fmt.Fprintf(b.Options.ErrOut, "📋 Step 8: Creating API service bindings...\n")
 	bindings, err := b.createAPIServiceBindings(ctx, config, result, secretName)
 	if err != nil {
+		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to create API service bindings: %v\n", err)
 		return err
 	}
+	fmt.Fprintf(b.Options.ErrOut, "✅ API service bindings created (%d bindings)\n", len(bindings))
 
+	fmt.Fprintf(b.Options.ErrOut, "📋 Step 9: Printing results table...\n")
 	fmt.Fprintln(b.Options.ErrOut)
 	return b.printTable(ctx, config, bindings)
 }

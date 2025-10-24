@@ -24,6 +24,11 @@ GOBIN_DIR=$(abspath ./bin )
 PATH := $(GOBIN_DIR):$(TOOLS_GOBIN_DIR):$(PATH)
 TMPDIR := $(shell mktemp -d)
 
+# Image build configuration
+# REV is the short git sha of latest commit.
+REV ?= $(shell git rev-parse --short HEAD)
+IMAGE_REPO ?= kube-bind
+
 # Detect the path used for the install target
 ifeq (,$(shell go env GOBIN))
 INSTALL_GOBIN=$(shell go env GOPATH)/bin
@@ -290,6 +295,7 @@ CONTRIBS_E2E := $(patsubst %,test-e2e-contrib-%,$(CONTRIBS))
 
 .PHONY: test-e2e-contribs $(CONTRIBS_E2E)
 test-e2e-contribs: $(CONTRIBS_E2E) ## Run e2e tests for external integrations
+
 test-e2e-contrib-kcp: $(DEX) $(KCP)
 $(CONTRIBS_E2E):
 	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && $(GO_TEST) -race -count $(COUNT) $(E2E_PARALLELISM_FLAG) ./test/e2e/...
@@ -369,32 +375,29 @@ deploy-docs: venv ## Deploy docs
 	. $(VENV)/activate; \
 	REMOTE=$(REMOTE) BRANCH=$(BRANCH) docs/scripts/deploy-docs.sh
 
-# Image build configuration
-# REV is the short git sha of latest commit.
-REV=$(shell git rev-parse --short HEAD)
-KIND_CLUSTER ?= backend
-KO_DOCKER_REPO ?= kube-bind
-
+# Example: make IMAGE_REPO=ghcr.io/<username> image-local 
 .PHONY: image-local
 image-local:
 	@echo "Building images locally with tag $(REV)"
 	@command -v ko >/dev/null 2>&1 || { echo "ko not found. Install with: go install github.com/google/ko@latest"; exit 1; }
 
 	@echo "Building konnector image locally..."
-	KO_DOCKER_REPO=$(KO_DOCKER_REPO) ko build \
+	KO_DOCKER_REPO=$(IMAGE_REPO) ko build \
 		--local \
 		-B \
 		-t $(REV) \
 		./cmd/konnector
 
 	@echo "Building backend image locally..."
-	KO_DOCKER_REPO=$(KO_DOCKER_REPO) ko build \
+	KO_DOCKER_REPO=$(IMAGE_REPO) ko build \
 		--local \
 		-B \
 		-t $(REV) \
 		./cmd/backend
 
-	@echo "Successfully built local images with tag $(REV)"
+	@echo "Successfully built local images:"
+	@echo "  $(IMAGE_REPO)/konnector:$(REV)"
+	@echo "  $(IMAGE_REPO)/backend:$(REV)"
 
 .PHONY: kind-load
 kind-load:
@@ -402,5 +405,68 @@ kind-load:
 	kind load docker-image $(KO_DOCKER_REPO)/konnector:$(REV) --name $(KIND_CLUSTER)
 	kind load docker-image $(KO_DOCKER_REPO)/backend:$(REV) --name $(KIND_CLUSTER)
 	@echo "Successfully loaded images into kind cluster '$(KIND_CLUSTER)'"
+
+.PHONY: helm-build-local
+helm-build-local: ## Build and package Helm charts locally for testing
+	@echo "Building Helm charts locally..."
+	@command -v helm >/dev/null 2>&1 || { echo "helm not found. Install from: https://helm.sh/docs/intro/install/"; exit 1; }
+	
+	@# Set chart version to semver format for local builds (0.0.0-<git-sha>)
+	CHART_VERSION="0.0.0-$(REV)"; \
+	for chart_dir in deploy/charts/*/; do \
+		if [ -f "$${chart_dir}Chart.yaml" ]; then \
+			chart_name=$$(basename "$$chart_dir"); \
+			echo "Processing chart: $$chart_name"; \
+			\
+			cp "$${chart_dir}Chart.yaml" "$${chart_dir}Chart.yaml.bak"; \
+			sed -i.tmp "s/^version:.*/version: $$CHART_VERSION/" "$${chart_dir}Chart.yaml"; \
+			sed -i.tmp "s/^appVersion:.*/appVersion: $$CHART_VERSION/" "$${chart_dir}Chart.yaml"; \
+			rm -f "$${chart_dir}Chart.yaml.tmp"; \
+			\
+			helm package "$$chart_dir" --version "$$CHART_VERSION" --destination ./bin/; \
+			echo "Packaged: ./bin/$$chart_name-$$CHART_VERSION.tgz"; \
+			\
+			mv "$${chart_dir}Chart.yaml.bak" "$${chart_dir}Chart.yaml"; \
+		fi; \
+	done
+	@echo "Helm charts built successfully in ./bin/"
+
+.PHONY: helm-clean
+helm-clean: ## Clean up built helm charts
+	rm -f ./bin/*.tgz
+
+.PHONY: helm-push-local
+helm-push-local: ## Push Helm charts to IMAGE_REPO registry
+	@echo "Pushing Helm charts to registry: $(IMAGE_REPO)"
+	@command -v helm >/dev/null 2>&1 || { echo "helm not found. Install from: https://helm.sh/docs/intro/install/"; exit 1; }
+	
+	CHART_VERSION="0.0.0-$(REV)"; \
+	export HELM_EXPERIMENTAL_OCI=1; \
+	for chart_file in ./bin/*-$$CHART_VERSION.tgz; do \
+		if [ -f "$$chart_file" ]; then \
+			chart_filename=$$(basename "$$chart_file"); \
+			chart_name=$${chart_filename%-$$CHART_VERSION.tgz}; \
+			if [[ "$$chart_name" =~ [[:space:]] ]]; then \
+				echo "Skipping chart with invalid name: '$$chart_name' (contains spaces)"; \
+				continue; \
+			fi; \
+			echo "Pushing $$chart_name to $(IMAGE_REPO)"; \
+			helm push "$$chart_file" "oci://$(IMAGE_REPO)/charts"; \
+			echo "Chart available at: oci://$(IMAGE_REPO)/charts/$$chart_name:$$CHART_VERSION"; \
+		fi; \
+	done
+
+.PHONY: helm-test
+helm-test: helm-build-local ## Test Helm chart installation (dry-run)
+	@echo "Testing Helm chart installation..."
+	CHART_VERSION="0.0.0-$(REV)"; \
+	for chart_dir in deploy/charts/*/; do \
+		if [ -f "$${chart_dir}Chart.yaml" ]; then \
+			chart_name=$$(basename "$$chart_dir"); \
+			echo "Testing chart: $$chart_name"; \
+			helm install test-$$chart_name "./bin/$$chart_name-$$CHART_VERSION.tgz" --dry-run --debug; \
+			echo "✓ Chart $$chart_name passes dry-run test"; \
+		fi; \
+	done
 
 include Makefile.venv

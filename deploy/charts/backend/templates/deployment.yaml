@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kube-bind.fullname" . }}
+  labels:
+    {{- include "kube-bind.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kube-bind.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "kube-bind.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kube-bind.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --listen-address={{ .Values.backend.listenAddress }}
+            {{- if .Values.backend.logLevel }}
+            - --log-level={{ .Values.backend.logLevel }}
+            {{- end }}
+            {{- if .Values.backend.oidc.issuerUrl }}
+            - --oidc-issuer-url={{ .Values.backend.oidc.issuerUrl }}
+            {{- end }}
+            {{- if .Values.backend.oidc.clientId }}
+            - --oidc-issuer-client-id={{ .Values.backend.oidc.clientId }}
+            {{- end }}
+            {{- if .Values.backend.oidc.clientSecret }}
+            - --oidc-issuer-client-secret={{ .Values.backend.oidc.clientSecret }}
+            {{- end }}
+            {{- if .Values.backend.oidc.callbackUrl }}
+            - --oidc-callback-url={{ .Values.backend.oidc.callbackUrl }}
+            {{- end }}
+            {{- if .Values.backend.prettyName }}
+            - --pretty-name={{ .Values.backend.prettyName }}
+            {{- end }}
+            {{- if .Values.backend.namespacePrefix }}
+            - --namespace-prefix={{ .Values.backend.namespacePrefix }}
+            {{- end }}
+            {{- if .Values.backend.consumerScope }}
+            - --consumer-scope={{ .Values.backend.consumerScope }}
+            {{- end }}
+            {{- if .Values.backend.cookieSigningKey }}
+            - --cookie-signing-key={{ .Values.backend.cookieSigningKey }}
+            {{- end }}
+            {{- if .Values.backend.cookieEncryptionKey }}
+            - --cookie-encryption-key={{ .Values.backend.cookieEncryptionKey }}
+            {{- end }}
+            {{- if .Values.backend.tls.enabled }}
+            - --tls-cert-file={{ .Values.backend.tls.tlsCertFile }}
+            - --tls-key-file={{ .Values.backend.tls.tlsKeyFile }}
+            {{- end }}
+          ports:
+            {{- if .Values.backend.tls.enabled }}
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+            {{- else }}
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+            {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.backend.tls.enabled }}
+            - name: tls-certs
+              mountPath: /etc/kube-bind/tls
+              readOnly: true
+            {{- end }}
+            {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if .Values.backend.tls.enabled }}
+        - name: tls-certs
+          secret:
+            secretName: {{ .Values.backend.tls.certSecretName }}
+        {{- end }}
+        {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

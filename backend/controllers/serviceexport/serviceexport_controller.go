@@ -82,11 +82,11 @@ func NewAPIServiceExportReconciler(
 	return r, nil
 }
 
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=apiserviceexports/finalizers,verbs=update
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=boundschemas,verbs=get;list;watch
-//+kubebuilder:rbac:groups=kubebind.k8s.io,resources=boundschemas/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiserviceexports,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiserviceexports/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=kube-bind.io,resources=apiserviceexports/finalizers,verbs=update
+//+kubebuilder:rbac:groups=kube-bind.io,resources=boundschemas,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=kube-bind.io,resources=boundschemas/status,verbs=get;update;patch;list
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

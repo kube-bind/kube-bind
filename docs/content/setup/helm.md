@@ -1,16 +1,16 @@
-<---
+---
 description: >
   Install kube-bind on an existing Kubernetes cluster via the official Helm chart.
 ---
 
 # Installation with Helm
 
-Kube-bind can be installed on an existing Kubernetes cluster using the official Helm chart.
-There are 2 helm charts available: `kube-bind/backend` for service providers and `kube-bind/konnectors` for service consumers.
+Kube-bind can be installed on an existing Kubernetes cluster using the official Helm OCI charts.
+The backend chart is available as an OCI image for service providers, with konnector charts coming soon for service consumers.
 
 ## Quick Start
 
-**Important**: Current version of kube-bind uses application level redirect (HTTP 302) to CLI. Your ingress controller must support this behavior.
+**Important**: Current version of kube-bind uses application-level redirect (HTTP 302) to CLI. Your ingress controller must support this behavior.
 
 ## Prerequisites & Setup Guides
 
@@ -23,25 +23,39 @@ The following prerequisites are required. Click the links below for detailed set
 
 ### Install Kube-Bind Backend
 
-1. **Add the Helm repository:**
-```bash
-helm repo add kube-bind https://kube-bind.github.io/helm-charts
-helm repo update
-```
+1. **Get the latest chart version:**
+   
+   Visit the [releases page](https://github.com/kube-bind/kube-bind/releases) or check available versions:
+   ```bash
+   # For latest tag version (recommended for production):
+   VERSION=$(curl -s https://api.github.com/repos/kube-bind/kube-bind/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/v//')
+   
+   # Or use a specific development version:
+   # VERSION=0.0.0-<git-sha>
+   ```
 
 2. **Configure your values:**
-Edit `deploy/charts/backend/examples/values-local-development.yaml` and replace the placeholder values:
-- `### REPLACE ME ###` with your actual OIDC credentials
-- Update hostnames to match your setup
+   
+   Edit `deploy/charts/backend/examples/values-local-development.yaml` and replace the placeholder values:
+   - `### REPLACE ME ###` with your actual OIDC credentials
+   - Update hostnames to match your setup
 
-3. **Install the backend:**
-```bash
-helm upgrade --install \
-    --namespace kube-bind \
-    --create-namespace \
-    --values ./deploy/charts/backend/examples/values-local-development.yaml \
-    kube-bind kube-bind/backend
-```
+3. **Install the backend using OCI chart:**
+   ```bash
+   # Using latest release version
+   helm upgrade --install \
+       --namespace kube-bind \
+       --create-namespace \
+       --values ./deploy/charts/backend/examples/values-local-development.yaml \
+       kube-bind oci://ghcr.io/kube-bind/charts/backend --version ${VERSION}
+   
+   # Or install a specific development version
+   # helm upgrade --install \
+   #     --namespace kube-bind \
+   #     --create-namespace \
+   #     --values ./deploy/charts/backend/examples/values-local-development.yaml \
+   #     kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.0.0-21d91e9
+   ```
 
 4. **Seed with example resources (optional):**
 ```bash
@@ -65,6 +79,11 @@ kind create cluster --name kube-bind-test
 
 ### Helm
 Install Helm 3.x from [https://helm.sh/docs/intro/install/](https://helm.sh/docs/intro/install/)
+
+**Note**: Helm 3.8+ is required for OCI chart support. Enable experimental OCI support if needed:
+```bash
+export HELM_EXPERIMENTAL_OCI=1
+```
 
 ### cert-manager Setup
 
@@ -240,3 +259,42 @@ The example values file at `deploy/charts/backend/examples/values-local-developm
 - **Hostnames**: Update to match your actual domains
 
 For production deployments, create your own values file based on the example.
+
+---
+
+## Available OCI Charts
+
+Kube-bind Helm charts are published as OCI images to GitHub Container Registry:
+
+### Backend Chart
+- **Registry**: `oci://ghcr.io/kube-bind/charts/backend`
+- **Latest Release**: Use the latest tag version (e.g., `1.0.0`)
+- **Development Builds**: Available as `0.0.0-<git-sha>` format for each commit to main
+
+### Finding Available Versions
+
+**Release versions:**
+```bash
+# List all releases
+curl -s https://api.github.com/repos/kube-bind/kube-bind/releases | grep '"tag_name"' | head -5
+
+# Get latest release version
+VERSION=$(curl -s https://api.github.com/repos/kube-bind/kube-bind/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/v//')
+echo "Latest version: ${VERSION}"
+```
+
+**Development versions:**
+Development charts are built from every commit to the main branch with the format `0.0.0-<short-git-sha>`.
+
+### Installing Different Versions
+
+```bash
+# Install latest stable release (recommended for production)
+helm upgrade --install kube-bind oci://ghcr.io/kube-bind/charts/backend --version ${VERSION}
+
+# Install specific release version  
+helm upgrade --install kube-bind oci://ghcr.io/kube-bind/charts/backend --version 1.0.0
+
+# Install development build (for testing)
+helm upgrade --install kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.0.0-a1b2c3d
+```

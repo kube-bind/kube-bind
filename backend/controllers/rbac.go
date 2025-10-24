@@ -27,3 +27,8 @@ package controllers
 // These permissions allow the backend to grant RBAC permissions for exported resources
 //+kubebuilder:rbac:groups="",resources=configmaps,verbs=*
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=*
+
+// Wildcard permissions to allow granting RBAC permissions for any API group/resource
+// This is needed for kube-bind to create ClusterRoles with permissions for bound resources
+// In a way this makes all the above specific permissions redundant, but they are left for clarity and traceability.
+//+kubebuilder:rbac:groups=*,resources=*,verbs=*

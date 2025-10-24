@@ -26,6 +26,11 @@ jobs:
     - uses: sigstore/cosign-installer@v3.7.0
     - name: Install ko
       run: go install github.com/google/ko@latest
+    
+    - name: Install Helm
+      uses: azure/setup-helm@v3
+      with:
+        version: 'v3.12.0'
 
     - name: Set LDFLAGS
       run: echo LDFLAGS="$(make ldflags)" | tee -a >> $GITHUB_ENV
@@ -61,6 +66,42 @@ jobs:
             -a ref=${{ github.ref }} \
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
+
+    - name: Package and push Helm charts as OCI
+      env:
+        HELM_EXPERIMENTAL_OCI: 1
+      run: |
+        # Login to GitHub Container Registry for Helm
+        echo "${{ github.token }}" | helm registry login ghcr.io --username ${{ github.actor }} --password-stdin
+        
+        # Set chart version - use tag name if available, otherwise use semver format
+        if [[ "${{ github.ref_type }}" == "tag" ]]; then
+          CHART_VERSION="${{ github.ref_name }}"
+          # Remove 'v' prefix if present
+          CHART_VERSION="${CHART_VERSION#v}"
+        else
+          CHART_VERSION="0.0.0-${{ github.sha }}"
+        fi
+        
+        # Package and push each chart in deploy/charts/
+        for chart_dir in deploy/charts/*/; do
+          if [ -f "${chart_dir}Chart.yaml" ]; then
+            chart_name=$(basename "$chart_dir")
+            echo "Processing chart: $chart_name"
+            
+            # Update chart version and appVersion in Chart.yaml
+            sed -i "s/^version:.*/version: ${CHART_VERSION}/" "${chart_dir}Chart.yaml"
+            sed -i "s/^appVersion:.*/appVersion: ${CHART_VERSION}/" "${chart_dir}Chart.yaml"
+            
+            # Package the chart
+            helm package "$chart_dir" --version "${CHART_VERSION}"
+            
+            # Push to GitHub Container Registry
+            helm push "${chart_name}-${CHART_VERSION}.tgz" "oci://ghcr.io/${{ github.repository_owner }}/charts"
+            
+            echo "Helm chart pushed to oci://ghcr.io/${{ github.repository_owner }}/charts/${chart_name}:${CHART_VERSION}"
+          fi
+        done
 
     - uses: actions/delete-package-versions@v3
       with:

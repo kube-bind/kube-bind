@@ -107,6 +107,6 @@ jobs:
 
     - uses: actions/delete-package-versions@v3
       with:
-        package-name: 'kube-bind'
+        package-name: '${{ github.event.repository.name }}'
         min-versions-to-keep: 10
         delete-only-pre-release-versions: "true"

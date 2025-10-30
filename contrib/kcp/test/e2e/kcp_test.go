@@ -50,7 +50,7 @@ func TestKCPNamespacedScope(t *testing.T) {
 
 func testKcpIntegration(t *testing.T, scope kubebindv1alpha2.InformerScope) {
 	t.Helper()
-	t.Logf("Testing KCP integration with informer scope %s, tempdir: %s", scope, t.TempDir())
+	t.Logf("Testing kcp integration with informer scope %s, tempdir: %s", scope, t.TempDir())
 
 	// dex
 	framework.StartDex(t)

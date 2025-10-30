@@ -78,7 +78,7 @@ func performBindingWithBrowser(t *testing.T, backendAddr string, clusterID strin
 	})
 }
 
-// simulateKCPBrowser simulates browser interaction for KCP binding using templates.
+// simulateKCPBrowser simulates browser interaction for kcp binding using templates.
 func simulateKCPBrowser(t *testing.T, authURLCh chan string, template string) {
 	browser := surf.NewBrowser()
 	authURL := <-authURLCh

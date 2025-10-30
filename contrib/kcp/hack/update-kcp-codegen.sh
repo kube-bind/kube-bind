@@ -26,7 +26,7 @@ fi
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
 
-# Generate KCP API resources from CRDs
+# Generate kcp API resources from CRDs
 (
   ${KCP_APIGEN_GEN} --input-dir "${REPO_ROOT}"/deploy/crd --output-dir "${REPO_ROOT}"/contrib/kcp/deploy/resources
 )

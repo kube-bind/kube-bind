@@ -9,7 +9,7 @@ description: >
 
 - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
 
-## Start with Kube-Bind
+## Start with kube-bind
 
 This section allows you to run local kube-bind backend and konnector with the standard Kubernetes provider.
 

@@ -53,7 +53,7 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	opts := plugin.NewBindOptions(streams)
 	cmd := &cobra.Command{
 		Use:   "bind",
-		Short: "kubectl plugin for Kube-Bind.io, bind different remote types into the current cluster.",
+		Short: "kubectl plugin for kube-bind, bind different remote types into the current cluster.",
 		Long: help.Doc(`
 		kube-bind is a project that aims to provide better support for
 		service providers and consumers that reside in distinct Kubernetes clusters.

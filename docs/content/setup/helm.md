@@ -5,7 +5,7 @@ description: >
 
 # Installation with Helm
 
-Kube-bind can be installed on an existing Kubernetes cluster using the official Helm OCI charts.
+kube-bind can be installed on an existing Kubernetes cluster using the official Helm OCI charts.
 The backend chart is available as an OCI image for service providers, with konnector charts coming soon for service consumers.
 
 ## Quick Start
@@ -21,21 +21,21 @@ The following prerequisites are required. Click the links below for detailed set
 - **[cert-manager](#cert-manager-setup)** - For TLS certificate management
 - **[OIDC provider](#oidc-provider-setup)** - For authentication (Dex, Keycloak, etc.)
 
-### Install Kube-Bind Backend
+### Install kube-bind Backend
 
 1. **Get the latest chart version:**
-   
+
    Visit the [releases page](https://github.com/kube-bind/kube-bind/releases) or check available versions:
    ```bash
    # For latest tag version (recommended for production):
    VERSION=$(curl -s https://api.github.com/repos/kube-bind/kube-bind/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/v//')
-   
+
    # Or use a specific development version:
    # VERSION=0.0.0-<git-sha>
    ```
 
 2. **Configure your values:**
-   
+
    Edit `deploy/charts/backend/examples/values-local-development.yaml` and replace the placeholder values:
    - `### REPLACE ME ###` with your actual OIDC credentials
    - Update hostnames to match your setup
@@ -48,7 +48,7 @@ The following prerequisites are required. Click the links below for detailed set
        --create-namespace \
        --values ./deploy/charts/backend/examples/values-local-development.yaml \
        kube-bind oci://ghcr.io/kube-bind/charts/backend --version ${VERSION}
-   
+
    # Or install a specific development version
    # helm upgrade --install \
    #     --namespace kube-bind \
@@ -150,7 +150,7 @@ EOF
 
 ### OIDC Provider Setup
 
-Kube-bind requires an OIDC provider for authentication. Here's how to set up Dex as an example:
+kube-bind requires an OIDC provider for authentication. Here's how to set up Dex as an example:
 
 #### Install Dex OIDC Provider
 
@@ -186,21 +186,21 @@ helm repo add dex https://charts.dexidp.io
 cat > /tmp/dex-values.yaml <<EOF
 config:
   issuer: https://auth.example.com  # Replace with your domain
-  
+
   logger:
     level: "debug"
-  
+
   storage:
     type: kubernetes
     config:
       inCluster: true
-  
+
   web:
     https: 0.0.0.0:5557
     tlsCert: /etc/dex/tls/tls.crt
     tlsKey: /etc/dex/tls/tls.key
     http: "0.0.0.0:5556"
-  
+
   connectors:
     - type: github
       id: github
@@ -210,7 +210,7 @@ config:
         clientSecret: ### REPLACE ME ###
         redirectURI: https://auth.example.com/callback
         org: your-org  # Replace with your GitHub org
-  
+
   staticClients:
     - id: kube-bind
       redirectURIs:
@@ -264,7 +264,7 @@ For production deployments, create your own values file based on the example.
 
 ## Available OCI Charts
 
-Kube-bind Helm charts are published as OCI images to GitHub Container Registry:
+kube-bind Helm charts are published as OCI images to GitHub Container Registry:
 
 ### Backend Chart
 - **Registry**: `oci://ghcr.io/kube-bind/charts/backend`
@@ -292,7 +292,7 @@ Development charts are built from every commit to the main branch with the forma
 # Install latest stable release (recommended for production)
 helm upgrade --install kube-bind oci://ghcr.io/kube-bind/charts/backend --version ${VERSION}
 
-# Install specific release version  
+# Install specific release version
 helm upgrade --install kube-bind oci://ghcr.io/kube-bind/charts/backend --version 1.0.0
 
 # Install development build (for testing)

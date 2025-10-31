@@ -1,6 +1,6 @@
 ---
 description: >
-  Set up kube-bind with KCP provider for advanced multi-cluster scenarios.
+  Set up kube-bind with kcp provider for advanced multi-cluster scenarios.
 ---
 
 # kcp Setup
@@ -24,7 +24,7 @@ The kcp provider integrates kube-bind with [kcp](https://github.com/kcp-dev/kcp)
 
 ## Setup Steps
 
-### 1. Start KCP
+### 1. Start kcp
 
 ```bash
 make run-kcp
@@ -56,7 +56,7 @@ Start dex:
 ./bin/dex serve examples/config-dev.yaml
 ```
 
-### 3. Bootstrap KCP
+### 3. Bootstrap kcp
 
 Create the kube-bind provider workspace and APIExport:
 
@@ -66,7 +66,7 @@ export KUBECONFIG=.kcp/backend.kubeconfig
 ./bin/kcp-init --kcp-kubeconfig $KUBECONFIG
 ```
 
-### 4. Start Backend with KCP Provider
+### 4. Start Backend with kcp Provider
 
 Switch to the kube-bind workspace:
 
@@ -74,7 +74,7 @@ Switch to the kube-bind workspace:
 kubectl ws use :root:kube-bind
 ```
 
-Start the backend with KCP provider:
+Start the backend with kcp provider:
 
 ```bash
 ./bin/backend \

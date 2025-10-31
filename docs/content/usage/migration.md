@@ -11,7 +11,7 @@ The v0.6.x release introduces several significant improvements:
 - **Catalog API**: New `Collection` and `APIServiceExportTemplate` CRDs for better service organization
 - **Enhanced Permission Claims**: Support for `NamedResources` alongside label selectors
 - **Provider-side Namespace Management**: Automatic RBAC and namespace provisioning
-- **Improved KCP Integration**: Better workspace and APIExport handling
+- **Improved kcp Integration**: Better workspace and APIExport handling
 
 ## API Changes
 

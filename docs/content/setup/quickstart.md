@@ -9,18 +9,18 @@ description: >
 
 - [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl)
 
-## Start with Kube-Bind
+## Start with kube-bind
 
 This section allows you to run local kube-bind backend and konnector with the standard Kubernetes provider.
 
 Starting with v0.5.0, kube-bind supports multiple backend providers through multicluster-runtime:
 
 - **Standard Provider** (default): Works with regular Kubernetes clusters
-- **KCP Provider**: Advanced multi-tenant setup with kcp workspaces (see [KCP Setup Guide](kcp-setup.md))
+- **kcp Provider**: Advanced multi-tenant setup with kcp workspaces (see [kcp Setup Guide](kcp-setup.md))
 
-This quickstart uses the default provider. For kcp integration, see the [KCP Setup Guide](kcp-setup.md).
+This quickstart uses the default provider. For kcp integration, see the [kcp Setup Guide](kcp-setup.md).
 
-### Using KCP for Local Development
+### Using kcp for Local Development
 
 For local development, we use [kcp](https://github.com/kcp-dev/kcp) to create multiple logical clusters under a single kcp instance, making them available and accessible via the same URL.
 

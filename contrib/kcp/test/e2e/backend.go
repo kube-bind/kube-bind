@@ -60,7 +60,7 @@ func bootstrapBackend(t *testing.T, server kcptestingserver.RunningServer, scope
 
 	_, backendKubeconfig := wsConfig(t, server, logicalcluster.NewPath("root").Join("kube-bind"))
 
-	t.Log("Starting kube-bind backend for KCP")
+	t.Log("Starting kube-bind backend for kcp")
 	addr, _ := framework.StartBackend(t,
 		"--kubeconfig="+backendKubeconfig,
 		"--multicluster-runtime-provider=kcp",

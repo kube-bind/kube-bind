@@ -129,7 +129,7 @@ func createApiBinding(t testing.TB, client *kcpclientset.ClusterClientset, path 
 
 func bootstrapKCP(t testing.TB, server kcptestingserver.RunningServer) {
 	t.Helper()
-	t.Log("Bootstrapping KCP")
+	t.Log("Bootstrapping kcp")
 
 	cfg := server.BaseConfig(t)
 	cfg.Host += "/clusters/root"

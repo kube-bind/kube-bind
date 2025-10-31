@@ -13,13 +13,13 @@ kube-bind supports multiple deployment scenarios and backend providers to meet d
 
 ### Advanced Multi-Cluster Setup
 
-- **[KCP Integration](kcp-setup.md)**: Advanced multi-tenant setup with kcp workspaces and APIExports
+- **[kcp Integration](kcp-setup.md)**: Advanced multi-tenant setup with kcp workspaces and APIExports
 
 ## Architecture Overview
 
 Starting with v0.5.0, kube-bind uses a multicluster-runtime architecture that supports:
 
-- **Multiple Providers**: Choose between standard Kubernetes or KCP backends
+- **Multiple Providers**: Choose between standard Kubernetes or kcp backends
 - **Enhanced API**: v1alpha2 API with resource-based exports and BoundSchema support
 - **Flexible Deployment**: Support for various cluster topologies and requirements
 
@@ -27,7 +27,7 @@ Choose the setup that best fits your use case:
 
 - Use **Quickstart** or **Local Setup with Kind** for development and testing
 - Use **Helm Deployment** for production environments with standard Kubernetes
-- Use **KCP Integration** for advanced multi-tenant scenarios with workspace isolation
+- Use **kcp Integration** for advanced multi-tenant scenarios with workspace isolation
 
 ## Next Steps
 

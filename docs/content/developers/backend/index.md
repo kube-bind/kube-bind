@@ -15,7 +15,7 @@ Starting with v0.5.0, the backend leverages `sigs.k8s.io/multicluster-runtime` f
 ### Supported Providers
 
 - **Default Provider**: Standard Kubernetes cluster support
-- **KCP Provider**: Integration with [kcp](https://github.com/kcp-dev/kcp) through `github.com/kcp-dev/multicluster-provider`
+- **kcp Provider**: Integration with [kcp](https://www.kcp.io/) through `github.com/kcp-dev/multicluster-provider`
 
 ## Configuration
 
@@ -30,12 +30,12 @@ The backend can be configured to use different providers:
 
 ### Provider Configuration
 
-#### KCP Provider
+#### kcp Provider
 
-When using the KCP provider (`--multicluster-runtime-provider kcp`), the backend:
+When using the kcp provider (`--multicluster-runtime-provider kcp`), the backend:
 
 - Connects to kcp workspaces through APIExports
-- Manages resources across logical clusters  
+- Manages resources across logical clusters
 - Supports advanced multi-tenancy features
 - Enables workspace-based isolation
 

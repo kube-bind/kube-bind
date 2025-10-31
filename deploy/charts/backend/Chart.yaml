@@ -1,6 +1,6 @@
 apiVersion: v2
 name: backend
-description: A Helm chart for Kube-bind backend deployment
+description: A Helm chart for kube-bind backend deployment
 
 # A chart can be either an 'application' or a 'library' chart.
 #

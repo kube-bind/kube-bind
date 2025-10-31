@@ -633,7 +633,7 @@
           <li class="md-nav__item">
   <a href="#install-kube-bind-backend" class="md-nav__link">
     <span class="md-ellipsis">
-      Install Kube-Bind Backend
+      Install kube-bind Backend
     </span>
   </a>
   
@@ -1985,7 +1985,7 @@
           <li class="md-nav__item">
   <a href="#install-kube-bind-backend" class="md-nav__link">
     <span class="md-ellipsis">
-      Install Kube-Bind Backend
+      Install kube-bind Backend
     </span>
   </a>
   
@@ -2132,7 +2132,7 @@
 
 
 <h1 id="installation-with-helm">Installation with Helm</h1>
-<p>Kube-bind can be installed on an existing Kubernetes cluster using the official Helm OCI charts.
+<p>kube-bind can be installed on an existing Kubernetes cluster using the official Helm OCI charts.
 The backend chart is available as an OCI image for service providers, with konnector charts coming soon for service consumers.</p>
 <h2 id="quick-start">Quick Start</h2>
 <p><strong>Important</strong>: Current version of kube-bind uses application-level redirect (HTTP 302) to CLI. Your ingress controller must support this behavior.</p>
@@ -2144,7 +2144,7 @@ The backend chart is available as an OCI image for service providers, with konne
 <li><strong><a href="#cert-manager-setup">cert-manager</a></strong> - For TLS certificate management</li>
 <li><strong><a href="#oidc-provider-setup">OIDC provider</a></strong> - For authentication (Dex, Keycloak, etc.)</li>
 </ul>
-<h3 id="install-kube-bind-backend">Install Kube-Bind Backend</h3>
+<h3 id="install-kube-bind-backend">Install kube-bind Backend</h3>
 <ol>
 <li><strong>Get the latest chart version:</strong></li>
 </ol>
@@ -2253,7 +2253,7 @@ The backend chart is available as an OCI image for service providers, with konne
 <a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="s">EOF</span>
 </code></pre></div>
 <h3 id="oidc-provider-setup">OIDC Provider Setup</h3>
-<p>Kube-bind requires an OIDC provider for authentication. Here's how to set up Dex as an example:</p>
+<p>kube-bind requires an OIDC provider for authentication. Here's how to set up Dex as an example:</p>
 <h4 id="install-dex-oidc-provider">Install Dex OIDC Provider</h4>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span>oidc
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
@@ -2355,7 +2355,7 @@ The backend chart is available as an OCI image for service providers, with konne
 <p>For production deployments, create your own values file based on the example.</p>
 <hr />
 <h2 id="available-oci-charts">Available OCI Charts</h2>
-<p>Kube-bind Helm charts are published as OCI images to GitHub Container Registry:</p>
+<p>kube-bind Helm charts are published as OCI images to GitHub Container Registry:</p>
 <h3 id="backend-chart">Backend Chart</h3>
 <ul>
 <li><strong>Registry</strong>: <code>oci://ghcr.io/kube-bind/charts/backend</code></li>
@@ -2377,7 +2377,7 @@ Development charts are built from every commit to the main branch with the forma
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Install latest stable release (recommended for production)</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>kube-bind<span class="w"> </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Install specific release version  </span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Install specific release version</span>
 <a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>kube-bind<span class="w"> </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="m">1</span>.0.0
 <a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
 <a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="c1"># Install development build (for testing)</span>

@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Set up kube-bind with KCP provider for advanced multi-cluster scenarios.
+        <meta name="description" content="Set up kube-bind with kcp provider for advanced multi-cluster scenarios.
 ">
       
       
@@ -1804,7 +1804,7 @@
           <li class="md-nav__item">
   <a href="#1-start-kcp" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Start KCP
+      1. Start kcp
     </span>
   </a>
   
@@ -1822,7 +1822,7 @@
           <li class="md-nav__item">
   <a href="#3-bootstrap-kcp" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Bootstrap KCP
+      3. Bootstrap kcp
     </span>
   </a>
   
@@ -1831,7 +1831,7 @@
           <li class="md-nav__item">
   <a href="#4-start-backend-with-kcp-provider" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Start Backend with KCP Provider
+      4. Start Backend with kcp Provider
     </span>
   </a>
   
@@ -2006,7 +2006,7 @@
 <li>kube-bind binaries built (<code>make build</code>)</li>
 </ul>
 <h2 id="setup-steps">Setup Steps</h2>
-<h3 id="1-start-kcp">1. Start KCP</h3>
+<h3 id="1-start-kcp">1. Start kcp</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>make<span class="w"> </span>run-kcp
 </code></pre></div>
 <h3 id="2-start-dex-oidc-provider">2. Start Dex OIDC Provider</h3>
@@ -2025,17 +2025,17 @@
 <p>Start dex:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./bin/dex<span class="w"> </span>serve<span class="w"> </span>examples/config-dev.yaml
 </code></pre></div>
-<h3 id="3-bootstrap-kcp">3. Bootstrap KCP</h3>
+<h3 id="3-bootstrap-kcp">3. Bootstrap kcp</h3>
 <p>Create the kube-bind provider workspace and APIExport:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cp<span class="w"> </span>.kcp/admin.kubeconfig<span class="w"> </span>.kcp/backend.kubeconfig
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/backend.kubeconfig
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>./bin/kcp-init<span class="w"> </span>--kcp-kubeconfig<span class="w"> </span><span class="nv">$KUBECONFIG</span>
 </code></pre></div>
-<h3 id="4-start-backend-with-kcp-provider">4. Start Backend with KCP Provider</h3>
+<h3 id="4-start-backend-with-kcp-provider">4. Start Backend with kcp Provider</h3>
 <p>Switch to the kube-bind workspace:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root:kube-bind
 </code></pre></div>
-<p>Start the backend with KCP provider:</p>
+<p>Start the backend with kcp provider:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>./bin/backend<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span>--multicluster-runtime-provider<span class="w"> </span>kcp<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--server-url<span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>apiexportendpointslice<span class="w"> </span>kube-bind.io<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s2">&quot;{.status.endpoints[0].url}&quot;</span><span class="k">)</span><span class="w"> </span><span class="se">\</span>

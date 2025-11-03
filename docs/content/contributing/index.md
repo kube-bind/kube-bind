@@ -17,7 +17,7 @@ contribution. See the [DCO](https://github.com/kube-bind/kube-bind/tree/main/DCO
 ### Prerequisites
 
 1. Clone this repository.
-2. [Install Go](https://golang.org/doc/install) (currently 1.22).
+2. [Install Go](https://golang.org/doc/install) (kube-bind requires 1.24+).
 3. Install [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl).
 
 ## Finding Areas to Contribute

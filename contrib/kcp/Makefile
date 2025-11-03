@@ -16,23 +16,17 @@
 SHELL := /usr/bin/env bash -e
 
 ROOT_DIR=$(abspath ../..)
-GO_INSTALL = $(ROOT_DIR)/hack/go-install.sh
-TOOLS_GOBIN_DIR = $(ROOT_DIR)/hack/tools
-GOBIN_DIR = $(ROOT_DIR)/bin
-PATH := $(GOBIN_DIR):$(TOOLS_GOBIN_DIR):$(PATH)
-TMPDIR := $(shell mktemp -d)
+UGET = $(ROOT_DIR)/hack/uget.sh
+ABS_TOOLS_DIR = $(ROOT_DIR)/hack/tools
+ABS_BUILD_DIR = $(ROOT_DIR)/bin
+PATH := $(ABS_BUILD_DIR):$(ABS_TOOLS_DIR):$(PATH)
 
-# Detect the path used for the install target
-ifeq (,$(shell go env GOBIN))
-INSTALL_GOBIN=$(shell go env GOPATH)/bin
-else
-INSTALL_GOBIN=$(shell go env GOBIN)
-endif
-
+export UGET_DIRECTORY = $(ABS_TOOLS_DIR)
+export UGET_CHECKSUMS = $(ROOT_DIR)/hack/tools.checksums
 
 KCP_APIGEN_VER := v0.28.0
 KCP_APIGEN_BIN := apigen
-KCP_APIGEN_GEN := $(TOOLS_GOBIN_DIR)/$(KCP_APIGEN_BIN)-$(KCP_APIGEN_VER)
+KCP_APIGEN_GEN := $(ABS_TOOLS_DIR)/$(KCP_APIGEN_BIN)
 export KCP_APIGEN_GEN # so hack scripts can use it
 
 all: build
@@ -44,7 +38,7 @@ require-%:
 
 # KCP tool installation targets
 $(KCP_APIGEN_GEN):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/kcp-dev/kcp/sdk/cmd/apigen $(KCP_APIGEN_BIN) $(KCP_APIGEN_VER)
+	@GO_MODULE=true $(UGET) github.com/kcp-dev/kcp/sdk/cmd/apigen $(KCP_APIGEN_BIN) $(KCP_APIGEN_VER)
 
 # KCP runtime targets
 run-kcp: $(KCP) ## Start KCP server

@@ -15,30 +15,24 @@
 # We need bash for some conditional logic below.
 SHELL := /usr/bin/env bash -e
 
-GO_INSTALL = ./hack/go-install.sh
-
 ROOT_DIR=$(abspath .)
 TOOLS_DIR=hack/tools
-TOOLS_GOBIN_DIR := $(abspath $(TOOLS_DIR))
-GOBIN_DIR=$(abspath ./bin )
-PATH := $(GOBIN_DIR):$(TOOLS_GOBIN_DIR):$(PATH)
-TMPDIR := $(shell mktemp -d)
+BUILD_DIR=bin/
+ABS_TOOLS_DIR := $(abspath $(TOOLS_DIR))
+ABS_BUILD_DIR=$(abspath $(BUILD_DIR))
+PATH := $(ABS_BUILD_DIR):$(ABS_TOOLS_DIR):$(PATH)
+
+export UGET_DIRECTORY = $(TOOLS_DIR)
+export UGET_CHECKSUMS = hack/tools.checksums
 
 # Image build configuration
 # REV is the short git sha of latest commit.
 REV ?= $(shell git rev-parse --short HEAD)
 IMAGE_REPO ?= kube-bind
 
-# Detect the path used for the install target
-ifeq (,$(shell go env GOBIN))
-INSTALL_GOBIN=$(shell go env GOPATH)/bin
-else
-INSTALL_GOBIN=$(shell go env GOBIN)
-endif
-
 CONTROLLER_GEN_VER := v0.17.3
 CONTROLLER_GEN_BIN := controller-gen
-CONTROLLER_GEN := $(TOOLS_DIR)/$(CONTROLLER_GEN_BIN)-$(CONTROLLER_GEN_VER)
+CONTROLLER_GEN := $(TOOLS_DIR)/$(CONTROLLER_GEN_BIN)
 export CONTROLLER_GEN # so hack scripts can use it
 
 KUBE_CLIENT_GEN_VER := v0.32.0
@@ -50,46 +44,46 @@ KUBE_INFORMER_GEN_BIN := informer-gen
 KUBE_APPLYCONFIGURATION_GEN_VER := v0.32.0
 KUBE_APPLYCONFIGURATION_GEN_BIN := applyconfiguration-gen
 
-KUBE_CLIENT_GEN := $(GOBIN_DIR)/$(KUBE_CLIENT_GEN_BIN)-$(KUBE_CLIENT_GEN_VER)
+KUBE_CLIENT_GEN := $(ABS_BUILD_DIR)/$(KUBE_CLIENT_GEN_BIN)
 export KUBE_CLIENT_GEN
-KUBE_LISTER_GEN := $(GOBIN_DIR)/$(KUBE_LISTER_GEN_BIN)-$(KUBE_LISTER_GEN_VER)
+KUBE_LISTER_GEN := $(ABS_BUILD_DIR)/$(KUBE_LISTER_GEN_BIN)
 export KUBE_LISTER_GEN
-KUBE_INFORMER_GEN := $(GOBIN_DIR)/$(KUBE_INFORMER_GEN_BIN)-$(KUBE_INFORMER_GEN_VER)
+KUBE_INFORMER_GEN := $(ABS_BUILD_DIR)/$(KUBE_INFORMER_GEN_BIN)
 export KUBE_INFORMER_GEN
-KUBE_APPLYCONFIGURATION_GEN := $(GOBIN_DIR)/$(KUBE_APPLYCONFIGURATION_GEN_BIN)-$(KUBE_APPLYCONFIGURATION_GEN_VER)
+KUBE_APPLYCONFIGURATION_GEN := $(ABS_BUILD_DIR)/$(KUBE_APPLYCONFIGURATION_GEN_BIN)
 export KUBE_APPLYCONFIGURATION_GEN
 
 YAML_PATCH_VER ?= v0.0.11
 YAML_PATCH_BIN := yaml-patch
-YAML_PATCH := $(TOOLS_DIR)/$(YAML_PATCH_BIN)-$(YAML_PATCH_VER)
+YAML_PATCH := $(TOOLS_DIR)/$(YAML_PATCH_BIN)
 export YAML_PATCH # so hack scripts can use it
 
-GOLANGCI_LINT_VER := v2.1.6
+GOLANGCI_LINT_VER := 2.1.6
 GOLANGCI_LINT_BIN := golangci-lint
-GOLANGCI_LINT := $(TOOLS_GOBIN_DIR)/$(GOLANGCI_LINT_BIN)-$(GOLANGCI_LINT_VER)
+GOLANGCI_LINT := $(ABS_TOOLS_DIR)/$(GOLANGCI_LINT_BIN)
 
 GOTESTSUM_VER := v1.8.1
 GOTESTSUM_BIN := gotestsum
-GOTESTSUM := $(abspath $(TOOLS_DIR))/$(GOTESTSUM_BIN)-$(GOTESTSUM_VER)
+GOTESTSUM := $(abspath $(TOOLS_DIR))/$(GOTESTSUM_BIN)
 
 LOGCHECK_VER := v0.2.0
 LOGCHECK_BIN := logcheck
-LOGCHECK := $(TOOLS_GOBIN_DIR)/$(LOGCHECK_BIN)-$(LOGCHECK_VER)
+LOGCHECK := $(ABS_TOOLS_DIR)/$(LOGCHECK_BIN)
 export LOGCHECK # so hack scripts can use it
 
 CODE_GENERATOR_VER := v2.4.0
 CODE_GENERATOR_BIN := code-generator
-CODE_GENERATOR := $(TOOLS_GOBIN_DIR)/$(CODE_GENERATOR_BIN)-$(CODE_GENERATOR_VER)
+CODE_GENERATOR := $(ABS_TOOLS_DIR)/$(CODE_GENERATOR_BIN)
 export CODE_GENERATOR # so hack scripts can use it
 
-KCP_VER := v0.28.3
+KCP_VER := 0.28.3
 KCP_BIN := kcp
-KCP := $(TOOLS_GOBIN_DIR)/$(KCP_BIN)-$(KCP_VER)
+KCP := $(ABS_TOOLS_DIR)/$(KCP_BIN)
 KCP_CMD ?= $(KCP)
 
 DEX_VER := v2.43.1
 DEX_BIN := dex
-DEX := $(TOOLS_GOBIN_DIR)/$(DEX_BIN)-$(DEX_VER)
+DEX := $(ABS_TOOLS_DIR)/$(DEX_BIN)
 
 ARCH := $(shell go env GOARCH)
 OS := $(shell go env GOOS)
@@ -132,12 +126,16 @@ ldflags:
 require-%:
 	@if ! command -v $* 1> /dev/null 2>&1; then echo "$* not found in \$$PATH"; exit 1; fi
 
+.PHONY: clean
+clean: ## Remove all build artifacts
+	rm -rf $(BUILD_DIR) $(TOOLS_DIR)
+
 build: WHAT ?= ./cmd/... ./cli/cmd/... ./contrib/kcp/cmd/kcp-init/...
 build: require-jq require-go require-git verify-go-versions ## Build the project
-	mkdir -p $(GOBIN_DIR)
+	mkdir -p $(ABS_BUILD_DIR)
 	set -x; for W in $(WHAT); do \
 		pushd . && cd $${W%..}; \
-		GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o  $(GOBIN_DIR) ./...; \
+		GOOS=$(OS) GOARCH=$(ARCH) CGO_ENABLED=0 go build $(BUILDFLAGS) -ldflags="$(LDFLAGS)" -o $(ABS_BUILD_DIR) ./...; \
 		popd; \
 	done
 .PHONY: build
@@ -147,15 +145,17 @@ install: ## install binaries to GOBIN
 	GOOS=$(OS) GOARCH=$(ARCH) go install -ldflags="$(LDFLAGS)" $(WHAT)
 .PHONY: install
 
-
 $(GOLANGCI_LINT):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/golangci/golangci-lint/v2/cmd/golangci-lint $(GOLANGCI_LINT_BIN) $(GOLANGCI_LINT_VER)
+	@hack/uget.sh \
+		https://github.com/golangci/golangci-lint/releases/download/v{VERSION}/golangci-lint-{VERSION}-{GOOS}-{GOARCH}.tar.gz \
+		${GOLANGCI_LINT_BIN} \
+		${GOLANGCI_LINT_VER}
 
 $(LOGCHECK):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) sigs.k8s.io/logtools/logcheck $(LOGCHECK_BIN) $(LOGCHECK_VER)
+	@GO_MODULE=true hack/uget.sh sigs.k8s.io/logtools/logcheck ${LOGCHECK_BIN} $(LOGCHECK_VER)
 
 $(CODE_GENERATOR):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/kcp-dev/code-generator/v2 $(CODE_GENERATOR_BIN) $(CODE_GENERATOR_VER)
+	@GO_MODULE=true hack/uget.sh github.com/kcp-dev/code-generator/v2 ${CODE_GENERATOR_BIN} $(CODE_GENERATOR_VER)
 
 lint: $(GOLANGCI_LINT) $(LOGCHECK) ## Run golangci-lint
 	@if [ -n "$(WHAT)" ]; then \
@@ -180,23 +180,30 @@ tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENE
 .PHONY: tools
 
 $(CONTROLLER_GEN):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) sigs.k8s.io/controller-tools/cmd/controller-gen $(CONTROLLER_GEN_BIN) $(CONTROLLER_GEN_VER)
+	@UNCOMPRESSED=true hack/uget.sh \
+		https://github.com/kubernetes-sigs/controller-tools/releases/download/{VERSION}/controller-gen-{GOOS}-{GOARCH} \
+		${CONTROLLER_GEN_BIN} \
+		${CONTROLLER_GEN_VER} \
+		${CONTROLLER_GEN_BIN}*
 
 $(YAML_PATCH):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/pivotal-cf/yaml-patch/cmd/yaml-patch $(YAML_PATCH_BIN) $(YAML_PATCH_VER)
+	@GO_MODULE=true hack/uget.sh github.com/pivotal-cf/yaml-patch/cmd/yaml-patch $(YAML_PATCH_BIN) $(YAML_PATCH_VER)
 
 $(GOTESTSUM):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) gotest.tools/gotestsum $(GOTESTSUM_BIN) $(GOTESTSUM_VER)
+	@hack/uget.sh \
+		https://github.com/gotestyourself/gotestsum/releases/download/v{VERSION}/gotestsum_{VERSION}_{GOOS}_{GOARCH}.tar.gz \
+		${GOTESTSUM_BIN} \
+		${GOTESTSUM_VER} \
+		${GOTESTSUM_BIN}
 
 $(KUBE_CLIENT_GEN):
-	GOBIN=$(GOBIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/$(KUBE_CLIENT_GEN_BIN) $(KUBE_CLIENT_GEN_BIN) $(KUBE_CLIENT_GEN_VER)
+	@GO_MODULE=true hack/uget.sh k8s.io/code-generator/cmd/$(KUBE_CLIENT_GEN_BIN) $(KUBE_CLIENT_GEN_BIN) $(KUBE_CLIENT_GEN_VER)
 $(KUBE_LISTER_GEN):
-	GOBIN=$(GOBIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/$(KUBE_LISTER_GEN_BIN) $(KUBE_LISTER_GEN_BIN) $(KUBE_LISTER_GEN_VER)
+	@GO_MODULE=true hack/uget.sh k8s.io/code-generator/cmd/$(KUBE_LISTER_GEN_BIN) $(KUBE_LISTER_GEN_BIN) $(KUBE_LISTER_GEN_VER)
 $(KUBE_INFORMER_GEN):
-	GOBIN=$(GOBIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/$(KUBE_INFORMER_GEN_BIN) $(KUBE_INFORMER_GEN_BIN) $(KUBE_INFORMER_GEN_VER)
+	@GO_MODULE=true hack/uget.sh k8s.io/code-generator/cmd/$(KUBE_INFORMER_GEN_BIN) $(KUBE_INFORMER_GEN_BIN) $(KUBE_INFORMER_GEN_VER)
 $(KUBE_APPLYCONFIGURATION_GEN):
-	GOBIN=$(GOBIN_DIR) $(GO_INSTALL) k8s.io/code-generator/cmd/$(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_VER)
-
+	@GO_MODULE=true hack/uget.sh k8s.io/code-generator/cmd/$(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_BIN) $(KUBE_APPLYCONFIGURATION_GEN_VER)
 
 codegen: $(CONTROLLER_GEN) $(YAML_PATCH) $(CODE_GENERATOR) $(KUBE_CLIENT_GEN) $(KUBE_LISTER_GEN) $(KUBE_INFORMER_GEN) $(KUBE_APPLYCONFIGURATION_GEN) ## Generate code
 	go mod download
@@ -232,13 +239,15 @@ imports: $(GOLANGCI_LINT) verify-go-versions ## Fix imports and format code
 	fi
 
 $(TOOLS_DIR)/verify_boilerplate.py:
-	mkdir -p $(TOOLS_DIR)
-	curl --fail --retry 3 -L -o $(TOOLS_DIR)/verify_boilerplate.py https://raw.githubusercontent.com/kubernetes/repo-infra/master/hack/verify_boilerplate.py
-	chmod +x $(TOOLS_DIR)/verify_boilerplate.py
+	@UNCOMPRESSED=true hack/uget.sh \
+		https://raw.githubusercontent.com/kubernetes/repo-infra/master/hack/verify_boilerplate.py \
+		verify_boilerplate.py \
+		201dcad9616c117927232ee0bc499ff38a27023e \
+		verify_boilerplate.py
 
 .PHONY: verify-boilerplate
 verify-boilerplate: $(TOOLS_DIR)/verify_boilerplate.py
-	$(TOOLS_DIR)/verify_boilerplate.py --boilerplate-dir=hack/boilerplate --skip dex
+	$(TOOLS_DIR)/verify_boilerplate.py --boilerplate-dir=hack/boilerplate --skip dex --skip hack/uget.sh
 
 ifdef ARTIFACT_DIR
 GOTESTSUM_ARGS += --junitfile=$(ARTIFACT_DIR)/junit.xml
@@ -257,23 +266,34 @@ else
 E2E_PARALLELISM_FLAG :=
 endif
 
+# dex does not publish binaries for their releases, and their go.mod file
+# is missing "/v2" and so dex cannot be installed as a Go dependency. Cloning
+# the repo and building it by hand is the best of the worst approaches remaining.
+DEX_TMP_DIR = $(TOOLS_DIR)/dex-clone-$(DEX_VER)
 $(DEX):
 	mkdir -p $(TOOLS_DIR)
-	git clone --branch $(DEX_VER) --depth 1 https://github.com/dexidp/dex $(TOOLS_DIR)/dex-clone-$(DEX_VER) || true
-	cd $(TOOLS_DIR)/dex-clone-$(DEX_VER) && GOWORK=off make build
-	cp -a $(TOOLS_DIR)/dex-clone-$(DEX_VER)/bin/dex $(DEX)
-	ln -sf $(DEX) $(TOOLS_GOBIN_DIR)/dex
+	git clone --branch $(DEX_VER) --depth 1 https://github.com/dexidp/dex $(DEX_TMP_DIR) || true
+	cd $(DEX_TMP_DIR) && GOWORK=off make build
+	cp -a $(DEX_TMP_DIR)/bin/dex $(DEX)
+	rm -rf $(DEX_TMP_DIR)
 
+.PHONY: dex
+dex: $(DEX)
+
+.PHONY: run-dex
 run-dex: $(DEX)
 	$(DEX) serve hack/dex-config-dev.yaml
 
 $(KCP):
-	mkdir -p $(TOOLS_DIR)
-	curl --fail --retry 3 -L "https://github.com/kcp-dev/kcp/releases/download/$(KCP_VER)/kcp_$(KCP_VER:v%=%)_$(OS)_$(ARCH).tar.gz" | \
-	tar xz -C "$(TOOLS_DIR)" --strip-components="1" bin/kcp
-	mv $(TOOLS_DIR)/kcp $(KCP)
-	ln -sf $(KCP) $(TOOLS_GOBIN_DIR)/kcp
+	@hack/uget.sh \
+		https://github.com/kcp-dev/kcp/releases/download/v{VERSION}/kcp_{VERSION}_{GOOS}_{GOARCH}.tar.gz \
+		$(KCP_BIN) \
+		$(KCP_VER)
 
+.PHONY: kcp
+kcp: $(KCP)
+
+.PHONY: run-kcp
 run-kcp: $(KCP)
 	$(KCP_CMD) start --bind-address=127.0.0.1
 
@@ -375,7 +395,7 @@ deploy-docs: venv ## Deploy docs
 	. $(VENV)/activate; \
 	REMOTE=$(REMOTE) BRANCH=$(BRANCH) docs/scripts/deploy-docs.sh
 
-# Example: make IMAGE_REPO=ghcr.io/<username> image-local 
+# Example: make IMAGE_REPO=ghcr.io/<username> image-local
 .PHONY: image-local
 image-local:
 	@echo "Building images locally with tag $(REV)"
@@ -410,7 +430,7 @@ kind-load:
 helm-build-local: ## Build and package Helm charts locally for testing
 	@echo "Building Helm charts locally..."
 	@command -v helm >/dev/null 2>&1 || { echo "helm not found. Install from: https://helm.sh/docs/intro/install/"; exit 1; }
-	
+
 	@# Set chart version to semver format for local builds (0.0.0-<git-sha>)
 	CHART_VERSION="0.0.0-$(REV)"; \
 	for chart_dir in deploy/charts/*/; do \
@@ -439,7 +459,7 @@ helm-clean: ## Clean up built helm charts
 helm-push-local: ## Push Helm charts to IMAGE_REPO registry
 	@echo "Pushing Helm charts to registry: $(IMAGE_REPO)"
 	@command -v helm >/dev/null 2>&1 || { echo "helm not found. Install from: https://helm.sh/docs/intro/install/"; exit 1; }
-	
+
 	CHART_VERSION="0.0.0-$(REV)"; \
 	export HELM_EXPERIMENTAL_OCI=1; \
 	for chart_file in ./bin/*-$$CHART_VERSION.tgz; do \

@@ -35,8 +35,7 @@ make run-kcp
 Clone and configure dex:
 
 ```bash
-git clone https://github.com/dexidp/dex.git
-cd dex && make build
+make dex
 ```
 
 Configure dex (`examples/config-dev.yaml`):
@@ -53,7 +52,7 @@ staticClients:
 Start dex:
 
 ```bash
-./bin/dex serve examples/config-dev.yaml
+./hack/tools/dex serve examples/config-dev.yaml
 ```
 
 ### 3. Bootstrap kcp

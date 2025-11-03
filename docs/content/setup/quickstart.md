@@ -1,6 +1,6 @@
 ---
 description: >
-  Get started with kube bind.
+  Get started with kube-bind.
 ---
 
 # Quickstart
@@ -35,9 +35,7 @@ the oauth2 workflow.
 
 We use dex to manage OIDC, following the steps below you can run a local OIDC issuer using dex:
 
-* First, clone the dex repo: `git clone https://github.com/dexidp/dex.git`
-* `cd dex` and then build the dex binary `make build`
-* The binary will be created in `bin/dex`
+* First, build dex: `make dex`, the binary will be created in `hack/tools/dex`.
 * Adjust the config file(`examples/config-dev.yaml`) for dex by specifying the server callback method:
   ```yaml
   staticClients:
@@ -47,9 +45,9 @@ We use dex to manage OIDC, following the steps below you can run a local OIDC is
     name: 'Kube Bind'
     secret: ZXhhbXBsZS1hcHAtc2VjcmV0
   ```
-* Run dex: `./bin/dex serve examples/config-dev.yaml`
+* Run dex: `./hack/tools/dex serve examples/config-dev.yaml`
 
-Next you should be able to run the backend. For it you need a kubernetes cluster (e.g. kind)
+Next you should be able to run the backend. For it you need a Kubernetes cluster (e.g. kind)
 accessible.
 
 ***Note: make sure before running the backend that you have the dex server up and running as mentioned above

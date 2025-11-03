@@ -68,4 +68,3 @@ These limitations are part of the roadmap and will be addressed in the future.
 
 * Currently we don't support related resources, like ConfigMaps, Secrets.
 * We don't support lifecycle of `BoundSchema` resources, like schema changes.
-* Currently multicluster-runtime dependency is pointing to a fork, we will work on getting the changes merged upstream. See [PR](https://github.com/kubernetes-sigs/multicluster-runtime/pull/62) for details.

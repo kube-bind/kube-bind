@@ -16,18 +16,30 @@ jobs:
   image:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
       with:
         go-version: v1.24.0
         check-latest: true
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: web/package-lock.json
+
     # We need this to remove local tags that are not semver so goreleaser doesn't get confused.
     - name: Delete non-semver tags
       run: 'git tag -d $(git tag -l | grep -v "^v")'
+
+    # Set up Docker Buildx for multi-platform builds
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     # If you notice signing errors, you may need to update the cosign version.
     - uses: sigstore/cosign-installer@v3.7.0
-    - name: Install ko
-      run: go install github.com/google/ko@latest
+
     
     - name: Install Helm
       uses: azure/setup-helm@v3
@@ -37,16 +49,45 @@ jobs:
     - name: Set LDFLAGS
       run: echo LDFLAGS="$(make ldflags)" | tee -a >> $GITHUB_ENV
 
-    # Build ko from HEAD, build and push an image tagged with the commit SHA,
-    # then keylessly sign it with cosign.
-    - name: Publish and sign konnector image
+    # Login to GitHub Container Registry (used by both ko and Docker)
+    - name: Login to GitHub Container Registry  
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    # Build and push konnector image using Dockerfile.konnector
+    - name: Build and push konnector image
+      uses: docker/build-push-action@v6
+      id: build-konnector
+      with:
+        context: .
+        file: ./Dockerfile.konnector
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/konnector:latest
+          ghcr.io/${{ github.repository_owner }}/konnector:${{ github.sha }}
+          ghcr.io/${{ github.repository_owner }}/konnector:${{ github.ref_name }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          LDFLAGS=${{ env.LDFLAGS }}
+        labels: |
+          org.opencontainers.image.title=Kube Bind Konnector
+          org.opencontainers.image.description=Kube Bind konnector component
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.revision=${{ github.sha }}
+          org.opencontainers.image.version=${{ github.ref_name }}
+
+    # Sign the konnector image
+    - name: Sign konnector image
       env:
-        KO_DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/konnector
         COSIGN_EXPERIMENTAL: 'true'
       run: |
-        echo "${{ github.token }}" | ko login ghcr.io --username "${{ github.actor }}" --password-stdin
-        img=$(ko build --bare --platform=all -t latest -t ${{ github.sha }} -t ${{github.ref_name}} ./cmd/konnector)
-        echo "built ${img}"
+        img="ghcr.io/${{ github.repository_owner }}/konnector@${{ steps.build-konnector.outputs.digest }}"
+        echo "signing ${img}"
         cosign sign ${img} \
             --yes \
             -a sha=${{ github.sha }} \
@@ -54,14 +95,37 @@ jobs:
             -a run_id=${{ github.run_id }} \
             -a run_attempt=${{ github.run_attempt }}
 
-    - name: Publish and sign backend image
+    # Build and push backend image using Dockerfile (includes frontend)
+    - name: Build and push backend image
+      uses: docker/build-push-action@v6
+      id: build
+      with:
+        context: .
+        file: ./Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository_owner }}/backend:latest
+          ghcr.io/${{ github.repository_owner }}/backend:${{ github.sha }}
+          ghcr.io/${{ github.repository_owner }}/backend:${{ github.ref_name }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          LDFLAGS=${{ env.LDFLAGS }}
+        labels: |
+          org.opencontainers.image.title=Kube Bind Backend
+          org.opencontainers.image.description=Kube Bind backend with integrated Vue.js frontend
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.revision=${{ github.sha }}
+          org.opencontainers.image.version=${{ github.ref_name }}
+
+    # Sign the backend image
+    - name: Sign backend image
       env:
-        KO_DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/backend
         COSIGN_EXPERIMENTAL: 'true'
       run: |
-        echo "${{ github.token }}" | ko login ghcr.io --username "${{ github.actor }}" --password-stdin
-        img=$(ko build --bare --platform=all -t latest -t ${{ github.sha }} -t ${{github.ref_name}} ./cmd/backend)
-        echo "built ${img}"
+        img="ghcr.io/${{ github.repository_owner }}/backend@${{ steps.build.outputs.digest }}"
+        echo "signing ${img}"
         cosign sign ${img} \
             --yes \
             -a sha=${{ github.sha }} \

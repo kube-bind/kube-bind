@@ -17,11 +17,16 @@ limitations under the License.
 package v1alpha2
 
 import (
+	"errors"
+	"fmt"
+	"strings"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-// BindingResponse is a non-CRUD resource that is returned by the server after
+// BindingResourceResponse is a non-CRUD resource that is returned by the server after
 // authentication and resource selection on the service prpvider website. It returns
 // a list of requests of possibly different types that kubectl bind has to
 // pass to the sub-command kubect-bind-<type>, e.g. kubectl-bind-apiservice for
@@ -29,7 +34,7 @@ import (
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:storageversion
-type BindingResponse struct {
+type BindingResourceResponse struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// authentication is data specific to the authentication method that was used.
@@ -72,4 +77,39 @@ type BindingResponseAuthenticationOAuth2CodeGrant struct {
 
 	// id is the ID of the authenticated user. It is for informational purposes only.
 	ID string `json:"id"`
+}
+
+// BindableResourcesRequest is sent by the consumer to the service provider
+// to indicate which resources the user wants to bind to. It is sent after
+// authentication and resource selection on the service provider website.
+type BindableResourcesRequest struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	TemplateRef APIServiceExportTemplateRef `json:"templateRef,omitempty"`
+}
+
+type APIServiceExportTemplateRef struct {
+	// name is the name of the APIServiceExportTemplate to bind to.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+}
+
+func (r *BindableResourcesRequest) Validate() error {
+	if r.TemplateRef.Name == "" {
+		return errors.New("templateRef.name is required")
+	}
+
+	if r.Name == "" {
+		return errors.New("name is required")
+	}
+
+	// Validate DNS name format for the request name
+	if errs := validation.IsDNS1123Label(r.Name); len(errs) > 0 {
+		return fmt.Errorf("name %q is not a valid DNS label: %s", r.Name, strings.Join(errs, ", "))
+	}
+
+	return nil
 }

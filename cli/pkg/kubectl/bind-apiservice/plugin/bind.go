@@ -20,23 +20,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/printers"
 	kubeclient "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
-	"sigs.k8s.io/yaml"
 
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/base"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -44,12 +42,13 @@ import (
 
 // BindAPIServiceOptions are the options for the kubectl-bind-apiservice command.
 type BindAPIServiceOptions struct {
-	Options *base.Options
-	Logs    *logs.Options
+	*base.Options
+	Logs *logs.Options
 
 	JSONYamlPrintFlags *genericclioptions.JSONYamlPrintFlags
 	OutputFormat       string
 	Print              *genericclioptions.PrintFlags
+	printer            printers.ResourcePrinter
 
 	remoteKubeconfigFile      string
 	remoteKubeconfigNamespace string
@@ -62,8 +61,9 @@ type BindAPIServiceOptions struct {
 	KonnectorImageOverride string
 	DowngradeKonnector     bool
 	NoBanner               bool
-
-	url string
+	DryRun                 bool
+	Template               string
+	Name                   string
 }
 
 // NewBindAPIServiceOptions returns new BindAPIServiceOptions.
@@ -81,6 +81,7 @@ func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 	logsv1.AddFlags(b.Logs, cmd.Flags())
 	b.Print.AddFlags(cmd)
 
+	cmd.Flags().StringVar(&b.Template, "template-name", b.Template, "A template name to use for binding")
 	cmd.Flags().StringVar(&b.remoteKubeconfigFile, "remote-kubeconfig", b.remoteKubeconfigFile, "A file path for a kubeconfig file to connect to the service provider cluster")
 	cmd.Flags().StringVar(&b.remoteKubeconfigNamespace, "remote-kubeconfig-namespace", b.remoteKubeconfigNamespace, "The namespace of the remote kubeconfig secret to read from")
 	cmd.Flags().StringVar(&b.remoteKubeconfigName, "remote-kubeconfig-name", b.remoteKubeconfigNamespace, "The name of the remote kubeconfig secret to read from")
@@ -89,6 +90,7 @@ func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVar(&b.DowngradeKonnector, "downgrade-konnector", b.DowngradeKonnector, "Downgrade the konnector to the version of the kubectl-bind-apiservice binary")
 	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
+	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
 	cmd.Flags().MarkHidden("konnector-image") //nolint:errcheck
 	cmd.Flags().BoolVar(&b.NoBanner, "no-banner", b.NoBanner, "Do not show the red banner")
 	cmd.Flags().MarkHidden("no-banner") //nolint:errcheck
@@ -96,46 +98,44 @@ func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 
 // Complete ensures all fields are initialized.
 func (b *BindAPIServiceOptions) Complete(args []string) error {
-	if err := b.Options.Complete(); err != nil {
+	if len(args) > 0 {
+		b.Name = args[0]
+	}
+	if err := b.Options.Complete(false); err != nil {
 		return err
 	}
 
-	if len(args) > 0 {
-		b.url = args[0]
+	printer, err := b.Print.ToPrinter()
+	if err != nil {
+		return err
 	}
+
+	b.printer = printer
 	return nil
 }
 
 // Validate validates the BindAPIServiceOptions are complete and usable.
 func (b *BindAPIServiceOptions) Validate() error {
-	if b.url == "" && b.file == "" {
-		return errors.New("url or file is required")
-	}
-	if b.url != "" && b.file != "" {
-		return errors.New("url and file are mutually exclusive")
-	}
-	if b.url != "" {
-		if _, err := url.Parse(b.url); err != nil {
-			return fmt.Errorf("invalid url %q: %w", b.url, err)
-		}
+	if b.file == "" && b.Template == "" {
+		return errors.New("file, template-name or --file are required")
 	}
 
 	if allowed := sets.NewString(b.Print.AllowedFormats()...); *b.Print.OutputFormat != "" && !allowed.Has(*b.Print.OutputFormat) {
 		return fmt.Errorf("invalid output format %q (allowed: %s)", *b.Print.OutputFormat, strings.Join(allowed.List(), ", "))
 	}
 
-	if (b.remoteKubeconfigNamespace == "" && b.remoteKubeconfigName != "") ||
-		(b.remoteKubeconfigNamespace != "" && b.remoteKubeconfigName == "") {
-		return errors.New("remote-kubeconfig-namespace and remote-kubeconfig-name must be specified together")
+	if b.Template == "" {
+		if (b.remoteKubeconfigNamespace == "" && b.remoteKubeconfigName != "") ||
+			(b.remoteKubeconfigNamespace != "" && b.remoteKubeconfigName == "") {
+			return errors.New("remote-kubeconfig-namespace and remote-kubeconfig-name must be specified together")
+		}
+		if b.remoteKubeconfigFile == "" && b.remoteKubeconfigNamespace == "" && b.remoteKubeconfigName == "" {
+			return errors.New("remote-kubeconfig or remote-kubeconfig-namespace and remote-kubeconfig-name are required")
+		}
 	}
-	if b.remoteKubeconfigFile == "" && b.remoteKubeconfigNamespace == "" && b.remoteKubeconfigName == "" {
-		return errors.New("remote-kubeconfig or remote-kubeconfig-namespace and remote-kubeconfig-name are required")
-	}
-	if b.file != "" && b.url != "" {
-		return errors.New("file and arguments are mutually exclusive")
-	}
-	if b.file == "" && b.url == "" {
-		return errors.New("file or arguments are required")
+	// Name is required unless reading from file, where name will be read from the file.
+	if b.Name == "" && b.file == "" {
+		return errors.New("name is required")
 	}
 
 	return b.Options.Validate()
@@ -143,95 +143,73 @@ func (b *BindAPIServiceOptions) Validate() error {
 
 // Run starts the binding process.
 func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
-	fmt.Fprintf(b.Options.ErrOut, "🔧 Starting binding process...\n")
+	fmt.Fprintf(b.Options.ErrOut, "Starting binding process...\n")
 
-	fmt.Fprintf(b.Options.ErrOut, "📋 Step 1: Getting client config...\n")
 	config, err := b.Options.ClientConfig.ClientConfig()
 	if err != nil {
-		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to get client config: %v\n", err)
 		return err
 	}
-	fmt.Fprintf(b.Options.ErrOut, "✅ Client config obtained successfully\n")
 
-	fmt.Fprintf(b.Options.ErrOut, "📋 Step 2: Getting remote kubeconfig...\n")
-	remoteKubeconfig, remoteNamespace, remoteConfig, err := b.getRemoteKubeconfig(ctx, config)
-	if err != nil {
-		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to get remote kubeconfig: %v\n", err)
-		return err
+	// Use the shared binder to create bindings
+	binderOpts := &BinderOptions{
+		IOStreams:                 b.Options.IOStreams,
+		SkipKonnector:             b.SkipKonnector,
+		KonnectorImageOverride:    b.KonnectorImageOverride,
+		DowngradeKonnector:        b.DowngradeKonnector,
+		RemoteKubeconfigFile:      b.remoteKubeconfigFile,
+		RemoteKubeconfigNamespace: b.remoteKubeconfigNamespace,
+		RemoteKubeconfigName:      b.remoteKubeconfigName,
+		RemoteNamespace:           b.remoteNamespace,
+		File:                      b.file,
 	}
-	fmt.Fprintf(b.Options.ErrOut, "✅ Remote kubeconfig obtained, namespace: %s\n", remoteNamespace)
+	binder := NewBinder(config, binderOpts)
 
-	fmt.Fprintf(b.Options.ErrOut, "📋 Step 3: Getting request manifest...\n")
-	bs, err := b.getRequestManifest()
-	if err != nil {
-		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to get request manifest: %v\n", err)
-		return err
+	var bindings []*kubebindv1alpha2.APIServiceBinding
+	if b.Template != "" {
+		r, err := b.bindTemplate(ctx)
+		if err != nil {
+			return err
+		}
+		bindings, err = binder.BindFromResponse(ctx, r.response)
+		if err != nil {
+			return fmt.Errorf("failed to create bindings: %w", err)
+		}
+	} else if b.file != "" {
+		bindings, err = binder.BindFromFile(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to create bindings: %w", err)
+		}
 	}
-	fmt.Fprintf(b.Options.ErrOut, "✅ Request manifest obtained (%d bytes)\n", len(bs))
 
-	fmt.Fprintf(b.Options.ErrOut, "📋 Step 4: Unmarshaling manifest...\n")
-	request, err := b.unmarshalManifest(bs)
-	if err != nil {
-		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to unmarshal manifest: %v\n", err)
-		return err
-	}
-	fmt.Fprintf(b.Options.ErrOut, "✅ Manifest unmarshaled successfully\n")
-
-	fmt.Fprintf(b.Options.ErrOut, "📋 Step 5: Creating service export request...\n")
-	result, err := b.createServiceExportRequest(ctx, remoteConfig, remoteNamespace, request)
-	if err != nil {
-		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to create service export request: %v\n", err)
-		return err
-	}
-	fmt.Fprintf(b.Options.ErrOut, "✅ Service export request created successfully\n")
-
-	fmt.Fprintf(b.Options.ErrOut, "📋 Step 6: Deploying konnector...\n")
-	if err := b.deployKonnector(ctx, config); err != nil {
-		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to deploy konnector: %v\n", err)
-		return err
-	}
-	fmt.Fprintf(b.Options.ErrOut, "✅ Konnector deployed successfully\n")
-
-	fmt.Fprintf(b.Options.ErrOut, "📋 Step 7: Creating kubeconfig secret...\n")
-	secretName, err := b.createKubeconfigSecret(ctx, config, remoteConfig.Host, remoteNamespace, remoteKubeconfig)
-	if err != nil {
-		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to create kubeconfig secret: %v\n", err)
-		return err
-	}
-	fmt.Fprintf(b.Options.ErrOut, "✅ Kubeconfig secret created: %s\n", secretName)
-
-	fmt.Fprintf(b.Options.ErrOut, "📋 Step 8: Creating API service bindings...\n")
-	bindings, err := b.createAPIServiceBindings(ctx, config, result, secretName)
-	if err != nil {
-		fmt.Fprintf(b.Options.ErrOut, "❌ Failed to create API service bindings: %v\n", err)
-		return err
-	}
-	fmt.Fprintf(b.Options.ErrOut, "✅ API service bindings created (%d bindings)\n", len(bindings))
-
-	fmt.Fprintf(b.Options.ErrOut, "📋 Step 9: Printing results table...\n")
 	fmt.Fprintln(b.Options.ErrOut)
 	return b.printTable(ctx, config, bindings)
 }
 
-func (b *BindAPIServiceOptions) getRemoteKubeconfig(ctx context.Context, config *rest.Config) (kubeconfig, ns string, remoteConfig *rest.Config, err error) {
+func (b *BindAPIServiceOptions) getRemoteKubeconfig(ctx context.Context, config *rest.Config, namespace, name string) (kubeconfig, ns string, remoteConfig *rest.Config, err error) {
 	var remoteKubeConfig *clientcmdapi.Config
-	if b.remoteKubeconfigFile != "" {
+
+	switch {
+	case b.remoteKubeconfigFile != "":
 		remoteKubeConfig, err = clientcmd.LoadFromFile(b.remoteKubeconfigFile)
 		if err != nil {
 			return "", "", nil, err
 		}
-	} else {
+	case b.remoteKubeconfigNamespace != "" && b.remoteKubeconfigName != "":
+		name = b.remoteKubeconfigName
+		namespace = b.remoteKubeconfigNamespace
+		fallthrough
+	default:
 		kubeClient, err := kubeclient.NewForConfig(config)
 		if err != nil {
 			return "", "", nil, err
 		}
-		secret, err := kubeClient.CoreV1().Secrets(b.remoteKubeconfigNamespace).Get(ctx, b.remoteKubeconfigName, metav1.GetOptions{})
+		secret, err := kubeClient.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return "", "", nil, err
 		}
 		bs, found := secret.Data["kubeconfig"]
 		if !found {
-			return "", "", nil, fmt.Errorf("secret %s/%s does not contain a kubeconfig", b.remoteKubeconfigNamespace, b.remoteKubeconfigName)
+			return "", "", nil, fmt.Errorf("secret %s/%s does not contain a kubeconfig", namespace, name)
 		}
 		remoteKubeConfig, err = clientcmd.Load(bs)
 		if err != nil {
@@ -261,45 +239,97 @@ func (b *BindAPIServiceOptions) getRemoteKubeconfig(ctx context.Context, config 
 	return string(remoteKubeconfig), c.Namespace, remoteConfig, nil
 }
 
-func (b *BindAPIServiceOptions) getRequestManifest() ([]byte, error) {
-	if b.url != "" {
-		resp, err := http.Get(b.url) //nolint:noctx
-		if err != nil {
-			return nil, fmt.Errorf("failed to get %s: %w", b.url, err)
-		}
-		defer resp.Body.Close()
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read response body: %w", err)
-		}
-		return body, nil
-	}
-
-	if b.file == "-" {
-		body, err := io.ReadAll(b.Options.IOStreams.In)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read from stdin: %w", err)
-		}
-		return body, nil
-	}
-
-	body, err := os.ReadFile(b.file)
+func (b *BindAPIServiceOptions) ensureClientSideNamespaceExists(ctx context.Context, config *rest.Config) error {
+	kubeClient, err := kubeclient.NewForConfig(config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file %s: %w", b.file, err)
+		return err
 	}
-	return body, nil
+
+	_, err = kubeClient.CoreV1().Namespaces().Get(ctx, "kube-bind", metav1.GetOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	} else if apierrors.IsNotFound(err) {
+		ns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "kube-bind",
+			},
+		}
+		if _, err = kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
+			return err
+		} else {
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Created kube-bind namespace.\n")
+		}
+	}
+	return nil
 }
 
-func (b *BindAPIServiceOptions) unmarshalManifest(bs []byte) (*kubebindv1alpha2.APIServiceExportRequest, error) {
-	var request kubebindv1alpha2.APIServiceExportRequest
-	if err := yaml.Unmarshal(bs, &request); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal manifest: %w", err)
+type bindTemplateResult struct {
+	response  *kubebindv1alpha2.BindingResourceResponse
+	namespace string
+	name      string
+}
+
+func (b *BindAPIServiceOptions) bindTemplate(ctx context.Context) (*bindTemplateResult, error) {
+	config, err := b.Options.ClientConfig.ClientConfig()
+	if err != nil {
+		return nil, err
 	}
-	if request.APIVersion != kubebindv1alpha2.SchemeGroupVersion.String() {
-		return nil, fmt.Errorf("invalid apiVersion %q", request.APIVersion)
+
+	kubeClient, err := kubeclient.NewForConfig(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kube client: %w", err)
 	}
-	if request.Kind != "APIServiceExportRequest" {
-		return nil, fmt.Errorf("invalid kind %q", request.Kind)
+
+	// Get authenticated client with auto-login
+	client, err := b.Options.GetAuthenticatedClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create authenticated client: %w", err)
 	}
-	return &request, nil
+
+	bindRequest := &kubebindv1alpha2.BindableResourcesRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: b.Name,
+		},
+		TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
+			Name: b.Template,
+		},
+	}
+
+	bindResponse, err := client.Bind(ctx, bindRequest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to bind to template %q: %w", b.Template, err)
+	}
+
+	if bindResponse.Authentication.OAuth2CodeGrant == nil {
+		return nil, fmt.Errorf("unexpected response: authentication.oauth2CodeGrant is nil")
+	}
+
+	err = b.ensureClientSideNamespaceExists(ctx, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to ensure kube-bind namespace exists: %w", err)
+	}
+
+	// copy kubeconfig into local cluster
+	remoteHost, remoteNamespace, err := base.ParseRemoteKubeconfig(bindResponse.Kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+	secretName, err := base.FindRemoteKubeconfig(ctx, kubeClient, remoteNamespace, remoteHost)
+	if err != nil {
+		return nil, err
+	}
+	secret, created, err := base.EnsureKubeconfigSecret(ctx, string(bindResponse.Kubeconfig), secretName, kubeClient)
+	if err != nil {
+		return nil, err
+	}
+	if created {
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+	} else {
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+	}
+	return &bindTemplateResult{
+		response:  bindResponse,
+		namespace: secret.Namespace,
+		name:      secret.Name,
+	}, nil
 }

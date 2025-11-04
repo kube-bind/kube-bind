@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
+	"github.com/kube-bind/kube-bind/backend/auth"
 	"github.com/kube-bind/kube-bind/backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexport"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexportrequest"
@@ -39,7 +40,7 @@ import (
 type Server struct {
 	Config *Config
 
-	OIDC       *http.OIDCServiceProvider
+	OIDC       *auth.OIDCServiceProvider
 	Kubernetes *kube.Manager
 	WebServer  *http.Server
 
@@ -67,9 +68,9 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	// setup oidc backend
 	callback := c.Options.OIDC.CallbackURL
 	if callback == "" {
-		callback = fmt.Sprintf("http://%s/callback", s.WebServer.Addr().String())
+		callback = fmt.Sprintf("http://%s/api/callback", s.WebServer.Addr().String())
 	}
-	s.OIDC, err = http.NewOIDCServiceProvider(
+	s.OIDC, err = auth.NewOIDCServiceProvider(
 		ctx,
 		c.Options.OIDC.IssuerClientID,
 		c.Options.OIDC.IssuerClientSecret,
@@ -118,11 +119,15 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		c.Options.SchemaSource,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		s.Kubernetes,
+		c.Options.Frontend,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)
 	}
-	handler.AddRoutes(s.WebServer.Router)
+	err = handler.AddRoutes(s.WebServer.Router)
+	if err != nil {
+		return nil, fmt.Errorf("error adding routes to HTTP Server: %w", err)
+	}
 
 	opts := controller.TypedOptions[mcreconcile.Request]{
 		SkipNameValidation: ptr.To(c.Options.TestingSkipNameValidation),

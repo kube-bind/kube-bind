@@ -68,7 +68,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 	}
 
 	if b.KonnectorImageOverride != "" {
-		fmt.Fprintf(b.Options.ErrOut, "🚀 Deploying konnector %s to namespace kube-bind with custom image %q.\n", bindVersion, b.KonnectorImageOverride)
+		fmt.Fprintf(b.Options.ErrOut, "Deploying konnector %s to namespace kube-bind with custom image %q.\n", bindVersion, b.KonnectorImageOverride)
 		if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, b.KonnectorImageOverride); err != nil {
 			return err
 		}
@@ -81,8 +81,8 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 		konnectorImage := fmt.Sprintf("%s:%s", konnectorImage, bindVersion)
 
 		if installed {
-			if konnectorVersion == "unknown" || konnectorVersion == "latest" {
-				fmt.Fprintf(b.Options.ErrOut, "ℹ️ konnector of %s version already installed, skipping\n", konnectorVersion)
+			if konnectorVersion == "unknown" || konnectorVersion == "latest" || konnectorVersion == "main" {
+				fmt.Fprintf(b.Options.ErrOut, "konnector of %s version already installed, skipping\n", konnectorVersion)
 				// fall through to CRD test
 			} else {
 				konnectorSemVer, err := semver.Parse(strings.TrimLeft(konnectorVersion, "v"))
@@ -94,16 +94,16 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 					return fmt.Errorf("failed to parse kubectl-bind SemVer version %q: %w", bindVersion, err)
 				}
 				if bindSemVer.GT(konnectorSemVer) {
-					fmt.Fprintf(b.Options.ErrOut, "🚀 Updating konnector from %s to %s.\n", konnectorVersion, bindVersion)
+					fmt.Fprintf(b.Options.ErrOut, "Updating konnector from %s to %s.\n", konnectorVersion, bindVersion)
 					if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, konnectorImage); err != nil {
 						return err
 					}
 				} else if bindSemVer.LT(konnectorSemVer) {
-					fmt.Fprintf(b.Options.ErrOut, "⚠️ Newer konnector %s installed. To downgrade to %s use --downgrade-konnector.\n", konnectorVersion, bindVersion)
+					fmt.Fprintf(b.Options.ErrOut, "Newer konnector %s installed. To downgrade to %s use --downgrade-konnector.\n", konnectorVersion, bindVersion)
 				}
 			}
 		} else {
-			fmt.Fprintf(b.Options.ErrOut, "🚀 Deploying konnector %s to namespace kube-bind.\n", bindVersion)
+			fmt.Fprintf(b.Options.ErrOut, "Deploying konnector %s to namespace kube-bind.\n", bindVersion)
 			if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, konnectorImage); err != nil {
 				return err
 			}

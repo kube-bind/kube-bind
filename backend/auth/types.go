@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kube Bind Authors.
+Copyright 2025 The Kube Bind Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,22 +14,48 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package http
+package auth
 
 import (
 	"context"
+	"time"
 
 	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
 
-// AuthCode is sent and received by to/from the OIDC provider. It's the state
-// we can use to map the OIDC provider's response to the request from the client.
-type AuthCode struct {
-	RedirectURL       string `json:"redirectURL"`
-	SessionID         string `json:"sid"`
-	ClusterID         string `json:"cid"`
-	ProviderClusterID string `json:"pcid"`
+type AuthResponse struct {
+	Success bool                   `json:"success"`
+	Data    interface{}            `json:"data,omitempty"`
+	Error   string                 `json:"error,omitempty"`
+	Message string                 `json:"message,omitempty"`
+	Meta    map[string]interface{} `json:"meta,omitempty"`
+}
+
+type TokenResponse struct {
+	AccessToken  string    `json:"access_token"`
+	TokenType    string    `json:"token_type"`
+	ExpiresIn    int64     `json:"expires_in"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	Scope        string    `json:"scope,omitempty"`
+	RefreshToken string    `json:"refresh_token,omitempty"`
+
+	ClusterID string `json:"cluster_id,omitempty"`
+}
+
+type AuthorizeRequest struct {
+	RedirectURL           string     `json:"redirect_url" form:"redirect_url"`
+	ClientSideRedirectURL string     `json:"client_side_redirect_url" form:"client_side_redirect_url"`
+	SessionID             string     `json:"session_id" form:"session_id"`
+	ClusterID             string     `json:"cluster_id" form:"cluster_id"`
+	ClientType            ClientType `json:"client_type" form:"client_type"`
+}
+
+type CallbackRequest struct {
+	Code             string `json:"code" form:"code"`
+	State            string `json:"state" form:"state"`
+	Error            string `json:"error,omitempty" form:"error"`
+	ErrorDescription string `json:"error_description,omitempty" form:"error_description"`
 }
 
 type OIDCServiceProvider struct {

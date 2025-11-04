@@ -55,6 +55,10 @@ func (in *APIServiceExportTemplate) SetConditions(conditions conditionsapi.Condi
 
 // APIServiceExportTemplateSpec defines the desired state of APIServiceExportTemplate.
 type APIServiceExportTemplateSpec struct {
+	// description is an optional description of the template.
+	//
+	// +optional
+	Description string `json:"description,omitempty"`
 	// scope defines the scope of the resources in this template.
 	// +required
 	// +kubebuilder:validation:Required
@@ -72,12 +76,13 @@ type APIServiceExportTemplateSpec struct {
 	// +optional
 	PermissionClaims []PermissionClaim `json:"permissionClaims,omitempty"`
 
-	// namespaces specifies the namespaces that should be bootstrapped as part of this template.
+	// Namespaces specifies the namespaces that should be bootstrapped as part of this template.
 	// When objects originate from provider side, consumer does not always know the necessary details
 	// This field allows provider to pre-heat the necessary namespaces on provider side by creating
 	// APIServiceNamespace objects attached to the APIServiceExport. More namespaces can be created later by the consumer.
 	//
 	// +optional
+	// +kubebuilder:validation:Optional
 	Namespaces []Namespaces `json:"namespaces,omitempty"`
 }
 

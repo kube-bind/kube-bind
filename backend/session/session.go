@@ -29,7 +29,7 @@ import (
 type State struct {
 	Token       TokenInfo `msgpack:"tok,omitempty"`
 	SessionID   string    `msgpack:"sid,omitempty"`
-	ClusterID   string    `msgpack:"cl,omitempty"`
+	ClusterID   string    `msgpack:"cid,omitempty"`
 	RedirectURL string    `msgpack:"red,omitempty"`
 }
 

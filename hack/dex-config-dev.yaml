@@ -110,6 +110,7 @@ staticClients:
 - id: kube-bind
   redirectURIs:
   - 'http://127.0.0.1:8080/callback'
+  - 'http://127.0.0.1:8080/api/callback'
   name: 'Kube Bind'
   secret: ZXhhbXBsZS1hcHAtc2VjcmV0
 

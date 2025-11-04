@@ -13,7 +13,6 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/kube-bind/kube-bind v0.0.0-00010101000000-000000000000
 	github.com/kube-bind/kube-bind/sdk v0.4.1
-	github.com/mdp/qrterminal/v3 v3.2.0
 	github.com/muesli/reflow v0.3.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
@@ -120,7 +119,6 @@ require (
 	k8s.io/apiserver v0.33.3 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
-	rsc.io/qr v0.2.0 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/kustomize/api v0.19.0 // indirect

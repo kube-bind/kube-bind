@@ -86,7 +86,7 @@ kubectl ws create provider --enter
      --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
      --oidc-issuer-client-id=kube-bind \
      --oidc-issuer-url=http://127.0.0.1:5556/dex \
-     --oidc-callback-url=http://127.0.0.1:8080/callback \
+     --oidc-callback-url=http://127.0.0.1:8080/api/callback \
      --pretty-name="BigCorp.com" \
      --namespace-prefix="kube-bind-" \
      --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
@@ -118,7 +118,7 @@ kubectl ws create consumer --enter
 Now create the APIServiceExportRequest:
 
 ```shell
-./bin/kubectl-bind http://127.0.0.1:8080/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind http://127.0.0.1:8080 --dry-run -o yaml > apiserviceexport.yaml
 
 # This will wait for konnector to be ready. Once this gets running - start the konnector bellow
 # IMPORTANT: Check namespace to be used!

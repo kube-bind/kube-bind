@@ -25,7 +25,6 @@ import (
 	kcpapisv1alpha2 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha2"
 	kcpclientset "github.com/kcp-dev/kcp/sdk/client/clientset/versioned/cluster"
 	kcptestinghelpers "github.com/kcp-dev/kcp/sdk/testing/helpers"
-	kcptestingserver "github.com/kcp-dev/kcp/sdk/testing/server"
 	"github.com/kcp-dev/logicalcluster/v3"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
@@ -38,8 +37,8 @@ import (
 	"github.com/kube-bind/kube-bind/test/e2e/framework"
 )
 
-func wsConfig(t testing.TB, server kcptestingserver.RunningServer, workspace logicalcluster.Path) (*rest.Config, string) {
-	cfg := server.BaseConfig(t)
+func wsConfig(t testing.TB, rest *rest.Config, workspace logicalcluster.Path) (*rest.Config, string) {
+	cfg := rest
 	cfg.Host += "/clusters/" + workspace.String()
 
 	kubeconfig := framework.WriteKubeconfig(t,
@@ -127,11 +126,11 @@ func createApiBinding(t testing.TB, client *kcpclientset.ClusterClientset, path 
 	return inCluster
 }
 
-func bootstrapKCP(t testing.TB, server kcptestingserver.RunningServer) {
+func bootstrapKCP(t testing.TB, rest *rest.Config) {
 	t.Helper()
 	t.Log("Bootstrapping kcp")
 
-	cfg := server.BaseConfig(t)
+	cfg := rest
 	cfg.Host += "/clusters/root"
 	adminApiCfg := framework.RestToKubeconfig(cfg, "default")
 	adminKubeconfig := framework.WriteKubeconfig(t, adminApiCfg, "admin.kubeconfig")

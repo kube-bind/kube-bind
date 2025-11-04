@@ -18,12 +18,12 @@ package e2e
 
 import (
 	"fmt"
+	"path"
 	"strings"
 	"testing"
 	"time"
 
 	kcpclientset "github.com/kcp-dev/kcp/sdk/client/clientset/versioned/cluster"
-	kcptesting "github.com/kcp-dev/kcp/sdk/testing"
 	kcptestinghelpers "github.com/kcp-dev/kcp/sdk/testing/helpers"
 	"github.com/kcp-dev/logicalcluster/v3"
 	"github.com/stretchr/testify/require"
@@ -31,24 +31,29 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 
+	boostrapdeploy "github.com/kube-bind/kube-bind/contrib/kcp/deploy"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"github.com/kube-bind/kube-bind/test/e2e/framework"
 )
 
+// TODO: Parallelizm is disabled due to bind-login overlapping server usage
+// We need to refactor config machienery to allow multiple servers to be used in parallel tests
+
 func TestKCPClusterScope(t *testing.T) {
-	t.Parallel()
-	testKcpIntegration(t, kubebindv1alpha2.ClusterScope)
+	// t.Parallel()
+	testKcpIntegration(t, "cc", kubebindv1alpha2.ClusterScope)
 }
 
 func TestKCPNamespacedScope(t *testing.T) {
-	t.Parallel()
-	testKcpIntegration(t, kubebindv1alpha2.NamespacedScope)
+	// t.Parallel()
+	testKcpIntegration(t, "nc", kubebindv1alpha2.NamespacedScope)
 }
 
-func testKcpIntegration(t *testing.T, scope kubebindv1alpha2.InformerScope) {
+func testKcpIntegration(t *testing.T, name string, scope kubebindv1alpha2.InformerScope) {
 	t.Helper()
 	t.Logf("Testing kcp integration with informer scope %s, tempdir: %s", scope, t.TempDir())
 
@@ -56,30 +61,29 @@ func testKcpIntegration(t *testing.T, scope kubebindv1alpha2.InformerScope) {
 	framework.StartDex(t)
 
 	// kcp bootstrap
-	server := kcptesting.PrivateKcpServer(t)
-	bootstrapKCP(t, server)
+	bootstrapKCP(t, framework.ClientConfig(t))
+
+	suffix := framework.RandomString(4)
 
 	// consumer
 	t.Log("Create consumer workspace")
-	consumerWsPath, _ := kcptesting.NewWorkspaceFixture(t, server, logicalcluster.NewPath("root"), kcptesting.WithName("consumer"))
-
-	t.Log("Create a consumer kubeconfig")
-	consumerCfg, consumerKubeconfig := wsConfig(t, server, consumerWsPath)
+	consumerWsName := fmt.Sprintf("%s-consumer-%s", name, suffix)
+	consumerCfg, consumerKubeconfigPath := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithStaticName(consumerWsName))
 
 	t.Log("Start konnector for consumer workspace")
-	framework.StartKonnector(t, consumerCfg, "--kubeconfig="+consumerKubeconfig)
+	framework.StartKonnector(t, consumerCfg, "--kubeconfig="+consumerKubeconfigPath)
 
 	// backend
-	backendAddr := bootstrapBackend(t, server, scope)
+	backendAddr := bootstrapBackend(t, framework.ClientConfig(t), scope)
 
 	// provider
 	t.Log("Create provider workspace")
-	providerWsPath, _ := kcptesting.NewWorkspaceFixture(t, server, logicalcluster.NewPath("root"), kcptesting.WithName("provider"))
+	providerWsName := fmt.Sprintf("%s-provider-%s", name, suffix)
+	providerWsPath := logicalcluster.NewPath("root").Join(providerWsName)
+	providerCfg, _ := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithStaticName(providerWsName))
 
-	t.Log("Create a provider kubeconfig")
-	providerCfg, _ := wsConfig(t, server, providerWsPath)
-
-	cfg := server.BaseConfig(t)
+	cfg := framework.ClientConfig(t)
+	cfg.Host = strings.Split(cfg.Host, "/clusters/")[0]
 	kcpClusterClient, err := kcpclientset.NewForConfig(cfg)
 	require.NoError(t, err, "failed to create kcp client")
 
@@ -102,15 +106,20 @@ func testKcpIntegration(t *testing.T, scope kubebindv1alpha2.InformerScope) {
 	)
 
 	t.Log("Applying example APIExport, APIResourceSchemas and templates to provider workspace")
-	framework.ApplyFiles(t,
-		providerCfg,
-		"../../deploy/examples/apiexport.yaml",
-		"../../deploy/examples/apiresourceschema-cowboys.yaml",  // namespaced
-		"../../deploy/examples/apiresourceschema-sheriffs.yaml", // cluster scoped
-		"../../deploy/examples/template-cowboys.yaml",           // template for cowboys
-		"../../deploy/examples/template-sheriffs.yaml",          // template for sheriffs
-		"../../deploy/examples/collection-wildwest.yaml",
-	)
+
+	files := []string{"examples/apiexport.yaml",
+		"examples/apiresourceschema-cowboys.yaml",  // namespaced
+		"examples/apiresourceschema-sheriffs.yaml", // cluster scoped
+		"examples/template-cowboys.yaml",           // template for cowboys
+		"examples/template-sheriffs.yaml",          // template for sheriffs
+		"examples/collection-wildwest.yaml",
+	}
+	for _, f := range files {
+		data, err := boostrapdeploy.Examples.ReadFile(f)
+		require.NoError(t, err, "failed to read example file %s", f)
+
+		framework.ApplyManifest(t, providerCfg, data)
+	}
 
 	t.Log("Bind the APIExport locally")
 	createApiBinding(t,
@@ -141,20 +150,29 @@ func testKcpIntegration(t *testing.T, scope kubebindv1alpha2.InformerScope) {
 
 	// kube-bind process
 	t.Log("Perform binding process with browser")
-	var kind, resource, template string
+	var templateRef, kind, resource string
 	switch scope {
 	case kubebindv1alpha2.ClusterScope:
 		kind = "Sheriff"
 		resource = "sheriffs"
-		template = "sheriffs"
+		templateRef = "sheriffs"
 	case kubebindv1alpha2.NamespacedScope:
 		kind = "Cowboy"
 		resource = "cowboys"
-		template = "cowboys"
+		templateRef = "cowboys"
 	default:
 		require.Fail(t, "unhandled scope %q", scope)
 	}
-	performBindingWithBrowser(t, backendAddr, providerClusterID, consumerCfg, consumerKubeconfig, resource, template)
+
+	kubeBindConfig := path.Join(framework.WorkDir, "kube-bind-config-kcp.yaml")
+
+	iostreams, _, _, _ := genericclioptions.NewTestIOStreams()
+	authURLDryRunCh := make(chan string, 1)
+	go framework.SimulateBrowser(t, authURLDryRunCh)
+	framework.Login(t, iostreams, authURLDryRunCh, kubeBindConfig, fmt.Sprintf("http://%s/api/exports", backendAddr), providerClusterID)
+
+	t.Logf("Performing binding using template %s", templateRef)
+	performBinding(t, consumerCfg, templateRef, resource, kubeBindConfig)
 
 	t.Log("Testing resource creation and synchronization...")
 	testKCPResourceSync(t, consumerCfg, providerCfg, scope, kind, resource)

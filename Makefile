@@ -277,6 +277,26 @@ $(KCP):
 run-kcp: $(KCP)
 	$(KCP_CMD) start --bind-address=127.0.0.1
 
+.PHONY: run-kcp-infra
+run-kcp-infra: $(KCP) $(DEX) ## Run KCP infrastructure for e2e tests (blocking)
+	mkdir -p .kcp
+	$(MAKE) run-dex 2>&1 & DEX_PID=$$!; \
+	$(MAKE) run-kcp &>.kcp/kcp.log & KCP_PID=$$!; \
+	trap 'kill -TERM $$DEX_PID $$KCP_PID; rm -rf .kcp' TERM INT EXIT && \
+	echo "Waiting for kcp to be ready (check .kcp/kcp.log)." && while ! KUBECONFIG=.kcp/admin.kubeconfig kubectl get --raw /readyz &>/dev/null; do sleep 1; echo -n "."; done && echo && \
+	echo "KCP is ready. Press Ctrl+C to stop." && \
+	wait $$KCP_PID
+
+.PHONY: test-e2e-only
+ifdef USE_GOTESTSUM
+test-e2e-only: $(GOTESTSUM)
+endif
+test-e2e-only: TEST_ARGS ?=
+test-e2e-only: WORK_DIR ?= .
+test-e2e-only: WHAT ?= ./test/e2e...
+test-e2e-only: build ## Run e2e tests against existing KCP infrastructure
+	KUBECONFIG=$$PWD/.kcp/admin.kubeconfig GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -v -count $(COUNT) $(E2E_PARALLELISM_FLAG) $(WHAT) $(TEST_ARGS)
+
 .PHONY: test-e2e
 ifdef USE_GOTESTSUM
 test-e2e: $(GOTESTSUM)
@@ -298,7 +318,11 @@ test-e2e-contribs: $(CONTRIBS_E2E) ## Run e2e tests for external integrations
 
 test-e2e-contrib-kcp: $(DEX) $(KCP)
 $(CONTRIBS_E2E):
-	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && $(GO_TEST) -race -count $(COUNT) $(E2E_PARALLELISM_FLAG) ./test/e2e/...
+	mkdir .kcp
+	$(MAKE) run-kcp &>.kcp/kcp.log & KCP_PID=$$!; \
+	trap 'kill -TERM $$KCP_PID; rm -rf .kcp' TERM INT EXIT && \
+	echo "Waiting for kcp to be ready (check .kcp/kcp.log)." && while ! KUBECONFIG=.kcp/admin.kubeconfig kubectl get --raw /readyz &>/dev/null; do sleep 1; echo -n "."; done && echo && \
+	cd contrib/$(patsubst test-e2e-contrib-%,%,$@) && KUBECONFIG=$$PWD/../../.kcp/admin.kubeconfig $(GO_TEST) -race -count $(COUNT) $(E2E_PARALLELISM_FLAG) ./test/e2e/...
 
 .PHONY: test
 ifdef USE_GOTESTSUM
@@ -375,35 +399,53 @@ deploy-docs: venv ## Deploy docs
 	. $(VENV)/activate; \
 	REMOTE=$(REMOTE) BRANCH=$(BRANCH) docs/scripts/deploy-docs.sh
 
-# Example: make IMAGE_REPO=ghcr.io/<username> image-local
+.PHONY: build-web
+build-web:
+	cd web && npm run build
+
+# Example: make IMAGE_REPO=ghcr.io/<username> image-local 
+# Set PLATFORMS to override default architectures (e.g., make PLATFORMS=linux/amd64,linux/arm64 image-local)
+# For local builds, default to current architecture on Linux platform to support --load
+PLATFORMS ?= linux/$(ARCH)
 .PHONY: image-local
 image-local:
-	@echo "Building images locally with tag $(REV)"
-	@command -v ko >/dev/null 2>&1 || { echo "ko not found. Install with: go install github.com/google/ko@latest"; exit 1; }
+	@echo "Building multi-arch images locally with tag $(REV) for platforms: $(PLATFORMS)"
+	@command -v docker >/dev/null 2>&1 || { echo "docker not found. Please install Docker"; exit 1; }
+	@docker buildx version >/dev/null 2>&1 || { echo "docker buildx not found. Please enable buildx in Docker"; exit 1; }
 
-	@echo "Building konnector image locally..."
-	KO_DOCKER_REPO=$(IMAGE_REPO) ko build \
-		--local \
-		-B \
-		-t $(REV) \
-		./cmd/konnector
+	@# Create buildx builder if it doesn't exist
+	@docker buildx create --name kube-bind-builder --use 2>/dev/null || docker buildx use kube-bind-builder 2>/dev/null || true
+	@docker buildx inspect --bootstrap >/dev/null 2>&1
 
-	@echo "Building backend image locally..."
-	KO_DOCKER_REPO=$(IMAGE_REPO) ko build \
-		--local \
-		-B \
-		-t $(REV) \
-		./cmd/backend
+	@echo "Building konnector multi-arch image locally..."
+	docker buildx build \
+		--platform $(PLATFORMS) \
+		--build-arg LDFLAGS="$(LDFLAGS)" \
+		-t $(IMAGE_REPO)/konnector:$(REV) \
+		-f Dockerfile.konnector \
+		--load .
 
-	@echo "Successfully built local images:"
-	@echo "  $(IMAGE_REPO)/konnector:$(REV)"
-	@echo "  $(IMAGE_REPO)/backend:$(REV)"
+	@echo "Building backend multi-arch image locally..."
+	docker buildx build \
+		--platform $(PLATFORMS) \
+		--build-arg LDFLAGS="$(LDFLAGS)" \
+		-t $(IMAGE_REPO)/backend:$(REV) \
+		-f Dockerfile \
+		--load .
+
+	@echo "Successfully built multi-arch local images:"
+	@echo "  $(IMAGE_REPO)/konnector:$(REV) ($(PLATFORMS))"
+	@echo "  $(IMAGE_REPO)/backend:$(REV) ($(PLATFORMS))"
+
+# Kind cluster configuration
+KIND_CLUSTER ?= kube-bind
+DOCKER_REPO ?= $(IMAGE_REPO)
 
 .PHONY: kind-load
 kind-load:
 	@echo "Loading images into kind cluster '$(KIND_CLUSTER)'"
-	kind load docker-image $(KO_DOCKER_REPO)/konnector:$(REV) --name $(KIND_CLUSTER)
-	kind load docker-image $(KO_DOCKER_REPO)/backend:$(REV) --name $(KIND_CLUSTER)
+	kind load docker-image $(DOCKER_REPO)/konnector:$(REV) --name $(KIND_CLUSTER)
+	kind load docker-image $(DOCKER_REPO)/backend:$(REV) --name $(KIND_CLUSTER)
 	@echo "Successfully loaded images into kind cluster '$(KIND_CLUSTER)'"
 
 .PHONY: helm-build-local

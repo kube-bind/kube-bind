@@ -54,7 +54,7 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 		if existing.Spec.KubeconfigSecretRef.Namespace != "kube-bind" || existing.Spec.KubeconfigSecretRef.Name != secretName {
 			return nil, fmt.Errorf("found existing APIServiceBinding %s not from this service provider", bindingName)
 		}
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Reusing existing APIServiceBinding %s.\n", existing.Name)
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Reusing existing APIServiceBinding %s.\n", existing.Name)
 
 		// Validate all CRDs are owned by this binding
 		for _, resource := range request.Spec.Resources {
@@ -106,6 +106,6 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 		return nil, err
 	}
 
-	fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Created APIServiceBinding %s for %d resources\n", bindingName, len(request.Spec.Resources))
+	fmt.Fprintf(b.Options.IOStreams.ErrOut, "Created APIServiceBinding %s for %d resources\n", bindingName, len(request.Spec.Resources))
 	return []*kubebindv1alpha2.APIServiceBinding{created}, nil
 }

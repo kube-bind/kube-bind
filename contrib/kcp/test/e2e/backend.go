@@ -19,26 +19,29 @@ package e2e
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
 	kcpclientset "github.com/kcp-dev/kcp/sdk/client/clientset/versioned/cluster"
 	kcptestinghelpers "github.com/kcp-dev/kcp/sdk/testing/helpers"
-	kcptestingserver "github.com/kcp-dev/kcp/sdk/testing/server"
 	"github.com/kcp-dev/logicalcluster/v3"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/rest"
 
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"github.com/kube-bind/kube-bind/test/e2e/framework"
 )
 
-func bootstrapBackend(t *testing.T, server kcptestingserver.RunningServer, scope kubebindv1alpha2.InformerScope) string {
+func bootstrapBackend(t *testing.T, rest *rest.Config, scope kubebindv1alpha2.InformerScope) string {
 	t.Helper()
 	t.Log("Bootstrapping backend")
 
-	client, err := kcpclientset.NewForConfig(server.BaseConfig(t))
+	rest.Host = strings.Split(rest.Host, "/clusters/")[0]
+
+	client, err := kcpclientset.NewForConfig(rest)
 	require.NoError(t, err)
 
 	exportUrl := ""
@@ -58,7 +61,7 @@ func bootstrapBackend(t *testing.T, server kcptestingserver.RunningServer, scope
 	}, wait.ForeverTestTimeout, time.Millisecond*100)
 	require.NotEmpty(t, exportUrl, "APIExportEndpointSlice URL is empty")
 
-	_, backendKubeconfig := wsConfig(t, server, logicalcluster.NewPath("root").Join("kube-bind"))
+	_, backendKubeconfig := wsConfig(t, rest, logicalcluster.NewPath("root").Join("kube-bind"))
 
 	t.Log("Starting kube-bind backend for kcp")
 	addr, _ := framework.StartBackend(t,

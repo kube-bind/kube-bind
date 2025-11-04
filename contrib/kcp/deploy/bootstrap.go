@@ -18,6 +18,7 @@ package kubebind
 
 import (
 	"context"
+	"embed"
 	"time"
 
 	kcpapiextensionsclientset "github.com/kcp-dev/client-go/apiextensions/client"
@@ -34,6 +35,9 @@ import (
 
 	"github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/config/kcp/resources"
 )
+
+//go:embed examples/*.yaml
+var Examples embed.FS
 
 var (
 	// KubeBindRootClusterName is the workspace to host common APIs.

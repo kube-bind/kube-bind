@@ -17,89 +17,58 @@ limitations under the License.
 package framework
 
 import (
-	"bytes"
 	"context"
-	"io"
-	"os"
-	"os/exec"
-	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	bindapiserviceplugin "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-apiservice/plugin"
-	bindplugin "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/plugin"
+	"github.com/kube-bind/kube-bind/cli/pkg/client"
+	"github.com/kube-bind/kube-bind/cli/pkg/config"
+	loginplugin "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-login/plugin"
 )
 
-func Bind(t *testing.T, iostreams genericclioptions.IOStreams, authURLCh chan<- string, invocations chan<- SubCommandInvocation, positionalArg string, flags ...string) {
+func GetKubeBindRestClient(t *testing.T, configFile string) client.Client {
+	t.Helper()
+
+	c, err := config.LoadConfigFromFile(configFile)
+	require.NoError(t, err)
+
+	server, _, err := c.GetCurrentServer()
+	require.NoError(t, err)
+	require.NotNil(t, server, "no current server configured in %s", configFile)
+
+	client, err := client.NewClient(*server, client.WithInsecure(true))
+	require.NoError(t, err)
+
+	return client
+}
+
+func Login(t *testing.T, iostreams genericclioptions.IOStreams, authURLCh chan<- string, configFile, serverURL, clusterID string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	args := flags
-	if positionalArg != "" {
-		args = append(args, positionalArg)
-	}
-	t.Logf("kubectl bind %s", strings.Join(args, " "))
+	t.Logf("kubectl login %s --skip-browser --config-file=%s --cluster=%s", serverURL, configFile, clusterID)
 
-	opts := bindplugin.NewBindOptions(iostreams)
+	opts := loginplugin.NewLoginOptions(iostreams)
 	cmd := &cobra.Command{}
 	opts.AddCmdFlags(cmd)
-	err := cmd.Flags().Parse(flags)
+	args := []string{serverURL}
+	if clusterID != "" {
+		args = append(args, "--cluster="+clusterID)
+	}
+	if configFile != "" {
+		args = append(args, "--config-file="+configFile)
+	}
+	err := cmd.Flags().Parse(args)
 	require.NoError(t, err)
 
-	err = opts.Complete([]string{positionalArg})
+	err = opts.Complete(args)
 	require.NoError(t, err)
+
 	err = opts.Validate()
 	require.NoError(t, err)
-	opts.Runner = func(cmd *exec.Cmd) error {
-		bs, err := io.ReadAll(cmd.Stdin)
-		if err != nil {
-			return err
-		}
-		if invocations != nil {
-			invocations <- SubCommandInvocation{
-				Executable: cmd.Args[0],
-				Args:       cmd.Args[1:],
-				Stdin:      bs,
-			}
-		}
-		t.Logf("Running command: %s\nstdin:\n", cmd.String())
-		t.Logf("%s", bs)
-
-		return nil
-	}
 	err = opts.Run(ctx, authURLCh)
-	require.NoError(t, err)
-}
-
-type SubCommandInvocation struct {
-	Executable string
-	Args       []string
-	Stdin      []byte
-}
-
-func BindAPIService(t *testing.T, stdin []byte, positionalArg string, flags ...string) {
-	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
-	args := flags
-	if positionalArg != "" {
-		args = append(args, positionalArg)
-	}
-	t.Logf("kubectl bind apiservice %s", strings.Join(args, " "))
-
-	opts := bindapiserviceplugin.NewBindAPIServiceOptions(genericclioptions.IOStreams{In: bytes.NewReader(stdin), Out: os.Stdout, ErrOut: os.Stderr})
-	cmd := &cobra.Command{}
-	opts.AddCmdFlags(cmd)
-	err := cmd.Flags().Parse(flags)
-	require.NoError(t, err)
-
-	err = opts.Complete([]string{positionalArg})
-	require.NoError(t, err)
-	err = opts.Validate()
-	require.NoError(t, err)
-	err = opts.Run(ctx)
 	require.NoError(t, err)
 }

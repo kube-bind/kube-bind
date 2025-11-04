@@ -15,7 +15,6 @@ linters:
     - errcheck
     - errchkjson
     - gocritic
-    - godot
     - goprintffuncname
     - gosec
     - govet

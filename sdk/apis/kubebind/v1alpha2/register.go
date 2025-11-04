@@ -59,7 +59,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ClusterBinding{},
 		&ClusterBindingList{},
 		&BindingProvider{},
-		&BindingResponse{},
+		&BindingResourceResponse{},
 		&APIServiceExportTemplate{},
 		&APIServiceExportTemplateList{},
 		&Collection{},

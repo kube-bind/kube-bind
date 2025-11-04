@@ -17,70 +17,11 @@ limitations under the License.
 package plugin
 
 import (
-	"crypto/tls"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"net"
-	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/blang/semver/v4"
-	"github.com/mdp/qrterminal/v3"
-	clientgoversion "k8s.io/client-go/pkg/version"
-
-	"github.com/kube-bind/kube-bind/pkg/version"
-	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
-
-func getProvider(url string, insecure bool) (*kubebindv1alpha2.BindingProvider, error) {
-	client := &http.Client{}
-	if insecure {
-		client.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: insecure, //nolint:gosec
-			},
-		}
-	}
-
-	resp, err := client.Get(url) //nolint:noctx
-	if err != nil {
-		return nil, err
-	}
-
-	blob, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := resp.Body.Close(); err != nil {
-		return nil, err
-	}
-
-	provider := &kubebindv1alpha2.BindingProvider{}
-	if err := json.Unmarshal(blob, provider); err != nil {
-		return nil, err
-	}
-
-	// check provider version compatibility
-	bindVersion, err := version.BinaryVersion(clientgoversion.Get().GitVersion)
-	if err != nil {
-		return nil, err
-	}
-	if bindSemVer, err := semver.Parse(strings.TrimLeft(bindVersion, "v")); err != nil {
-		return nil, fmt.Errorf("failed to parse bind version %q: %v", bindVersion, err)
-	} else if min := semver.MustParse("0.5.0"); bindSemVer.GE(min) {
-		// At v0.5.0 we made breaking change for how APIExports looks like.
-		// So we need to test for v0.5.0+. If
-		if err := validateProviderVersion(provider.Version); err != nil {
-			return nil, err
-		}
-	}
-
-	return provider, nil
-}
 
 func validateProviderVersion(providerVersion string) error {
 	switch providerVersion {
@@ -96,61 +37,8 @@ func validateProviderVersion(providerVersion string) error {
 		return fmt.Errorf("provider version %q cannot be parsed", providerVersion)
 	}
 	// Check if provider is higher than 0.4.8, we need to have same version of kube-bind to use this provider.
-	if min := semver.MustParse("0.5.0"); providerSemVer.LT(min) {
+	if min := semver.MustParse("0.6.0"); providerSemVer.LT(min) {
 		return fmt.Errorf("provider version %s is not supported, must be at least v%s", providerVersion, min)
-	}
-
-	return nil
-}
-
-func (b *BindOptions) authenticate(provider *kubebindv1alpha2.BindingProvider, callback, sessionID, clusterID string, urlCh chan<- string) error {
-	var oauth2Method *kubebindv1alpha2.OAuth2CodeGrant
-	for _, m := range provider.AuthenticationMethods {
-		if m.Method == "OAuth2CodeGrant" {
-			oauth2Method = m.OAuth2CodeGrant
-			break
-		}
-	}
-	if oauth2Method == nil {
-		return errors.New("server does not support OAuth2 code grant flow")
-	}
-
-	u, err := url.Parse(oauth2Method.AuthenticatedURL)
-	if err != nil {
-		return fmt.Errorf("failed to parse auth url: %v", err)
-	}
-
-	cbURL, err := url.Parse(callback)
-	if err != nil {
-		return fmt.Errorf("failed to parse callback url: %v", err)
-	}
-	_, cbPort, err := net.SplitHostPort(cbURL.Host)
-	if err != nil {
-		return fmt.Errorf("failed to parse callback port: %v", err)
-	}
-
-	values := u.Query()
-	values.Add("p", cbPort)
-	values.Add("s", sessionID)
-	values.Add("c", clusterID)
-	u.RawQuery = values.Encode()
-
-	fmt.Fprintf(b.Options.ErrOut, "\nTo authenticate, visit in your browser:\n\n\t%s\n", u.String())
-
-	// TODO(sttts): callback backend, not 127.0.0.1
-	if false {
-		fmt.Fprintf(b.Options.ErrOut, "\n\nor scan the QRCode below:")
-		config := qrterminal.Config{
-			Level:     qrterminal.L,
-			Writer:    b.Options.ErrOut,
-			BlackChar: qrterminal.WHITE,
-			WhiteChar: qrterminal.BLACK,
-			QuietZone: 2,
-		}
-		qrterminal.GenerateWithConfig(u.String(), config)
-	}
-	if urlCh != nil {
-		urlCh <- u.String()
 	}
 
 	return nil

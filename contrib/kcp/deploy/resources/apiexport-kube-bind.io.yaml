@@ -64,12 +64,17 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: apiserviceexporttemplates
-    schema: v251022-ca928ec.apiserviceexporttemplates.kube-bind.io
+    schema: v251029-fadb9ed.apiserviceexporttemplates.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io
     name: apiservicenamespaces
     schema: v250809-5ed76a1.apiservicenamespaces.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
+    name: bindableresourcesrequests
+    schema: v251029-ff0a399.bindableresourcesrequests.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io

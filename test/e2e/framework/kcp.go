@@ -63,6 +63,13 @@ func WithName(s string, formatArgs ...any) ClusterWorkspaceOption {
 	}
 }
 
+func WithStaticName(s string) ClusterWorkspaceOption {
+	return func(ws *tenancyv1alpha1.Workspace) {
+		ws.Name = s
+		ws.GenerateName = ""
+	}
+}
+
 func RandomString(length int) string {
 	token := make([]byte, length)
 	rand.Read(token) //nolint:errcheck

@@ -27,6 +27,9 @@ import (
 	"k8s.io/klog/v2"
 
 	apiservicecmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-apiservice/cmd"
+	collectionscmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-collections/cmd"
+	logincmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-login/cmd"
+	templatescmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-templates/cmd"
 	bindcmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/cmd"
 )
 
@@ -53,6 +56,27 @@ func KubectlBindCommand() *cobra.Command {
 		os.Exit(1)
 	}
 	rootCmd.AddCommand(apiserviceCmd)
+
+	loginCmd, err := logincmd.New(genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v", err)
+		os.Exit(1)
+	}
+	rootCmd.AddCommand(loginCmd)
+
+	templatesCmd, err := templatescmd.New(genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v", err)
+		os.Exit(1)
+	}
+	rootCmd.AddCommand(templatesCmd)
+
+	collectionsCmd, err := collectionscmd.New(genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v", err)
+		os.Exit(1)
+	}
+	rootCmd.AddCommand(collectionsCmd)
 
 	return rootCmd
 }

@@ -89,6 +89,7 @@ Start the backend with kcp provider:
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
   --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
   --schema-source apiresourceschemas
+  --consumer-scope=cluster
 ```
 
 ### 5. Create Provider Workspace
@@ -131,6 +132,11 @@ kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
 
 # Enable recursive binding
 kubectl kcp bind apiexport root:provider:cowboys-stable
+
+# Create templates and catalog
+kubectl create -f contrib/kcp/deploy/examples/template-cowboys.yaml
+kubectl create -f contrib/kcp/deploy/examples/template-sheriffs.yaml
+kubectl create -f contrib/kcp/deploy/examples/collection-wildwest.yaml
 ```
 
 ### 8. Get Logical Cluster Information
@@ -159,23 +165,8 @@ kubectl ws create consumer --enter
 Generate the APIServiceExport YAML:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/<logical-cluster-id>/exports --dry-run -o yaml > apiserviceexport.yaml
-```
-
-Extract the kubeconfig for binding:
-
-```bash
-kubectl get secret <secret-name> -n kube-bind -o jsonpath='{.data.kubeconfig}' | base64 -d > remote.kubeconfig
-```
-
-Perform the binding:
-
-```bash
-./bin/kubectl-bind apiservice \
-  --remote-kubeconfig remote.kubeconfig \
-  -f apiserviceexport.yaml \
-  --skip-konnector \
-  --remote-namespace kube-bind-<random-suffix>
+./bin/kubectl-bind login http://127.0.0.1:8080 --cluster <logical-cluster-id>
+./bin/kubectl-bind --skip-konnector
 ```
 
 ### 3. Start Konnector
@@ -192,46 +183,3 @@ Create example resources:
 ```bash
 kubectl apply -f contrib/kcp/deploy/examples/cowboy.yaml
 ```
-
-## Advanced Features
-
-### Multiple Consumers
-
-You can create multiple consumer workspaces to test multi-tenant scenarios:
-
-```bash
-# Create second consumer
-cp .kcp/admin.kubeconfig .kcp/consumer2.kubeconfig
-export KUBECONFIG=.kcp/consumer2.kubeconfig
-kubectl ws use :root
-kubectl ws create consumer2 --enter
-
-# Repeat binding process with different namespace
-# Start konnector on different port
-go run ./cmd/konnector/ --lease-namespace default --server-address :8091
-```
-
-### Debugging
-
-To debug the setup, use the following commands:
-
-```bash
-# Switch to debug workspace
-cp .kcp/admin.kubeconfig .kcp/debug.kubeconfig
-export KUBECONFIG=.kcp/debug.kubeconfig
-kubectl ws use :root:kube-bind
-
-# Check available resources
-kubectl-s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" api-resources
-
-# List CRDs
-kubectl-s "$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}")/clusters/*" get crd
-```
-
-## Key Differences from Standard Setup
-
-- **Provider Selection**: Uses `--multicluster-runtime-provider kcp` flag
-- **Workspace Management**: Requires kcp workspace creation and management
-- **APIExport Integration**: Leverages kcp's APIExport mechanism to enable shared backed service.
-- **URL Structure**: Uses kcp-specific URLs with cluster identifiers. In production, this should be abstracted by a service wrapper.
-- **Advanced Isolation**: Provides workspace-level isolation beyond namespaces

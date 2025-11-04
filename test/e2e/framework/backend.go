@@ -83,7 +83,7 @@ func StartBackendWithoutDefaultArgs(t testing.TB, args ...string) (net.Addr, *ba
 	dexId, dexSecret := CreateDexClient(t, addr)
 	opts.OIDC.IssuerClientID = dexId
 	opts.OIDC.IssuerClientSecret = dexSecret
-	opts.OIDC.CallbackURL = "http://" + addr.String() + "/callback"
+	opts.OIDC.CallbackURL = "http://" + addr.String() + "/api/callback"
 
 	// Skip name conflict validation - when run in-process with multiple
 	// controllers they all will register the same metric names, which

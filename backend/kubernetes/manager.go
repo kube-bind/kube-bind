@@ -181,6 +181,22 @@ func (m *Manager) ListCollections(ctx context.Context, cluster string) (*kubebin
 	return &collections, nil
 }
 
+func (m *Manager) ListTemplates(ctx context.Context, cluster string) (*kubebindv1alpha2.APIServiceExportTemplateList, error) {
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	c := cl.GetClient()
+
+	var templates kubebindv1alpha2.APIServiceExportTemplateList
+	err = c.List(ctx, &templates)
+	if err != nil {
+		return nil, err
+	}
+
+	return &templates, nil
+}
+
 func (m *Manager) GetTemplates(ctx context.Context, cluster, name string) (*kubebindv1alpha2.APIServiceExportTemplate, error) {
 	cl, err := m.manager.GetCluster(ctx, cluster)
 	if err != nil {

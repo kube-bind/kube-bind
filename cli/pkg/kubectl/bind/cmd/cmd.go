@@ -33,42 +33,53 @@ import (
 )
 
 var (
-	// TODO: add other examples related to permission claim commands.
 	BindExampleUses = `
-	# select a kube-bind.io compatible service from the given URL, e.g. an API service.
-	%[1]s bind https://mangodb.com/exports
+	# Open kube-bind UI for current server context
+	%[1]s bind
 
-	# authenticate and configure the services to bind, but don't actually bind them.
-	%[1]s bind https://mangodb.com/exports --dry-run -o yaml > apiservice-export-requests.yaml
+	# Open kube-bind UI for specific server
+	%[1]s bind https://mangodb.com
 
-	# bind to a remote API service as configured above and actually bind to it, e.g. in GitOps automation.
-	%[1]s bind apiservice --remote-kubeconfig name -f apiservice-binding-requests.yaml
+	# List available templates (CLI mode)
+	%[1]s bind --dry-run
 
-	# bind to a remote API service via a request manifest from a https URL.
-	%[1]s bind apiservice --remote-kubeconfig name https://some-url.com/apiservice-export-requests.yaml
+	# Bind specific template (CLI mode)
+	%[1]s bind --template my-app
+
+	# Bind template with server override
+	%[1]s bind https://mangodb.com --template my-app
+
+	# View template details without binding
+	%[1]s bind --template my-app --dry-run
 	`
 )
 
 func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	opts := plugin.NewBindOptions(streams)
 	cmd := &cobra.Command{
-		Use:   "bind",
-		Short: "kubectl plugin for kube-bind, bind different remote types into the current cluster.",
+		Use:   "bind [server-url]",
+		Short: "Open kube-bind UI or bind templates from a remote server.",
 		Long: help.Doc(`
-		kube-bind is a project that aims to provide better support for
-		service providers and consumers that reside in distinct Kubernetes clusters.
+		kube-bind allows you to bind remote services into your cluster using either
+		a web UI or command-line interface.
+
+		By default, 'kubectl bind' opens the kube-bind web UI in your browser.
+		Use the --template flag to bind specific templates via CLI.
 
 		For more information, see: https://kube-bind.io
-
-		To bind a remote service, use the 'kubectl bind' command.
-		Please check the examples below for more information.
 	`),
 		Example:      fmt.Sprintf(BindExampleUses, "kubectl"),
 		SilenceUsage: true,
 		Args: func(cmd *cobra.Command, args []string) error {
-			for _, arg := range args {
+			// Allow 0 or 1 arguments
+			if len(args) > 1 {
+				return fmt.Errorf("too many arguments, expected at most 1")
+			}
+			// If argument is provided, it must be a URL
+			if len(args) == 1 {
+				arg := args[0]
 				if !strings.HasPrefix(arg, "http://") && !strings.HasPrefix(arg, "https://") {
-					return fmt.Errorf("unknown argument: %s", arg) // this will fall back to sub-commands
+					return fmt.Errorf("server URL must start with http:// or https://, got: %s", arg)
 				}
 			}
 			return nil
@@ -81,9 +92,6 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 			yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
 			fmt.Fprintf(streams.ErrOut, "%s\n\n", yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time."))
 
-			if len(args) == 0 {
-				return cmd.Help()
-			}
 			if err := opts.Complete(args); err != nil {
 				return err
 			}

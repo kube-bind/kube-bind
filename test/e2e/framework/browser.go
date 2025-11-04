@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/headzoo/surf"
 	"github.com/headzoo/surf/browser"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,4 +36,13 @@ func BrowserEventuallyAtPath(t *testing.T, browser *browser.Browser, path string
 		t.Logf("Waiting for browser to be at %s, current URL: %s", path, browser.Url())
 		return false
 	}, wait.ForeverTestTimeout, time.Millisecond*100, "Browser is not at path %s", path)
+}
+
+func SimulateBrowser(t *testing.T, authURLCh chan string) {
+	browser := surf.NewBrowser()
+	authURL := <-authURLCh
+
+	t.Logf("Browsing to auth URL: %s", authURL)
+	err := browser.Open(authURL)
+	require.NoError(t, err)
 }

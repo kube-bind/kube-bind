@@ -16,3 +16,8 @@ coverage.*
 docs/generators/cli-doc/cli-doc
 apiserviceexport.yaml
 *.prod
+
+# Frontend dependencies and build
+web/node_modules/
+web/.vite/
+web/*.tsbuildinfo

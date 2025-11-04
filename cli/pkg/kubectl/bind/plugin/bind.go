@@ -17,35 +17,40 @@ limitations under the License.
 package plugin
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"math/big"
+	"net"
+	"net/http"
 	"net/url"
-	"os"
 	"os/exec"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
-	kubeclient "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/base"
-	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/authenticator"
+	bindapiservice "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-apiservice/plugin"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
+
+// BindResult represents the result from the UI callback
+type BindResult struct {
+	Success          bool   `json:"success"`
+	Message          string `json:"message,omitempty"`
+	Error            string `json:"error,omitempty"`
+	ErrorDescription string `json:"error_description,omitempty"`
+
+	Response kubebindv1alpha2.BindingResourceResponse `json:"response,omitempty"`
+}
 
 // BindOptions contains the options for creating an APIBinding.
 type BindOptions struct {
@@ -55,13 +60,6 @@ type BindOptions struct {
 	Print   *genericclioptions.PrintFlags
 	printer printers.ResourcePrinter
 	DryRun  bool
-
-	// skipInsecure skips the verification of the server's certificate chain and host name.
-	SkipInsecure bool
-
-	// url is the argument accepted by the command. It contains the
-	// reference to where an APIService exists.
-	URL string
 
 	// skipKonnector skips the deployment of the konnector.
 	SkipKonnector bool
@@ -100,18 +98,14 @@ func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
-	cmd.Flags().BoolVar(&b.SkipInsecure, "insecure-skip-tls-verify", b.SkipInsecure, "Skip the verification of the server's certificate chain and host name.")
 	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
 }
 
 // Complete ensures all fields are initialized.
 func (b *BindOptions) Complete(args []string) error {
-	if err := b.Options.Complete(); err != nil {
+	// Try base completion, but don't fail if no current server is configured
+	if err := b.Options.Complete(false); err != nil {
 		return err
-	}
-
-	if len(args) > 0 {
-		b.URL = args[0]
 	}
 
 	printer, err := b.Print.ToPrinter()
@@ -126,12 +120,12 @@ func (b *BindOptions) Complete(args []string) error {
 
 // Validate validates the BindOptions are complete and usable.
 func (b *BindOptions) Validate() error {
-	if b.URL == "" {
-		return errors.New("url is required as an argument") // should not happen because we validate that before
+	if b.Server == "" {
+		return fmt.Errorf("server is required")
 	}
 
-	if _, err := url.Parse(b.URL); err != nil {
-		return fmt.Errorf("invalid url %q: %w", b.URL, err)
+	if _, err := url.Parse(b.Server); err != nil {
+		return fmt.Errorf("invalid url %q: %w", b.Server, err)
 	}
 
 	return b.Options.Validate()
@@ -139,191 +133,264 @@ func (b *BindOptions) Validate() error {
 
 // Run starts the binding process.
 func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
-	config, err := b.ClientConfig.ClientConfig()
+	// Always use UI mode with callback listener
+	return b.runWithCallback(ctx, urlCh)
+}
+
+// runWithCallback creates a local callback listener and opens the UI
+func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) error {
+	_, err := b.Options.ClientConfig.ClientConfig()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get client config: %w", err)
 	}
-	kubeClient, err := kubeclient.NewForConfig(config)
+
+	// Generate session ID. It is used to verify callback.
+	sessionID, err := generateRandomString(32)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate session ID: %w", err)
 	}
 
-	exportURL, err := url.Parse(b.URL)
+	// Setup callback server with random port
+	resultCh := make(chan *BindResult, 1)
+	errCh := make(chan error, 1)
+
+	callbackServer, callbackPort, err := b.startCallbackServer(resultCh, errCh, sessionID)
 	if err != nil {
-		return err // should never happen because we test this in Validate()
+		return fmt.Errorf("failed to start callback server: %w", err)
 	}
+	defer callbackServer.Close()
 
-	provider, err := getProvider(exportURL.String(), b.SkipInsecure)
+	// Build the UI URL with callback parameters
+	uiURL, err := b.buildUIURL(callbackPort, sessionID, b.Cluster)
 	if err != nil {
-		return fmt.Errorf("failed to fetch authentication url %q: %v", exportURL, err)
+		return fmt.Errorf("failed to build UI URL: %w", err)
 	}
 
-	if provider.APIVersion != kubebindv1alpha2.GroupVersion {
-		return fmt.Errorf("unsupported binding provider version %q, expected %q", provider.APIVersion, kubebindv1alpha2.GroupVersion)
-	}
+	fmt.Fprintf(b.Options.IOStreams.ErrOut, "🌐 Opening kube-bind UI in your browser...\n")
+	fmt.Fprintf(b.Options.IOStreams.ErrOut, "    %s\n\n", uiURL)
 
-	ns, err := kubeClient.CoreV1().Namespaces().Get(ctx, "kube-bind", metav1.GetOptions{})
-	if err != nil && !apierrors.IsNotFound(err) {
-		return err
-	} else if apierrors.IsNotFound(err) {
-		ns = &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "kube-bind",
-			},
-		}
-		if ns, err = kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
-			return err
-		} else {
-			fmt.Fprintf(b.Options.IOStreams.ErrOut, "📦 Created kube-bind namespace.\n")
-		}
-	}
-
-	auth := authenticator.NewLocalhostCallbackAuthenticator()
-	err = auth.Start()
-	fmt.Fprintf(b.Options.ErrOut, "\n\n")
-	if err != nil {
-		return err
-	}
-
-	sessionID := SessionID()
-	if err := b.authenticate(provider, auth.Endpoint(), sessionID, ClusterID(ns), urlCh); err != nil {
-		return err
-	}
-
-	timeoutCtx, cancel := context.WithTimeout(ctx, 10*time.Minute)
-	defer cancel()
-	response, gvk, err := auth.WaitForResponse(timeoutCtx)
-	if err != nil {
-		return err
-	}
-
-	fmt.Fprintf(b.IOStreams.ErrOut, "🔑 Successfully authenticated to %s\n", exportURL.String())
-
-	// verify the response
-	if gvk.GroupVersion() != kubebindv1alpha2.SchemeGroupVersion || gvk.Kind != "BindingResponse" {
-		return fmt.Errorf("unexpected response type %s, only supporting %s", gvk, kubebindv1alpha2.SchemeGroupVersion.WithKind("BindingResponse"))
-	}
-	bindingResponse, ok := response.(*kubebindv1alpha2.BindingResponse)
-	if !ok {
-		return fmt.Errorf("unexpected response type %T", response)
-	}
-	if bindingResponse.Authentication.OAuth2CodeGrant == nil {
-		return fmt.Errorf("unexpected response: authentication.oauth2CodeGrant is nil")
-	}
-	if bindingResponse.Authentication.OAuth2CodeGrant.SessionID != sessionID {
-		return fmt.Errorf("unexpected response: sessionID does not match")
-	}
-
-	// extract the requests
-	apiRequests := make([]*kubebindv1alpha2.APIServiceExportRequestResponse, len(bindingResponse.Requests))
-	for i, request := range bindingResponse.Requests {
-		var meta metav1.TypeMeta
-		if err := json.Unmarshal(request.Raw, &meta); err != nil {
-			return fmt.Errorf("unexpected response: failed to unmarshal request #%d: %v", i, err)
-		}
-		if got, expected := meta.APIVersion, kubebindv1alpha2.SchemeGroupVersion.String(); got != expected {
-			return fmt.Errorf("unexpected response: request #%d is not %s, got %s", i, expected, got)
-		}
-		var apiRequest kubebindv1alpha2.APIServiceExportRequestResponse
-		if err := json.Unmarshal(request.Raw, &apiRequest); err != nil {
-			return fmt.Errorf("failed to unmarshal api request #%d: %v", i+1, err)
-		}
-		apiRequests[i] = &apiRequest
-	}
-
-	// copy kubeconfig into local cluster
-	remoteHost, remoteNamespace, err := base.ParseRemoteKubeconfig(bindingResponse.Kubeconfig)
-	if err != nil {
-		return err
-	}
-	secretName, err := base.FindRemoteKubeconfig(ctx, kubeClient, remoteNamespace, remoteHost)
-	if err != nil {
-		return err
-	}
-	secret, created, err := base.EnsureKubeconfigSecret(ctx, string(bindingResponse.Kubeconfig), secretName, kubeClient)
-	if err != nil {
-		return err
-	}
-	if created {
-		fmt.Fprintf(b.Options.ErrOut, "🔒 Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+	// Open browser
+	if err := base.OpenBrowser(uiURL); err != nil {
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Failed to open browser automatically: %v\n", err)
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Please manually open: %s\n\n", uiURL)
 	} else {
-		fmt.Fprintf(b.Options.ErrOut, "🔒 Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Browser opened successfully\n")
 	}
 
-	// print the request in dry-run mode
-	if b.DryRun {
-		for _, request := range apiRequests {
-			if err = b.printer.PrintObj(request, b.IOStreams.Out); err != nil {
-				return err
+	fmt.Fprintf(b.Options.IOStreams.ErrOut, "Waiting for binding completion from UI...\n")
+	fmt.Fprintf(b.Options.IOStreams.ErrOut, "   (Press Ctrl+C to cancel)\n\n")
+
+	// Wait for callback result with context cancellation
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	select {
+	case result := <-resultCh:
+		if result.Error != "" {
+			return fmt.Errorf("binding failed: %s - %s", result.Error, result.ErrorDescription)
+		}
+
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Binding completed successfully!\n")
+		if result.Message != "" {
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "   %s\n", result.Message)
+		}
+
+		// Handle dry-run mode
+		if b.DryRun {
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Dry-run mode: outputting APIServiceExport requests\n\n")
+
+			// Print each request from the response using the configured printer
+			for i, request := range result.Response.Requests {
+				if i > 0 && b.Print.OutputFormat != nil && *b.Print.OutputFormat == "yaml" {
+					fmt.Fprintf(b.Options.IOStreams.Out, "---\n")
+				}
+
+				// TODO: support proper k/k style printers.
+				// Unmarshal the raw JSON into an APIServiceExportRequest
+				var apiRequest kubebindv1alpha2.APIServiceExportRequest
+				if err := json.Unmarshal(request.Raw, &apiRequest); err != nil {
+					return fmt.Errorf("failed to unmarshal request %d: %w", i, err)
+				}
+
+				// Use the printer to output in the requested format
+				if b.printer != nil {
+					if err := b.printer.PrintObj(&apiRequest, b.Options.IOStreams.Out); err != nil {
+						return fmt.Errorf("failed to print request %d: %w", i, err)
+					}
+				} else {
+					// Fallback to raw JSON output if printer is not available
+					fmt.Fprintf(b.Options.IOStreams.Out, "%s", request.Raw)
+				}
 			}
 		}
-	}
 
-	if b.DryRun {
-		return nil
-	}
-
-	// call sub-command for apiservices
-	executable, err := os.Executable()
-	if err != nil {
-		return err
-	}
-	for _, request := range apiRequests {
-		bs, err := json.Marshal(request)
+		// Create bindings using the shared binder
+		config, err := b.Options.ClientConfig.ClientConfig()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get client config: %w", err)
 		}
 
-		args := []string{
-			"apiservice",
-			"--remote-kubeconfig-namespace", secret.Namespace,
-			"--remote-kubeconfig-name", secret.Name,
-			"-f", "-",
+		bindings, err := b.bindResponseToAPIServiceBindings(ctx, config, &result.Response)
+		if err != nil {
+			return fmt.Errorf("failed to create APIServiceBindings: %w", err)
 		}
-		b.flags.VisitAll(func(flag *pflag.Flag) {
-			if flag.Changed && PassOnFlags.Has(flag.Name) {
-				args = append(args, "--"+flag.Name+"="+flag.Value.String())
+
+		if b.DryRun {
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "\nDry-run mode: no APIServiceBindings were created.\n")
+			return nil
+		}
+
+		// Print the results
+		if len(bindings) > 0 {
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Created %d APIServiceBinding(s):\n", len(bindings))
+			for _, binding := range bindings {
+				fmt.Fprintf(b.Options.IOStreams.Out, "  - %s\n", binding.Name)
 			}
-		})
-
-		if b.KonnectorImageOverride != "" {
-			args = append(args, "--konnector-image"+"="+b.KonnectorImageOverride)
 		}
 
-		// TODO: support passing through the base options
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Resources bound successfully!\n")
+		return nil
 
-		fmt.Fprintf(b.Options.ErrOut, "\n")
-		fmt.Fprintf(b.Options.ErrOut, "🚀 Executing: %s %s\n", "kubectl bind", strings.Join(args, " "))
-		fmt.Fprintf(b.Options.ErrOut, "✨ Use \"-o yaml\" and \"--dry-run\" to get the APIServiceExportRequest.\n   and pass it to \"kubectl bind apiservice\" directly. Great for automation.\n")
+	case err := <-errCh:
+		return fmt.Errorf("callback server error: %w", err)
+	case <-ctx.Done():
+		return fmt.Errorf("operation cancelled")
+	}
+}
 
-		command := exec.CommandContext(ctx, executable, append(args, "--no-banner")...)
-		command.Stdin = bytes.NewReader(bs)
-		command.Stdout = b.Options.Out
-		command.Stderr = b.Options.ErrOut
-		if err := b.Runner(command); err != nil {
-			return err
+// buildUIURL constructs the UI URL with callback parameters
+func (b *BindOptions) buildUIURL(callbackPort int, sessionID, clusterID string) (string, error) {
+	// Parse the base URL
+	u, err := url.Parse(b.Server)
+	if err != nil {
+		return "", fmt.Errorf("invalid server URL: %w", err)
+	}
+
+	redirectURL := "http://127.0.0.1:" + strconv.Itoa(callbackPort) + "/callback"
+
+	// Add query parameters
+	values := u.Query()
+	values.Add("session_id", sessionID)
+	values.Add("redirect_url", redirectURL)
+	if clusterID != "" {
+		values.Add("cluster_id", clusterID)
+	}
+	u.RawQuery = values.Encode()
+
+	return u.String(), nil
+}
+
+// startCallbackServer starts a local HTTP server to receive the callback from the UI
+func (b *BindOptions) startCallbackServer(resultCh chan<- *BindResult, errCh chan<- error, sessionID string) (*http.Server, int, error) {
+	// Find an available port
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to find available port: %w", err)
+	}
+
+	port := listener.Addr().(*net.TCPAddr).Port
+	listener.Close()
+
+	// Setup HTTP handler
+	mux := http.NewServeMux()
+	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+		// Validate session ID
+		if r.URL.Query().Get("session_id") != sessionID {
+			http.Error(w, "Invalid session", http.StatusUnauthorized)
+			return
 		}
+
+		result := &BindResult{}
+		payload := kubebindv1alpha2.BindingResourceResponse{}
+
+		// Parse query parameters (for simple callbacks)
+		query := r.URL.Query()
+
+		response := query.Get("binding_response")
+		responseData, err := base64.URLEncoding.DecodeString(response)
+		if err != nil {
+			http.Error(w, "Invalid binding_response", http.StatusBadRequest)
+			return
+		}
+		if err := json.Unmarshal(responseData, &payload); err != nil {
+			http.Error(w, "Invalid binding_response JSON", http.StatusBadRequest)
+			return
+		}
+
+		result.Response = payload
+
+		result.Success = query.Get("success") == "true"
+		result.Message = query.Get("message")
+		result.Error = query.Get("error")
+		result.ErrorDescription = query.Get("error_description")
+
+		// Send success page
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprintf(w, `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Kube-Bind - Binding Complete</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 100px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Kube-Bind</h1>
+    <div class="%s">
+        <h2>%s</h2>
+        <p>You can now close this window and return to the CLI.</p>
+    </div>
+</body>
+</html>`,
+			map[bool]string{true: "success", false: "error"}[result.Success || result.Error == ""],
+			map[bool]string{true: "Binding Completed Successfully!", false: "Binding Failed"}[result.Success || result.Error == ""])
+
+		// Send result to channel
+		select {
+		case resultCh <- result:
+		default:
+		}
+	})
+
+	server := &http.Server{
+		ReadTimeout: time.Minute * 5,
+		Addr:        fmt.Sprintf(":%d", port),
+		Handler:     mux,
 	}
 
-	return nil
+	go func() {
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			select {
+			case errCh <- err:
+			default:
+			}
+		}
+	}()
+
+	return server, port, nil
 }
 
-func ClusterID(ns *corev1.Namespace) string {
-	hash := sha256.Sum224([]byte(ns.UID))
-	base62hash := toBase62(hash)
-	return base62hash[:6] // 50 billion
-}
-
-func SessionID() string {
-	var b [28]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		panic(err)
+// generateRandomString generates a random string of the specified length
+func generateRandomString(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
 	}
-	return toBase62(b)[:6] // 50 billion
+	return fmt.Sprintf("%x", bytes)[:length], nil
 }
 
-func toBase62(hash [28]byte) string {
-	var i big.Int
-	i.SetBytes(hash[:])
-	return i.Text(62)
+// bindResponseToAPIServiceBindings uses the shared binder to create API service bindings
+func (b *BindOptions) bindResponseToAPIServiceBindings(ctx context.Context, config *rest.Config, response *kubebindv1alpha2.BindingResourceResponse) ([]*kubebindv1alpha2.APIServiceBinding, error) {
+	binderOpts := &bindapiservice.BinderOptions{
+		IOStreams:              b.Options.IOStreams,
+		SkipKonnector:          b.SkipKonnector,
+		KonnectorImageOverride: b.KonnectorImageOverride,
+		DryRun:                 b.DryRun,
+	}
+
+	binder := bindapiservice.NewBinder(config, binderOpts)
+	return binder.BindFromResponse(ctx, response)
 }

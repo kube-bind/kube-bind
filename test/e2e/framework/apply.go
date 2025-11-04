@@ -88,6 +88,11 @@ func ApplyManifest(t testing.TB, config *rest.Config, manifests ...any) {
 			err := yaml.Unmarshal([]byte(m), &obj)
 			require.NoError(t, err, "Failed to unmarshal manifest")
 			u.Object = obj
+		case []byte:
+			obj := map[string]any{}
+			err := yaml.Unmarshal(m, &obj)
+			require.NoError(t, err, "Failed to unmarshal manifest")
+			u.Object = obj
 		case yaml.Node:
 			obj := map[string]any{}
 			err := m.Decode(&obj)

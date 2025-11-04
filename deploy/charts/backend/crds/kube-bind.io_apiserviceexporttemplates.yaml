@@ -52,9 +52,12 @@ spec:
           spec:
             description: spec specifies the template.
             properties:
+              description:
+                description: description is an optional description of the template.
+                type: string
               namespaces:
                 description: |-
-                  namespaces specifies the namespaces that should be bootstrapped as part of this template.
+                  Namespaces specifies the namespaces that should be bootstrapped as part of this template.
                   When objects originate from provider side, consumer does not always know the necessary details
                   This field allows provider to pre-heat the necessary namespaces on provider side by creating
                   APIServiceNamespace objects attached to the APIServiceExport. More namespaces can be created later by the consumer.

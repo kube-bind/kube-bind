@@ -55,7 +55,7 @@ k ws use :root:kube-bind
   --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
   --oidc-issuer-client-id=kube-bind \
   --oidc-issuer-url=http://127.0.0.1:5556/dex \
-  --oidc-callback-url=http://127.0.0.1:8080/callback \
+  --oidc-callback-url=http://127.0.0.1:8080/api/callback \
   --pretty-name="BigCorp.com" \
   --namespace-prefix="kube-bind-" \
   --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
@@ -108,7 +108,7 @@ kubectl apply -f contrib/kcp/deploy/examples/collection-wildwest.yaml
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/2cc89nxsuivawooq
+# cluster   Ready   https://192.168.2.166:6443/clusters/1y7tqtsucxaekmqu
 ```
 
 ## Consumer
@@ -124,7 +124,8 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind http://127.0.0.1:8080/clusters/2cc89nxsuivawooq/exports --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind login http://127.0.0.1:8080 --cluster qs427lvg0y86m0ka
+./bin/kubectl-bind --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind`
@@ -132,7 +133,7 @@ kubectl get secrets -n kube-bind -o jsonpath='{.items[0].data.kubeconfig}' | bas
 
 namespace=$(yq '.contexts[0].context.namespace' remote.kubeconfig)
 
-./bin/kubectl-bind apiservice -v 6 --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml  --skip-konnector --remote-namespace "$namespace"
+./bin/kubectl-bind apiservice -v 6 --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml --skip-konnector --remote-namespace "$namespace"
 ```
 
 This will keep running, so switch to a new terminal.

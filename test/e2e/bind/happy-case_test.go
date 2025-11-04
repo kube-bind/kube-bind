@@ -19,11 +19,11 @@ package bind
 import (
 	"context"
 	"fmt"
+	"path"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/headzoo/surf"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
+	bindapiservice "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-apiservice/plugin"
 	clusterscoped "github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/cluster-scoped"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	providerfixtures "github.com/kube-bind/kube-bind/test/e2e/bind/fixtures/provider"
@@ -89,6 +90,10 @@ func testHappyCase(
 	if resourceScope == apiextensionsv1.ClusterScoped {
 		serviceGVR = schema.GroupVersionResource{Group: "bar.io", Version: "v1alpha1", Resource: "foos"}
 	}
+	templateRef := "mangodb"
+	if resourceScope == apiextensionsv1.ClusterScoped {
+		templateRef = "foo"
+	}
 
 	consumerClient := framework.DynamicClient(t, consumerConfig).Resource(serviceGVR)
 	providerClient := framework.DynamicClient(t, providerConfig).Resource(serviceGVR)
@@ -117,33 +122,73 @@ spec:
 	consumerNS, providerNS := "default", "unknown"
 	clusterNs, clusterScopedUpInsName := "unknown", "unknown"
 
+	kubeBindConfig := path.Join(framework.WorkDir, "kube-bind-config.yaml")
+
+	// binding step outputs this.
+	var bindResponse *kubebindv1alpha2.BindingResourceResponse
 	for _, tc := range []struct {
 		name string
 		step func(t *testing.T)
 	}{
 		{
-			name: "Service is bound dry run",
+			name: "Login to provider",
 			step: func(t *testing.T) {
-				iostreams, _, bufOut, _ := genericclioptions.NewTestIOStreams()
+				iostreams, _, _, _ := genericclioptions.NewTestIOStreams()
 				authURLDryRunCh := make(chan string, 1)
-				go simulateBrowser(t, authURLDryRunCh, serviceGVR.Resource)
-				framework.Bind(t, iostreams, authURLDryRunCh, nil, fmt.Sprintf("http://%s/exports", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector", "--dry-run")
-				_, err := yaml.YAMLToJSON(bufOut.Bytes())
-				require.NoError(t, err)
+				go framework.SimulateBrowser(t, authURLDryRunCh)
+				framework.Login(t, iostreams, authURLDryRunCh, kubeBindConfig, fmt.Sprintf("http://%s/api/exports", addr.String()), "")
 			},
 		},
 		{
-			name: "Service is bound",
+			name: "List templates",
+			step: func(t *testing.T) {
+				c := framework.GetKubeBindRestClient(t, kubeBindConfig)
+				result, err := c.GetTemplates(ctx)
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				require.Len(t, result.Items, 2)
+			},
+		},
+		{
+			name: "List collections",
+			step: func(t *testing.T) {
+				c := framework.GetKubeBindRestClient(t, kubeBindConfig)
+				result, err := c.GetCollections(ctx)
+				require.NoError(t, err)
+				require.NotNil(t, result)
+				require.Len(t, result.Items, 1)
+			},
+		},
+		{
+			name: "Get bind APIServiceExportRequest from server",
+			step: func(t *testing.T) {
+				c := framework.GetKubeBindRestClient(t, kubeBindConfig)
+				var err error
+				bindResponse, err = c.Bind(ctx, &kubebindv1alpha2.BindableResourcesRequest{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test-binding",
+					},
+					TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
+						Name: templateRef,
+					},
+				})
+				require.NoError(t, err)
+				require.NotNil(t, bindResponse)
+			},
+		},
+		{
+			name: "Bind the payload",
 			step: func(t *testing.T) {
 				iostreams, _, _, _ := genericclioptions.NewTestIOStreams()
-				authURLCh := make(chan string, 1)
-				go simulateBrowser(t, authURLCh, serviceGVR.Resource)
-				invocations := make(chan framework.SubCommandInvocation, 1)
-				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/exports", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
-				inv := <-invocations
-				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
+				binderOpts := &bindapiservice.BinderOptions{
+					IOStreams:     iostreams,
+					SkipKonnector: true,
+				}
 
-				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
+				binder := bindapiservice.NewBinder(consumerConfig, binderOpts)
+				result, err := binder.BindFromResponse(ctx, bindResponse)
+				require.NoError(t, err)
+				require.Len(t, result, 1)
 
 				t.Logf("Waiting for %s CRD to be created on consumer side", serviceGVR.Resource)
 				crdClient := framework.ApiextensionsClient(t, consumerConfig).ApiextensionsV1().CustomResourceDefinitions()
@@ -717,52 +762,11 @@ spec:
 				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be deleted on provider side", serviceGVR.Resource)
 			},
 		},
-		{
-			name: "Bind again",
-			step: func(t *testing.T) {
-				iostreams, _, _, _ := genericclioptions.NewTestIOStreams()
-				authURLCh := make(chan string, 1)
-				go simulateBrowser(t, authURLCh, serviceGVR.Resource)
-				invocations := make(chan framework.SubCommandInvocation, 1)
-				framework.Bind(t, iostreams, authURLCh, invocations, fmt.Sprintf("http://%s/exports", addr.String()), "--kubeconfig", consumerKubeconfig, "--skip-konnector")
-				inv := <-invocations
-				requireEqualSlicePattern(t, []string{"apiservice", "--remote-kubeconfig-namespace", "*", "--remote-kubeconfig-name", "*", "-f", "-", "--kubeconfig=" + consumerKubeconfig, "--skip-konnector=true", "--no-banner"}, inv.Args)
-				framework.BindAPIService(t, inv.Stdin, "", inv.Args...)
-			},
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.step(t)
 		})
 	}
-}
-
-func simulateBrowser(t *testing.T, authURLCh chan string, resource string) {
-	browser := surf.NewBrowser()
-	authURL := <-authURLCh
-
-	t.Logf("Browsing to auth URL: %s", authURL)
-	err := browser.Open(authURL)
-	require.NoError(t, err)
-
-	t.Logf("Waiting for browser to be at /resources")
-	framework.BrowserEventuallyAtPath(t, browser, "/resources")
-
-	// Convert resource name to template name
-	var templateName string
-	switch resource {
-	case "mangodbs":
-		templateName = "mangodb"
-	case "foos":
-		templateName = "foo"
-	}
-
-	t.Logf("Clicking template %s", templateName)
-	err = browser.Click("a." + templateName)
-	require.NoError(t, err)
-
-	t.Logf("Waiting for browser to be forwarded to client")
-	framework.BrowserEventuallyAtPath(t, browser, "/callback")
 }
 
 func toUnstructured(t *testing.T, manifest string) *unstructured.Unstructured {
@@ -773,17 +777,4 @@ func toUnstructured(t *testing.T, manifest string) *unstructured.Unstructured {
 	require.NoError(t, err)
 
 	return &unstructured.Unstructured{Object: obj}
-}
-
-func requireEqualSlicePattern(t *testing.T, pattern []string, slice []string) {
-	t.Helper()
-
-	require.Equal(t, len(pattern), len(slice), "slice length doesn't match pattern length\n     got: %s\nexpected: %s", strings.Join(slice, " "), strings.Join(pattern, " "))
-
-	for i, s := range slice {
-		if pattern[i] == "*" {
-			continue
-		}
-		require.Equal(t, pattern[i], s, "slice doesn't match pattern at index %d\n     got: %s\nexpected: %s", i, strings.Join(slice, " "), strings.Join(pattern, " "))
-	}
 }

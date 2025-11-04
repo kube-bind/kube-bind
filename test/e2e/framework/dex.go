@@ -61,8 +61,13 @@ func StartDex(t testing.TB) {
 
 		t.Logf("Starting dex with config %q", dexConfig)
 
+		dexBinary := os.Getenv("DEX_BINARY")
+		if dexBinary == "" {
+			dexBinary = "dex"
+		}
+
 		dexCmd := exec.Command(
-			"dex",
+			dexBinary,
 			"serve",
 			dexConfig,
 		)
@@ -104,7 +109,7 @@ func CreateDexClient(t testing.TB, addr net.Addr) (string, string) {
 		Client: &dexapi.Client{
 			Id:           id,
 			Secret:       secret,
-			RedirectUris: []string{fmt.Sprintf("http://%s/callback", addr)},
+			RedirectUris: []string{fmt.Sprintf("http://%s/api/callback", addr)},
 			Public:       true,
 			Name:         "kube-bind on port " + port,
 		},

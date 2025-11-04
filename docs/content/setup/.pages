@@ -2,5 +2,6 @@ nav:
     - index.md
     - quickstart.md
     - local-setup-with-kind.md
+    - kcp-setup.md
     - helm.md
     - kubectl-plugin.md

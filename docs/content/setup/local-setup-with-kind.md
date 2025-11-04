@@ -3,10 +3,10 @@
 This guide will walk you through setting up kube-bind between two Kubernetes clusters, where
 
 * **Backend cluster**:
-  * Deploys dex, cert-manager and kube-bind/backend
-  * Provides kube-bind compatible backend for MangoDB resources
+    * Deploys dex, cert-manager and kube-bind/backend
+    * Provides kube-bind compatible backend for MangoDB resources
 * **App cluster**:
-  * Provides an application consuming MangoDBs
+    * Provides an application consuming MangoDBs
 
 ## Pre-requisites
 
@@ -35,7 +35,7 @@ The provider cluster we'll prepare in this section will provide a kube-bind comp
 
 > What is MangoDB? It is just an example CRD to demonstrate kube-bind's capabilities and testing, without any workloads. See its definition in [/test/e2e/bind/fixtures/provider/crd-mangodb.yaml](/test/e2e/bind/fixtures/provider/crd-mangodb.yaml).
 
-### Step one: create the Backend cluster
+### Step 1: Create the Backend Cluster
 
 First, stash the host's external IP in a variable as we're going to use it often:
 
@@ -68,7 +68,7 @@ EOF_BackendClusterDefinition
 
 > Note: the port mappings will become clear later on, but in general this setup is solely specific to how Kind exposes ports of its nodes on the host. Specifically, we're exposing ports from containers through NodePort services on Kind's nodes, and to make these ports available on the host we need to map them to host's ports through `extraPortMappings`.
 
-### Step two: deploy an identity provider
+### Step 2: Deploy an Identity Provider
 
 kube-bind relies on OAuth2 for securely authenticating consumer and producer clusters. There are many ways to handle that in Kubernetes, for example with [dex IDP](https://github.com/dexidp/dex). It depends on cert-manager, which we'll deploy first:
 
@@ -132,7 +132,7 @@ helm install \
     -f -
 ```
 
-### Step three: deploy the MangoDB kube-bind backend
+### Step 3: Deploy the MangoDB kube-bind Backend
 
 Now we'll deploy a kube-bind--compatible backend for MangoDB. Let's start with kube-bind CRDs:
 
@@ -147,9 +147,10 @@ kubectl apply -f test/e2e/bind/fixtures/provider/crd-mangodb.yaml
 ```
 
 To set up the MangoDB backend we'll need:
-* ServiceAccount and ClusterRoleBinding for kube-bind's user,
-* Deployment that runs the MangoDB backend
-* Service that exposes the backend's address
+
+* `ServiceAccount` and `ClusterRoleBinding` for kube-bind's user,
+* `Deployment` that runs the MangoDB backend
+* `Service` that exposes the backend's address
 
 ```sh
 kubectl create namespace backend
@@ -203,7 +204,7 @@ replicaset.apps/mangodb-6ff44cbbf   1         1         1       100s
 
 The App cluster will consume MangoDB CRs provided by the Backend.
 
-### Step one: create the App cluster
+### Step 1: Create the App Cluster
 
 Again, let's start by stashing the host's external IP in a variable as we're going to use it often (possibly the same one as for the Backend cluster):
 
@@ -223,7 +224,7 @@ networking:
 EOF_AppClusterDefinition
 ```
 
-### Binding MangoDB backend
+### Step 2: Bind the MangoDB Backend
 
 Now we'll bring in MangoDB CRDs from the Backend cluster (you can run `kubectl get crds` to see there are none yet):
 
@@ -241,11 +242,13 @@ To authenticate, visit in your browser:
 ```
 
 The client is now waiting for you to visit the address similar to the one displayed in the output above. After completing the steps to create an OAuth2 token, it is then used by the kube-bind backend to pass the ServiceAccount's kubeconfig (in the Backend cluster) to the App cluster securely:
+
 1. on the "Log in to dex" landing page, select "Log in with Example",
 2. on the "Grant Access" page, click the "Grant Access" button,
 3. lastly, click "Bind" when the page displays the mangodb resource.
 
 Go back to the terminal where `kubectl bind` command was run, and you should see the following output:
+
 ```
 🔑 Successfully authenticated to http://${BACKEND_HOST_IP}:8080/export
 🔒 Created secret kube-bind/kubeconfig-x9bd5 for host https://${BACKEND_HOST_IP}:34595, namespace kube-bind-gfsqn
@@ -260,7 +263,7 @@ NAME                                                  PROVIDER   READY   MESSAGE
 apiservicebinding.kube-bind.io/mangodbs.mangodb.com              False   Pending   0s
 ```
 
-### Step two: demo time!
+### Step 3: Demo Time!
 
 Let's see if we have CRDs for the MangoDB resource:
 
@@ -288,6 +291,7 @@ kubectl describe mangodb my-db
 ```
 
 And finally, switch to the backend cluster and see that the CR is mirrored there:
+
 ```sh
 $ kubectl config use-context kind-backend
 Switched to context "kind-backend".
@@ -312,7 +316,7 @@ Spec:
 Events:          <none>
 ```
 
-### Step three: clean up
+### Step 4: Clean up
 
 Once you're done, you may clean up the setup simply by deleting the two kind clusters:
 

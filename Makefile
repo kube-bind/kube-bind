@@ -283,13 +283,13 @@ test-e2e: $(GOTESTSUM)
 endif
 test-e2e: TEST_ARGS ?=
 test-e2e: WORK_DIR ?= .
-test-e2e: WHAT ?= ./test/e2e...
+test-e2e: TEST_WHAT ?= ./test/e2e...
 test-e2e: $(KCP) $(DEX) build ## Run e2e tests
 	mkdir .kcp
 	$(MAKE) run-kcp &>.kcp/kcp.log & KCP_PID=$$!; \
 	trap 'kill -TERM $$KCP_PID; rm -rf .kcp' TERM INT EXIT && \
 	echo "Waiting for kcp to be ready (check .kcp/kcp.log)." && while ! KUBECONFIG=.kcp/admin.kubeconfig kubectl get --raw /readyz &>/dev/null; do sleep 1; echo -n "."; done && echo && \
-	KUBECONFIG=$$PWD/.kcp/admin.kubeconfig GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) $(E2E_PARALLELISM_FLAG) $(WHAT) $(TEST_ARGS)
+	KUBECONFIG=$$PWD/.kcp/admin.kubeconfig GOOS=$(OS) GOARCH=$(ARCH) $(GO_TEST) -race -count $(COUNT) $(E2E_PARALLELISM_FLAG) $(TEST_WHAT) $(TEST_ARGS)
 
 CONTRIBS_E2E := $(patsubst %,test-e2e-contrib-%,$(CONTRIBS))
 
@@ -304,11 +304,11 @@ $(CONTRIBS_E2E):
 ifdef USE_GOTESTSUM
 test: $(GOTESTSUM)
 endif
-test: WHAT ?= ./...
+test: TEST_WHAT ?= ./...
 # We will need to move into the sub package, of pkg/apis to run those tests.
 test:  ## Run unit tests
-	@if [ -n "$(WHAT)" ]; then \
-		$(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $$(go list "$(WHAT)" | grep -v ./test/e2e/); \
+	@if [ -n "$(TEST_WHAT)" ]; then \
+		$(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) $$(go list "$(TEST_WHAT)" | grep -v ./test/e2e/); \
 	else \
 		for MOD in $(GOMODS); do \
 			( cd $$MOD; $(GO_TEST) -race -count $(COUNT) -coverprofile=coverage.txt -covermode=atomic $(TEST_ARGS) ) \
@@ -375,7 +375,7 @@ deploy-docs: venv ## Deploy docs
 	. $(VENV)/activate; \
 	REMOTE=$(REMOTE) BRANCH=$(BRANCH) docs/scripts/deploy-docs.sh
 
-# Example: make IMAGE_REPO=ghcr.io/<username> image-local 
+# Example: make IMAGE_REPO=ghcr.io/<username> image-local
 .PHONY: image-local
 image-local:
 	@echo "Building images locally with tag $(REV)"
@@ -410,7 +410,7 @@ kind-load:
 helm-build-local: ## Build and package Helm charts locally for testing
 	@echo "Building Helm charts locally..."
 	@command -v helm >/dev/null 2>&1 || { echo "helm not found. Install from: https://helm.sh/docs/intro/install/"; exit 1; }
-	
+
 	@# Set chart version to semver format for local builds (0.0.0-<git-sha>)
 	CHART_VERSION="0.0.0-$(REV)"; \
 	for chart_dir in deploy/charts/*/; do \
@@ -439,7 +439,7 @@ helm-clean: ## Clean up built helm charts
 helm-push-local: ## Push Helm charts to IMAGE_REPO registry
 	@echo "Pushing Helm charts to registry: $(IMAGE_REPO)"
 	@command -v helm >/dev/null 2>&1 || { echo "helm not found. Install from: https://helm.sh/docs/intro/install/"; exit 1; }
-	
+
 	CHART_VERSION="0.0.0-$(REV)"; \
 	export HELM_EXPERIMENTAL_OCI=1; \
 	for chart_file in ./bin/*-$$CHART_VERSION.tgz; do \

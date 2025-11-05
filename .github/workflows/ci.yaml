@@ -37,6 +37,20 @@ jobs:
     - run: cd web && npm install
     - run: make build-web
     - run: make test-e2e
+
+  go-test-e2e-contrib:
+    name: go-test-e2e-contrib
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: v1.24.0
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - run: cd web && npm install
+    - run: make build-web
     - run: make test-e2e-contribs
 
   go-test:

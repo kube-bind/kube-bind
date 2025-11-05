@@ -14,7 +14,7 @@
         <link rel="canonical" href="https://docs.kube-bind.io/main/setup/quickstart/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../kubectl-plugin/">
       
       
         <link rel="next" href="../local-setup-with-kind/">
@@ -521,6 +521,27 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../kubectl-plugin/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    kubectl Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -653,27 +674,6 @@
   
   <span class="md-ellipsis">
     Installation with Helm
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../kubectl-plugin/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    kubectl Plugins
   </span>
   
 
@@ -1522,6 +1522,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
       
@@ -1588,6 +1594,69 @@
   
   <span class="md-ellipsis">
     bind apiservice
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_collections/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind collections
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_login/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind login
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_templates/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind templates
   </span>
   
 
@@ -1979,7 +2048,7 @@ and that you have at least one k8s cluster. Take a look at the backend option in
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>--oidc-issuer-client-secret<span class="o">=</span>ZXhhbXBsZS1hcHAtc2VjcmV0<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>--oidc-issuer-client-id<span class="o">=</span>kube-bind<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span>--oidc-issuer-url<span class="o">=</span>http://127.0.0.1:5556/dex<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span>--oidc-callback-url<span class="o">=</span>http://127.0.0.1:8080/callback<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span>--oidc-callback-url<span class="o">=</span>http://127.0.0.1:8080/api/callback<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span>--pretty-name<span class="o">=</span><span class="s2">&quot;BigCorp.com&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span>--namespace-prefix<span class="o">=</span><span class="s2">&quot;kube-bind-&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span>--cookie-signing-key<span class="o">=</span><span class="nv">bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
@@ -2000,7 +2069,7 @@ The <code>--cookie-encryption-key</code> option is optional and supports byte le
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>create<span class="w"> </span>consumer<span class="w"> </span>--enter
 </code></pre></div>
 <p>Now create the APIServiceExportRequest:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./bin/kubectl-bind<span class="w"> </span>http://127.0.0.1:8080/exports<span class="w"> </span>--dry-run<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>apiserviceexport.yaml
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./bin/kubectl-bind<span class="w"> </span>http://127.0.0.1:8080<span class="w"> </span>--dry-run<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>apiserviceexport.yaml
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># This will wait for konnector to be ready. Once this gets running - start the konnector bellow</span>
 <a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># IMPORTANT: Check namespace to be used!</span>

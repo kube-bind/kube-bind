@@ -17,7 +17,7 @@
         <link rel="prev" href="../local-setup-with-kind/">
       
       
-        <link rel="next" href="../kubectl-plugin/">
+        <link rel="next" href="../../usage/">
       
       
       <link rel="icon" href="../../favicons/favicon.ico">
@@ -524,6 +524,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../kubectl-plugin/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    kubectl Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../quickstart/" class="md-nav__link">
         
   
@@ -765,27 +786,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../kubectl-plugin/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    kubectl Plugins
-  </span>
-  
-
-      </a>
     </li>
   
 
@@ -1630,6 +1630,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
       
@@ -1696,6 +1702,69 @@
   
   <span class="md-ellipsis">
     bind apiservice
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_collections/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind collections
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_login/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind login
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_templates/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind templates
   </span>
   
 
@@ -2172,11 +2241,11 @@ The backend chart is available as an OCI image for service providers, with konne
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span>kube-bind<span class="w"> </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="c1"># Or install a specific development version</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># helm upgrade --install \</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1">#     --namespace kube-bind \</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="c1">#     --create-namespace \</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="c1">#     --values ./deploy/charts/backend/examples/values-local-development.yaml \</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1">#     kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.0.0-21d91e9</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w"> </span>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">     </span>--namespace<span class="w"> </span>kube-bind<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">     </span>--create-namespace<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">     </span>--values<span class="w"> </span>./deploy/charts/backend/examples/values-local-development.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">     </span>kube-bind<span class="w"> </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="m">0</span>.0.0-fadb9edd26c0202f4a9511ee9d71b9e5f43672b9<span class="w"> </span>
 </code></pre></div></p>
 </li>
 <li>

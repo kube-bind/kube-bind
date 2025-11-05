@@ -14,10 +14,10 @@
         <link rel="canonical" href="https://docs.kube-bind.io/main/setup/kubectl-plugin/">
       
       
-        <link rel="prev" href="../helm/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../../usage/">
+        <link rel="next" href="../quickstart/">
       
       
       <link rel="icon" href="../../favicons/favicon.ico">
@@ -521,6 +521,37 @@
                 
   
   
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    kubectl Plugins
+  </span>
+  
+
+      </a>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
   
   
     <li class="md-nav__item">
@@ -575,37 +606,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  <span class="md-ellipsis">
-    kubectl Plugins
-  </span>
-  
-
-      </a>
-      
     </li>
   
 
@@ -1450,6 +1450,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
       
@@ -1516,6 +1522,69 @@
   
   <span class="md-ellipsis">
     bind apiservice
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_collections/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind collections
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_login/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind login
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_templates/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind templates
   </span>
   
 
@@ -1796,8 +1865,8 @@
 <h1 id="kubectl-plugins">kubectl Plugins</h1>
 <p>kube-bind provides kubectl plugins to interact with kube-bind protocol.</p>
 <p>or use <a href="https://krew.sigs.k8s.io/">krew</a>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>krew<span class="w"> </span>index<span class="w"> </span>add<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>https://github.com/kube-bind/krew-index.git
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>bind/bind
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>index<span class="w"> </span>add<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>https://github.com/kube-bind/krew-index.git
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>bind/bind
 </code></pre></div>
 
 

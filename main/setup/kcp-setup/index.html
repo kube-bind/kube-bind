@@ -524,6 +524,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../kubectl-plugin/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    kubectl Plugins
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../quickstart/" class="md-nav__link">
         
   
@@ -571,27 +592,6 @@
   
   <span class="md-ellipsis">
     Installation with Helm
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../kubectl-plugin/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    kubectl Plugins
   </span>
   
 
@@ -1440,6 +1440,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
       
@@ -1506,6 +1512,69 @@
   
   <span class="md-ellipsis">
     bind apiservice
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_collections/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind collections
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_login/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind login
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_templates/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind templates
   </span>
   
 
@@ -1929,48 +1998,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#advanced-features" class="md-nav__link">
-    <span class="md-ellipsis">
-      Advanced Features
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Advanced Features">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#multiple-consumers" class="md-nav__link">
-    <span class="md-ellipsis">
-      Multiple Consumers
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#debugging" class="md-nav__link">
-    <span class="md-ellipsis">
-      Debugging
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#key-differences-from-standard-setup" class="md-nav__link">
-    <span class="md-ellipsis">
-      Key Differences from Standard Setup
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -2048,6 +2075,7 @@
 <a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span>--cookie-signing-key<span class="o">=</span><span class="nv">bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE</span><span class="o">=</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span>--cookie-encryption-key<span class="o">=</span>wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y<span class="o">=</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span>--schema-source<span class="w"> </span>apiresourceschemas
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span>--consumer-scope<span class="o">=</span>cluster
 </code></pre></div>
 <h3 id="5-create-provider-workspace">5. Create Provider Workspace</h3>
 <p>Create a provider workspace for hosting services:</p>
@@ -2078,6 +2106,11 @@
 <a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
 <a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># Enable recursive binding</span>
 <a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>kubectl<span class="w"> </span>kcp<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>apiexport<span class="w"> </span>root:provider:cowboys-stable
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1"># Create templates and catalog</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/template-cowboys.yaml
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/template-sheriffs.yaml
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/collection-wildwest.yaml
 </code></pre></div>
 <h3 id="8-get-logical-cluster-information">8. Get Logical Cluster Information</h3>
 <p>Retrieve the logical cluster URL for consumer setup:</p>
@@ -2094,60 +2127,17 @@
 </code></pre></div>
 <h3 id="2-perform-binding">2. Perform Binding</h3>
 <p>Generate the APIServiceExport YAML:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>./bin/kubectl-bind<span class="w"> </span>http://127.0.0.1:8080/clusters/&lt;logical-cluster-id&gt;/exports<span class="w"> </span>--dry-run<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>apiserviceexport.yaml
-</code></pre></div>
-<p>Extract the kubeconfig for binding:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>&lt;secret-name&gt;<span class="w"> </span>-n<span class="w"> </span>kube-bind<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.data.kubeconfig}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>remote.kubeconfig
-</code></pre></div>
-<p>Perform the binding:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>./bin/kubectl-bind<span class="w"> </span>apiservice<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>--remote-kubeconfig<span class="w"> </span>remote.kubeconfig<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>-f<span class="w"> </span>apiserviceexport.yaml<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--skip-konnector<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span>--remote-namespace<span class="w"> </span>kube-bind-&lt;random-suffix&gt;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>./bin/kubectl-bind<span class="w"> </span>login<span class="w"> </span>http://127.0.0.1:8080<span class="w"> </span>--cluster<span class="w"> </span>&lt;logical-cluster-id&gt;
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>./bin/kubectl-bind<span class="w"> </span>--skip-konnector
 </code></pre></div>
 <h3 id="3-start-konnector">3. Start Konnector</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/consumer.kubeconfig
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>go<span class="w"> </span>run<span class="w"> </span>./cmd/konnector/<span class="w"> </span>--lease-namespace<span class="w"> </span>default
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/consumer.kubeconfig
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>go<span class="w"> </span>run<span class="w"> </span>./cmd/konnector/<span class="w"> </span>--lease-namespace<span class="w"> </span>default
 </code></pre></div>
 <h3 id="4-test-the-setup">4. Test the Setup</h3>
 <p>Create example resources:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/cowboy.yaml
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/cowboy.yaml
 </code></pre></div>
-<h2 id="advanced-features">Advanced Features</h2>
-<h3 id="multiple-consumers">Multiple Consumers</h3>
-<p>You can create multiple consumer workspaces to test multi-tenant scenarios:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1"># Create second consumer</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>cp<span class="w"> </span>.kcp/admin.kubeconfig<span class="w"> </span>.kcp/consumer2.kubeconfig
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/consumer2.kubeconfig
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>create<span class="w"> </span>consumer2<span class="w"> </span>--enter
-<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>
-<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="c1"># Repeat binding process with different namespace</span>
-<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="c1"># Start konnector on different port</span>
-<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>go<span class="w"> </span>run<span class="w"> </span>./cmd/konnector/<span class="w"> </span>--lease-namespace<span class="w"> </span>default<span class="w"> </span>--server-address<span class="w"> </span>:8091
-</code></pre></div>
-<h3 id="debugging">Debugging</h3>
-<p>To debug the setup, use the following commands:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># Switch to debug workspace</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>cp<span class="w"> </span>.kcp/admin.kubeconfig<span class="w"> </span>.kcp/debug.kubeconfig
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/debug.kubeconfig
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root:kube-bind
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
-<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="c1"># Check available resources</span>
-<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>kubectl-s<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>apiexportendpointslice<span class="w"> </span>kube-bind.io<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s2">&quot;{.status.endpoints[0].url}&quot;</span><span class="k">)</span><span class="s2">/clusters/*&quot;</span><span class="w"> </span>api-resources
-<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>
-<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="c1"># List CRDs</span>
-<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>kubectl-s<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>apiexportendpointslice<span class="w"> </span>kube-bind.io<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s2">&quot;{.status.endpoints[0].url}&quot;</span><span class="k">)</span><span class="s2">/clusters/*&quot;</span><span class="w"> </span>get<span class="w"> </span>crd
-</code></pre></div>
-<h2 id="key-differences-from-standard-setup">Key Differences from Standard Setup</h2>
-<ul>
-<li><strong>Provider Selection</strong>: Uses <code>--multicluster-runtime-provider kcp</code> flag</li>
-<li><strong>Workspace Management</strong>: Requires kcp workspace creation and management</li>
-<li><strong>APIExport Integration</strong>: Leverages kcp's APIExport mechanism to enable shared backed service.</li>
-<li><strong>URL Structure</strong>: Uses kcp-specific URLs with cluster identifiers. In production, this should be abstracted by a service wrapper.</li>
-<li><strong>Advanced Isolation</strong>: Provides workspace-level isolation beyond namespaces</li>
-</ul>
 
 
 

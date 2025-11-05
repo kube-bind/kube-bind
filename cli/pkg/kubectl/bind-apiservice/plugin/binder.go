@@ -63,6 +63,7 @@ func NewBinder(config *rest.Config, opts *BinderOptions) *Binder {
 
 // TODO: bindFromFile and bindFromResponse can likely share a lot of code. This slow is bit repetitive
 // but keeps the two paths separate for clarity. But it needs love.
+// https://github.com/kube-bind/kube-bind/issues/360
 
 func (b *Binder) BindFromFile(ctx context.Context) ([]*kubebindv1alpha2.APIServiceBinding, error) {
 	// Ensure client side namespace exists

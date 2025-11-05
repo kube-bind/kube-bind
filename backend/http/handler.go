@@ -130,8 +130,8 @@ func (h *handler) AddRoutes(mux *mux.Router) error {
 	apiRouter.Handle("/ping", auth.RequireAuth(http.HandlerFunc(h.handlePing))).Methods(http.MethodGet)
 
 	switch {
+	// Development mode: proxy to frontend dev server
 	case strings.HasPrefix(h.frontend, "http://"):
-		// Development mode: proxy to frontend dev server
 		spaserver, err := spaserver.NewSPAReverseProxyServer(h.frontend)
 		if err != nil {
 			return err

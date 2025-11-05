@@ -19,7 +19,6 @@ package plugin
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -96,7 +95,7 @@ func (o *LoginOptions) AddCmdFlags(cmd *cobra.Command) {
 // Complete completes the options
 func (o *LoginOptions) Complete(args []string) error {
 	if len(args) > 0 {
-		o.Options.Server = strings.TrimSuffix(args[0], "/")
+		o.Options.ServerName = strings.TrimSuffix(args[0], "/")
 	}
 	err := o.Options.Complete(true)
 	if err != nil {
@@ -118,17 +117,14 @@ func (o *LoginOptions) Run(ctx context.Context, authURLCh chan<- string) error {
 	config := o.Options.GetConfig()
 
 	// Generate a random session ID for cli session to verify callback requests.
-	sessionID, err := generateRandomString(32)
-	if err != nil {
-		return fmt.Errorf("failed to generate session ID: %w", err)
-	}
+	sessionID := rand.Text()
 
 	// Setup callback server with random port
 	tokenCh := make(chan *TokenResponse, 1)
 	errCh := make(chan error, 1)
 
 	// Get provider information
-	fmt.Fprintf(o.Streams.ErrOut, "Connecting to kube-bind server %s...\n", o.Options.Server)
+	fmt.Fprintf(o.Streams.ErrOut, "Connecting to kube-bind server %s...\n", o.Options.ServerName)
 	provider, err := o.getProvider(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get provider information: %w", err)
@@ -182,7 +178,7 @@ func (o *LoginOptions) Run(ctx context.Context, authURLCh chan<- string) error {
 		token.ExpiresAt = time.Now().Add(time.Duration(token.ExpiresIn) * time.Second)
 	}
 
-	serverHost, err := url.Parse(o.Options.Server)
+	serverHost, err := url.Parse(o.Options.ServerName)
 	if err != nil {
 		return fmt.Errorf("failed to parse server URL: %w", err)
 	}
@@ -234,7 +230,7 @@ func (o *LoginOptions) Run(ctx context.Context, authURLCh chan<- string) error {
 }
 
 func (o *LoginOptions) getProvider(ctx context.Context) (*kubebindv1alpha2.BindingProvider, error) {
-	url, err := url.Parse(o.Options.Server)
+	url, err := url.Parse(o.Options.ServerName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse server URL: %w", err)
 	}
@@ -293,8 +289,8 @@ func (o *LoginOptions) buildAuthURL(provider *kubebindv1alpha2.BindingProvider, 
 	values.Set("redirect_url", redirectURL)
 	values.Set("session_id", sessionID)
 	values.Set("client_type", "cli")
-	if o.Cluster != "" {
-		values.Set("cluster_id", o.Cluster)
+	if o.ClusterName != "" {
+		values.Set("cluster_id", o.ClusterName)
 	}
 	u.RawQuery = values.Encode()
 
@@ -375,12 +371,4 @@ func (o *LoginOptions) startCallbackServerWithRandomPort(tokenCh chan<- *TokenRe
 	}()
 
 	return server, callbackURL, nil
-}
-
-func generateRandomString(length int) (string, error) {
-	bytes := make([]byte, length)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return base64.URLEncoding.EncodeToString(bytes)[:length], nil
 }

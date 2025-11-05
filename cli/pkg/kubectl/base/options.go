@@ -40,10 +40,10 @@ type Options struct {
 	Kubeconfig string
 	// KubectlOverrides stores the extra client connection fields, such as context, user, etc.
 	KubectlOverrides *clientcmd.ConfigOverrides
-	// Server is the kube-bind server name to use (overrides kube-bind config current server)
-	Server string
-	// Cluster is the kube-bind cluster name to use (overrides kube-bind config current cluster)
-	Cluster string
+	// ServerName is the kube-bind server name to use (overrides kube-bind config current server)
+	ServerName string
+	// ClusterName is the kube-bind cluster name to use (overrides kube-bind config current cluster)
+	ClusterName string
 	// SkipInsecure skips TLS verification (for development)
 	SkipInsecure bool
 	// ConfigFile is the path to the kube-bind configuration file
@@ -87,8 +87,8 @@ func (o *Options) BindFlags(cmd *cobra.Command) {
 	clientcmd.BindOverrideFlags(o.KubectlOverrides, cmd.PersistentFlags(), kubectlConfigOverrideFlags)
 
 	// Add common kube-bind flags
-	cmd.Flags().StringVar(&o.Server, "server", o.Server, "The kube-bind server name to use (overrides kube-bind config current server)")
-	cmd.Flags().StringVar(&o.Cluster, "cluster", o.Cluster, "The kube-bind cluster name to use (overrides kube-bind config current cluster)")
+	cmd.Flags().StringVar(&o.ServerName, "server", o.ServerName, "The kube-bind server name to use (overrides kube-bind config current server)")
+	cmd.Flags().StringVar(&o.ClusterName, "cluster", o.ClusterName, "The kube-bind cluster name to use (overrides kube-bind config current cluster)")
 	cmd.Flags().BoolVar(&o.SkipInsecure, "insecure-skip-tls-verify", false, "Skip TLS certificate verification (not recommended)")
 	cmd.Flags().StringVar(&o.ConfigFile, "config-file", "", "Path to the kube-bind configuration file")
 }
@@ -123,16 +123,16 @@ func (o *Options) Complete(skipValidate bool) error {
 	}
 
 	switch {
-	case o.Server != "" && o.Cluster != "":
+	case o.ServerName != "" && o.ClusterName != "":
 		// Both server and cluster specified separately - do nothing
-	case o.Server != "" && strings.Contains(o.Server, "@"):
+	case o.ServerName != "" && strings.Contains(o.ServerName, "@"):
 		// Server specified in server@cluster format
-		parts := strings.SplitN(o.Server, "@", 2)
-		o.Server = parts[0]
-		o.Cluster = parts[1]
-	case o.Server != "" && o.Cluster == "":
+		parts := strings.SplitN(o.ServerName, "@", 2)
+		o.ServerName = parts[0]
+		o.ClusterName = parts[1]
+	case o.ServerName != "" && o.ClusterName == "":
 		// Only server specified - do nothing. Cluster is empty
-	case o.Server == "":
+	case o.ServerName == "":
 		// No server specified - do nothing. Will be resolved from config
 	}
 
@@ -141,7 +141,7 @@ func (o *Options) Complete(skipValidate bool) error {
 	// So if its empty here, we need to resolve it.
 	var s *config.Server
 	var c *config.Config
-	if o.Server == "" {
+	if o.ServerName == "" {
 		c, err = config.LoadConfigFromFile(o.ConfigFile)
 		if err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
@@ -159,11 +159,11 @@ func (o *Options) Complete(skipValidate bool) error {
 		}
 
 		var exists bool
-		s, exists = c.Get(o.Server, o.Cluster)
+		s, exists = c.Get(o.ServerName, o.ClusterName)
 		if !exists && !skipValidate {
-			err := fmt.Errorf("server %q not found in config", o.Server)
-			if o.Cluster != "" {
-				err = fmt.Errorf("server %q with cluster %q not found in config", o.Server, o.Cluster)
+			err := fmt.Errorf("server %q not found in config", o.ServerName)
+			if o.ClusterName != "" {
+				err = fmt.Errorf("server %q with cluster %q not found in config", o.ServerName, o.ClusterName)
 			}
 			return err
 		}
@@ -174,8 +174,8 @@ func (o *Options) Complete(skipValidate bool) error {
 	}
 
 	if s != nil {
-		o.Server = s.URL
-		o.Cluster = s.Cluster
+		o.ServerName = s.URL
+		o.ClusterName = s.Cluster
 	}
 	o.server = s
 	o.config = c
@@ -185,14 +185,14 @@ func (o *Options) Complete(skipValidate bool) error {
 
 // Validate validates the configured options.
 func (o *Options) Validate() error {
-	if o.Server != "" && strings.Contains(o.Server, "@") && o.Cluster != "" {
+	if o.ServerName != "" && strings.Contains(o.ServerName, "@") && o.ClusterName != "" {
 		return fmt.Errorf("cannot specify both server in 'server@cluster' format and --cluster flag")
 	}
 
-	if o.Cluster != "" && o.Server == "" {
+	if o.ClusterName != "" && o.ServerName == "" {
 		return fmt.Errorf("cannot specify --cluster without --server")
 	}
-	if _, err := url.Parse(o.Server); err != nil {
+	if _, err := url.Parse(o.ServerName); err != nil {
 		return fmt.Errorf("invalid server URL: %w", err)
 	}
 

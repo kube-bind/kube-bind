@@ -124,7 +124,7 @@ kubectl ws create consumer --enter
 10. Bind the thing:
 
 ```bash
-./bin/kubectl-bind login http://127.0.0.1:8080 --cluster qs427lvg0y86m0ka
+./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 7yw1thtocnvdhf74 
 ./bin/kubectl-bind --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret

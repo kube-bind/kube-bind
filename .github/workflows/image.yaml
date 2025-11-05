@@ -22,13 +22,6 @@ jobs:
         go-version: v1.24.0
         check-latest: true
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: web/package-lock.json
-
     # We need this to remove local tags that are not semver so goreleaser doesn't get confused.
     - name: Delete non-semver tags
       run: 'git tag -d $(git tag -l | grep -v "^v")'

@@ -82,6 +82,7 @@ func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 	b.Print.AddFlags(cmd)
 
 	cmd.Flags().StringVar(&b.Template, "template-name", b.Template, "A template name to use for binding")
+	cmd.Flags().StringVar(&b.Name, "name", b.Name, "The name of the BindableResourcesRequest to create")
 	cmd.Flags().StringVar(&b.remoteKubeconfigFile, "remote-kubeconfig", b.remoteKubeconfigFile, "A file path for a kubeconfig file to connect to the service provider cluster")
 	cmd.Flags().StringVar(&b.remoteKubeconfigNamespace, "remote-kubeconfig-namespace", b.remoteKubeconfigNamespace, "The namespace of the remote kubeconfig secret to read from")
 	cmd.Flags().StringVar(&b.remoteKubeconfigName, "remote-kubeconfig-name", b.remoteKubeconfigNamespace, "The name of the remote kubeconfig secret to read from")

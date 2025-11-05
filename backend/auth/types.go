@@ -43,6 +43,9 @@ type TokenResponse struct {
 	ClusterID string `json:"cluster_id,omitempty"`
 }
 
+// TODO: We should remove client_side_redirect_url.
+// https://github.com/kube-bind/kube-bind/issues/362
+
 type AuthorizeRequest struct {
 	RedirectURL           string     `json:"redirect_url" form:"redirect_url"`
 	ClientSideRedirectURL string     `json:"client_side_redirect_url" form:"client_side_redirect_url"`

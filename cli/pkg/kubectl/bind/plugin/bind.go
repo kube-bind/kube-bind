@@ -120,12 +120,12 @@ func (b *BindOptions) Complete(args []string) error {
 
 // Validate validates the BindOptions are complete and usable.
 func (b *BindOptions) Validate() error {
-	if b.Server == "" {
+	if b.ServerName == "" {
 		return fmt.Errorf("server is required")
 	}
 
-	if _, err := url.Parse(b.Server); err != nil {
-		return fmt.Errorf("invalid url %q: %w", b.Server, err)
+	if _, err := url.Parse(b.ServerName); err != nil {
+		return fmt.Errorf("invalid url %q: %w", b.ServerName, err)
 	}
 
 	return b.Options.Validate()
@@ -145,10 +145,7 @@ func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) erro
 	}
 
 	// Generate session ID. It is used to verify callback.
-	sessionID, err := generateRandomString(32)
-	if err != nil {
-		return fmt.Errorf("failed to generate session ID: %w", err)
-	}
+	sessionID := rand.Text()
 
 	// Setup callback server with random port
 	resultCh := make(chan *BindResult, 1)
@@ -161,7 +158,7 @@ func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) erro
 	defer callbackServer.Close()
 
 	// Build the UI URL with callback parameters
-	uiURL, err := b.buildUIURL(callbackPort, sessionID, b.Cluster)
+	uiURL, err := b.buildUIURL(callbackPort, sessionID, b.ClusterName)
 	if err != nil {
 		return fmt.Errorf("failed to build UI URL: %w", err)
 	}
@@ -261,7 +258,7 @@ func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) erro
 // buildUIURL constructs the UI URL with callback parameters
 func (b *BindOptions) buildUIURL(callbackPort int, sessionID, clusterID string) (string, error) {
 	// Parse the base URL
-	u, err := url.Parse(b.Server)
+	u, err := url.Parse(b.ServerName)
 	if err != nil {
 		return "", fmt.Errorf("invalid server URL: %w", err)
 	}
@@ -371,15 +368,6 @@ func (b *BindOptions) startCallbackServer(resultCh chan<- *BindResult, errCh cha
 	}()
 
 	return server, port, nil
-}
-
-// generateRandomString generates a random string of the specified length
-func generateRandomString(length int) (string, error) {
-	bytes := make([]byte, length)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", bytes)[:length], nil
 }
 
 // bindResponseToAPIServiceBindings uses the shared binder to create API service bindings

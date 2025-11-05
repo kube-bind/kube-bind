@@ -45,10 +45,5 @@ func isWindows() bool {
 
 // isMacOS checks if the current OS is macOS
 func isMacOS() bool {
-	cmd := exec.Command("uname")
-	output, err := cmd.Output()
-	if err != nil {
-		return false
-	}
-	return strings.TrimSpace(string(output)) == "Darwin"
+	return strings.Contains(strings.ToLower(exec.Command("uname").String()), "darwin")
 }

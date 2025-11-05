@@ -124,8 +124,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)
 	}
-	err = handler.AddRoutes(s.WebServer.Router)
-	if err != nil {
+	if err := handler.AddRoutes(s.WebServer.Router); err != nil {
 		return nil, fmt.Errorf("error adding routes to HTTP Server: %w", err)
 	}
 

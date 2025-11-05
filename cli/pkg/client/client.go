@@ -34,13 +34,13 @@ import (
 )
 
 type Client interface {
-	GetTemplates(ctx context.Context) (*kubebindv1alpha2.APIServiceExportTemplateList, error)
-	GetCollections(ctx context.Context) (*kubebindv1alpha2.CollectionList, error)
-	Bind(ctx context.Context, request *kubebindv1alpha2.BindableResourcesRequest) (*kubebindv1alpha2.BindingResourceResponse, error)
+	GetTemplates(context.Context) (*kubebindv1alpha2.APIServiceExportTemplateList, error)
+	GetCollections(context.Context) (*kubebindv1alpha2.CollectionList, error)
+	Bind(context.Context, *kubebindv1alpha2.BindableResourcesRequest) (*kubebindv1alpha2.BindingResourceResponse, error)
 
-	Get(urlStr string) (*http.Response, error)
-	Post(urlStr string, body io.Reader) (*http.Response, error)
-	Do(req *http.Request) (*http.Response, error)
+	Get(string) (*http.Response, error)
+	Post(string, io.Reader) (*http.Response, error)
+	Do(*http.Request) (*http.Response, error)
 }
 
 // authenticatedClient provides an HTTP client with automatic authentication
@@ -152,8 +152,8 @@ func (c *authenticatedClient) Bind(ctx context.Context, request *kubebindv1alpha
 }
 
 // Get performs an authenticated GET request
-func (c *authenticatedClient) Get(urlStr string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", urlStr, nil)
+func (c *authenticatedClient) Get(url string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +166,8 @@ func (c *authenticatedClient) Get(urlStr string) (*http.Response, error) {
 }
 
 // Post performs an authenticated POST request
-func (c *authenticatedClient) Post(urlStr string, body io.Reader) (*http.Response, error) {
-	req, err := http.NewRequest("POST", urlStr, body)
+func (c *authenticatedClient) Post(url string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, err
 	}

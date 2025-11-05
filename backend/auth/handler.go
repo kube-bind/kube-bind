@@ -184,45 +184,47 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		parsedRedirectURL.RawQuery = values.Encode()
 
 		http.Redirect(w, r, parsedRedirectURL.String(), http.StatusFound)
-	} else {
-		// UI flow - set cookie and redirect to UI
-		cookieName := ah.generateCookieName(authCode.ClusterID)
-		s := securecookie.New(ah.cookieSigningKey, ah.cookieEncryptionKey)
-		encoded, err := s.Encode(cookieName, sessionState)
-		if err != nil {
-			logger.Error(err, "failed to encode secure session cookie")
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-
-		secure := false
-		http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
-
-		clientParams := &client.ClientParameters{
-			ClusterID:             authCode.ClusterID,
-			ClientSideRedirectURL: authCode.ClientSideRedirectURL,
-			RedirectURL:           authCode.RedirectURL,
-			SessionID:             authCode.SessionID,
-		}
-		url := clientParams.WithParams(authCode.RedirectURL)
-
-		http.Redirect(w, r, url, http.StatusFound)
+		return
 	}
+
+	// UI flow - set cookie and redirect to UI
+	cookieName := ah.generateCookieName(authCode.ClusterID)
+	s := securecookie.New(ah.cookieSigningKey, ah.cookieEncryptionKey)
+	encoded, err := s.Encode(cookieName, sessionState)
+	if err != nil {
+		logger.Error(err, "failed to encode secure session cookie")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	secure := false
+	http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
+
+	clientParams := &client.ClientParameters{
+		ClusterID:             authCode.ClusterID,
+		ClientSideRedirectURL: authCode.ClientSideRedirectURL,
+		RedirectURL:           authCode.RedirectURL,
+		SessionID:             authCode.SessionID,
+	}
+	url := clientParams.WithParams(authCode.RedirectURL)
+
+	http.Redirect(w, r, url, http.StatusFound)
 }
 
 func (ah *AuthHandler) respondWithError(w http.ResponseWriter, clientType ClientType, message string, statusCode int) {
-	if clientType == ClientTypeCLI {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(statusCode)
-		err := json.NewEncoder(w).Encode(AuthResponse{
-			Success: false,
-			Error:   message,
-		})
-		if err != nil {
-			http.Error(w, "internal error", http.StatusInternalServerError)
-		}
-	} else {
+	if clientType != ClientTypeCLI {
 		http.Error(w, message, statusCode)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	err := json.NewEncoder(w).Encode(AuthResponse{
+		Success: false,
+		Error:   message,
+	})
+	if err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
 	}
 }
 

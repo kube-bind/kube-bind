@@ -63,7 +63,7 @@ func (o *CollectionsOptions) AddCmdFlags(cmd *cobra.Command) {
 func (o *CollectionsOptions) Complete(args []string) error {
 	// Set this before complete base settings as login accepts server URL as argument without flag.
 	if len(args) > 0 {
-		o.Options.Server = args[0]
+		o.Options.ServerName = args[0]
 	}
 
 	if err := o.Options.Complete(false); err != nil {

@@ -106,7 +106,12 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 			return nil, fmt.Errorf("error setting up kcp provider: %w", err)
 		}
 
-		config.ExternalAddressGenerator = newKCPExternalAddressGenerator(options.ExternalAddress)
+		gen, err := newKCPExternalAddressGenerator(options.ExternalAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		config.ExternalAddressGenerator = gen
 		config.Provider = provider
 	default:
 		config.ExternalAddressGenerator = kuberesources.NewFixedExternalAddressGenerator(options.ExternalAddress)
@@ -133,7 +138,17 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	return config, nil
 }
 
-func newKCPExternalAddressGenerator(externalAddress string) kuberesources.ExternalAddressGeneratorFunc {
+func newKCPExternalAddressGenerator(externalAddress string) (kuberesources.ExternalAddressGeneratorFunc, error) {
+	var extURL *url.URL
+	if externalAddress != "" {
+		var err error
+
+		extURL, err = url.Parse(externalAddress)
+		if err != nil {
+			return nil, fmt.Errorf("invalid --external-address: %w", err)
+		}
+	}
+
 	return func(_ context.Context, clusterConfig *rest.Config) (string, error) {
 		// In kcp case, we are talking via apiexport so clientconfig will be pointing to
 		// https://192.168.2.166:6443/services/apiexport/root:org:ws/<apiexport-name>/clusters/2p0rtkf7b697s6mj
@@ -153,13 +168,13 @@ func newKCPExternalAddressGenerator(externalAddress string) kuberesources.Extern
 		clusterID := pathParts[5]
 
 		// Construct new URL with cluster path
-		extU, err := url.Parse(externalAddress)
-		if err != nil {
-			return "", fmt.Errorf("invalid --external-address: %w", err)
+		var finalURL = u
+		if extURL != nil {
+			finalURL = extURL
 		}
 
-		extU.Path = "/clusters/" + clusterID
+		finalURL.Path = "/clusters/" + clusterID
 
-		return extU.String(), nil
-	}
+		return finalURL.String(), nil
+	}, nil
 }

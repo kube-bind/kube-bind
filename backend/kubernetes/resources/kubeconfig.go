@@ -141,10 +141,14 @@ func GenerateKubeconfig(ctx context.Context,
 // and is dependent on the provider.
 type ExternalAddressGeneratorFunc func(ctx context.Context, clusterConfig *rest.Config) (string, error)
 
-// FixedExternalAddressGenerator returns an address generator that ignores its input and always returns
-// the same address.
+// FixedExternalAddressGenerator returns an address generator uses the given address when available,
+// otherwise falls back to the host of the provided rest config.
 func NewFixedExternalAddressGenerator(address string) ExternalAddressGeneratorFunc {
-	return func(_ context.Context, _ *rest.Config) (string, error) {
+	return func(_ context.Context, clusterConfig *rest.Config) (string, error) {
+		if address == "" {
+			return clusterConfig.Host, nil
+		}
+
 		return address, nil
 	}
 }

@@ -41,7 +41,7 @@ type Manager struct {
 	providerPrettyName string
 	scope              kubebindv1alpha2.InformerScope
 
-	externalAddressGenerator kuberesources.ExternalAddreesGeneratorFunc
+	externalAddressGenerator kuberesources.ExternalAddressGeneratorFunc
 	externalCA               []byte
 	externalTLSServerName    string
 
@@ -51,7 +51,7 @@ type Manager struct {
 func NewKubernetesManager(
 	ctx context.Context,
 	namespacePrefix, providerPrettyName string,
-	externalAddressGenerator kuberesources.ExternalAddreesGeneratorFunc,
+	externalAddressGenerator kuberesources.ExternalAddressGeneratorFunc,
 	scope kubebindv1alpha2.InformerScope,
 	externalCA []byte,
 	externalTLSServerName string,

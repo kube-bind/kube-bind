@@ -38,16 +38,12 @@ import (
 func GenerateKubeconfig(ctx context.Context,
 	client client.Client,
 	clusterConfig *rest.Config,
-	externalAddressGenerator ExternalAddreesGeneratorFunc,
+	externalAddressGenerator ExternalAddressGeneratorFunc,
 	externalCA []byte,
 	externalTLSServerName string,
 	saSecretName, ns, kubeconfigSecretName string,
 ) (*corev1.Secret, error) {
 	logger := klog.FromContext(ctx)
-
-	if externalAddressGenerator == nil {
-		externalAddressGenerator = DefaultExternalAddreesGenerator
-	}
 
 	externalAddress, err := externalAddressGenerator(ctx, clusterConfig)
 	if err != nil {
@@ -141,11 +137,18 @@ func GenerateKubeconfig(ctx context.Context,
 	return &existing, nil
 }
 
-// ExternalAddreesGeneratorFunc is a function that generates the external address for a cluster based on the clusterConfig
+// ExternalAddressGeneratorFunc is a function that generates the external address for a cluster based on the clusterConfig
 // and is dependent on the provider.
-type ExternalAddreesGeneratorFunc func(ctx context.Context, clusterConfig *rest.Config) (string, error)
+type ExternalAddressGeneratorFunc func(ctx context.Context, clusterConfig *rest.Config) (string, error)
 
-// DefaultExternalAddreesGenerator is the default implementation of the ExternalAddreesGeneratorFunc.
-func DefaultExternalAddreesGenerator(ctx context.Context, clusterConfig *rest.Config) (string, error) {
-	return clusterConfig.Host, nil
+// FixedExternalAddressGenerator returns an address generator uses the given address when available,
+// otherwise falls back to the host of the provided rest config.
+func NewFixedExternalAddressGenerator(address string) ExternalAddressGeneratorFunc {
+	return func(_ context.Context, clusterConfig *rest.Config) (string, error) {
+		if address == "" {
+			return clusterConfig.Host, nil
+		}
+
+		return address, nil
+	}
 }

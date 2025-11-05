@@ -47,7 +47,7 @@ type Config struct {
 	Options *options.CompletedOptions
 
 	Provider                 multicluster.Provider
-	ExternalAddressGenerator kuberesources.ExternalAddreesGeneratorFunc
+	ExternalAddressGenerator kuberesources.ExternalAddressGeneratorFunc
 	Manager                  mcmanager.Manager
 	Scheme                   *runtime.Scheme
 
@@ -106,10 +106,15 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 			return nil, fmt.Errorf("error setting up kcp provider: %w", err)
 		}
 
-		config.ExternalAddressGenerator = parseKCPServerURL
+		gen, err := newKCPExternalAddressGenerator(options.ExternalAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		config.ExternalAddressGenerator = gen
 		config.Provider = provider
 	default:
-		config.ExternalAddressGenerator = kuberesources.DefaultExternalAddreesGenerator
+		config.ExternalAddressGenerator = kuberesources.NewFixedExternalAddressGenerator(options.ExternalAddress)
 		config.Provider = nil
 	}
 
@@ -133,26 +138,43 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	return config, nil
 }
 
-func parseKCPServerURL(ctx context.Context, clusterConfig *rest.Config) (string, error) {
-	// In kcp case, we are talking via apiexport so clientconfig will be pointing to
-	// https://192.168.2.166:6443/services/apiexport/2sssrgg8ivlpw0cy/kube-bind.io/clusters/2p0rtkf7b697s6mj
-	// We need to extract host and /clusters/... part
-	u, err := url.Parse(clusterConfig.Host)
-	if err != nil {
-		return "", err
+func newKCPExternalAddressGenerator(externalAddress string) (kuberesources.ExternalAddressGeneratorFunc, error) {
+	var extURL *url.URL
+	if externalAddress != "" {
+		var err error
+
+		extURL, err = url.Parse(externalAddress)
+		if err != nil {
+			return nil, fmt.Errorf("invalid --external-address: %w", err)
+		}
 	}
 
-	// Extract cluster ID from the path
-	// Path format: /services/apiexport/{export-id}/kube-bind.io/clusters/{cluster-id}
-	pathParts := strings.Split(strings.Trim(u.Path, "/"), "/")
-	if len(pathParts) < 5 || pathParts[4] != "clusters" {
-		return "", fmt.Errorf("invalid apiexport URL format")
-	}
+	return func(_ context.Context, clusterConfig *rest.Config) (string, error) {
+		// In kcp case, we are talking via apiexport so clientconfig will be pointing to
+		// https://192.168.2.166:6443/services/apiexport/root:org:ws/<apiexport-name>/clusters/2p0rtkf7b697s6mj
+		// We need to extract host and /clusters/... part
+		u, err := url.Parse(clusterConfig.Host)
+		if err != nil {
+			return "", err
+		}
 
-	clusterID := pathParts[5]
+		// Extract cluster ID from the path
+		// Path format: /services/apiexport/root:org:ws/<apiexport-name>/clusters/{cluster-id}
+		pathParts := strings.Split(strings.Trim(u.Path, "/"), "/")
+		if len(pathParts) < 6 || pathParts[4] != "clusters" {
+			return "", fmt.Errorf("invalid apiexport URL format")
+		}
 
-	// Construct new URL with cluster path
-	u.Path = "/clusters/" + clusterID
+		clusterID := pathParts[5]
 
-	return u.String(), nil
+		// Construct new URL with cluster path
+		var finalURL = u
+		if extURL != nil {
+			finalURL = extURL
+		}
+
+		finalURL.Path = "/clusters/" + clusterID
+
+		return finalURL.String(), nil
+	}, nil
 }

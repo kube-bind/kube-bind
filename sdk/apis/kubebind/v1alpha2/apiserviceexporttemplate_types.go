@@ -23,6 +23,8 @@ import (
 )
 
 // APIServiceExportTemplate groups multiple CRDs with related resources (permissionClaims) as a Service definition.
+// It is used by a web UI or CLI to allow users to select a set of resources to export from provider cluster to consumer cluster.
+// This object is considered a static asset on the provider side and is not expected to change frequently.
 //
 // +crd
 // +genclient:nonNamespaced

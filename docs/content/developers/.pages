@@ -1,4 +1,6 @@
 nav:
   - index.md
+  - Development Environment: dev-environments.md
   - Backend: backend
   - Konnector: konnector
+  - Publishing a release: publishing-a-release.md

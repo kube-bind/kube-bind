@@ -22,7 +22,8 @@ import (
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 )
 
-// Collection groups multiple APIServiceExportTemplates into a logical group. This functions as a folder in the UI.
+// Collection groups multiple APIServiceExportTemplates into a logical group. This functions as a grouping mechanism
+// in UIs or CLIs to allow users to select a set of resources to export from provider cluster to consumer cluster.
 //
 // +crd
 // +genclient

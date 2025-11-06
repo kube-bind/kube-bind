@@ -35,11 +35,8 @@ var (
 	# bind to a remote API service. Use kubectl bind to create the APIServiceExportRequest interactively.
 	%[1]s apiservice --remote-kubeconfig file -f apiservice-export-request.yaml
 
-	# bind to a remote API service via a request manifest from a https URL.
-	%[1]s apiservice --remote-kubeconfig file https://some-url.com/apiservice-export-requests.yaml
-
-	# bind to a API service directly without any remote agent or service provider.
-	%[1]s apiservice --remote-kubeconfig file -n remote-namespace resources.group/v1
+	# bind to a remote API using template name
+	%[1]s apiservice --name my-api --template-name database-service
 	`
 )
 

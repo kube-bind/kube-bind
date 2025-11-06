@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v250918-f26732b.boundschemas.kube-bind.io
+  name: v251106-640871f.boundschemas.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -24,7 +24,9 @@ spec:
       type: date
     name: v1alpha2
     schema:
-      description: BoundSchema
+      description: |-
+        BoundSchema defines the schema of a bound API resource. It is created on the provider side to track
+        CRD status on the consumer side by reflecting the CRD spec and status conditions.
       properties:
         apiVersion:
           description: |-

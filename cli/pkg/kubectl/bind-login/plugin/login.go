@@ -209,10 +209,10 @@ func (o *LoginOptions) Run(ctx context.Context, authURLCh chan<- string) error {
 	}
 
 	if token.Cluster != "" {
-		fmt.Fprintf(o.Streams.ErrOut, "Successfully authenticated to %s (cluster: %s)\n", serverHost.Host, token.Cluster)
-		fmt.Fprintf(o.Streams.ErrOut, "  Server key: %s\n", fmt.Sprintf("%s@%s", serverURL, token.Cluster))
+		fmt.Fprintf(o.Streams.ErrOut, "🔑 Successfully authenticated to %s (cluster: %s)\n", serverHost.Host, token.Cluster)
+		fmt.Fprintf(o.Streams.ErrOut, "   Server key: %s\n", fmt.Sprintf("%s@%s", serverURL, token.Cluster))
 	} else {
-		fmt.Fprintf(o.Streams.ErrOut, "Successfully authenticated to %s\n", serverHost.Host)
+		fmt.Fprintf(o.Streams.ErrOut, "🔑 Successfully authenticated to %s\n", serverHost.Host)
 	}
 
 	if o.ShowToken {

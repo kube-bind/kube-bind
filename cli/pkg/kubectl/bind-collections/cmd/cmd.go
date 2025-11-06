@@ -32,14 +32,12 @@ var (
 	# List collections from currently authenticated server
 	%[1]s collections
 
-	# List collections from specific server 
-	%[1]s collections https://mangodb.com
-
 	# List collections using --server flag to override current server
 	%[1]s collections --server https://mangodb.com
 
-	# List collections with JSON output
+	# List collections with JSON/YAML output
 	%[1]s collections -o json
+	%[1]s collections -o yaml
 	`
 )
 

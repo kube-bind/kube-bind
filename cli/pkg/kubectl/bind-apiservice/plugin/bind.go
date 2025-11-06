@@ -324,9 +324,9 @@ func (b *BindAPIServiceOptions) bindTemplate(ctx context.Context) (*bindTemplate
 		return nil, err
 	}
 	if created {
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "🔒 Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
 	} else {
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "🔒 Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
 	}
 	return &bindTemplateResult{
 		response:  bindResponse,

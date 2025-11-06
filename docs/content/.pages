@@ -2,7 +2,6 @@ nav:
   - Home:
     - index.md
   - Setup: setup
-  - Usage: usage
   - Contributing: contributing
   - Developers: developers
-  - Reference: reference
+  - API References: reference

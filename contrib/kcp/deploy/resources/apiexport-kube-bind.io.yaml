@@ -64,7 +64,7 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: apiserviceexporttemplates
-    schema: v251029-fadb9ed.apiserviceexporttemplates.kube-bind.io
+    schema: v251106-640871f.apiserviceexporttemplates.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io
@@ -79,7 +79,7 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: boundschemas
-    schema: v250918-f26732b.boundschemas.kube-bind.io
+    schema: v251106-640871f.boundschemas.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io
@@ -89,7 +89,7 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: collections
-    schema: v251022-ca928ec.collections.kube-bind.io
+    schema: v251106-640871f.collections.kube-bind.io
     storage:
       crd: {}
 status: {}

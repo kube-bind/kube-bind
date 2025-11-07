@@ -33,13 +33,14 @@ var (
 	%[1]s templates
 
 	# List templates from specific server 
-	%[1]s templates https://mangodb.com
+	%[1]s templates
 
 	# List templates using --server flag to override current server
 	%[1]s templates --server https://mangodb.com
 
-	# List templates with JSON output
+	# List templates with JSON/YAML output
 	%[1]s templates -o json
+	%[1]s templates -o yaml
 	`
 )
 

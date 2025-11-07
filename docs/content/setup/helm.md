@@ -50,11 +50,11 @@ The following prerequisites are required. Click the links below for detailed set
        kube-bind oci://ghcr.io/kube-bind/charts/backend --version ${VERSION}
 
    # Or install a specific development version
-    helm upgrade --install \
-        --namespace kube-bind \
-        --create-namespace \
-        --values ./deploy/charts/backend/examples/values-local-development.yaml \
-        kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.0.0-fadb9edd26c0202f4a9511ee9d71b9e5f43672b9 
+   helm upgrade --install \
+       --namespace kube-bind \
+       --create-namespace \
+       --values ./deploy/charts/backend/examples/values-local-development.yaml \
+       kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.0.0-fadb9edd26c0202f4a9511ee9d71b9e5f43672b9
    ```
 
 4. **Seed with example resources (optional):**

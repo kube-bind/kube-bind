@@ -409,7 +409,7 @@ build-web:
 PLATFORMS ?= linux/$(ARCH)
 .PHONY: image-local
 image-local:
-	@echo "Building multi-arch images locally with tag $(REV) for platforms: $(PLATFORMS)"
+	@echo "Building images locally with tag $(REV) for platforms: $(PLATFORMS)"
 	@command -v docker >/dev/null 2>&1 || { echo "docker not found. Please install Docker"; exit 1; }
 	@docker buildx version >/dev/null 2>&1 || { echo "docker buildx not found. Please enable buildx in Docker"; exit 1; }
 
@@ -417,25 +417,34 @@ image-local:
 	@docker buildx create --name kube-bind-builder --use 2>/dev/null || docker buildx use kube-bind-builder 2>/dev/null || true
 	@docker buildx inspect --bootstrap >/dev/null 2>&1
 
-	@echo "Building konnector multi-arch image locally..."
+	@# Check if building for multiple platforms
+	@if [[ "$(PLATFORMS)" == *","* ]]; then \
+		echo "Multi-platform build detected. Images will be pushed to registry instead of loaded locally."; \
+		LOAD_FLAG="--push"; \
+	else \
+		echo "Single platform build. Images will be loaded to local Docker daemon."; \
+		LOAD_FLAG="--load"; \
+	fi && \
+	\
+	echo "Building konnector image..." && \
 	docker buildx build \
 		--platform $(PLATFORMS) \
 		--build-arg LDFLAGS="$(LDFLAGS)" \
 		-t $(IMAGE_REPO)/konnector:$(REV) \
 		-f Dockerfile.konnector \
-		--load .
-
-	@echo "Building backend multi-arch image locally..."
+		$$LOAD_FLAG . && \
+	\
+	echo "Building backend image..." && \
 	docker buildx build \
 		--platform $(PLATFORMS) \
 		--build-arg LDFLAGS="$(LDFLAGS)" \
 		-t $(IMAGE_REPO)/backend:$(REV) \
 		-f Dockerfile \
-		--load .
-
-	@echo "Successfully built multi-arch local images:"
-	@echo "  $(IMAGE_REPO)/konnector:$(REV) ($(PLATFORMS))"
-	@echo "  $(IMAGE_REPO)/backend:$(REV) ($(PLATFORMS))"
+		$$LOAD_FLAG . && \
+	\
+	echo "Successfully built images:" && \
+	echo "  $(IMAGE_REPO)/konnector:$(REV) ($(PLATFORMS))" && \
+	echo "  $(IMAGE_REPO)/backend:$(REV) ($(PLATFORMS))"
 
 # Kind cluster configuration
 KIND_CLUSTER ?= kube-bind

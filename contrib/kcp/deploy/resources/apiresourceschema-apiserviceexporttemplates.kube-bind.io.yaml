@@ -2,7 +2,7 @@ apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
   creationTimestamp: null
-  name: v251029-fadb9ed.apiserviceexporttemplates.kube-bind.io
+  name: v251106-640871f.apiserviceexporttemplates.kube-bind.io
 spec:
   group: kube-bind.io
   names:
@@ -26,8 +26,10 @@ spec:
       type: date
     name: v1alpha2
     schema:
-      description: APIServiceExportTemplate groups multiple CRDs with related resources
-        (permissionClaims) as a Service definition.
+      description: |-
+        APIServiceExportTemplate groups multiple CRDs with related resources (permissionClaims) as a Service definition.
+        It is used by a web UI or CLI to allow users to select a set of resources to export from provider cluster to consumer cluster.
+        This object is considered a static asset on the provider side and is not expected to change frequently.
       properties:
         apiVersion:
           description: |-

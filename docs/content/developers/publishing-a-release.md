@@ -59,12 +59,10 @@ kube-bind has 3 go modules, and a unique tag is needed for each module every tim
 
 ## If it's a New Minor Version
 
-```shell
 If this is the first release of a new minor version (e.g. the last release was v0.7.x, and you are releasing the first
 0.8.x version), follow the following steps.
 
 Otherwise, you can skip to [Generate release notes](#generate-release-notes).
-```
 
 ## Generate Release Notes
 
@@ -78,7 +76,7 @@ go install k8s.io/release/cmd/release-notes@latest
 
 To use `release-notes` you will need to generate a GitHub API token (Settings -> Developers settings -> Personal access tokens -> Fine-grained tokens). A token with _Public Repositories (read-only)_ repository access and no further permissions is sufficient. Store the token somewhere safe and export it as `GITHUB_TOKEN` environment variable.
 
-Then, run run the `release-notes` tool (set `PREV_VERSION` to the version released before the one you have just released).
+Then, run the `release-notes` tool (set `PREV_VERSION` to the version released before the one you have just released).
 
 ```shell
 TAG=v0.5.0
@@ -109,7 +107,7 @@ The [goreleaser](https://github.com/kube-bind/kube-bind/actions/workflows/gorele
 Documentation for the respective release branch needs to be triggered manually after the release branch has been pushed.
 
 1. Navigate to the [Generate and push docs](https://github.com/kube-bind/kube-bind/actions/workflows/docs-gen-and-push.yaml) GitHub Action.
-2. Hit the "Run forkflow" button, run workflow against `release-$VERSION`.
+2. Hit the "Run workflow" button, run workflow against `release-$VERSION`.
 3. Make sure the triggered workflow ran and deployed a new version of the documentation to [https://docs.kube-bind.io/main/](https://docs.kube-bind.io/main).
 
 ## Notify

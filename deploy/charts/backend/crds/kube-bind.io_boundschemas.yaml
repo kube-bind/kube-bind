@@ -25,7 +25,9 @@ spec:
     name: v1alpha2
     schema:
       openAPIV3Schema:
-        description: BoundSchema
+        description: |-
+          BoundSchema defines the schema of a bound API resource. It is created on the provider side to track
+          CRD status on the consumer side by reflecting the CRD spec and status conditions.
         properties:
           apiVersion:
             description: |-

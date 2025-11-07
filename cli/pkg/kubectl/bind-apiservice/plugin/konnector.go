@@ -68,7 +68,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 	}
 
 	if b.KonnectorImageOverride != "" {
-		fmt.Fprintf(b.Options.ErrOut, "Deploying konnector %s to namespace kube-bind with custom image %q.\n", bindVersion, b.KonnectorImageOverride)
+		fmt.Fprintf(b.Options.ErrOut, "🚀 Deploying konnector %s to namespace kube-bind with custom image %q.\n", bindVersion, b.KonnectorImageOverride)
 		if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, b.KonnectorImageOverride); err != nil {
 			return err
 		}
@@ -103,7 +103,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 				}
 			}
 		} else {
-			fmt.Fprintf(b.Options.ErrOut, "Deploying konnector %s to namespace kube-bind.\n", bindVersion)
+			fmt.Fprintf(b.Options.ErrOut, "🚀 Deploying konnector %s to namespace kube-bind.\n", bindVersion)
 			if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, konnectorImage); err != nil {
 				return err
 			}

@@ -104,6 +104,9 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   # Enable note/warning/etc. callouts
   - admonition
+  # Enable content tabs
+  - pymdownx.tabbed:
+      alternate_style: true
 
 # Live reload if any of these change when running 'mkdocs serve'
 watch:

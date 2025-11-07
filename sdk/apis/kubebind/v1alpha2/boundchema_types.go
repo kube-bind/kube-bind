@@ -31,7 +31,8 @@ import (
 // Keys are "resource.group" for quick resolve (version is not part of the key).
 type ExportedSchemas map[string]*BoundSchema
 
-// BoundSchema
+// BoundSchema defines the schema of a bound API resource. It is created on the provider side to track
+// CRD status on the consumer side by reflecting the CRD spec and status conditions.
 // +crd
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

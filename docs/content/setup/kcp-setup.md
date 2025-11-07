@@ -12,7 +12,7 @@ This guide shows how to set up kube-bind with the kcp provider, which enables ad
 The kcp provider integrates kube-bind with [kcp](https://github.com/kcp-dev/kcp), enabling:
 
 - **Workspace-based isolation**: Each binding can operate in isolated kcp workspaces
-- **Advanced multi-tenancy**: Provider and consumer separation through logical clusters where backend can be in single workspace or multiple workspaces
+- **Advanced multi-tenancy**: Provider and consumer separation through logical clusters where the backend can be in a single workspace or multiple workspaces
 - **APIExport integration**: Leverages kcp's APIExport mechanism for service exposure
 - **Scalable architecture**: Supports large-scale multi-cluster deployments
 

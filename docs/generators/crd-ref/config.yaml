@@ -49,3 +49,28 @@ source_repositories:
           - https://github.com/kube-bind/kube-bind
         topics:
           - apis
+      apiconversions.kube-bind.io:
+        owner:
+          - https://github.com/kube-bind/kube-bind
+        topics:
+          - apis
+      apiserviceexporttemplates.kube-bind.io:
+        owner:
+          - https://github.com/kube-bind/kube-bind
+        topics:
+          - apis
+      bindableresourcesrequests.kube-bind.io:
+        owner:
+          - https://github.com/kube-bind/kube-bind
+        topics:
+          - apis
+      boundschemas.kube-bind.io:
+        owner:
+          - https://github.com/kube-bind/kube-bind
+        topics:
+          - apis
+      collections.kube-bind.io:
+        owner:
+          - https://github.com/kube-bind/kube-bind
+        topics:
+          - apis

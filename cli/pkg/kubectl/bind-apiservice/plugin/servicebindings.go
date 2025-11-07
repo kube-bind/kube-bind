@@ -106,6 +106,6 @@ func (b *BindAPIServiceOptions) createAPIServiceBindings(ctx context.Context, co
 		return nil, err
 	}
 
-	fmt.Fprintf(b.Options.IOStreams.ErrOut, "Created APIServiceBinding %s for %d resources\n", bindingName, len(request.Spec.Resources))
+	fmt.Fprintf(b.Options.IOStreams.ErrOut, "✅ Created APIServiceBinding %s for %d resources\n", bindingName, len(request.Spec.Resources))
 	return []*kubebindv1alpha2.APIServiceBinding{created}, nil
 }

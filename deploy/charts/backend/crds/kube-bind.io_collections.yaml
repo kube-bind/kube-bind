@@ -29,8 +29,9 @@ spec:
     name: v1alpha2
     schema:
       openAPIV3Schema:
-        description: Collection groups multiple APIServiceExportTemplates into a logical
-          group. This functions as a folder in the UI.
+        description: |-
+          Collection groups multiple APIServiceExportTemplates into a logical group. This functions as a grouping mechanism
+          in UIs or CLIs to allow users to select a set of resources to export from provider cluster to consumer cluster.
         properties:
           apiVersion:
             description: |-

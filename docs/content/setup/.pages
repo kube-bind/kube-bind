@@ -2,5 +2,4 @@ nav:
     - index.md
     - kubectl-plugin.md
     - quickstart.md
-    - local-setup-with-kind.md
     - helm.md

@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	logsv1 "k8s.io/component-base/logs/api/v1"
@@ -34,23 +33,19 @@ import (
 
 var (
 	BindExampleUses = `
-	# Open kube-bind UI for current server context
+	# %[1]s bind login --server https://my-kube-bind-server.com
+
+	# Open kube-bind UI for current server context 
 	%[1]s bind
 
-	# Open kube-bind UI for specific server
-	%[1]s bind https://mangodb.com
-
 	# List available templates (CLI mode)
-	%[1]s bind --dry-run
+	%[1]s bind templates
 
 	# Bind specific template (CLI mode)
-	%[1]s bind --template my-app
-
-	# Bind template with server override
-	%[1]s bind https://mangodb.com --template my-app
+	%[1]s bind apiservice --name my-api --template-name database-service
 
 	# View template details without binding
-	%[1]s bind --template my-app --dry-run
+	%[1]s bind apiservice --name my-api --template-name database-service --dry-run
 	`
 )
 
@@ -64,9 +59,8 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 		a web UI or command-line interface.
 
 		By default, 'kubectl bind' opens the kube-bind web UI in your browser.
-		Use the --template flag to bind specific templates via CLI.
 
-		For more information, see: https://kube-bind.io
+		For more information, see: https://docs.kube-bind.io
 	`),
 		Example:      fmt.Sprintf(BindExampleUses, "kubectl"),
 		SilenceUsage: true,
@@ -88,9 +82,6 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 			if err := logsv1.ValidateAndApply(opts.Logs, nil); err != nil {
 				return err
 			}
-
-			yellow := color.New(color.BgRed, color.FgBlack).SprintFunc()
-			fmt.Fprintf(streams.ErrOut, "%s\n\n", yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time."))
 
 			if err := opts.Complete(args); err != nil {
 				return err

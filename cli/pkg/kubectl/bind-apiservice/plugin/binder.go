@@ -66,6 +66,17 @@ func NewBinder(config *rest.Config, opts *BinderOptions) *Binder {
 // https://github.com/kube-bind/kube-bind/issues/360
 
 func (b *Binder) BindFromFile(ctx context.Context) ([]*kubebindv1alpha2.APIServiceBinding, error) {
+	// Generate the kubectl command that would be equivalent
+	remoteFlags := ""
+	if b.opts.RemoteKubeconfigFile != "" {
+		remoteFlags = fmt.Sprintf("--remote-kubeconfig %s", b.opts.RemoteKubeconfigFile)
+	} else if b.opts.RemoteKubeconfigNamespace != "" && b.opts.RemoteKubeconfigName != "" {
+		remoteFlags = fmt.Sprintf("--remote-kubeconfig-namespace %s --remote-kubeconfig-name %s", b.opts.RemoteKubeconfigNamespace, b.opts.RemoteKubeconfigName)
+	}
+	fmt.Fprintf(b.opts.IOStreams.ErrOut, "🚀 Executing: kubectl bind apiservice %s -f -\n", remoteFlags)
+	fmt.Fprintf(b.opts.IOStreams.ErrOut, "✨ Use \"-o yaml\" and \"--dry-run\" to get the APIServiceExportRequest.\n")
+	fmt.Fprintf(b.opts.IOStreams.ErrOut, "    and pass it to \"kubectl bind apiservice\" directly. Great for automation.\n")
+
 	// Ensure client side namespace exists
 	err := b.ensureClientSideNamespaceExists(ctx)
 	if err != nil {
@@ -99,9 +110,9 @@ func (b *Binder) BindFromFile(ctx context.Context) ([]*kubebindv1alpha2.APIServi
 	}
 
 	if created {
-		fmt.Fprintf(b.opts.IOStreams.ErrOut, "Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+		fmt.Fprintf(b.opts.IOStreams.ErrOut, "🔒 Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
 	} else {
-		fmt.Fprintf(b.opts.IOStreams.ErrOut, "Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+		fmt.Fprintf(b.opts.IOStreams.ErrOut, "🔒 Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
 	}
 
 	if b.opts.DryRun {
@@ -184,9 +195,9 @@ func (b *Binder) BindFromResponse(ctx context.Context, response *kubebindv1alpha
 	}
 
 	if created {
-		fmt.Fprintf(b.opts.IOStreams.ErrOut, "Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+		fmt.Fprintf(b.opts.IOStreams.ErrOut, "🔒 Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
 	} else {
-		fmt.Fprintf(b.opts.IOStreams.ErrOut, "Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
+		fmt.Fprintf(b.opts.IOStreams.ErrOut, "🔒 Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
 	}
 
 	if b.opts.DryRun {

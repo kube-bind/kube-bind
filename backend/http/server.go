@@ -21,7 +21,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -37,22 +36,9 @@ type Server struct {
 
 func NewServer(options *options.Serve) (*Server, error) {
 	server := &Server{
-		options: options,
-		Router:  mux.NewRouter(),
-	}
-
-	if options.Listener == nil {
-		var err error
-		addr := options.ListenAddress
-		if options.ListenIP != "" {
-			addr = net.JoinHostPort(options.ListenIP, strconv.Itoa(options.ListenPort))
-		}
-		server.listener, err = net.Listen("tcp", addr)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		server.listener = options.Listener
+		options:  options,
+		Router:   mux.NewRouter(),
+		listener: options.Listener,
 	}
 
 	return server, nil

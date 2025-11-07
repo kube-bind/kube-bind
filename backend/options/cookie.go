@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/gorilla/securecookie"
 	"github.com/spf13/pflag"
 )
 
@@ -38,6 +39,12 @@ func (options *Cookie) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (options *Cookie) Complete() error {
+	if options.SigningKey == "" {
+		options.SigningKey = base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(32))
+	}
+	if options.EncryptionKey == "" {
+		options.EncryptionKey = base64.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(32))
+	}
 	return nil
 }
 

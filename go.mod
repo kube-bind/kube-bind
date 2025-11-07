@@ -10,12 +10,12 @@ replace (
 )
 
 require (
-	github.com/coreos/go-oidc/v3 v3.15.0
+	github.com/coreos/go-oidc/v3 v3.16.0
 	github.com/dexidp/dex/api/v2 v2.3.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/go-cmp v0.7.0
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/headzoo/surf v1.0.1
 	github.com/kcp-dev/code-generator/v3 v3.0.0-20250707080944-4094fb87e20f
@@ -30,6 +30,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
 	github.com/vmihailenco/msgpack/v4 v4.3.12
+	github.com/xrstf/mockoidc v0.0.0-20251106154715-f2594670cb08
 	golang.org/x/oauth2 v0.29.0
 	google.golang.org/grpc v1.70.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -70,7 +71,8 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
-	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
+	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect

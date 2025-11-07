@@ -19,6 +19,7 @@ package options
 import (
 	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/spf13/pflag"
 )
@@ -50,6 +51,17 @@ func (options *Serve) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (options *Serve) Complete() error {
+	if options.Listener == nil {
+		var err error
+		addr := options.ListenAddress
+		if options.ListenIP != "" {
+			addr = net.JoinHostPort(options.ListenIP, strconv.Itoa(options.ListenPort))
+		}
+		options.Listener, err = net.Listen("tcp", addr)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

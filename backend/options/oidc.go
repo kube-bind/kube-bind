@@ -17,9 +17,13 @@ limitations under the License.
 package options
 
 import (
+	"crypto/tls"
 	"fmt"
+	"net"
 
 	"github.com/spf13/pflag"
+
+	"github.com/kube-bind/kube-bind/backend/oidc"
 )
 
 type OIDC struct {
@@ -28,6 +32,11 @@ type OIDC struct {
 	IssuerURL          string
 	CallbackURL        string
 	AuthorizeURL       string
+	CAFile             string
+
+	// TLSConfig is set if an embedded OIDC server is used.
+	TLSConfig  *tls.Config
+	OIDCServer *oidc.Server
 }
 
 func NewOIDC() *OIDC {
@@ -40,9 +49,37 @@ func (options *OIDC) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.IssuerURL, "oidc-issuer-url", options.IssuerURL, "Callback URL for OpenID responses.")
 	fs.StringVar(&options.CallbackURL, "oidc-callback-url", options.CallbackURL, "OpenID callback URL")
 	fs.StringVar(&options.AuthorizeURL, "oidc-authorize-url", options.AuthorizeURL, "OpenID authorize URL")
+	fs.StringVar(&options.CAFile, "oidc-ca-file", options.CAFile, "Path to a CA bundle to use when verifying the OIDC provider's TLS certificate.")
 }
 
-func (options *OIDC) Complete() error {
+func (options *OIDC) Complete(listener net.Listener) error {
+	if options.IssuerURL == "" {
+		oidcServer, err := oidc.New(options.CAFile, listener)
+		if err != nil {
+			return err
+		}
+		options.OIDCServer = oidcServer
+
+		cfg, err := oidcServer.Config()
+		if err != nil {
+			return err
+		}
+		options.TLSConfig = oidcServer.TLSConfig()
+		options.IssuerURL = cfg.Issuer
+		options.IssuerClientID = cfg.ClientID
+		options.IssuerClientSecret = cfg.ClientSecret
+		// This should be provided from outside, but in embedded - we detect.
+		options.CallbackURL = cfg.CallbackURL
+	}
+
+	if options.CAFile != "" {
+		tlsConfig, err := oidc.LoadTLSConfig(options.CAFile)
+		if err != nil {
+			return fmt.Errorf("failed to load OIDC CA file: %w", err)
+		}
+		options.TLSConfig = tlsConfig
+	}
+
 	return nil
 }
 
@@ -58,6 +95,9 @@ func (options *OIDC) Validate() error {
 	}
 	if options.CallbackURL == "" {
 		return fmt.Errorf("OIDC callback URL cannot be empty")
+	}
+	if options.CAFile != "" && options.TLSConfig != nil {
+		return fmt.Errorf("cannot use both CA file and embedded OIDC server")
 	}
 
 	return nil

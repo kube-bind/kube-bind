@@ -311,7 +311,7 @@ All the instructions assume you have already cloned the kube-bind repository and
         staticClients:
         - id: kube-bind
             redirectURIs:
-            - 'http://${BACKEND_HOST_IP}:8080/callback'
+            - 'http://${BACKEND_HOST_IP}:8080/api/callback'
             name: 'Kube Bind'
             secret: ZXhhbXBsZS1hcHAtc2VjcmV0
 
@@ -386,13 +386,13 @@ All the instructions assume you have already cloned the kube-bind repository and
         create deployment mangodb \
         --image ghcr.io/kube-bind/backend:main \
         --port 8080 \
-        -- /ko-app/backend \
+        -- /bin/backend \
             --listen-address 0.0.0.0:8080 \
             --external-address "${BACKEND_KUBE_API_EXTERNAL_ADDRESS}" \
             --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
             --oidc-issuer-client-id=kube-bind \
             --oidc-issuer-url=http://${BACKEND_HOST_IP}:5556/dex \
-            --oidc-callback-url=http://${BACKEND_HOST_IP}:8080/callback \
+            --oidc-callback-url=http://${BACKEND_HOST_IP}:8080/api/callback \
             --pretty-name="BigCorp.com" \
             --namespace-prefix="kube-bind-" \
             --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
@@ -442,7 +442,7 @@ All the instructions assume you have already cloned the kube-bind repository and
     kind: Cluster
     name: app
     networking:
-    apiServerAddress: ${APP_HOST_IP}
+        apiServerAddress: ${APP_HOST_IP}
     EOF_AppClusterDefinition
     ```
 
@@ -498,12 +498,13 @@ All the instructions assume you have already cloned the kube-bind repository and
     apiVersion: mangodb.com/v1alpha1
     kind: MangoDB
     metadata:
-    name: my-db
+      name: my-db
     spec:
-    tokenSecret: my-secret
-    region: eu-west-1
-    tier: Shared
+      tokenSecret: my-secret
+      region: eu-west-1
+      tier: Shared
     EOF_MangoDBDefinition
+    
     kubectl describe mangodb my-db
     ```
 

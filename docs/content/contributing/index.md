@@ -53,7 +53,7 @@ that might not be obvious to the contributor.
 ### Approvers
 
 Approvers are responsible for sign-off on the acceptance of the contribution. In essence, approval indicates that the
-change is desired and good for the project, aligns with code, api, and system conventions, and appears to follow all required
+change is desired and good for the project, aligns with code, API, and system conventions, and appears to follow all required
 process including adequate testing, documentation, follow ups, or notifications to other areas who might be interested
 or affected by the change.
 

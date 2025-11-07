@@ -6,19 +6,19 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="ClusterBinding represents a bound consumer cluster. It lives in a service provider cluster
-and is a singleton named &#34;cluster&#34;.
+        <meta name="description" content="BoundSchema defines the schema of a bound API resource. It is created on the provider side to track
+CRD status on the consumer side by reflecting the CRD spec and status conditions.
 ">
       
       
       
-        <link rel="canonical" href="https://docs.kube-bind.io/main/reference/crd/kube-bind.io/clusterbindings/">
+        <link rel="canonical" href="https://docs.kube-bind.io/main/reference/crd/kube-bind.io/boundschemas/">
       
       
-        <link rel="prev" href="../boundschemas/">
+        <link rel="prev" href="../bindableresourcesrequests/">
       
       
-        <link rel="next" href="../collections/">
+        <link rel="next" href="../clusterbindings/">
       
       
       <link rel="icon" href="../../../../favicons/favicon.ico">
@@ -26,7 +26,7 @@ and is a singleton named &#34;cluster&#34;.
     
     
       
-        <title>ClusterBinding - docs.kube-bind.io</title>
+        <title>BoundSchema - docs.kube-bind.io</title>
       
     
     
@@ -78,7 +78,7 @@ and is a singleton named &#34;cluster&#34;.
     <div data-md-component="skip">
       
         
-        <a href="#clusterbinding-crd-schema-reference-group-kube-bindio" class="md-skip">
+        <a href="#boundschema-crd-schema-reference-group-kube-bindio" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@ and is a singleton named &#34;cluster&#34;.
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ClusterBinding
+              BoundSchema
             
           </span>
         </div>
@@ -1687,27 +1687,6 @@ and is a singleton named &#34;cluster&#34;.
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../boundschemas/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    BoundSchema
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -1722,7 +1701,7 @@ and is a singleton named &#34;cluster&#34;.
           
   
   <span class="md-ellipsis">
-    ClusterBinding
+    BoundSchema
   </span>
   
 
@@ -1733,7 +1712,7 @@ and is a singleton named &#34;cluster&#34;.
         
   
   <span class="md-ellipsis">
-    ClusterBinding
+    BoundSchema
   </span>
   
 
@@ -1753,9 +1732,9 @@ and is a singleton named &#34;cluster&#34;.
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#clusterbinding-crd-schema-reference-group-kube-bindio" class="md-nav__link">
+  <a href="#boundschema-crd-schema-reference-group-kube-bindio" class="md-nav__link">
     <span class="md-ellipsis">
-      ClusterBinding CRD schema reference (group kube-bind.io)
+      BoundSchema CRD schema reference (group kube-bind.io)
     </span>
   </a>
   
@@ -1765,6 +1744,27 @@ and is a singleton named &#34;cluster&#34;.
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../clusterbindings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    ClusterBinding
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -1839,9 +1839,9 @@ and is a singleton named &#34;cluster&#34;.
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#clusterbinding-crd-schema-reference-group-kube-bindio" class="md-nav__link">
+  <a href="#boundschema-crd-schema-reference-group-kube-bindio" class="md-nav__link">
     <span class="md-ellipsis">
-      ClusterBinding CRD schema reference (group kube-bind.io)
+      BoundSchema CRD schema reference (group kube-bind.io)
     </span>
   </a>
   
@@ -1865,437 +1865,28 @@ and is a singleton named &#34;cluster&#34;.
   
 
 
-  <h1>ClusterBinding</h1>
+  <h1>BoundSchema</h1>
 
-<h2 id="clusterbinding-crd-schema-reference-group-kube-bindio">ClusterBinding CRD schema reference (group kube-bind.io)</h2>
-<div class="lead">ClusterBinding represents a bound consumer cluster. It lives in a service provider cluster
-and is a singleton named &#34;cluster&#34;.
+<h2 id="boundschema-crd-schema-reference-group-kube-bindio">BoundSchema CRD schema reference (group kube-bind.io)</h2>
+<div class="lead">BoundSchema defines the schema of a bound API resource. It is created on the provider side to track
+CRD status on the consumer side by reflecting the CRD spec and status conditions.
 </div>
 
 <dl class="crd-meta">
 <dt class="fullname">Full name:</dt>
-<dd class="fullname">clusterbindings.kube-bind.io</dd>
+<dd class="fullname">boundschemas.kube-bind.io</dd>
 <dt class="groupname">Group:</dt>
 <dd class="groupname">kube-bind.io</dd>
 <dt class="singularname">Singular name:</dt>
-<dd class="singularname">clusterbinding</dd>
+<dd class="singularname">boundschema</dd>
 <dt class="pluralname">Plural name:</dt>
-<dd class="pluralname">clusterbindings</dd>
+<dd class="pluralname">boundschemas</dd>
 <dt class="scope">Scope:</dt>
 <dd class="scope">Namespaced</dd>
 <dt class="versions">Versions:</dt>
-<dd class="versions"><a class="version" href="#v1alpha1" title="Show schema for version v1alpha1">v1alpha1</a><a class="version" href="#v1alpha2" title="Show schema for version v1alpha2">v1alpha2</a></dd>
+<dd class="versions"><a class="version" href="#v1alpha2" title="Show schema for version v1alpha2">v1alpha2</a></dd>
 </dl>
 
-<div class="crd-schema-version">
-<h2 id="v1alpha1">Version v1alpha1</h2>
-
-
-
-<h3 id="property-details-v1alpha1">Properties</h3>
-
-
-<div class="property depth-0">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.apiVersion">.apiVersion</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-
-</div>
-
-<div class="property-description">
-<p>APIVersion defines the versioned schema of this representation of an object.
-Servers should convert recognized schemas to the latest internal value, and
-may reject unrecognized values.
-More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources</a></p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-0">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.kind">.kind</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-
-</div>
-
-<div class="property-description">
-<p>Kind is a string value representing the REST resource this object represents.
-Servers may infer this from the endpoint the client submits requests to.
-Cannot be updated.
-In CamelCase.
-More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds</a></p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-0">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.metadata">.metadata</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">object</span>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-0">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.spec">.spec</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">object</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>spec represents the data in the newly created ClusterBinding.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-1">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.spec.kubeconfigSecretRef">.spec.kubeconfigSecretRef</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">object</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-2">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.spec.kubeconfigSecretRef.key">.spec.kubeconfigSecretRef.key</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>The key of the secret to select from.  Must be &ldquo;kubeconfig&rdquo;.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-2">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.spec.kubeconfigSecretRef.name">.spec.kubeconfigSecretRef.name</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>Name of the referent.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-1">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.spec.providerPrettyName">.spec.providerPrettyName</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>providerPrettyName is the pretty name of the service provider cluster. This
-can be shared among different ServiceBindings.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-1">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.spec.serviceProviderSpec">.spec.serviceProviderSpec</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">object</span>
-
-</div>
-
-<div class="property-description">
-<p>serviceProviderSpec contains all the data and information about the service which has been bound to the service
-binding request. The service providers decide what they need and what to configure based on what then include in
-this field, such as service region, type, tiers, etc&hellip;</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-0">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status">.status</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">object</span>
-
-</div>
-
-<div class="property-description">
-<p>status contains reconciliation information for the service binding.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-1">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.conditions">.status.conditions</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">array</span>
-
-</div>
-
-<div class="property-description">
-<p>conditions is a list of conditions that apply to the ClusterBinding. It is
-updated by the konnector and the service provider.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-2">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.conditions[*]">.status.conditions[*]</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">object</span>
-
-</div>
-
-<div class="property-description">
-<p>Condition defines an observation of a object operational state.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-3">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.conditions[*].lastTransitionTime">.status.conditions[*].lastTransitionTime</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>Last time the condition transitioned from one status to another.
-This should be when the underlying condition changed. If that is not known, then using the time when
-the API field changed is acceptable.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-3">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.conditions[*].message">.status.conditions[*].message</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-
-</div>
-
-<div class="property-description">
-<p>A human readable message indicating details about the transition.
-This field may be empty.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-3">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.conditions[*].reason">.status.conditions[*].reason</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-
-</div>
-
-<div class="property-description">
-<p>The reason for the condition&rsquo;s last transition in CamelCase.
-The specific API may choose whether or not this field is considered a guaranteed API.
-This field may not be empty.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-3">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.conditions[*].severity">.status.conditions[*].severity</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-
-</div>
-
-<div class="property-description">
-<p>Severity provides an explicit classification of Reason code, so the users or machines can immediately
-understand the current situation and act accordingly.
-The Severity field MUST be set only when Status=False.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-3">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.conditions[*].status">.status.conditions[*].status</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>Status of the condition, one of True, False, Unknown.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-3">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.conditions[*].type">.status.conditions[*].type</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>Type of condition in CamelCase or in foo.example.com/CamelCase.
-Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
-can be useful (see .node.status.conditions), the ability to deconflict is important.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-1">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.heartbeatInterval">.status.heartbeatInterval</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-
-</div>
-
-<div class="property-description">
-<p>heartbeatInterval is the maximal interval between heartbeats that the
-konnector promises to send. The service provider can assume that the
-konnector is not unhealthy if it does not receive a heartbeat within
-this time.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-1">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.konnectorVersion">.status.konnectorVersion</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-
-</div>
-
-<div class="property-description">
-<p>konnectorVersion is the version of the konnector that is running on the
-consumer cluster.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-1">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha1-.status.lastHeartbeatTime">.status.lastHeartbeatTime</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-
-</div>
-
-<div class="property-description">
-<p>lastHeartbeatTime is the last time the konnector updated the status.</p>
-
-</div>
-
-</div>
-</div>
-
-
-
-
-</div>
 <div class="crd-schema-version">
 <h2 id="v1alpha2">Version v1alpha2</h2>
 
@@ -2367,11 +1958,11 @@ More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architec
 <div class="property-body">
 <div class="property-meta">
 <span class="property-type">object</span>
-<span class="property-required">Required</span>
+
 </div>
 
 <div class="property-description">
-<p>spec represents the data in the newly created ClusterBinding.</p>
+<p>BoundSchemaSpec defines the desired state of the BoundSchema.</p>
 
 </div>
 
@@ -2380,80 +1971,7 @@ More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architec
 
 <div class="property depth-1">
 <div class="property-header">
-<h3 class="property-path" id="v1alpha2-.spec.kubeconfigSecretRef">.spec.kubeconfigSecretRef</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">object</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>kubeconfigSecretName is the secret ref that contains the kubeconfig of the service cluster.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-2">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha2-.spec.kubeconfigSecretRef.key">.spec.kubeconfigSecretRef.key</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>The key of the secret to select from.  Must be &ldquo;kubeconfig&rdquo;.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-2">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha2-.spec.kubeconfigSecretRef.name">.spec.kubeconfigSecretRef.name</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>Name of the referent.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-1">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha2-.spec.providerPrettyName">.spec.providerPrettyName</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>providerPrettyName is the pretty name of the service provider cluster. This
-can be shared among different ServiceBindings.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-1">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha2-.spec.serviceProviderSpec">.spec.serviceProviderSpec</h3>
+<h3 class="property-path" id="v1alpha2-.spec.conversion">.spec.conversion</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
@@ -2462,9 +1980,804 @@ can be shared among different ServiceBindings.</p>
 </div>
 
 <div class="property-description">
-<p>serviceProviderSpec contains all the data and information about the service which has been bound to the service
-binding request. The service providers decide what they need and what to configure based on what then include in
-this field, such as service region, type, tiers, etc&hellip;</p>
+<p>conversion defines conversion settings for the defined custom resource.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.conversion.strategy">.spec.conversion.strategy</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>strategy specifies how custom resources are converted between versions. Allowed values are:
+- <code>&quot;None&quot;</code>: The converter only change the apiVersion and would not touch any other field in the custom resource.
+- <code>&quot;Webhook&quot;</code>: API Server will call to an external webhook to do the conversion. Additional information
+  is needed for this option. This requires spec.preserveUnknownFields to be false, and spec.conversion.webhook to be set.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.conversion.webhook">.spec.conversion.webhook</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>webhook describes how to call the conversion webhook. Required when <code>strategy</code> is set to <code>&quot;Webhook&quot;</code>.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.conversion.webhook.clientConfig">.spec.conversion.webhook.clientConfig</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>clientConfig is the instructions for how to call the webhook if strategy is <code>Webhook</code>.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.conversion.webhook.clientConfig.caBundle">.spec.conversion.webhook.clientConfig.caBundle</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>caBundle is a PEM encoded CA bundle which will be used to validate the webhook&rsquo;s server certificate.
+If unspecified, system trust roots on the apiserver are used.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.conversion.webhook.clientConfig.url">.spec.conversion.webhook.clientConfig.url</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>url gives the location of the webhook, in standard URL form
+(<code>scheme://host:port/path</code>).</p>
+
+<p>Please note that using <code>localhost</code> or <code>127.0.0.1</code> as a <code>host</code> is
+risky unless you take great care to run this webhook on all hosts
+which run an apiserver which might need to make calls to this
+webhook. Such installs are likely to be non-portable, i.e., not easy
+to turn up in a new cluster.</p>
+
+<p>The scheme must be &ldquo;https&rdquo;; the URL must begin with &ldquo;https://&rdquo;.</p>
+
+<p>A path is optional, and if present may be any string permissible in
+a URL. You may use the path to pass an arbitrary string to the
+webhook, for example, a cluster identifier.</p>
+
+<p>Attempting to use a user or basic auth e.g. &ldquo;user:password@&rdquo; is not
+allowed. Fragments (&ldquo;#&hellip;&rdquo;) and query parameters (&ldquo;?&hellip;&rdquo;) are not
+allowed, either.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.conversion.webhook.conversionReviewVersions">.spec.conversion.webhook.conversionReviewVersions</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>conversionReviewVersions is an ordered list of preferred <code>ConversionReview</code>
+versions the Webhook expects. The API server will use the first version in
+the list which it supports. If none of the versions specified in this list
+are supported by API server, conversion will fail for the custom resource.
+If a persisted Webhook configuration specifies allowed versions and does not
+include any versions known to the API Server, calls to the webhook will fail.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.conversion.webhook.conversionReviewVersions[*]">.spec.conversion.webhook.conversionReviewVersions[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.group">.spec.group</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>group is the API group of the defined custom resource. Empty string means the
+core API group.     The resources are served under <code>/apis/&lt;group&gt;/...</code> or <code>/api</code> for the core group.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.informerScope">.spec.informerScope</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>InformerScope indicates whether the informer for defined custom resource is cluster- or namespace-scoped.
+Allowed values are <code>Cluster</code> and <code>Namespaced</code>.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.names">.spec.names</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>names specify the resource and kind names for the custom resource.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.names.categories">.spec.names.categories</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>categories is a list of grouped resources this custom resource belongs to (e.g. &lsquo;all&rsquo;).
+This is published in API discovery documents, and used by clients to support invocations like
+<code>kubectl get all</code>.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.names.categories[*]">.spec.names.categories[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.names.kind">.spec.names.kind</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>kind is the serialized kind of the resource. It is normally CamelCase and singular.
+Custom resource instances will use this value as the <code>kind</code> attribute in API calls.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.names.listKind">.spec.names.listKind</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>listKind is the serialized kind of the list for this resource. Defaults to &ldquo;<code>kind</code>List&rdquo;.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.names.plural">.spec.names.plural</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>plural is the plural name of the resource to serve.
+The custom resources are served under <code>/apis/&lt;group&gt;/&lt;version&gt;/.../&lt;plural&gt;</code>.
+Must match the name of the CustomResourceDefinition (in the form <code>&lt;names.plural&gt;.&lt;group&gt;</code>).
+Must be all lowercase.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.names.shortNames">.spec.names.shortNames</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>shortNames are short names for the resource, exposed in API discovery documents,
+and used by clients to support invocations like <code>kubectl get &lt;shortname&gt;</code>.
+It must be all lowercase.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.names.shortNames[*]">.spec.names.shortNames[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.names.singular">.spec.names.singular</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>singular is the singular name of the resource. It must be all lowercase. Defaults to lowercased <code>kind</code>.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.scope">.spec.scope</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>scope indicates whether the defined custom resource is cluster- or namespace-scoped.
+Allowed values are <code>Cluster</code> and <code>Namespaced</code>.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions">.spec.versions</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>versions is the API version of the defined custom resource.</p>
+
+<p>Note: the OpenAPI v3 schemas must be equal for all versions until CEL
+      version migration is supported.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*]">.spec.versions[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>APIResourceVersion describes one API version of a resource.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].additionalPrinterColumns">.spec.versions[*].additionalPrinterColumns</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>additionalPrinterColumns specifies additional columns returned in Table output.
+See <a href="https://kubernetes.io/docs/reference/using-api/api-concepts/#receiving-resources-as-tables">https://kubernetes.io/docs/reference/using-api/api-concepts/#receiving-resources-as-tables</a> for details.
+If no columns are specified, a single column displaying the age of the custom resource is used.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].additionalPrinterColumns[*]">.spec.versions[*].additionalPrinterColumns[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>CustomResourceColumnDefinition specifies a column for server side printing.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].additionalPrinterColumns[*].description">.spec.versions[*].additionalPrinterColumns[*].description</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>description is a human readable description of this column.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].additionalPrinterColumns[*].format">.spec.versions[*].additionalPrinterColumns[*].format</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>format is an optional OpenAPI type definition for this column. The &lsquo;name&rsquo; format is applied
+to the primary identifier column to assist in clients identifying column is the resource name.
+See <a href="https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#data-types">https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#data-types</a> for details.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].additionalPrinterColumns[*].jsonPath">.spec.versions[*].additionalPrinterColumns[*].jsonPath</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>jsonPath is a simple JSON path (i.e. with array notation) which is evaluated against
+each custom resource to produce the value for this column.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].additionalPrinterColumns[*].name">.spec.versions[*].additionalPrinterColumns[*].name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>name is a human readable name for the column.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].additionalPrinterColumns[*].priority">.spec.versions[*].additionalPrinterColumns[*].priority</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">integer</span>
+
+</div>
+
+<div class="property-description">
+<p>priority is an integer defining the relative importance of this column compared to others. Lower
+numbers are considered higher priority. Columns that may be omitted in limited space scenarios
+should be given a priority greater than 0.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].additionalPrinterColumns[*].type">.spec.versions[*].additionalPrinterColumns[*].type</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>type is an OpenAPI type definition for this column.
+See <a href="https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#data-types">https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#data-types</a> for details.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].deprecated">.spec.versions[*].deprecated</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">boolean</span>
+
+</div>
+
+<div class="property-description">
+<p>deprecated indicates this version of the custom resource API is deprecated.
+When set to true, API requests to this version receive a warning header in the server response.
+Defaults to false.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].deprecationWarning">.spec.versions[*].deprecationWarning</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>deprecationWarning overrides the default warning returned to API clients.
+May only be set when <code>deprecated</code> is true.
+The default warning indicates this version is deprecated and recommends use
+of the newest served version of equal or greater stability, if one exists.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].name">.spec.versions[*].name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>name is the version name, e.g. “v1”, “v2beta1”, etc.
+The custom resources are served under this version at <code>/apis/&lt;group&gt;/&lt;version&gt;/...</code> if <code>served</code> is true.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].schema">.spec.versions[*].schema</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>schema describes the structural schema used for validation, pruning, and defaulting
+of this version of the custom resource.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].served">.spec.versions[*].served</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">boolean</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>served is a flag enabling/disabling this version from being served via REST APIs</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].storage">.spec.versions[*].storage</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">boolean</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>storage indicates this version should be used when persisting custom resources to storage.
+There must be exactly one version with storage=true.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].subresources">.spec.versions[*].subresources</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>subresources specify what subresources this version of the defined custom resource have.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].subresources.scale">.spec.versions[*].subresources.scale</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>scale indicates the custom resource should serve a <code>/scale</code> subresource that returns an <code>autoscaling/v1</code> Scale object.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].subresources.scale.labelSelectorPath">.spec.versions[*].subresources.scale.labelSelectorPath</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>labelSelectorPath defines the JSON path inside of a custom resource that corresponds to Scale <code>status.selector</code>.
+Only JSON paths without the array notation are allowed.
+Must be a JSON Path under <code>.status</code> or <code>.spec</code>.
+Must be set to work with HorizontalPodAutoscaler.
+The field pointed by this JSON path must be a string field (not a complex selector struct)
+which contains a serialized label selector in string form.
+More info: <a href="https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions#scale-subresource">https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions#scale-subresource</a>
+If there is no value under the given path in the custom resource, the <code>status.selector</code> value in the <code>/scale</code>
+subresource will default to the empty string.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].subresources.scale.specReplicasPath">.spec.versions[*].subresources.scale.specReplicasPath</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>specReplicasPath defines the JSON path inside of a custom resource that corresponds to Scale <code>spec.replicas</code>.
+Only JSON paths without the array notation are allowed.
+Must be a JSON Path under <code>.spec</code>.
+If there is no value under the given path in the custom resource, the <code>/scale</code> subresource will return an error on GET.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].subresources.scale.statusReplicasPath">.spec.versions[*].subresources.scale.statusReplicasPath</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>statusReplicasPath defines the JSON path inside of a custom resource that corresponds to Scale <code>status.replicas</code>.
+Only JSON paths without the array notation are allowed.
+Must be a JSON Path under <code>.status</code>.
+If there is no value under the given path in the custom resource, the <code>status.replicas</code> value in the <code>/scale</code> subresource
+will default to 0.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.versions[*].subresources.status">.spec.versions[*].subresources.status</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>status indicates the custom resource should serve a <code>/status</code> subresource.
+When enabled:
+1. requests to the custom resource primary endpoint ignore changes to the <code>status</code> stanza of the object.
+2. requests to the custom resource <code>/status</code> subresource ignore changes to anything other than the <code>status</code> stanza of the object.</p>
 
 </div>
 
@@ -2482,7 +2795,168 @@ this field, such as service region, type, tiers, etc&hellip;</p>
 </div>
 
 <div class="property-description">
-<p>status contains reconciliation information for the service binding.</p>
+<p>BoundSchemaStatus defines the observed state of the BoundSchema.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.acceptedNames">.status.acceptedNames</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>acceptedNames are the names that are actually being used to serve discovery.
+They may be different than the names in spec.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.acceptedNames.categories">.status.acceptedNames.categories</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>categories is a list of grouped resources this custom resource belongs to (e.g. &lsquo;all&rsquo;).
+This is published in API discovery documents, and used by clients to support invocations like
+<code>kubectl get all</code>.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.acceptedNames.categories[*]">.status.acceptedNames.categories[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.acceptedNames.kind">.status.acceptedNames.kind</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>kind is the serialized kind of the resource. It is normally CamelCase and singular.
+Custom resource instances will use this value as the <code>kind</code> attribute in API calls.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.acceptedNames.listKind">.status.acceptedNames.listKind</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>listKind is the serialized kind of the list for this resource. Defaults to &ldquo;<code>kind</code>List&rdquo;.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.acceptedNames.plural">.status.acceptedNames.plural</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>plural is the plural name of the resource to serve.
+The custom resources are served under <code>/apis/&lt;group&gt;/&lt;version&gt;/.../&lt;plural&gt;</code>.
+Must match the name of the CustomResourceDefinition (in the form <code>&lt;names.plural&gt;.&lt;group&gt;</code>).
+Must be all lowercase.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.acceptedNames.shortNames">.status.acceptedNames.shortNames</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>shortNames are short names for the resource, exposed in API discovery documents,
+and used by clients to support invocations like <code>kubectl get &lt;shortname&gt;</code>.
+It must be all lowercase.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.acceptedNames.shortNames[*]">.status.acceptedNames.shortNames[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.acceptedNames.singular">.status.acceptedNames.singular</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>singular is the singular name of the resource. It must be all lowercase. Defaults to lowercased <code>kind</code>.</p>
 
 </div>
 
@@ -2500,8 +2974,7 @@ this field, such as service region, type, tiers, etc&hellip;</p>
 </div>
 
 <div class="property-description">
-<p>conditions is a list of conditions that apply to the ClusterBinding. It is
-updated by the konnector and the service provider.</p>
+<p>Conditions represent the latest available observations of the object&rsquo;s state.</p>
 
 </div>
 
@@ -2645,19 +3118,16 @@ can be useful (see .node.status.conditions), the ability to deconflict is import
 
 <div class="property depth-1">
 <div class="property-header">
-<h3 class="property-path" id="v1alpha2-.status.heartbeatInterval">.status.heartbeatInterval</h3>
+<h3 class="property-path" id="v1alpha2-.status.instantiations">.status.instantiations</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
-<span class="property-type">string</span>
+<span class="property-type">integer</span>
 
 </div>
 
 <div class="property-description">
-<p>heartbeatInterval is the maximal interval between heartbeats that the
-konnector promises to send. The service provider can assume that the
-konnector is not unhealthy if it does not receive a heartbeat within
-this time.</p>
+<p>Instantiations tracks the number of instances of the resource on the consumer side.</p>
 
 </div>
 
@@ -2666,35 +3136,34 @@ this time.</p>
 
 <div class="property depth-1">
 <div class="property-header">
-<h3 class="property-path" id="v1alpha2-.status.konnectorVersion">.status.konnectorVersion</h3>
+<h3 class="property-path" id="v1alpha2-.status.storedVersions">.status.storedVersions</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
-<span class="property-type">string</span>
+<span class="property-type">array</span>
 
 </div>
 
 <div class="property-description">
-<p>konnectorVersion is the version of the konnector that is running on the
-consumer cluster.</p>
+<p>storedVersions lists all versions of CustomResources that were ever persisted. Tracking these
+versions allows a migration path for stored versions in etcd. The field is mutable
+so a migration controller can finish a migration to another version (ensuring
+no old objects are left in storage), and then remove the rest of the
+versions from this list.
+Versions may not be removed from <code>spec.versions</code> while they exist in this list.</p>
 
 </div>
 
 </div>
 </div>
 
-<div class="property depth-1">
+<div class="property depth-2">
 <div class="property-header">
-<h3 class="property-path" id="v1alpha2-.status.lastHeartbeatTime">.status.lastHeartbeatTime</h3>
+<h3 class="property-path" id="v1alpha2-.status.storedVersions[*]">.status.storedVersions[*]</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
 <span class="property-type">string</span>
-
-</div>
-
-<div class="property-description">
-<p>lastHeartbeatTime is the last time the konnector updated the status.</p>
 
 </div>
 

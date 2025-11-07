@@ -6,33 +6,35 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Bind to a remote API service
+        <meta name="description" content="APIServiceExportTemplate groups multiple CRDs with related resources (permissionClaims) as a Service definition.
+It is used by a web UI or CLI to allow users to select a set of resources to export from provider cluster to consumer cluster.
+This object is considered a static asset on the provider side and is not expected to change frequently.
 ">
       
       
       
-        <link rel="canonical" href="https://docs.kube-bind.io/main/reference/cli/bind_apiservice/">
+        <link rel="canonical" href="https://docs.kube-bind.io/main/reference/crd/kube-bind.io/apiserviceexporttemplates/">
       
       
-        <link rel="prev" href="../bind/">
+        <link rel="prev" href="../apiserviceexports/">
       
       
-        <link rel="next" href="../bind_collections/">
+        <link rel="next" href="../apiservicenamespaces/">
       
       
-      <link rel="icon" href="../../../favicons/favicon.ico">
+      <link rel="icon" href="../../../../favicons/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
     
     
       
-        <title>bind apiservice - docs.kube-bind.io</title>
+        <title>APIServiceExportTemplate - docs.kube-bind.io</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.6f8fc17f.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.6f8fc17f.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -51,7 +53,7 @@
       
     
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -77,7 +79,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#examples" class="md-skip">
+        <a href="#apiserviceexporttemplate-crd-schema-reference-group-kube-bindio" class="md-skip">
           Skip to content
         </a>
       
@@ -95,9 +97,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="docs.kube-bind.io" class="md-header__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
+    <a href="../../../.." title="docs.kube-bind.io" class="md-header__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
       
-  <img src="../../../logo.svg" alt="logo">
+  <img src="../../../../logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -114,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              bind apiservice
+              APIServiceExportTemplate
             
           </span>
         </div>
@@ -233,7 +235,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../.." class="md-tabs__link">
+        <a href="../../../.." class="md-tabs__link">
           
   
     
@@ -253,7 +255,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../setup/" class="md-tabs__link">
+        <a href="../../../../setup/" class="md-tabs__link">
           
   
     
@@ -273,7 +275,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../contributing/" class="md-tabs__link">
+        <a href="../../../../contributing/" class="md-tabs__link">
           
   
     
@@ -293,7 +295,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../developers/" class="md-tabs__link">
+        <a href="../../../../developers/" class="md-tabs__link">
           
   
     
@@ -315,7 +317,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../" class="md-tabs__link">
+        <a href="../../../" class="md-tabs__link">
           
   
     
@@ -350,9 +352,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="docs.kube-bind.io" class="md-nav__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
+    <a href="../../../.." title="docs.kube-bind.io" class="md-nav__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
       
-  <img src="../../../logo.svg" alt="logo">
+  <img src="../../../../logo.svg" alt="logo">
 
     </a>
     docs.kube-bind.io
@@ -402,7 +404,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../.." class="md-nav__link ">
+            <a href="../../../.." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -466,7 +468,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../setup/" class="md-nav__link ">
+            <a href="../../../../setup/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -499,7 +501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../setup/kubectl-plugin/" class="md-nav__link">
+      <a href="../../../../setup/kubectl-plugin/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -520,7 +522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../setup/quickstart/" class="md-nav__link">
+      <a href="../../../../setup/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -541,7 +543,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../setup/helm/" class="md-nav__link">
+      <a href="../../../../setup/helm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -592,7 +594,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../contributing/" class="md-nav__link ">
+            <a href="../../../../contributing/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -658,7 +660,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../developers/" class="md-nav__link ">
+            <a href="../../../../developers/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -691,7 +693,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../developers/dev-environments/" class="md-nav__link">
+      <a href="../../../../developers/dev-environments/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -737,7 +739,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../developers/backend/" class="md-nav__link ">
+            <a href="../../../../developers/backend/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -816,7 +818,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../developers/backend/http/cluster-binding/" class="md-nav__link">
+      <a href="../../../../developers/backend/http/cluster-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -837,7 +839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../developers/backend/http/api-binding/" class="md-nav__link">
+      <a href="../../../../developers/backend/http/api-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -899,7 +901,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../developers/konnector/" class="md-nav__link ">
+            <a href="../../../../developers/konnector/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -980,7 +982,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../developers/konnector/controllers/konnector/" class="md-nav__link">
+      <a href="../../../../developers/konnector/controllers/konnector/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1001,7 +1003,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../developers/konnector/controllers/apiservicebinding/" class="md-nav__link">
+      <a href="../../../../developers/konnector/controllers/apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1072,7 +1074,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../developers/konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
+      <a href="../../../../developers/konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1093,7 +1095,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../developers/konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
+      <a href="../../../../developers/konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1114,7 +1116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../developers/konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
+      <a href="../../../../developers/konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1135,7 +1137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../developers/konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
+      <a href="../../../../developers/konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1180,7 +1182,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../developers/publishing-a-release/" class="md-nav__link">
+      <a href="../../../../developers/publishing-a-release/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1238,7 +1240,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1268,12 +1270,231 @@
                 
   
   
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    CLI
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            CLI
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/bind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/bind_apiservice/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind apiservice
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/bind_collections/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind collections
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/bind_login/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind login
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/bind_templates/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind templates
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
   
     
     
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    CRD
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            CRD
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
       
         
       
@@ -1295,24 +1516,24 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3_1" checked>
         
           
-          <label class="md-nav__link" for="__nav_5_2" id="__nav_5_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5_3_1" id="__nav_5_3_1_label" tabindex="0">
             
   
   <span class="md-ellipsis">
-    CLI
+    kube-bind.io
   </span>
   
 
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5_2">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_3_1_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_3_1">
             <span class="md-nav__icon md-icon"></span>
-            CLI
+            kube-bind.io
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -1323,11 +1544,74 @@
   
   
     <li class="md-nav__item">
-      <a href="../bind/" class="md-nav__link">
+      <a href="../apiconversions/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    bind
+    APIConversion
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apiservicebindings/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    APIServiceBinding
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apiserviceexportrequests/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    APIServiceExportRequest
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apiserviceexports/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    APIServiceExport
   </span>
   
 
@@ -1355,7 +1639,7 @@
           
   
   <span class="md-ellipsis">
-    bind apiservice
+    APIServiceExportTemplate
   </span>
   
 
@@ -1366,7 +1650,7 @@
         
   
   <span class="md-ellipsis">
-    bind apiservice
+    APIServiceExportTemplate
   </span>
   
 
@@ -1386,36 +1670,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
+  <a href="#apiserviceexporttemplate-crd-schema-reference-group-kube-bindio" class="md-nav__link">
     <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    <span class="md-ellipsis">
-      Options
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#options-inherited-from-parent-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      Options inherited from parent commands
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      SEE ALSO
+      APIServiceExportTemplate CRD schema reference (group kube-bind.io)
     </span>
   </a>
   
@@ -1437,289 +1694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../bind_collections/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    bind collections
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../bind_login/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    bind login
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../bind_templates/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    bind templates
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
-            
-  
-  <span class="md-ellipsis">
-    CRD
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_3">
-            <span class="md-nav__icon md-icon"></span>
-            CRD
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_3_1" >
-        
-          
-          <label class="md-nav__link" for="__nav_5_3_1" id="__nav_5_3_1_label" tabindex="0">
-            
-  
-  <span class="md-ellipsis">
-    kube-bind.io
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_3_1_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_3_1">
-            <span class="md-nav__icon md-icon"></span>
-            kube-bind.io
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../crd/kube-bind.io/apiconversions/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    APIConversion
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    APIServiceBinding
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    APIServiceExportRequest
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    APIServiceExport
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../crd/kube-bind.io/apiserviceexporttemplates/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    APIServiceExportTemplate
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
+      <a href="../apiservicenamespaces/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1740,7 +1715,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../crd/kube-bind.io/bindableresourcesrequests/" class="md-nav__link">
+      <a href="../bindableresourcesrequests/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1761,7 +1736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../crd/kube-bind.io/boundschemas/" class="md-nav__link">
+      <a href="../boundschemas/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1782,7 +1757,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../crd/kube-bind.io/clusterbindings/" class="md-nav__link">
+      <a href="../clusterbindings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1803,7 +1778,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../crd/kube-bind.io/collections/" class="md-nav__link">
+      <a href="../collections/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1865,36 +1840,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
+  <a href="#apiserviceexporttemplate-crd-schema-reference-group-kube-bindio" class="md-nav__link">
     <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#options" class="md-nav__link">
-    <span class="md-ellipsis">
-      Options
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#options-inherited-from-parent-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      Options inherited from parent commands
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      SEE ALSO
+      APIServiceExportTemplate CRD schema reference (group kube-bind.io)
     </span>
   </a>
   
@@ -1918,73 +1866,791 @@
   
 
 
-  <h1>bind apiservice</h1>
+  <h1>APIServiceExportTemplate</h1>
 
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>bind apiservice https://&lt;url-to-a-APIServiceExportRequest&gt;|-f &lt;file-to-a-APIBindingRequest&gt; [flags]
-</code></pre></div>
-<h3 id="examples">Examples</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    # bind to a remote API service. Use kubectl bind to create the APIServiceExportRequest interactively.
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    kubectl bind apiservice --remote-kubeconfig file -f apiservice-export-request.yaml
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    # bind to a remote API using template name
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    kubectl bind apiservice --name my-api --template-name database-service
-</code></pre></div>
-<h3 id="options">Options</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>      --allow-missing-template-keys          If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats. (default true)
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>      --as-uid string                        UID to impersonate for the operation
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>      --certificate-authority string         Path to a cert file for the certificate authority
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>      --cluster string                       The kube-bind cluster name to use (overrides kube-bind config current cluster)
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>      --config-file string                   Path to the kube-bind configuration file
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>      --context string                       The name of the kubeconfig context to use
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>      --disable-compression                  If true, opt-out of response compression for all requests to the server
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>      --downgrade-konnector                  Downgrade the konnector to the version of the kubectl-bind-apiservice binary
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  -d, --dry-run                              If true, only print the requests that would be sent to the service provider after authentication, without actually binding.
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  -f, --file string                          A file with an APIServiceExportRequest manifest. Use - to read from stdin
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>  -h, --help                                 help for apiservice
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>      --insecure-skip-tls-verify             Skip TLS certificate verification (not recommended)
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>      --kubeconfig string                    path to the kubeconfig file
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>      --log-flush-frequency duration         Maximum number of seconds between log flushes (default 5s)
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>      --log-text-info-buffer-size quantity   [Alpha] In text format with split output streams, the info messages can be buffered for a while to increase performance. The default value of zero bytes disables buffering. The size can be specified as number of bytes (512), multiples of 1000 (1K), multiples of 1024 (2Ki), or powers of those (3M, 4G, 5Mi, 6Gi). Enable the LoggingAlphaOptions feature gate to use this.
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>      --log-text-split-stream                [Alpha] In text format, write error messages to stderr and info messages to stdout. The default is to write a single stream to stdout. Enable the LoggingAlphaOptions feature gate to use this.
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>      --logging-format string                Sets the log format. Permitted formats: &quot;text&quot;. (default &quot;text&quot;)
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>      --name string                          The name of the BindableResourcesRequest to create
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>  -n, --namespace string                     If present, the namespace scope for this CLI request
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>  -o, --output string                        Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file).
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      --password string                      Password for basic authentication to the API server
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>      --proxy-url string                     If provided, this URL will be used to connect via proxy
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>      --remote-kubeconfig string             A file path for a kubeconfig file to connect to the service provider cluster
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>      --remote-kubeconfig-name string        The name of the remote kubeconfig secret to read from
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>      --remote-kubeconfig-namespace string   The namespace of the remote kubeconfig secret to read from
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>      --remote-namespace string              The namespace in the remote cluster where the konnector is deployed
-<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>      --server string                        The kube-bind server name to use (overrides kube-bind config current server)
-<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>      --show-managed-fields                  If true, keep the managedFields when printing objects in JSON or YAML format.
-<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>      --skip-konnector                       Skip the deployment of the konnector
-<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>      --template string                      Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
-<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>      --template-name string                 A template name to use for binding
-<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>      --tls-server-name string               If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
-<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>      --token string                         Bearer token for authentication to the API server
-<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>      --user string                          The name of the kubeconfig user to use
-<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>      --username string                      Username for basic authentication to the API server
-<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>  -v, --v Level                              number for the log level verbosity
-<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>      --vmodule pattern=N,...                comma-separated list of pattern=N settings for file-filtered logging (only works for text log format)
-</code></pre></div>
-<h3 id="options-inherited-from-parent-commands">Options inherited from parent commands</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>      --add_dir_header                   If true, adds the file directory to the header of the log messages
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>      --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>      --log_dir string                   If non-empty, write log files in this directory (no effect when -logtostderr=true)
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>      --log_file string                  If non-empty, use this log file (no effect when -logtostderr=true)
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>      --log_file_max_size uint           Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>      --logtostderr                      log to standard error instead of files (default true)
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>      --skip_headers                     If true, avoid header prefixes in the log messages
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>      --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
-</code></pre></div>
-<h3 id="see-also">SEE ALSO</h3>
-<ul>
-<li><a href="../bind/">bind</a>  - Open kube-bind UI or bind templates from a remote server.</li>
-</ul>
+<h2 id="apiserviceexporttemplate-crd-schema-reference-group-kube-bindio">APIServiceExportTemplate CRD schema reference (group kube-bind.io)</h2>
+<div class="lead">APIServiceExportTemplate groups multiple CRDs with related resources (permissionClaims) as a Service definition.
+It is used by a web UI or CLI to allow users to select a set of resources to export from provider cluster to consumer cluster.
+This object is considered a static asset on the provider side and is not expected to change frequently.
+</div>
+
+<dl class="crd-meta">
+<dt class="fullname">Full name:</dt>
+<dd class="fullname">apiserviceexporttemplates.kube-bind.io</dd>
+<dt class="groupname">Group:</dt>
+<dd class="groupname">kube-bind.io</dd>
+<dt class="singularname">Singular name:</dt>
+<dd class="singularname">apiserviceexporttemplate</dd>
+<dt class="pluralname">Plural name:</dt>
+<dd class="pluralname">apiserviceexporttemplates</dd>
+<dt class="scope">Scope:</dt>
+<dd class="scope">Cluster</dd>
+<dt class="versions">Versions:</dt>
+<dd class="versions"><a class="version" href="#v1alpha2" title="Show schema for version v1alpha2">v1alpha2</a></dd>
+</dl>
+
+<div class="crd-schema-version">
+<h2 id="v1alpha2">Version v1alpha2</h2>
+
+
+
+<h3 id="property-details-v1alpha2">Properties</h3>
+
+
+<div class="property depth-0">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.apiVersion">.apiVersion</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>APIVersion defines the versioned schema of this representation of an object.
+Servers should convert recognized schemas to the latest internal value, and
+may reject unrecognized values.
+More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources">https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources</a></p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-0">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.kind">.kind</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Kind is a string value representing the REST resource this object represents.
+Servers may infer this from the endpoint the client submits requests to.
+Cannot be updated.
+In CamelCase.
+More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds">https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds</a></p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-0">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.metadata">.metadata</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-0">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec">.spec</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>spec specifies the template.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.description">.spec.description</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>description is an optional description of the template.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.namespaces">.spec.namespaces</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>Namespaces specifies the namespaces that should be bootstrapped as part of this template.
+When objects originate from provider side, consumer does not always know the necessary details
+This field allows provider to pre-heat the necessary namespaces on provider side by creating
+APIServiceNamespace objects attached to the APIServiceExport. More namespaces can be created later by the consumer.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.namespaces[*]">.spec.namespaces[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.namespaces[*].name">.spec.namespaces[*].name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>name is the name of the namespace to create on provider side.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims">.spec.permissionClaims</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>permissionClaims defines the permission claims required by this template.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*]">.spec.permissionClaims[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>PermissionClaim selects objects of a GVR that a service provider may
+request and that a consumer may accept and allow the service provider access to.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].group">.spec.permissionClaims[*].group</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>group is the name of an API group.
+For core groups this is the empty string &lsquo;&ldquo;&rdquo;&rsquo;.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].resource">.spec.permissionClaims[*].resource</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>resource is the name of the resource.
+Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+not provided by an service binding export.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector">.spec.permissionClaims[*].selector</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Selector is a resource selector that selects objects of a GVR.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.labelSelector">.spec.permissionClaims[*].selector.labelSelector</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>LabelSelector is a label selector that selects objects of a GVR.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.labelSelector.matchExpressions">.spec.permissionClaims[*].selector.labelSelector.matchExpressions</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>matchExpressions is a list of label selector requirements. The requirements are ANDed.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-6">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.labelSelector.matchExpressions[*]">.spec.permissionClaims[*].selector.labelSelector.matchExpressions[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>A label selector requirement is a selector that contains values, a key, and an operator that
+relates the key and values.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.labelSelector.matchExpressions[*].key">.spec.permissionClaims[*].selector.labelSelector.matchExpressions[*].key</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>key is the label key that the selector applies to.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.labelSelector.matchExpressions[*].operator">.spec.permissionClaims[*].selector.labelSelector.matchExpressions[*].operator</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>operator represents a key&rsquo;s relationship to a set of values.
+Valid operators are In, NotIn, Exists and DoesNotExist.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.labelSelector.matchExpressions[*].values">.spec.permissionClaims[*].selector.labelSelector.matchExpressions[*].values</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>values is an array of string values. If the operator is In or NotIn,
+the values array must be non-empty. If the operator is Exists or DoesNotExist,
+the values array must be empty. This array is replaced during a strategic
+merge patch.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-8">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.labelSelector.matchExpressions[*].values[*]">.spec.permissionClaims[*].selector.labelSelector.matchExpressions[*].values[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.labelSelector.matchLabels">.spec.permissionClaims[*].selector.labelSelector.matchLabels</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+map is equivalent to an element of matchExpressions, whose key field is &ldquo;key&rdquo;, the
+operator is &ldquo;In&rdquo;, and the values array contains only &ldquo;value&rdquo;. The requirements are ANDed.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.namedResources">.spec.permissionClaims[*].selector.namedResources</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>NamedResource is a shorthand for selecting a single resource by name and namespace.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.namedResources[*]">.spec.permissionClaims[*].selector.namedResources[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>NamedResource selects a specific resource by name and namespace.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-6">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.namedResources[*].name">.spec.permissionClaims[*].selector.namedResources[*].name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Name is the name of the resource.
+Name matches the metadata.name field of the underlying object.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-6">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.namedResources[*].namespace">.spec.permissionClaims[*].selector.namedResources[*].namespace</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Namespace represents namespace where an object of the given group/resource may be managed.
+Namespaces matches against the metadata.namespace field. If not provided, the object is assumed to be cluster-scoped.
+Namespaces field is ignored for namespaced isolation mode.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.resources">.spec.resources</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>resources defines the CRDs that are part of this template.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.resources[*]">.spec.resources[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.resources[*].group">.spec.resources[*].group</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>group is the name of an API group.
+For core groups this is the empty string &lsquo;&ldquo;&rdquo;&rsquo;.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.resources[*].resource">.spec.resources[*].resource</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>resource is the name of the resource.
+Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+not provided by an service binding export.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.resources[*].versions">.spec.resources[*].versions</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>versions is a list of versions that should be exported. If this is empty
+a sensible default is chosen by the service provider.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.resources[*].versions[*]">.spec.resources[*].versions[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.scope">.spec.scope</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>scope defines the scope of the resources in this template.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-0">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status">.status</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>status contains reconciliation information for the template.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions">.status.conditions</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>conditions is a list of conditions that apply to the APIServiceExportTemplate.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*]">.status.conditions[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Condition defines an observation of a object operational state.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].lastTransitionTime">.status.conditions[*].lastTransitionTime</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Last time the condition transitioned from one status to another.
+This should be when the underlying condition changed. If that is not known, then using the time when
+the API field changed is acceptable.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].message">.status.conditions[*].message</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>A human readable message indicating details about the transition.
+This field may be empty.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].reason">.status.conditions[*].reason</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>The reason for the condition&rsquo;s last transition in CamelCase.
+The specific API may choose whether or not this field is considered a guaranteed API.
+This field may not be empty.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].severity">.status.conditions[*].severity</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Severity provides an explicit classification of Reason code, so the users or machines can immediately
+understand the current situation and act accordingly.
+The Severity field MUST be set only when Status=False.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].status">.status.conditions[*].status</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Status of the condition, one of True, False, Unknown.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].type">.status.conditions[*].type</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Type of condition in CamelCase or in foo.example.com/CamelCase.
+Many .condition.type values are consistent across resources like Available, but because arbitrary conditions
+can be useful (see .node.status.conditions), the ability to deconflict is important.</p>
+
+</div>
+
+</div>
+</div>
+
+
+
+
+</div>
 
 
 
@@ -2066,10 +2732,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
       
     
   </body>

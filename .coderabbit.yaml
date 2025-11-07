@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
 # CodeRabbit Configuration Template
 # Complete reference: https://docs.coderabbit.ai/reference/configuration
@@ -20,18 +20,86 @@ tone_instructions: "be professional and concise, avoid humor, no familiar langua
 early_access: false
 enable_free_tier: true
 
+chat:
+  art: false
+  auto_reply: true
+
 reviews:
   profile: "chill"
 
-  # Generate walkthrough in a markdown collapsible section.
-  # Default: false
-  collapse_walkthrough: true
+  # This lets coderabbit its status as a workflow check on the PR, while
+  # it is making a review the status is pending. Otherwise it will be
+  # green (or red if something catastrophically fails).
+  commit_status: true
+
+  # If enabled and coderabbit encounters an error during review, it will
+  # set the commit status to failed, preventing e.g. merging.
+  fail_commit_status: false
+
+  # This causes coderabbit to edit the PR description with a summary of
+  # changes. Can be noisy and is often wrong in big PRs.
+  high_level_summary: false
+
+  # With this enabled coderabbit makes a comment on every PR (with or
+  # without the label) and updates it with the status.
+  # OK-ish on PRs it reviews but noisy on others.
+  # This comment also contains the "walkthrough" mentioned in other
+  # settings.
+  review_status: false
+
+  # Stop the review if the PR is closed while the review is in progress.
+  abort_on_close: true
+
+  # Let coderabbit approve a PR if there are no issues found.
+  request_changes_workflow: true
+
+  # If enabled coderabbit will apply labels to the PR based on its
+  # analysis. Can be noisy. And wrong.
+  auto_apply_labels: false
+
+  # If enabled coderabbit assigns reviewers based on who edited files
+  # recently. Generally this should be resolved by code ownership.
+  auto_assign_reviewers: false
+
+  # Disabling general fluff. Each of these can be request individually
+  # with a command.
+  collapse_walkthrough: false
+  changed_files_summary: false
+  sequence_diagrams: false
+  high_level_summary_in_walkthrough: false
+  estimate_code_review_effort: false
+  assess_linked_issues: false
+  related_issues: false
+  related_prs: false
+  suggested_labels: false
+  suggested_reviewers: false
+  poem: false
+  in_progress_fortune: false
+  finishing_touches:
+    docstrings:
+      enabled: False
+    unit_tests:
+      enabled: False
+  pre_merge_checks:
+    docstrings:
+      mode: off
+    title:
+      mode: off
+    description:
+      mode: off
+    issue_assessment:
+      mode: off
 
   # Specify file patterns to include or exclude in a review using glob patterns (e.g., !dist/**, src/**). These patterns also apply to 'git sparse-checkout', including specified patterns and ignoring excluded ones (starting with '!') when cloning the repository.
   # Default: []
   path_filters: [
-   '!sdk/client/**',
-   '!**/*.yaml',
+    # ignore generated files
+    '!**/*_generated.*',
+    '!sdk/client/**',
+    # ignore generated yaml (e.g. crd) files
+    '!**/*.yaml',
+    # allow inspecting examples
+    '**/examples/*.yaml'
   ]
 
   # Configuration for auto review

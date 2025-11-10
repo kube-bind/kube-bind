@@ -54,7 +54,7 @@ The following prerequisites are required. Click the links below for detailed set
        --namespace kube-bind \
        --create-namespace \
        --values ./deploy/charts/backend/examples/values-local-development.yaml \
-       kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.0.0-fadb9edd26c0202f4a9511ee9d71b9e5f43672b9
+       kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.0.0-a50df39d7e4c71f7808f4209ec23f294c5ac8f86
    ```
 
 4. **Seed with example resources (optional):**

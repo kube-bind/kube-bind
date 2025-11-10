@@ -57,7 +57,8 @@ func (options *Serve) Complete() error {
 		if options.ListenIP != "" {
 			addr = net.JoinHostPort(options.ListenIP, strconv.Itoa(options.ListenPort))
 		}
-		options.Listener, err = net.Listen("tcp", addr)
+		// We only support TCP4 for now to avoid dual stack complications in embedded OIDC server tests.
+		options.Listener, err = net.Listen("tcp4", addr)
 		if err != nil {
 			return err
 		}
@@ -66,7 +67,7 @@ func (options *Serve) Complete() error {
 }
 
 func (options *Serve) Validate() error {
-	if (options.ListenIP == "") != (options.ListenAddress == "") {
+	if options.ListenIP == "" && options.ListenAddress == "" {
 		return fmt.Errorf("either listen-ip or listen-address must be provided")
 	}
 	if options.CertFile == "" && options.KeyFile != "" {

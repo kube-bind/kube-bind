@@ -228,6 +228,10 @@ func (options *CompletedOptions) Validate() error {
 		return fmt.Errorf("pretty name cannot be empty")
 	}
 
+	if err := options.Serve.Validate(); err != nil {
+		return err
+	}
+
 	if err := options.OIDC.Validate(); err != nil {
 		return err
 	}

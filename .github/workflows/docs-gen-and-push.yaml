@@ -34,7 +34,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: v1.24.0
+          go-version: v1.25.4
           cache: true
 
       - uses: actions/setup-python@v5

@@ -33,7 +33,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 
-	"github.com/kube-bind/kube-bind/deploy/konnector"
 	"github.com/kube-bind/kube-bind/pkg/version"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 )
@@ -69,7 +68,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 
 	if b.KonnectorImageOverride != "" {
 		fmt.Fprintf(b.Options.ErrOut, "🚀 Deploying konnector %s to namespace kube-bind with custom image %q.\n", bindVersion, b.KonnectorImageOverride)
-		if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, b.KonnectorImageOverride); err != nil {
+		if err := bootstrapKonnector(ctx, discoveryClient, dynamicClient, b.KonnectorImageOverride, b.KonnectorHostAliasParsed); err != nil {
 			return err
 		}
 	} else if !b.SkipKonnector {
@@ -95,7 +94,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 				}
 				if bindSemVer.GT(konnectorSemVer) {
 					fmt.Fprintf(b.Options.ErrOut, "Updating konnector from %s to %s.\n", konnectorVersion, bindVersion)
-					if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, konnectorImage); err != nil {
+					if err := bootstrapKonnector(ctx, discoveryClient, dynamicClient, konnectorImage, b.KonnectorHostAliasParsed); err != nil {
 						return err
 					}
 				} else if bindSemVer.LT(konnectorSemVer) {
@@ -104,7 +103,7 @@ func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *res
 			}
 		} else {
 			fmt.Fprintf(b.Options.ErrOut, "🚀 Deploying konnector %s to namespace kube-bind.\n", bindVersion)
-			if err := konnector.Bootstrap(ctx, discoveryClient, dynamicClient, konnectorImage); err != nil {
+			if err := bootstrapKonnector(ctx, discoveryClient, dynamicClient, konnectorImage, b.KonnectorHostAliasParsed); err != nil {
 				return err
 			}
 		}

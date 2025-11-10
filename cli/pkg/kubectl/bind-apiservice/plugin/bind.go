@@ -60,10 +60,15 @@ type BindAPIServiceOptions struct {
 	SkipKonnector          bool
 	KonnectorImageOverride string
 	DowngradeKonnector     bool
-	NoBanner               bool
-	DryRun                 bool
-	Template               string
-	Name                   string
+	// KonnectorHostAlias is a list of host alias entries to add to the konnector pods.
+	KonnectorHostAlias []string
+	// KonnectorHostAliasParsed is the parsed version of KonnectorHostAlias.
+	KonnectorHostAliasParsed []corev1.HostAlias
+
+	NoBanner bool
+	DryRun   bool
+	Template string
+	Name     string
 }
 
 // NewBindAPIServiceOptions returns new BindAPIServiceOptions.
@@ -95,6 +100,8 @@ func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().MarkHidden("konnector-image") //nolint:errcheck
 	cmd.Flags().BoolVar(&b.NoBanner, "no-banner", b.NoBanner, "Do not show the red banner")
 	cmd.Flags().MarkHidden("no-banner") //nolint:errcheck
+	cmd.Flags().StringSliceVarP(&b.KonnectorHostAlias, "konnector-host-alias", "", []string{}, "Add a host alias to the konnector pods in the format IP:hostname1,hostname2")
+	cmd.Flags().MarkHidden("konnector-host-alias") //nolint:errcheck
 }
 
 // Complete ensures all fields are initialized.
@@ -112,6 +119,16 @@ func (b *BindAPIServiceOptions) Complete(args []string) error {
 	}
 
 	b.printer = printer
+
+	// parse konnector host alias entries
+	for _, hostAlias := range b.KonnectorHostAlias {
+		parts := strings.SplitN(hostAlias, ":", 2)
+		hostnames := strings.Split(parts[1], ",")
+		b.KonnectorHostAliasParsed = append(b.KonnectorHostAliasParsed, corev1.HostAlias{
+			IP:        parts[0],
+			Hostnames: hostnames,
+		})
+	}
 	return nil
 }
 
@@ -139,6 +156,21 @@ func (b *BindAPIServiceOptions) Validate() error {
 		return errors.New("name is required")
 	}
 
+	// TODO(mjudeikis): This code is duplicate fromn bind/plugin/bind.go. Unify.
+	// validate konnector host alias entries
+	for _, hostAlias := range b.KonnectorHostAlias {
+		parts := strings.SplitN(hostAlias, ":", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid konnector-host-alias entry %q, expected format IP:hostname1,hostname2", hostAlias)
+		}
+		if parts[0] == "" {
+			return fmt.Errorf("invalid konnector-host-alias entry %q, IP address is empty", hostAlias)
+		}
+		if parts[1] == "" {
+			return fmt.Errorf("invalid konnector-host-alias entry %q, hostnames are empty", hostAlias)
+		}
+	}
+
 	return b.Options.Validate()
 }
 
@@ -156,6 +188,7 @@ func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
 		IOStreams:                 b.Options.IOStreams,
 		SkipKonnector:             b.SkipKonnector,
 		KonnectorImageOverride:    b.KonnectorImageOverride,
+		KonnectorHostAliasParsed:  b.KonnectorHostAliasParsed,
 		DowngradeKonnector:        b.DowngradeKonnector,
 		RemoteKubeconfigFile:      b.remoteKubeconfigFile,
 		RemoteKubeconfigNamespace: b.remoteKubeconfigNamespace,

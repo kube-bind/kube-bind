@@ -171,11 +171,6 @@ fix-lint: $(GOLANGCI_LINT) ## Run golangci-lint with --fix
 	GOLANGCI_LINT_FLAGS="--fix" $(MAKE) lint
 .PHONY: fix-lint
 
-vendor: ## Vendor the dependencies
-	go mod tidy
-	go mod vendor
-.PHONY: vendor
-
 tools: $(GOLANGCI_LINT) $(CONTROLLER_GEN) $(YAML_PATCH) $(GOTESTSUM) $(CODE_GENERATOR) ## Install tools
 .PHONY: tools
 
@@ -364,7 +359,7 @@ verify-modules: modules  # Verify go modules are up to date
 	done
 
 .PHONY: verify
-verify: verify-modules verify-go-versions verify-imports verify-codegen verify-boilerplate ## verify formal properties of the code
+verify: verify-go-versions verify-imports verify-codegen verify-boilerplate ## verify formal properties of the code
 
 .PHONY: help
 help: ## Show this help

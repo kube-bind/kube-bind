@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 	"github.com/xrstf/mockoidc"
 )
@@ -34,7 +34,7 @@ type Server struct {
 	tlsConfig *tls.Config
 }
 
-func New(caBundleFile string, listener net.Listener) (*Server, error) {
+func New(caBundleFile string, listener net.Listener, addrOverride string) (*Server, error) {
 	// Add offline_access to supported scopes for refresh token support
 	ensureOfflineAccessScope()
 	var tlsConfig *tls.Config
@@ -49,8 +49,9 @@ func New(caBundleFile string, listener net.Listener) (*Server, error) {
 	}
 
 	server, err := mockoidc.NewServer(&mockoidc.ServerConfig{
-		TLSConfig: tlsConfig,
-		Listener:  listener,
+		TLSConfig:    tlsConfig,
+		Listener:     listener,
+		AddrOverride: addrOverride,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mock OIDC server: %w", err)
@@ -70,8 +71,9 @@ type Config struct {
 
 	CodeChallengeMethodsSupported []string
 
-	// CallbackURL is kube-bind specific and must match API server endpoints.
+	// CallbackURL and IssuerURL are kube-bind specific and must match API server endpoints.
 	CallbackURL string
+	IssuerURL   string
 }
 
 var ErrServerNotRunning = fmt.Errorf("embedded OIDC server is not running")
@@ -85,18 +87,21 @@ func (s *Server) AddRoutes(mux *mux.Router) {
 }
 
 // URL returns the base URL of the embedded OIDC server.
-func (s *Server) Config() (*Config, error) {
-	return &Config{
+func (s *Server) Config(callbackURL, issuerURL string) (*Config, error) {
+	c := &Config{
 		ClientID:     s.server.Config().ClientID,
 		ClientSecret: s.server.Config().ClientSecret,
-		Issuer:       s.server.Config().Issuer,
+		Issuer:       issuerURL, // This overrided default fake OIDC issuer URL. Must match what it is served at.
 
 		AccessTTL:  s.server.Config().AccessTTL,
 		RefreshTTL: s.server.Config().RefreshTTL,
 
 		CodeChallengeMethodsSupported: s.server.Config().CodeChallengeMethodsSupported,
-		CallbackURL:                   path.Join(s.server.Addr(), "api/callback"),
-	}, nil
+		CallbackURL:                   callbackURL,
+		IssuerURL:                     issuerURL,
+	}
+	spew.Dump(c)
+	return c, nil
 }
 
 func LoadTLSConfig(caFile string) (*tls.Config, error) {

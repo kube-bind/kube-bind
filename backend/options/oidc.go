@@ -26,7 +26,15 @@ import (
 	"github.com/kube-bind/kube-bind/backend/oidc"
 )
 
+type OIDCType string
+
+const (
+	OIDCTypeEmbedded OIDCType = "embedded"
+	OIDCTypeExternal OIDCType = "external"
+)
+
 type OIDC struct {
+	Type               string
 	IssuerClientID     string
 	IssuerClientSecret string
 	IssuerURL          string
@@ -40,7 +48,9 @@ type OIDC struct {
 }
 
 func NewOIDC() *OIDC {
-	return &OIDC{}
+	return &OIDC{
+		Type: string(OIDCTypeExternal),
+	}
 }
 
 func (options *OIDC) AddFlags(fs *pflag.FlagSet) {
@@ -50,17 +60,18 @@ func (options *OIDC) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.CallbackURL, "oidc-callback-url", options.CallbackURL, "OpenID callback URL")
 	fs.StringVar(&options.AuthorizeURL, "oidc-authorize-url", options.AuthorizeURL, "OpenID authorize URL")
 	fs.StringVar(&options.CAFile, "oidc-ca-file", options.CAFile, "Path to a CA bundle to use when verifying the OIDC provider's TLS certificate.")
+	fs.StringVar(&options.Type, "oidc-type", options.Type, "Type of OIDC provider (embedded or external)")
 }
 
 func (options *OIDC) Complete(listener net.Listener) error {
-	if options.IssuerURL == "" {
-		oidcServer, err := oidc.New(options.CAFile, listener)
+	if options.Type == string(OIDCTypeEmbedded) {
+		oidcServer, err := oidc.New(options.CAFile, listener, options.IssuerURL)
 		if err != nil {
 			return err
 		}
 		options.OIDCServer = oidcServer
 
-		cfg, err := oidcServer.Config()
+		cfg, err := oidcServer.Config(options.CallbackURL, options.IssuerURL)
 		if err != nil {
 			return err
 		}

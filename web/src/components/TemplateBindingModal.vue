@@ -149,8 +149,7 @@ watch(() => props.template, (newTemplate) => {
   if (newTemplate?.metadata?.name) {
     // Generate Kubernetes-compliant name: lowercase alphanumeric and hyphens only
     const templateName = newTemplate.metadata.name.toLowerCase().replace(/[^a-z0-9-]/g, '-')
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-').toLowerCase()
-    bindingName.value = `${templateName}-${timestamp}`
+    bindingName.value = templateName
   }
 }, { immediate: true })
 

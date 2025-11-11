@@ -588,28 +588,22 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#deploy-a-kube-bind-backend" class="md-nav__link">
+  <a href="#quick-development-setup" class="md-nav__link">
     <span class="md-ellipsis">
-      Deploy a kube-bind Backend
+      Quick Development Setup
     </span>
   </a>
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#once-you-have-a-kube-bind-backend-running-you-can-connect-to-it-using-the-kubectl-bind-plugin" class="md-nav__link">
+          <li class="md-nav__item">
+  <a href="#production-deployment" class="md-nav__link">
     <span class="md-ellipsis">
-      Once you have a kube-bind backend running, you can connect to it using the kubectl bind plugin.
+      Production Deployment
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Once you have a kube-bind backend running, you can connect to it using the kubectl bind plugin.">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
   <a href="#connect-to-kube-bind-server" class="md-nav__link">
@@ -1389,6 +1383,14 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
     
     
       
@@ -1476,6 +1478,90 @@
   
   <span class="md-ellipsis">
     bind collections
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_dev/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind dev
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_dev_create/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind dev create
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_dev_delete/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind dev delete
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/bind_dev_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind dev example
   </span>
   
 
@@ -1920,28 +2006,22 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#deploy-a-kube-bind-backend" class="md-nav__link">
+  <a href="#quick-development-setup" class="md-nav__link">
     <span class="md-ellipsis">
-      Deploy a kube-bind Backend
+      Quick Development Setup
     </span>
   </a>
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#once-you-have-a-kube-bind-backend-running-you-can-connect-to-it-using-the-kubectl-bind-plugin" class="md-nav__link">
+          <li class="md-nav__item">
+  <a href="#production-deployment" class="md-nav__link">
     <span class="md-ellipsis">
-      Once you have a kube-bind backend running, you can connect to it using the kubectl bind plugin.
+      Production Deployment
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Once you have a kube-bind backend running, you can connect to it using the kubectl bind plugin.">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
   <a href="#connect-to-kube-bind-server" class="md-nav__link">
@@ -1991,17 +2071,59 @@
 <li><a href="../kubectl-plugin/">kube-bind CLI</a> installed</li>
 </ul>
 <h2 id="start-with-kube-bind">Start with kube-bind</h2>
-<h3 id="deploy-a-kube-bind-backend">Deploy a kube-bind Backend</h3>
-<p>You can deploy a kube-bind backend using helm (recommended):</p>
+<h3 id="quick-development-setup">Quick Development Setup</h3>
+<p><strong>Note:</strong> This setup requires Docker as it uses advanced network configuration to minimize external DNS dependencies and enable inter-cluster connectivity.</p>
+<p>For a quick development environment with local Kind clusters, use the <code>kubectl bind dev</code> command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>create
+</code></pre></div>
+<p>This command will:
+- Create two Kind clusters: <code>kind-provider</code> (API provider) and <code>kind-consumer</code> (API consumer)
+- Deploy the kube-bind backend to the provider cluster
+- Generate kubeconfig files for both clusters
+- Set up local DNS entries for <code>kube-bind.dev.local</code>
+- Start the kube-bind server at <code>http://kube-bind.dev.local:8080</code></p>
+<p>After the development environment is ready, you can:</p>
+<ol>
+<li>
+<p><strong>Authenticate to the provider cluster:</strong>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>http://kube-bind.dev.local:8080
+</code></pre></div>
+   This will open a browser for authentication and save the configuration.</p>
+</li>
+<li>
+<p><strong>Bind API services from provider to consumer:</strong>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>--konnector-host-alias<span class="w"> </span>&lt;docker-internal-ip-address&gt;:kube-bind.dev.local
+</code></pre></div>
+   This opens the kube-bind web UI where you can select and bind API services.</p>
+</li>
+<li>
+<p><strong>Verify bound resources:</strong>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>crd
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>apiservicebindings<span class="w"> </span>-n<span class="w"> </span>kube-bind
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Create example resource</strong>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>example<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>-
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>Check resource synced to provider</strong>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-provider.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>mangodbs.mangodb.com<span class="w"> </span>-A
+</code></pre></div></p>
+</li>
+</ol>
+<h3 id="production-deployment">Production Deployment</h3>
+<p>For production deployments, you can deploy a kube-bind backend using helm:</p>
 <ul>
 <li><strong><a href="../helm/">Using Helm Chart</a></strong> - Recommended for production deployments</li>
 </ul>
-<h2 id="once-you-have-a-kube-bind-backend-running-you-can-connect-to-it-using-the-kubectl-bind-plugin">Once you have a kube-bind backend running, you can connect to it using the <code>kubectl bind</code> plugin.</h2>
+<p>Once you have a kube-bind backend running (either development or production), you can connect to it:</p>
 <h3 id="connect-to-kube-bind-server">Connect to kube-bind Server</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>https://my-kube-bind-server.example.com
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>https://my-kube-bind-server.example.com
 </code></pre></div>
 <h3 id="open-kube-bind-web-ui-and-bind-services">Open kube-bind Web UI and bind services</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span>
 </code></pre></div>
 
 

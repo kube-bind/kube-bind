@@ -6,18 +6,18 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Login to a kube-bind server and store authentication credentials
+        <meta name="description" content="Create development environment with kind cluster and kube-bind backend
 ">
       
       
       
-        <link rel="canonical" href="https://docs.kube-bind.io/main/reference/cli/bind_login/">
+        <link rel="canonical" href="https://docs.kube-bind.io/main/reference/cli/bind_dev_create/">
       
       
-        <link rel="prev" href="../bind_dev_example/">
+        <link rel="prev" href="../bind_dev/">
       
       
-        <link rel="next" href="../bind_templates/">
+        <link rel="next" href="../bind_dev_delete/">
       
       
       <link rel="icon" href="../../../favicons/favicon.ico">
@@ -25,7 +25,7 @@
     
     
       
-        <title>bind login - docs.kube-bind.io</title>
+        <title>bind dev create - docs.kube-bind.io</title>
       
     
     
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              bind login
+              bind dev create
             
           </span>
         </div>
@@ -1412,69 +1412,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../bind_dev_create/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    bind dev create
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../bind_dev_delete/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    bind dev delete
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../bind_dev_example/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    bind dev example
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -1489,7 +1426,7 @@
           
   
   <span class="md-ellipsis">
-    bind login
+    bind dev create
   </span>
   
 
@@ -1500,7 +1437,7 @@
         
   
   <span class="md-ellipsis">
-    bind login
+    bind dev create
   </span>
   
 
@@ -1568,6 +1505,69 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bind_dev_delete/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind dev delete
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bind_dev_example/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind dev example
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bind_login/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind login
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -2028,51 +2028,61 @@
   
 
 
-  <h1>bind login</h1>
+  <h1>bind dev create</h1>
 
 <h3 id="synopsis">Synopsis</h3>
-<p>Login to a kube-bind server using OAuth2 authentication flow.</p>
-<p>The command will open your browser to complete the OAuth2 flow and store the resulting JWT token in ~/.kube-bind/config for use by subsequent commands.</p>
-<p>The SERVER_URL should point to the root of your kube-bind server, e.g. https://my-server.example.com</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>bind login [SERVER_URL] [flags]
+<p>Create a complete development environment for kube-bind using kind clusters.</p>
+<p>This command will: - Create a kind cluster configured for kube-bind development - Add kube-bind.dev.local to /etc/hosts (with sudo prompts if needed) - Install kube-bind backend helm chart (default: OCI chart from ghcr.io) - Configure necessary port mappings (8443, 15021)</p>
+<p>The backend chart can be sourced from: - OCI registry (default): oci://ghcr.io/kube-bind/charts/backend - Local filesystem: --chart-path ./deploy/charts/backend - Custom OCI registry: --chart-path oci://custom.registry/charts/backend</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>bind dev create [flags]
 </code></pre></div>
 <h3 id="examples">Examples</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    # Login to a kube-bind server
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    kubectl bind login https://my-kube-bind-server.example.com
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>    # Create a development environment with kind cluster and default OCI chart
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    kubectl bind dev dev create
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    # Login with a custom callback port
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    kubectl bind login https://my-kube-bind-server.example.com --callback-port 8081
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    # Create a development environment with custom provider cluster name
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    kubectl bind dev dev create --provider-cluster-name my-provider
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    # Login and show authentication status
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    kubectl bind login https://my-kube-bind-server.example.com --show-token
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    # Create with custom chart path (local development)
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    kubectl bind dev dev create --chart-path ../deploy/charts/backend
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    # Create with specific chart version
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    kubectl bind dev dev create --chart-version 0.1.0
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>    # Create with custom OCI chart
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    kubectl bind dev dev create --chart-path oci://registry.example.com/charts/backend --chart-version 1.0.0
 </code></pre></div>
 <h3 id="options">Options</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>      --as-uid string                        UID to impersonate for the operation
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>      --certificate-authority string         Path to a cert file for the certificate authority
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>      --cluster string                       The kube-bind cluster name to use (overrides kube-bind config current cluster)
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>      --config-file string                   Path to the kube-bind configuration file
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>      --context string                       The name of the kubeconfig context to use
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>      --disable-compression                  If true, opt-out of response compression for all requests to the server
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  -h, --help                                 help for login
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>      --insecure-skip-tls-verify             Skip TLS certificate verification (not recommended)
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>      --kubeconfig string                    path to the kubeconfig file
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>      --log-flush-frequency duration         Maximum number of seconds between log flushes (default 5s)
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>      --log-text-info-buffer-size quantity   [Alpha] In text format with split output streams, the info messages can be buffered for a while to increase performance. The default value of zero bytes disables buffering. The size can be specified as number of bytes (512), multiples of 1000 (1K), multiples of 1024 (2Ki), or powers of those (3M, 4G, 5Mi, 6Gi). Enable the LoggingAlphaOptions feature gate to use this.
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>      --log-text-split-stream                [Alpha] In text format, write error messages to stderr and info messages to stdout. The default is to write a single stream to stdout. Enable the LoggingAlphaOptions feature gate to use this.
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>      --logging-format string                Sets the log format. Permitted formats: &quot;text&quot;. (default &quot;text&quot;)
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>  -n, --namespace string                     If present, the namespace scope for this CLI request
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>      --password string                      Password for basic authentication to the API server
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>      --proxy-url string                     If provided, this URL will be used to connect via proxy
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>      --server string                        The kube-bind server name to use (overrides kube-bind config current server)
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>      --show-token                           Display the stored token after successful authentication
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>      --skip-browser                         Skip opening the browser automatically
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>      --timeout duration                     Timeout for the authentication flow (default 5m0s)
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      --tls-server-name string               If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>      --token string                         Bearer token for authentication to the API server
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>      --user string                          The name of the kubeconfig user to use
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>      --username string                      Username for basic authentication to the API server
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>  -v, --v Level                              number for the log level verbosity
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>      --vmodule pattern=N,...                comma-separated list of pattern=N settings for file-filtered logging (only works for text log format)
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>      --chart-path string                    Helm chart path or OCI registry URL (default &quot;oci://ghcr.io/kube-bind/charts/backend&quot;)
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>      --chart-version string                 Helm chart version (default &quot;0.0.0-a50df39d7e4c71f7808f4209ec23f294c5ac8f86&quot;)
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>      --cluster string                       The kube-bind cluster name to use (overrides kube-bind config current cluster)
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>      --config-file string                   Path to the kube-bind configuration file
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>      --consumer-cluster-name string         Name of the consumer cluster in dev mode (default &quot;kind-consumer&quot;)
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>      --context string                       The name of the kubeconfig context to use
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>      --disable-compression                  If true, opt-out of response compression for all requests to the server
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  -h, --help                                 help for create
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>      --image string                         Kube-bind backend image to use in dev mode (default &quot;ghcr.io/kube-bind/backend&quot;)
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>      --insecure-skip-tls-verify             Skip TLS certificate verification (not recommended)
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>      --kubeconfig string                    path to the kubeconfig file
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>      --log-flush-frequency duration         Maximum number of seconds between log flushes (default 5s)
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>      --log-text-info-buffer-size quantity   [Alpha] In text format with split output streams, the info messages can be buffered for a while to increase performance. The default value of zero bytes disables buffering. The size can be specified as number of bytes (512), multiples of 1000 (1K), multiples of 1024 (2Ki), or powers of those (3M, 4G, 5Mi, 6Gi). Enable the LoggingAlphaOptions feature gate to use this.
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>      --log-text-split-stream                [Alpha] In text format, write error messages to stderr and info messages to stdout. The default is to write a single stream to stdout. Enable the LoggingAlphaOptions feature gate to use this.
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>      --logging-format string                Sets the log format. Permitted formats: &quot;text&quot;. (default &quot;text&quot;)
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>  -n, --namespace string                     If present, the namespace scope for this CLI request
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>      --password string                      Password for basic authentication to the API server
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>      --provider-cluster-name string         Name of the provider cluster in dev mode (default &quot;kind-provider&quot;)
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      --proxy-url string                     If provided, this URL will be used to connect via proxy
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>      --server string                        The kube-bind server name to use (overrides kube-bind config current server)
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>      --tag string                           Kube-bind backend image tag to use in dev mode (default &quot;main&quot;)
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>      --tls-server-name string               If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>      --token string                         Bearer token for authentication to the API server
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>      --user string                          The name of the kubeconfig user to use
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>      --username string                      Username for basic authentication to the API server
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>  -v, --v Level                              number for the log level verbosity
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>      --vmodule pattern=N,...                comma-separated list of pattern=N settings for file-filtered logging (only works for text log format)
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>      --wait-for-ready-timeout duration      Timeout for waiting for the cluster to be ready (default 2m0s)
 </code></pre></div>
 <h3 id="options-inherited-from-parent-commands">Options inherited from parent commands</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>      --add_dir_header                   If true, adds the file directory to the header of the log messages
@@ -2089,7 +2099,7 @@
 </code></pre></div>
 <h3 id="see-also">SEE ALSO</h3>
 <ul>
-<li><a href="../bind/">bind</a>  - Open kube-bind UI or bind templates from a remote server.</li>
+<li><a href="../bind_dev/">bind dev</a>  - Manage development environment for kube-bind</li>
 </ul>
 
 

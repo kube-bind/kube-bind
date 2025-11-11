@@ -75,6 +75,16 @@ func run(ctx context.Context) error {
 		return err
 	}
 
+	// Show development mode warning for embedded OIDC
+	if completed.OIDC.Type == "embedded" {
+		fmt.Println("┌────────────────────────────────────────────────────────────────────────────────┐")
+		fmt.Println("│                              DEVELOPMENT MODE                                  │")
+		fmt.Println("│                        running with embedded oidc                             │")
+		fmt.Println("│                           do not use in production                            │")
+		fmt.Println("└────────────────────────────────────────────────────────────────────────────────┘")
+		fmt.Println()
+	}
+
 	// start server
 	config, err := backend.NewConfig(completed)
 	if err != nil {

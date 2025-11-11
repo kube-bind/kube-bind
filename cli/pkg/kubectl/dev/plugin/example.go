@@ -1,5 +1,5 @@
 /*
-Copyright 2022 The Kube Bind Authors.
+Copyright 2025 The Kube Bind Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,24 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package konnector
+package plugin
 
 import (
 	"context"
-	"embed"
-
-	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/dynamic"
-
-	"github.com/kube-bind/kube-bind/pkg/bootstrap"
+	"fmt"
 )
 
-//go:embed *.yaml
-var raw embed.FS
+var example = `apiVersion: mangodb.com/v1alpha1
+kind: MangoDB
+metadata:
+  name: my-first-mangodb-instance
+  namespace: default
+spec:
+  tier: Dedicated`
 
-func Bootstrap(ctx context.Context, discoveryClient discovery.DiscoveryInterface, dynamicClient dynamic.Interface, image string) error {
-	return bootstrap.Bootstrap(ctx, discoveryClient, dynamicClient, sets.Set[string]{}, raw,
-		bootstrap.ReplaceOption("IMAGE", image),
-	)
+func (o *DevOptions) RunPrintExample(ctx context.Context) error {
+	fmt.Fprintf(o.Streams.Out, "%s", example)
+	return nil
 }

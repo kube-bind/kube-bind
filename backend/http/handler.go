@@ -34,6 +34,7 @@ import (
 	"github.com/kube-bind/kube-bind/backend/auth"
 	"github.com/kube-bind/kube-bind/backend/client"
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
+	"github.com/kube-bind/kube-bind/backend/oidc"
 	"github.com/kube-bind/kube-bind/backend/spaserver"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -48,8 +49,8 @@ var noCacheHeaders = map[string]string{
 }
 
 type handler struct {
-	oidc           *auth.OIDCServiceProvider
-	authHandler    *auth.AuthHandler
+	oidcProvider   auth.OIDCProvider
+	authHandler    auth.AuthHandlerInterface
 	authMiddleware *auth.AuthMiddleware
 
 	scope              kubebindv1alpha2.InformerScope
@@ -64,12 +65,14 @@ type handler struct {
 
 	client      *http.Client
 	kubeManager *kubernetes.Manager
+	oidcServer  *oidc.Server
 
 	frontend string
 }
 
 func NewHandler(
-	provider *auth.OIDCServiceProvider,
+	oidcProvider auth.OIDCProvider,
+	oidcServer *oidc.Server,
 	oidcAuthorizeURL, backendCallbackURL, providerPrettyName, testingAutoSelect string,
 	cookieSigningKey, cookieEncryptionKey []byte,
 	schemaSource string,
@@ -83,14 +86,14 @@ func NewHandler(
 		return nil, fmt.Errorf("failed to create JWT service: %w", err)
 	}
 
-	// Create auth handler for generic authentication flows
-	authHandler := auth.NewAuthHandler(provider, jwtService, cookieSigningKey, cookieEncryptionKey)
+	// Create auth handler with OIDC provider
+	authHandler := auth.NewAuthHandler(oidcProvider, jwtService, cookieSigningKey, cookieEncryptionKey)
 
 	// Create auth middleware for request authentication
 	authMiddleware := auth.NewAuthMiddleware(jwtService, cookieSigningKey, cookieEncryptionKey)
 
 	return &handler{
-		oidc:                provider,
+		oidcProvider:        oidcProvider,
 		authHandler:         authHandler,
 		authMiddleware:      authMiddleware,
 		oidcAuthorizeURL:    oidcAuthorizeURL,
@@ -104,6 +107,7 @@ func NewHandler(
 		kubeManager:         mgr,
 		cookieSigningKey:    cookieSigningKey,
 		cookieEncryptionKey: cookieEncryptionKey,
+		oidcServer:          oidcServer,
 	}, nil
 }
 
@@ -128,6 +132,10 @@ func (h *handler) AddRoutes(mux *mux.Router) error {
 	apiRouter.Handle("/collections", auth.RequireAuth(http.HandlerFunc(h.handleCollections))).Methods(http.MethodGet)
 	apiRouter.Handle("/bind", auth.RequireAuth(http.HandlerFunc(h.handleBind))).Methods(http.MethodPost)
 	apiRouter.Handle("/ping", auth.RequireAuth(http.HandlerFunc(h.handlePing))).Methods(http.MethodGet)
+
+	if h.oidcServer != nil {
+		h.oidcServer.AddRoutes(mux)
+	}
 
 	switch {
 	// Development mode: proxy to frontend dev server

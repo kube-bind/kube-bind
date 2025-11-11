@@ -27,10 +27,12 @@ import (
 	"net/url"
 	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/client-go/rest"
@@ -67,6 +69,11 @@ type BindOptions struct {
 	// The konnector image to use and override default konnector image
 	KonnectorImageOverride string
 
+	// KonnectorHostAlias is a list of host alias entries to add to the konnector pods.
+	KonnectorHostAlias []string
+	// KonnectorHostAliasParsed is a list of parsed host alias entries to add to the konnector pods.
+	KonnectorHostAliasParsed []corev1.HostAlias
+
 	// Runner is runs the command. It can be replaced in tests.
 	Runner func(cmd *exec.Cmd) error
 
@@ -99,6 +106,8 @@ func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
 	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
+	cmd.Flags().StringSliceVarP(&b.KonnectorHostAlias, "konnector-host-alias", "", []string{}, "Add a host alias to the konnector pods in the format IP:hostname1,hostname2")
+	cmd.Flags().MarkHidden("konnector-host-alias") //nolint:errcheck
 }
 
 // Complete ensures all fields are initialized.
@@ -115,6 +124,16 @@ func (b *BindOptions) Complete(args []string) error {
 
 	b.printer = printer
 
+	// parse konnector host alias entries
+	for _, hostAlias := range b.KonnectorHostAlias {
+		parts := strings.SplitN(hostAlias, ":", 2)
+		hostnames := strings.Split(parts[1], ",")
+		b.KonnectorHostAliasParsed = append(b.KonnectorHostAliasParsed, corev1.HostAlias{
+			IP:        parts[0],
+			Hostnames: hostnames,
+		})
+	}
+
 	return nil
 }
 
@@ -126,6 +145,21 @@ func (b *BindOptions) Validate() error {
 
 	if _, err := url.Parse(b.ServerName); err != nil {
 		return fmt.Errorf("invalid url %q: %w", b.ServerName, err)
+	}
+
+	// TODO(mjudeikis): This code is duplicate fromn bind-apiservice/plugin/bind.go. Unify.
+	// validate konnector host alias entries
+	for _, hostAlias := range b.KonnectorHostAlias {
+		parts := strings.SplitN(hostAlias, ":", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid konnector-host-alias entry %q, expected format IP:hostname1,hostname2", hostAlias)
+		}
+		if parts[0] == "" {
+			return fmt.Errorf("invalid konnector-host-alias entry %q, IP address is empty", hostAlias)
+		}
+		if parts[1] == "" {
+			return fmt.Errorf("invalid konnector-host-alias entry %q, hostnames are empty", hostAlias)
+		}
 	}
 
 	return b.Options.Validate()
@@ -373,10 +407,11 @@ func (b *BindOptions) startCallbackServer(resultCh chan<- *BindResult, errCh cha
 // bindResponseToAPIServiceBindings uses the shared binder to create API service bindings
 func (b *BindOptions) bindResponseToAPIServiceBindings(ctx context.Context, config *rest.Config, response *kubebindv1alpha2.BindingResourceResponse) ([]*kubebindv1alpha2.APIServiceBinding, error) {
 	binderOpts := &bindapiservice.BinderOptions{
-		IOStreams:              b.Options.IOStreams,
-		SkipKonnector:          b.SkipKonnector,
-		KonnectorImageOverride: b.KonnectorImageOverride,
-		DryRun:                 b.DryRun,
+		IOStreams:                b.Options.IOStreams,
+		SkipKonnector:            b.SkipKonnector,
+		KonnectorHostAliasParsed: b.KonnectorHostAliasParsed,
+		KonnectorImageOverride:   b.KonnectorImageOverride,
+		DryRun:                   b.DryRun,
 	}
 
 	binder := bindapiservice.NewBinder(config, binderOpts)

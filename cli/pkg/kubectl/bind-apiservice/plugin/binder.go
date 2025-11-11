@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	kubeclient "k8s.io/client-go/kubernetes"
@@ -38,6 +39,7 @@ type BinderOptions struct {
 	IOStreams                 genericclioptions.IOStreams
 	SkipKonnector             bool
 	KonnectorImageOverride    string
+	KonnectorHostAliasParsed  []corev1.HostAlias
 	DowngradeKonnector        bool
 	RemoteKubeconfigFile      string
 	RemoteKubeconfigNamespace string
@@ -276,11 +278,12 @@ func (b *Binder) getRemoteKubeconfig(ctx context.Context, namespace, name string
 
 func (b *Binder) deployKonnector(ctx context.Context) error {
 	tempOpts := &BindAPIServiceOptions{
-		Options:                &base.Options{IOStreams: b.opts.IOStreams},
-		SkipKonnector:          b.opts.SkipKonnector,
-		KonnectorImageOverride: b.opts.KonnectorImageOverride,
-		DowngradeKonnector:     b.opts.DowngradeKonnector,
-		DryRun:                 b.opts.DryRun,
+		Options:                  &base.Options{IOStreams: b.opts.IOStreams},
+		SkipKonnector:            b.opts.SkipKonnector,
+		KonnectorImageOverride:   b.opts.KonnectorImageOverride,
+		DowngradeKonnector:       b.opts.DowngradeKonnector,
+		DryRun:                   b.opts.DryRun,
+		KonnectorHostAliasParsed: b.opts.KonnectorHostAliasParsed,
 	}
 	return tempOpts.deployKonnector(ctx, b.config)
 }

@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	"sync"
 
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
@@ -41,6 +42,8 @@ type Server struct {
 	Config *Config
 
 	OIDC       *auth.OIDCServiceProvider
+	oidcOnce   sync.Once
+	oidcErr    error
 	Kubernetes *kube.Manager
 	WebServer  *http.Server
 
@@ -55,6 +58,8 @@ type Controllers struct {
 }
 
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
+	logger := klog.FromContext(ctx)
+
 	s := &Server{
 		Config: c,
 	}
@@ -70,15 +75,16 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	if callback == "" {
 		callback = fmt.Sprintf("http://%s/api/callback", s.WebServer.Addr().String())
 	}
-	s.OIDC, err = auth.NewOIDCServiceProvider(
-		ctx,
-		c.Options.OIDC.IssuerClientID,
-		c.Options.OIDC.IssuerClientSecret,
-		callback,
-		c.Options.OIDC.IssuerURL,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("error setting up OIDC: %w", err)
+
+	// Use lazy initialization for embedded OIDC to avoid circular dependency
+	if c.Options.OIDC.OIDCServer != nil {
+		logger.Info("Using embedded OIDC server; will initialize lazily")
+	} else {
+		// External OIDC provider - initialize immediately
+		s.OIDC, err = s.initializeOIDCProvider(ctx, callback)
+		if err != nil {
+			return nil, fmt.Errorf("error setting up OIDC: %w", err)
+		}
 	}
 	s.Kubernetes, err = kube.NewKubernetesManager(
 		ctx,
@@ -109,7 +115,8 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	}
 
 	handler, err := http.NewHandler(
-		s.OIDC,
+		s,
+		s.Config.Options.OIDC.OIDCServer,
 		c.Options.OIDC.AuthorizeURL,
 		callback,
 		c.Options.PrettyName,
@@ -196,6 +203,56 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	}
 
 	return s, nil
+}
+
+func (s *Server) initializeOIDCProvider(ctx context.Context, callback string) (*auth.OIDCServiceProvider, error) {
+	logger := klog.FromContext(ctx)
+	logger.Info("Initializing OIDC Service Provider", "issuerURL", s.Config.Options.OIDC.IssuerURL)
+	if s.Config.Options.OIDC.TLSConfig != nil {
+		return auth.NewOIDCServiceProviderWithTLS(
+			ctx,
+			s.Config.Options.OIDC.IssuerClientID,
+			s.Config.Options.OIDC.IssuerClientSecret,
+			callback,
+			s.Config.Options.OIDC.IssuerURL,
+			s.Config.Options.OIDC.TLSConfig,
+		)
+	}
+	return auth.NewOIDCServiceProvider(
+		ctx,
+		s.Config.Options.OIDC.IssuerClientID,
+		s.Config.Options.OIDC.IssuerClientSecret,
+		callback,
+		s.Config.Options.OIDC.IssuerURL,
+	)
+}
+
+func (s *Server) ensureOIDC(ctx context.Context) error {
+	logger := klog.FromContext(ctx)
+	if s.Config.Options.OIDC.OIDCServer == nil {
+		// External OIDC - already initialized
+		return nil
+	}
+
+	s.oidcOnce.Do(func() {
+		callback := s.Config.Options.OIDC.CallbackURL
+		if callback == "" {
+			callback = fmt.Sprintf("http://%s/api/callback", s.WebServer.Addr().String())
+		}
+
+		s.OIDC, s.oidcErr = s.initializeOIDCProvider(ctx, callback)
+		if s.oidcErr == nil {
+			logger.Info("Successfully initialized embedded OIDC provider")
+		}
+	})
+	return s.oidcErr
+}
+
+func (s *Server) GetOIDCProvider(ctx context.Context) (*auth.OIDCServiceProvider, error) {
+	if err := s.ensureOIDC(ctx); err != nil {
+		return nil, err
+	}
+	return s.OIDC, nil
 }
 
 func (s *Server) Addr() net.Addr {

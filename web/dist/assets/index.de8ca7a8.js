@@ -98,7 +98,7 @@ var __yieldStar = (value) => {
 };
 var __forAwait = (obj, it, method) => (it = obj[__knownSymbol("asyncIterator")]) ? it.call(obj) : (obj = obj[__knownSymbol("iterator")](), it = {}, method = (key, fn) => (fn = obj[key]) && (it[key] = (arg) => new Promise((yes, no, done) => (arg = fn.call(obj, arg), done = arg.done, Promise.resolve(arg.value).then((value) => yes({ value, done }), no)))), method("next"), method("return"), it);
 var require_index_001 = __commonJS({
-  "assets/index.4caa6f6c.js"(exports) {
+  "assets/index.de8ca7a8.js"(exports) {
     (function polyfill() {
       const relList = document.createElement("link").relList;
       if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -11655,8 +11655,7 @@ ${formattedObject}`;
           var _a;
           if ((_a = newTemplate == null ? void 0 : newTemplate.metadata) == null ? void 0 : _a.name) {
             const templateName = newTemplate.metadata.name.toLowerCase().replace(/[^a-z0-9-]/g, "-");
-            const timestamp = (/* @__PURE__ */ new Date()).toISOString().slice(0, 19).replace(/[:T]/g, "-").toLowerCase();
-            bindingName.value = `${templateName}-${timestamp}`;
+            bindingName.value = templateName;
           }
         }, { immediate: true });
         const closeModal = () => {
@@ -11808,8 +11807,8 @@ ${formattedObject}`;
         };
       }
     });
-    const TemplateBindingModal_vue_vue_type_style_index_0_scoped_28ea2ebf_lang = "";
-    const TemplateBindingModal = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-28ea2ebf"]]);
+    const TemplateBindingModal_vue_vue_type_style_index_0_scoped_456ee52f_lang = "";
+    const TemplateBindingModal = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-456ee52f"]]);
     var __async2 = (__this, __arguments, generator) => {
       return new Promise((resolve2, reject) => {
         var fulfilled = (value) => {

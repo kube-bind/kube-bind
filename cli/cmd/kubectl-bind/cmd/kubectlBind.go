@@ -31,6 +31,7 @@ import (
 	logincmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-login/cmd"
 	templatescmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-templates/cmd"
 	bindcmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind/cmd"
+	devcmd "github.com/kube-bind/kube-bind/cli/pkg/kubectl/dev/cmd"
 )
 
 func KubectlBindCommand() *cobra.Command {
@@ -77,6 +78,13 @@ func KubectlBindCommand() *cobra.Command {
 		os.Exit(1)
 	}
 	rootCmd.AddCommand(collectionsCmd)
+
+	devCmd, err := devcmd.New(genericclioptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v", err)
+		os.Exit(1)
+	}
+	rootCmd.AddCommand(devCmd)
 
 	return rootCmd
 }

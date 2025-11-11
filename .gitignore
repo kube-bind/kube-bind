@@ -21,3 +21,5 @@ apiserviceexport.yaml
 web/node_modules/
 web/.vite/
 web/*.tsbuildinfo
+go.work
+go.work.sum

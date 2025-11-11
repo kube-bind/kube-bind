@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
@@ -136,4 +137,13 @@ func EnsureKubeconfigSecret(ctx context.Context, kubeconfig, name string, client
 	}
 
 	return secret, false, nil
+}
+
+// LoadRestConfigFromString loads a kubeconfig string and returns a rest.Config
+func LoadRestConfigFromString(kubeconfig string) (*rest.Config, error) {
+	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig))
+	if err != nil {
+		return nil, fmt.Errorf("failed to build config from kubeconfig: %w", err)
+	}
+	return config, nil
 }

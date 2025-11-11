@@ -18,6 +18,8 @@ package auth
 
 import (
 	"context"
+	"crypto/tls"
+	"net/http"
 	"time"
 
 	oidc "github.com/coreos/go-oidc/v3/oidc"
@@ -67,8 +69,9 @@ type OIDCServiceProvider struct {
 	redirectURI  string
 	issuerURL    string
 
-	verifier *oidc.IDTokenVerifier
-	provider *oidc.Provider
+	verifier  *oidc.IDTokenVerifier
+	provider  *oidc.Provider
+	tlsConfig *tls.Config
 }
 
 func NewOIDCServiceProvider(ctx context.Context, clientID, clientSecret, redirectURI, issuerURL string) (*OIDCServiceProvider, error) {
@@ -84,15 +87,53 @@ func NewOIDCServiceProvider(ctx context.Context, clientID, clientSecret, redirec
 		issuerURL:    issuerURL,
 		provider:     provider,
 		verifier:     provider.Verifier(&oidc.Config{ClientID: clientID}),
+		tlsConfig:    nil,
+	}, nil
+}
+
+func NewOIDCServiceProviderWithTLS(
+	ctx context.Context,
+	clientID, clientSecret, redirectURI, issuerURL string,
+	tlsConfig *tls.Config,
+) (*OIDCServiceProvider, error) {
+	// Create a custom HTTP client that trusts the TLS config
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	// Create context with the custom client
+	ctxWithClient := oidc.ClientContext(ctx, client)
+
+	provider, err := oidc.NewProvider(ctxWithClient, issuerURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return &OIDCServiceProvider{
+		clientID:     clientID,
+		clientSecret: clientSecret,
+		redirectURI:  redirectURI,
+		issuerURL:    issuerURL,
+		provider:     provider,
+		verifier:     provider.Verifier(&oidc.Config{ClientID: clientID}),
+		tlsConfig:    tlsConfig,
 	}, nil
 }
 
 func (o *OIDCServiceProvider) OIDCProviderConfig(scopes []string) *oauth2.Config {
-	return &oauth2.Config{
+	config := &oauth2.Config{
 		ClientID:     o.clientID,
 		ClientSecret: o.clientSecret,
 		Endpoint:     o.provider.Endpoint(),
 		RedirectURL:  o.redirectURI,
 		Scopes:       scopes,
 	}
+
+	return config
+}
+
+func (o *OIDCServiceProvider) GetTLSConfig() *tls.Config {
+	return o.tlsConfig
 }

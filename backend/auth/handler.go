@@ -17,6 +17,7 @@ limitations under the License.
 package auth
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -34,14 +35,23 @@ import (
 	"github.com/kube-bind/kube-bind/backend/session"
 )
 
+type OIDCProvider interface {
+	GetOIDCProvider(ctx context.Context) (*OIDCServiceProvider, error)
+}
+
+type AuthHandlerInterface interface {
+	HandleAuthorize(w http.ResponseWriter, r *http.Request)
+	HandleCallback(w http.ResponseWriter, r *http.Request)
+}
+
 type AuthHandler struct {
-	oidc                *OIDCServiceProvider
+	oidc                OIDCProvider
 	jwtService          *JWTService
 	cookieSigningKey    []byte
 	cookieEncryptionKey []byte
 }
 
-func NewAuthHandler(oidc *OIDCServiceProvider, jwtService *JWTService, cookieSigningKey, cookieEncryptionKey []byte) *AuthHandler {
+func NewAuthHandler(oidc OIDCProvider, jwtService *JWTService, cookieSigningKey, cookieEncryptionKey []byte) *AuthHandler {
 	return &AuthHandler{
 		oidc:                oidc,
 		jwtService:          jwtService,
@@ -85,8 +95,15 @@ func (ah *AuthHandler) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	provider, err := ah.oidc.GetOIDCProvider(r.Context())
+	if err != nil {
+		logger.Info("failed to get OIDC provider", "error", err)
+		ah.respondWithError(w, authReq.ClientType, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	encoded := base64.URLEncoding.EncodeToString(dataCode)
-	authURL := ah.oidc.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
+	authURL := provider.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
 
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
@@ -133,7 +150,25 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := ah.oidc.OIDCProviderConfig(nil).Exchange(r.Context(), code)
+	provider, err := ah.oidc.GetOIDCProvider(r.Context())
+	if err != nil {
+		logger.Info("failed to get OIDC provider", "error", err)
+		ah.respondWithError(w, authCode.ClientType, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Create context with custom HTTP client if TLS config is available
+	ctx := r.Context()
+	if tlsConfig := provider.GetTLSConfig(); tlsConfig != nil {
+		client := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: tlsConfig,
+			},
+		}
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
+	}
+
+	token, err := provider.OIDCProviderConfig(nil).Exchange(ctx, code)
 	if err != nil {
 		logger.Error(err, "failed to exchange token")
 		http.Error(w, "internal error", http.StatusInternalServerError)

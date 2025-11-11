@@ -30,7 +30,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-go@v5
       with:
-        go-version: v1.24.0
+        go-version: v1.25.4
     - uses: actions/setup-node@v4
       with:
         node-version: '20'
@@ -45,7 +45,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-go@v5
       with:
-        go-version: v1.24.0
+        go-version: v1.25.4
     - uses: actions/setup-node@v4
       with:
         node-version: '20'
@@ -60,7 +60,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-go@v5
       with:
-        go-version: v1.24.0
+        go-version: v1.25.4
     - run: make test
 
   lint:
@@ -70,7 +70,7 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-go@v5
       with:
-        go-version: v1.24.0
+        go-version: v1.25.4
     - run: make lint
 
   verify:
@@ -80,5 +80,5 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/setup-go@v5
       with:
-        go-version: v1.24.0
+        go-version: v1.25.4
     - run: make verify

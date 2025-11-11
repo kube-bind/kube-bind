@@ -99,7 +99,7 @@ func NewOptions() *Options {
 			ClusterScopedIsolation: string(kubebindv1alpha2.IsolationPrefixed),
 			ServerURL:              "",
 			SchemaSource:           CustomResourceDefinitionSource.String(),
-			Frontend:               "/www",
+			Frontend:               "embedded", // Not used, but indicates to use embedded frontend using SPA.
 		},
 	}
 }
@@ -167,7 +167,13 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {
-	if err := options.OIDC.Complete(); err != nil {
+	// Serve must complete first as OIDC may depend on it
+	// to reuse the listener.
+	if err := options.Serve.Complete(); err != nil {
+		return nil, err
+	}
+
+	if err := options.OIDC.Complete(options.Serve.Listener); err != nil {
 		return nil, err
 	}
 	if err := options.Cookie.Complete(); err != nil {
@@ -220,6 +226,10 @@ func (options *CompletedOptions) Validate() error {
 	}
 	if options.PrettyName == "" {
 		return fmt.Errorf("pretty name cannot be empty")
+	}
+
+	if err := options.Serve.Validate(); err != nil {
+		return err
 	}
 
 	if err := options.OIDC.Validate(); err != nil {

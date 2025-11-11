@@ -32,6 +32,10 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
@@ -44,6 +48,12 @@ spec:
             - --listen-address={{ .Values.backend.listenAddress }}
             {{- if .Values.backend.logLevel }}
             - --log-level={{ .Values.backend.logLevel }}
+            {{- end }}
+            {{- if .Values.backend.externalAddress }}
+            - --external-address={{ .Values.backend.externalAddress }}
+            {{- end }}
+            {{- if .Values.backend.externalServerName }}
+            - --external-server-name={{ .Values.backend.externalServerName }}
             {{- end }}
             {{- if .Values.backend.oidc.issuerUrl }}
             - --oidc-issuer-url={{ .Values.backend.oidc.issuerUrl }}
@@ -75,6 +85,11 @@ spec:
             {{- if .Values.backend.tls.enabled }}
             - --tls-cert-file={{ .Values.backend.tls.tlsCertFile }}
             - --tls-key-file={{ .Values.backend.tls.tlsKeyFile }}
+            {{- end }}
+            {{- if eq .Values.backend.oidc.type "embedded" }}
+            - --oidc-type=embedded
+            {{- else if eq .Values.backend.oidc.type "external" }}
+            - --oidc-type=external
             {{- end }}
           ports:
             {{- if .Values.backend.tls.enabled }}

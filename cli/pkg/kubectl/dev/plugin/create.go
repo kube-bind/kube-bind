@@ -76,7 +76,7 @@ func NewDevOptions(streams genericclioptions.IOStreams) *DevOptions {
 		ConsumerClusterName: "kind-consumer",
 		ChartPath:           "oci://ghcr.io/kube-bind/charts/backend",
 		// TODO: Update to released version
-		ChartVersion: "0.0.0-a50df39d7e4c71f7808f4209ec23f294c5ac8f86",
+		ChartVersion: "0.0.0-667783a5861bb10113d6e10e355bfe87e731a314",
 	}
 }
 
@@ -131,7 +131,6 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	// Display experimental warning header
 	fmt.Fprintf(o.Streams.ErrOut, "🧪 EXPERIMENTAL: Kube-bind dev command is in preview\n")
 	fmt.Fprintf(o.Streams.ErrOut, "📦 Requirements: Docker must be installed and running\n")
-	fmt.Fprintf(o.Streams.ErrOut, "⚠️  This command is for development purposes only\n\n")
 
 	if err := o.setupHostEntries(ctx); err != nil {
 		return err
@@ -326,6 +325,12 @@ func (o *DevOptions) installHelmChart(_ context.Context, restConfig *rest.Config
 			"port":     8080,
 			"nodePort": 31000,
 		},
+		"hostAliases": []map[string]interface{}{
+			{
+				"ip":        "0.0.0.0",
+				"hostnames": []string{"kube-bind.dev.local"},
+			},
+		},
 	}
 
 	var chart *chart.Chart
@@ -333,7 +338,6 @@ func (o *DevOptions) installHelmChart(_ context.Context, restConfig *rest.Config
 
 	if strings.HasPrefix(o.ChartPath, "oci://") {
 		tempInstallAction := action.NewInstall(actionConfig)
-		tempInstallAction.ChartPathOptions.RepoURL = o.ChartPath
 		tempInstallAction.ChartPathOptions.Version = o.ChartVersion
 		chartPath, err := tempInstallAction.ChartPathOptions.LocateChart(o.ChartPath, cli.New())
 		if err != nil {

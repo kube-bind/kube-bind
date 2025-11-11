@@ -139,8 +139,8 @@ func EnsureKubeconfigSecret(ctx context.Context, kubeconfig, name string, client
 	return secret, false, nil
 }
 
-// LoadRestConfigFromFile loads a kubeconfig string and returns a rest.Config
-func LoadRestConfigFromFile(kubeconfig string) (*rest.Config, error) {
+// LoadRestConfigFromString loads a kubeconfig string and returns a rest.Config
+func LoadRestConfigFromString(kubeconfig string) (*rest.Config, error) {
 	config, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig))
 	if err != nil {
 		return nil, fmt.Errorf("failed to build config from kubeconfig: %w", err)

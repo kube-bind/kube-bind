@@ -236,7 +236,7 @@ func (o *DevOptions) createCluster(ctx context.Context, clusterName, clusterConf
 	fmt.Fprint(o.Streams.ErrOut, "Wrote kubeconfig "+kubeconfigPath+"\n")
 
 	if installKubeBind {
-		restConfig, err := base.LoadRestConfigFromFile(kubeConfigFile)
+		restConfig, err := base.LoadRestConfigFromString(kubeConfigFile)
 		if err != nil {
 			return err
 		}

@@ -127,13 +127,9 @@ kubectl ws create consumer --enter
 ./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 7yw1thtocnvdhf74 
 ./bin/kubectl-bind --dry-run -o yaml > apiserviceexport.yaml
 
-# Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
-# name by running `kubectl get secret -n kube-bind`
-kubectl get secrets -n kube-bind -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d > remote.kubeconfig
-
-namespace=$(yq '.contexts[0].context.namespace' remote.kubeconfig)
-
-./bin/kubectl-bind apiservice -v 6 --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml --skip-konnector --remote-namespace "$namespace"
+# The dry-run saves assets locally and does not create any resources on the consumer cluster.
+# Use --from-dry-run with the session ID (printed at the end of dry-run output, or find it in ~/.kube-bind/dry-run/)
+./bin/kubectl-bind apiservice --from-dry-run <session-id> --skip-konnector
 ```
 
 This will keep running, so switch to a new terminal.
@@ -156,9 +152,8 @@ kubectl ws create consumer2 --enter
 
 ./bin/kubectl-bind http://127.0.0.1:8080/clusters/2vgrh380y0cq38du/exports --dry-run -o yaml > apiserviceexport2.yaml
 
-kubectl get secrets -n kube-bind -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d > remote2.kubeconfig
-
-./bin/kubectl-bind apiservice -v 6 --remote-kubeconfig remote2.kubeconfig -f apiserviceexport2.yaml  --skip-konnector --remote-namespace "$(yq '.contexts[0].context.namespace' remote2.kubeconfig)"
+# Use --from-dry-run with the session ID (printed at the end of dry-run output)
+./bin/kubectl-bind apiservice --from-dry-run <session-id> --skip-konnector
 
 ./bin/konnector --lease-namespace default --kubeconfig .kcp/consumer2.kubeconfig --server-address :8091
 ```

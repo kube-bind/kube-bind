@@ -25,7 +25,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
 	"github.com/xrstf/mockoidc"
 )
@@ -101,7 +100,6 @@ func (s *Server) Config(callbackURL, issuerURL string) (*Config, error) {
 		CallbackURL:                   callbackURL,
 		IssuerURL:                     issuerURL,
 	}
-	spew.Dump(c)
 	return c, nil
 }
 

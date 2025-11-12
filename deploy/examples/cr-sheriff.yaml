@@ -1,0 +1,26 @@
+apiVersion: wildwest.dev/v1alpha1
+kind: Sheriff
+metadata:
+  name: wyatt-earp
+spec:
+  intent: "Keep the peace in Tombstone"
+  secretRefs:
+  - name: sheriff-badge-credentials
+    namespace: sheriff-operations
+  - name: sheriff-jurisdiction-config
+    namespace: sheriff-operations
+status:
+  result: "Ready for duty"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: sheriff-badge-credentials
+  namespace: sheriff-operations
+  labels:
+    app: sheriff
+    security: high
+data:
+  badge_number: IzEyMzQ1  # "#12345" base64 encoded
+  authority_level: aGlnaA==  # "high" base64 encoded
+  jurisdiction: dG9tYnN0b25l  # "tombstone" base64 encoded

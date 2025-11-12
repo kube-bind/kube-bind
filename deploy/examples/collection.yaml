@@ -4,5 +4,5 @@ metadata:
   name: all
 spec:
   templates:
-  - name: mangodb
-  - name: foo
+  - name: cowboys
+  - name: sheriffs

@@ -90,8 +90,8 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().DurationVarP(&o.WaitForReadyTimeout, "wait-for-ready-timeout", "", 2*time.Minute, "Timeout for waiting for the cluster to be ready")
 	cmd.Flags().StringVarP(&o.ChartPath, "chart-path", "", o.ChartPath, "Helm chart path or OCI registry URL")
 	cmd.Flags().StringVarP(&o.ChartVersion, "chart-version", "", o.ChartVersion, "Helm chart version")
-	cmd.Flags().StringVarP(&o.Image, "image", "", "ghcr.io/kube-bind/backend", "Kube-bind backend image to use in dev mode")
-	cmd.Flags().StringVarP(&o.Tag, "tag", "", "main", "Kube-bind backend image tag to use in dev mode")
+	cmd.Flags().StringVarP(&o.Image, "image", "", "ghcr.io/kube-bind/backend", "kube-bind backend image to use in dev mode")
+	cmd.Flags().StringVarP(&o.Tag, "tag", "", "main", "kube-bind backend image tag to use in dev mode")
 }
 
 // Complete completes the options
@@ -124,16 +124,30 @@ nodes:
 - role: control-plane
 `
 
-// Run executes the create command
-func (o *DevOptions) Run(ctx context.Context) error {
+// Color helper functions
+func blueCommand(text string) string {
+	return "\033[38;5;67m" + text + "\033[0m"
+}
+
+func redText(text string) string {
+	return "\033[31m" + text + "\033[0m"
+}
+
+func (o *DevOptions) runWithColors(ctx context.Context) error {
 	_ = o.Options.GetConfig()
 
-	// Display experimental warning header
-	fmt.Fprintf(o.Streams.ErrOut, "🧪 EXPERIMENTAL: Kube-bind dev command is in preview\n")
-	fmt.Fprintf(o.Streams.ErrOut, "📦 Requirements: Docker must be installed and running\n")
+	// Display experimental warning header with red "EXPERIMENTAL"
+	fmt.Fprintf(o.Streams.ErrOut, "kube-bind Development Environment Setup\n\n")
+	fmt.Fprintf(o.Streams.ErrOut, "%s kube-bind dev command is in preview\n", redText("EXPERIMENTAL:"))
+	fmt.Fprintf(o.Streams.ErrOut, "Requirements: Docker must be installed and running\n\n")
 
+	hostEntryExisted := false
 	if err := o.setupHostEntries(ctx); err != nil {
-		return err
+		fmt.Fprintf(o.Streams.ErrOut, "⚠️  Host entry setup warning: %v\n", err)
+		hostEntryExisted = false
+	} else {
+		fmt.Fprint(o.Streams.ErrOut, "✓ Host entry exists for kube-bind.dev.local\n")
+		hostEntryExisted = true
 	}
 
 	if err := o.checkFileLimits(); err != nil {
@@ -147,33 +161,56 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	providerIP, err := o.getClusterIPAddress(ctx, o.ProviderClusterName, "kube-bind-dev")
 	if err != nil {
 		fmt.Fprintf(o.Streams.ErrOut, "⚠️  Failed to get provider cluster IP address: %v\n", err)
-		fmt.Fprintf(o.Streams.ErrOut, "💡 Fallback: Use docker command to get IP manually:\n")
-		fmt.Fprintf(o.Streams.ErrOut, "   docker inspect %s-control-plane | jq -r '.[0].NetworkSettings.Networks[\"kube-bind-dev\"].IPAddress'\n", o.ProviderClusterName)
-	} else {
-		fmt.Fprintf(o.Streams.ErrOut, "Provider cluster IP address: %s\n", providerIP)
+		providerIP = ""
 	}
 
 	if err := o.createCluster(ctx, o.ConsumerClusterName, consumerClusterConfig, false); err != nil {
 		return err
 	}
 
-	message := "🚀 Kube-bind dev environment is ready!\n\n" +
-		"- Provider cluster kubeconfig: " + o.ProviderClusterName + ".kubeconfig\n" +
-		"- Consumer cluster kubeconfig: " + o.ConsumerClusterName + ".kubeconfig\n" +
-		"- Kube-bind server URL: http://kube-bind.dev.local:8080\n" +
-		"- Next steps:\n" +
-		"  1. Run login to authenticate to the provider cluster:\n\n" +
-		"kubectl bind login http://kube-bind.dev.local:8080\n\n" +
-		"  2. Run bind to bind an API service from the provider to the consumer cluster:\n\n"
-	if providerIP == "" {
-		message += fmt.Sprintf("PROVIDER_IP=$(docker inspect %s-control-plane | jq -r '.[0].NetworkSettings.Networks[\"kube-bind-dev\"].IPAddress')\n", o.ProviderClusterName)
-		message += "KUBECONFIG=" + o.ConsumerClusterName + ".kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local\n"
-	} else {
-		message += "KUBECONFIG=" + o.ConsumerClusterName + ".kubeconfig kubectl bind --konnector-host-alias " + providerIP + ":kube-bind.dev.local\n"
+	// Success message
+	fmt.Fprint(o.Streams.ErrOut, "kube-bind dev environment is ready!\n\n")
+
+	// Configuration
+	fmt.Fprint(o.Streams.ErrOut, "Configuration:\n")
+	fmt.Fprintf(o.Streams.ErrOut, "• Provider cluster kubeconfig: %s.kubeconfig\n", o.ProviderClusterName)
+	fmt.Fprintf(o.Streams.ErrOut, "• Consumer cluster kubeconfig: %s.kubeconfig\n", o.ConsumerClusterName)
+	fmt.Fprint(o.Streams.ErrOut, "• kube-bind server URL: http://kube-bind.dev.local:8080\n\n")
+
+	// Next steps with colored commands
+	fmt.Fprint(o.Streams.ErrOut, "Next Steps:\n\n")
+
+	stepNum := 1
+
+	// Only show /etc/hosts step if entry didn't already exist
+	if !hostEntryExisted {
+		fmt.Fprintf(o.Streams.ErrOut, "%d. Add to /etc/hosts (if not already done):\n", stepNum)
+		fmt.Fprintf(o.Streams.ErrOut, "%s\n\n", blueCommand("echo '127.0.0.1 kube-bind.dev.local' | sudo tee -a /etc/hosts"))
+		stepNum++
 	}
 
-	fmt.Fprint(o.Streams.ErrOut, message)
+	fmt.Fprintf(o.Streams.ErrOut, "%d. Login to authenticate to the provider cluster:\n", stepNum)
+	fmt.Fprintf(o.Streams.ErrOut, "%s\n\n", blueCommand("kubectl bind login http://kube-bind.dev.local:8080"))
+	stepNum++
+
+	fmt.Fprintf(o.Streams.ErrOut, "%d. Bind an API service from provider to consumer:\n", stepNum)
+	if providerIP != "" {
+		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias %s:kube-bind.dev.local", o.ConsumerClusterName, providerIP)))
+	} else {
+		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("PROVIDER_IP=$(docker inspect %s-control-plane | jq -r '.[0].NetworkSettings.Networks[\"kube-bind-dev\"].IPAddress') && KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local", o.ProviderClusterName, o.ConsumerClusterName)))
+	}
+
 	return nil
+}
+
+// Run runs the dev command
+func (o *DevOptions) Run(ctx context.Context) error {
+	return o.runWithColors(ctx)
+}
+
+// SetupHostEntries sets up the host entries for the dev environment
+func (o *DevOptions) SetupHostEntries(ctx context.Context) error {
+	return o.setupHostEntries(ctx)
 }
 
 func (o *DevOptions) setupHostEntries(ctx context.Context) error {
@@ -488,6 +525,36 @@ func hostEntryExists(hostsPath, hostname string) (bool, error) {
 	}
 
 	return false, scanner.Err()
+}
+
+// CheckFileLimits checks system file limits for the dev environment
+func (o *DevOptions) CheckFileLimits() error {
+	return o.checkFileLimits()
+}
+
+// GetClusterIPAddress gets the IP address of a cluster in the specified network
+func (o *DevOptions) GetClusterIPAddress(ctx context.Context, clusterName, networkName string) (string, error) {
+	return o.getClusterIPAddress(ctx, clusterName, networkName)
+}
+
+// CreateProviderCluster creates the provider cluster
+func (o *DevOptions) CreateProviderCluster(ctx context.Context) error {
+	return o.createCluster(ctx, o.ProviderClusterName, providerClusterConfig, true)
+}
+
+// CreateConsumerCluster creates the consumer cluster
+func (o *DevOptions) CreateConsumerCluster(ctx context.Context) error {
+	return o.createCluster(ctx, o.ConsumerClusterName, consumerClusterConfig, false)
+}
+
+// GetProviderClusterName returns the provider cluster name
+func (o *DevOptions) GetProviderClusterName() string {
+	return o.ProviderClusterName
+}
+
+// GetConsumerClusterName returns the consumer cluster name
+func (o *DevOptions) GetConsumerClusterName() string {
+	return o.ConsumerClusterName
 }
 
 func (o *DevOptions) checkFileLimits() error {

@@ -1,0 +1,23 @@
+apiVersion: wildwest.dev/v1alpha1
+kind: Cowboy
+metadata:
+  name: billy-the-kid
+spec:
+  intent: "Ride the range and protect the cattle"
+  weapons:
+  - name: colt-45-permit
+  - name: winchester-rifle-license
+status:
+  result: "Ready to ride"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: colt-45-permit
+  labels:
+    app: cowboy
+    type: weapon
+data:
+  serial_number: QzQ1LTEyMzQ1Ng==  # "C45-123456" base64 encoded
+  permit_date: MTg4MS0wNC0xNQ==  # "1881-04-15" base64 encoded
+  issued_by: VG9tYnN0b25lIE1hcnNoYWw=  # "Tombstone Marshal" base64 encoded

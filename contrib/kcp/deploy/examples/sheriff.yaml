@@ -1,6 +1,0 @@
-apiVersion: wildwest.dev/v1alpha1
-kind: Sheriff
-metadata:
-  name: sheriff
-spec:
-  intent: "ride into the sunset"

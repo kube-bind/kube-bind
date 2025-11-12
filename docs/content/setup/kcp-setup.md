@@ -19,94 +19,53 @@ The kcp provider integrates kube-bind with [kcp](https://github.com/kcp-dev/kcp)
 ## Prerequisites
 
 - [kcp](https://github.com/kcp-dev/kcp) instance running and accessible
-- [dex](https://github.com/dexidp/dex) for OIDC authentication
 - kube-bind binaries built (`make build`)
 
 ## Setup Steps
 
-### 1. Start kcp
+1. Start kcp
 
 ```bash
 make run-kcp
 ```
 
-### 2. Start Dex OIDC Provider
+## Backend
 
-Clone and configure dex:
-
-```bash
-git clone https://github.com/dexidp/dex.git
-cd dex && make build
-```
-
-Configure dex (`examples/config-dev.yaml`):
-
-```yaml
-staticClients:
-- id: kube-bind
-  redirectURIs:
-  - 'http://127.0.0.1:8080/callback'
-  name: 'Kube Bind'
-  secret: ZXhhbXBsZS1hcHAtc2VjcmV0
-```
-
-Start dex:
-
-```bash
-./bin/dex serve examples/config-dev.yaml
-```
-
-### 3. Bootstrap kcp
-
-Create the kube-bind provider workspace and APIExport:
-
+2. Bootstrap kcp:
 ```bash
 cp .kcp/admin.kubeconfig .kcp/backend.kubeconfig
 export KUBECONFIG=.kcp/backend.kubeconfig
 ./bin/kcp-init --kcp-kubeconfig $KUBECONFIG
 ```
-
-### 4. Start Backend with kcp Provider
-
-Switch to the kube-bind workspace:
-
-```bash
-kubectl ws use :root:kube-bind
+3. Run the backend:
 ```
+k ws use :root:kube-bind
 
-Start the backend with kcp provider:
-
-```bash
 ./bin/backend \
   --multicluster-runtime-provider kcp \
   --server-url=$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}") \
-  --oidc-issuer-client-secret=ZXhhbXBsZS1hcHAtc2VjcmV0 \
-  --oidc-issuer-client-id=kube-bind \
-  --oidc-issuer-url=http://127.0.0.1:5556/dex \
-  --oidc-callback-url=http://127.0.0.1:8080/callback \
   --pretty-name="BigCorp.com" \
+  --oidc-type=embedded \
+  --oidc-issuer-url=http://127.0.0.1:8080/oidc \
+  --oidc-callback-url=http://127.0.0.1:8080/api/callback \
   --namespace-prefix="kube-bind-" \
-  --cookie-signing-key=bGMHz7SR9XcI9JdDB68VmjQErrjbrAR9JdVqjAOKHzE= \
-  --cookie-encryption-key=wadqi4u+w0bqnSrVFtM38Pz2ykYVIeeadhzT34XlC1Y= \
-  --schema-source apiresourceschemas
+  --schema-source apiresourceschemas \
   --consumer-scope=cluster
 ```
 
-### 5. Create Provider Workspace
+This process will keep running, so open a new terminal.
 
-Create a provider workspace for hosting services:
+## Provider
 
+4. Copy the kubeconfig to the provider and create provider workspace:
 ```bash
 cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
 export KUBECONFIG=.kcp/provider.kubeconfig
-kubectl ws use :root
-kubectl ws create provider --enter
+k ws use :root
+kubectl create-workspace provider --enter
 ```
 
-### 6. Bind APIExport to Provider
-
-Bind the kube-bind APIExport to the provider workspace:
-
+5. Bind the APIExport to the provider workspace
 ```bash
 kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
   --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
@@ -121,38 +80,29 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
   --accept-permission-claim apiresourceschemas.apis.kcp.io
 ```
 
-### 7. Create Example Resources
-
-Deploy example APIExport and APIResourceSchemas:
-
+6. Create CRD in provider:
 ```bash
-kubectl create -f contrib/kcp/deploy/examples/apiexport.yaml
-kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
-kubectl create -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
-
-# Enable recursive binding
+kubectl apply -f contrib/kcp/deploy/examples/apiexport.yaml
+kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
+kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
 kubectl kcp bind apiexport root:provider:cowboys-stable
 
-# Create templates and catalog
-kubectl create -f contrib/kcp/deploy/examples/template-cowboys.yaml
-kubectl create -f contrib/kcp/deploy/examples/template-sheriffs.yaml
-kubectl create -f contrib/kcp/deploy/examples/collection-wildwest.yaml
+kubectl apply -f deploy/examples/template-cowboys.yaml
+kubectl apply -f deploy/examples/template-sheriffs.yaml
+kubectl apply -f deploy/examples/collection.yaml
 ```
 
-### 8. Get Logical Cluster Information
-
-Retrieve the logical cluster URL for consumer setup:
+7. Get LogicalCluster:
 
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/2xh2v3gzjhn4tmve
+# cluster   Ready   https://192.168.2.166:6443/clusters/2ocmmccjkme8bof4
 ```
 
-## Consumer Setup
+## Consumer
 
-### 1. Create Consumer Workspace
-
+8. Now we gonna initiate consumer:
 ```bash
 cp .kcp/admin.kubeconfig .kcp/consumer.kubeconfig
 export KUBECONFIG=.kcp/consumer.kubeconfig
@@ -160,26 +110,34 @@ kubectl ws use :root
 kubectl ws create consumer --enter
 ```
 
-### 2. Perform Binding
-
-Generate the APIServiceExport YAML:
+9. Bind the thing:
 
 ```bash
-./bin/kubectl-bind login http://127.0.0.1:8080 --cluster <logical-cluster-id>
-./bin/kubectl-bind --skip-konnector
+./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 2ocmmccjkme8bof4 
+./bin/kubectl-bind --dry-run -o yaml > apiserviceexport.yaml
+
+# Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
+# name by running `kubectl get secret -n kube-bind`
+kubectl get secrets -n kube-bind -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d > remote.kubeconfig
+
+namespace=$(yq '.contexts[0].context.namespace' remote.kubeconfig)
+
+./bin/kubectl-bind apiservice -v 6 --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml --skip-konnector --remote-namespace "$namespace"
 ```
 
-### 3. Start Konnector
+This will keep running, so switch to a new terminal.
+
+### Consumer Konnector
+
+Start konnector:
 
 ```bash
-export KUBECONFIG=.kcp/consumer.kubeconfig
-go run ./cmd/konnector/ --lease-namespace default
+./bin/konnector --lease-namespace default --kubeconfig .kcp/consumer.kubeconfig
 ```
 
-### 4. Test the Setup
-
-Create example resources:
+# Create an instance 
 
 ```bash
-kubectl apply -f contrib/kcp/deploy/examples/cowboy.yaml
+kubectl apply -f deploy/examples/cr-cowboy.yaml
+kubectl apply -f deploy/examples/cr-sheriff.yaml
 ```

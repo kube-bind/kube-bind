@@ -24,7 +24,8 @@ This is the 3 line pitch:
 ```shell
 $ kubectl krew index add bind https://github.com/kube-bind/krew-index.git
 $ kubectl krew install bind/bind
-$ kubectl bind https://mangodb/exports
+$ kubectl bind login https://mangodb
+$ kubectl bind
 Redirect to the brower to authenticate via OIDC.
 BOOM – the MangoDB API is available in the local cluster,
        without anything MangoDB-specific running.

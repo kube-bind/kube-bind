@@ -34,6 +34,20 @@ spec:
           properties:
             intent:
               type: string
+            secretRefs:
+              type: array
+              description: "Array of references to multiple Secrets for sheriff operations"
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: "Name of the referenced Secret"
+                  namespace:
+                    type: string
+                    description: "Namespace of the referenced Secret"
+                required:
+                - name
           type: object
         status:
           description: SheriffStatus communicates the observed state of the Sheriff.

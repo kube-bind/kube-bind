@@ -35,7 +35,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 
-	boostrapdeploy "github.com/kube-bind/kube-bind/contrib/kcp/deploy"
+	kcpboostrapdeploy "github.com/kube-bind/kube-bind/contrib/kcp/deploy"
+	bootstrapdeploy "github.com/kube-bind/kube-bind/deploy/examples"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	"github.com/kube-bind/kube-bind/test/e2e/framework"
 )
@@ -111,14 +112,21 @@ func testKcpIntegration(t *testing.T, name string, scope kubebindv1alpha2.Inform
 	files := []string{"examples/apiexport.yaml",
 		"examples/apiresourceschema-cowboys.yaml",  // namespaced
 		"examples/apiresourceschema-sheriffs.yaml", // cluster scoped
-		"examples/template-cowboys.yaml",           // template for cowboys
-		"examples/template-sheriffs.yaml",          // template for sheriffs
-		"examples/collection-wildwest.yaml",
 	}
 	for _, f := range files {
-		data, err := boostrapdeploy.Examples.ReadFile(f)
+		data, err := kcpboostrapdeploy.Examples.ReadFile(f)
 		require.NoError(t, err, "failed to read example file %s", f)
+		framework.ApplyManifest(t, providerCfg, data)
+	}
 
+	files = []string{
+		"template-cowboys.yaml",  // template for cowboys
+		"template-sheriffs.yaml", // template for sheriffs
+		"collection.yaml",
+	}
+	for _, f := range files {
+		data, err := bootstrapdeploy.Examples.ReadFile(f)
+		require.NoError(t, err, "failed to read example file %s", f)
 		framework.ApplyManifest(t, providerCfg, data)
 	}
 

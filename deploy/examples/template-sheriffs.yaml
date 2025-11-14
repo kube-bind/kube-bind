@@ -1,0 +1,20 @@
+apiVersion: kube-bind.io/v1alpha2
+kind: APIServiceExportTemplate
+metadata:
+  name: sheriffs
+spec:
+  scope: Cluster
+  resources:
+  - group: wildwest.dev
+    versions: 
+    - v1alpha1
+    resource: sheriffs
+  permissionClaims:
+  - group: ""
+    resource: secrets
+    selector:
+      labelSelector:
+        matchLabels:
+          app: sheriff
+  namespaces:
+  - name: sheriff-operations

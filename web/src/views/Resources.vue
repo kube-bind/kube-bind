@@ -169,7 +169,10 @@ interface Template {
       resource: string
       selector?: {
         labelSelector?: any
-        namedResources?: string[]
+        namedResources?: Array<{
+          name: string
+          namespace?: string
+        }>
       }
     }>
     namespaces?: Array<{

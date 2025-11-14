@@ -261,7 +261,7 @@ func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj any) {
 
 	if secretKey == c.consumerSecretRefKey {
 		key := c.providerNamespace + "/cluster"
-		logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "ConsumerSecret", "SecretKey", secretKey)
+		logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "ConsumerSecret", "accessSecretKey", secretKey)
 		c.queue.Add(key)
 	}
 }
@@ -294,7 +294,7 @@ func (c *controller) enqueueProviderSecret(logger klog.Logger, obj any) {
 	}
 
 	key := ns + "/cluster"
-	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "Secret", "SecretKey", secretKey)
+	logger.V(2).Info("queueing ClusterBinding", "key", key, "reason", "Secret", "accessSecretKey", secretKey)
 	c.queue.Add(key)
 }
 
@@ -432,7 +432,7 @@ func (c *controller) updateServiceBindings(ctx context.Context, update func(*kub
 
 	objs, err := c.serviceBindingInformer.Informer().GetIndexer().ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.consumerSecretRefKey)
 	if err != nil {
-		logger.Error(err, "failed to list service bindings", "secretKey", c.consumerSecretRefKey)
+		logger.Error(err, "failed to list service bindings", "accessSecretKey", c.consumerSecretRefKey)
 		return
 	}
 	for _, obj := range objs {

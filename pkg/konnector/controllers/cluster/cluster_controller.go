@@ -202,7 +202,7 @@ type controller struct {
 
 // Start starts the controller, which stops when ctx.Done() is closed.
 func (c *controller) Start(ctx context.Context) {
-	logger := klog.FromContext(ctx).WithValues("controller", controllerName, "secretKey", c.consumerSecretRefKey)
+	logger := klog.FromContext(ctx).WithValues("controller", controllerName, "accessSecretKey", c.consumerSecretRefKey)
 	ctx = klog.NewContext(ctx, logger)
 
 	logger.V(2).Info("starting factories")
@@ -261,7 +261,7 @@ func (c *controller) updateServiceBindings(ctx context.Context, update func(*kub
 
 	objs, err := c.serviceBindingIndexer.ByIndex(indexers.ByServiceBindingKubeconfigSecret, c.consumerSecretRefKey)
 	if err != nil {
-		logger.Error(err, "failed to list service bindings", "secretKey", c.consumerSecretRefKey)
+		logger.Error(err, "failed to list service bindings", "accessSecretKey", c.consumerSecretRefKey)
 		return
 	}
 	for _, obj := range objs {

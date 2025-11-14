@@ -171,7 +171,7 @@ func (c *controller) enqueueConsumerSecret(logger klog.Logger, obj any) {
 			runtime.HandleError(err)
 			return
 		}
-		logger.V(2).Info("queueing APIServiceBinding", "key", key, "reason", "Secret", "SecretKey", secretKey)
+		logger.V(2).Info("queueing APIServiceBinding", "key", key, "reason", "Secret", "accessSecretKey", secretKey)
 		c.queue.Add(key)
 	}
 }

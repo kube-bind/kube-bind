@@ -39,18 +39,20 @@ spec:
             properties:
               intent:
                 type: string
-              badge:
-                type: object
-                description: "Reference to a Secret containing sheriff badge credentials"
-                properties:
-                  name:
-                    type: string
-                    description: "Name of the referenced Secret"
-                  namespace:
-                    type: string
-                    description: "Namespace of the referenced Secret"
-                required:
-                - name
+              secretRefs:
+                type: array
+                description: "Array of references to Secrets containing sheriff credentials"
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: "Name of the referenced Secret"
+                    namespace:
+                      type: string
+                      description: "Namespace of the referenced Secret"
+                  required:
+                  - name
           status:
             description: SheriffStatus communicates the observed state of the Sheriff.
             type: object

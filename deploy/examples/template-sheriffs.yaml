@@ -16,5 +16,11 @@ spec:
       labelSelector:
         matchLabels:
           app: sheriff
+      references:
+        - resource: sheriffs
+          group: wildwest.dev
+          jsonPath:
+            name: spec.secretRefs.#.name
+            namespace: spec.secretRefs.#.namespace
   namespaces:
-  - name: sheriff-operations
+  - name: wild-west

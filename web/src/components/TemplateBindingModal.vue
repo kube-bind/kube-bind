@@ -108,7 +108,10 @@ interface Template {
       resource: string
       selector?: {
         labelSelector?: any
-        namedResources?: string[]
+        namedResources?: Array<{
+          name: string
+          namespace?: string
+        }>
       }
     }>
     namespaces?: Array<{
@@ -187,9 +190,11 @@ const formatNamedResources = (namedResources: any[]): string => {
   
   return namedResources.map(resource => {
     if (typeof resource === 'string') return resource
-    if (typeof resource === 'object' && resource.name) return resource.name
-    if (typeof resource === 'object' && resource.namespace && resource.name) {
-      return `${resource.namespace}/${resource.name}`
+    if (typeof resource === 'object' && resource.name) {
+      if (resource.namespace) {
+        return `${resource.namespace}/${resource.name}`
+      }
+      return resource.name
     }
     return JSON.stringify(resource)
   }).join(', ')

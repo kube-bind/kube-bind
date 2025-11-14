@@ -29,8 +29,11 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/bootstrap"
 )
 
-//go:embed cr-*.yaml template-*.yaml collection.yaml
+//go:embed crd-*.yaml template-*.yaml collection.yaml
 var Examples embed.FS
+
+//go:embed cr-*.yaml
+var CRExamples embed.FS
 
 func Bootstrap(t *testing.T, discoveryClient discovery.DiscoveryInterface, dynamicClient dynamic.Interface, batteriesIncluded sets.Set[string]) {
 	ctx, cancel := context.WithCancel(context.Background())

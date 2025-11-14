@@ -20,12 +20,16 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -226,6 +230,10 @@ func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 		}
 	}
 
+	if err := c.cleanupRBACResources(ctx, client, cache, sns, apiServiceExports); err != nil {
+		return fmt.Errorf("failed to cleanup RBAC resources: %w", err)
+	}
+
 	return nil
 }
 
@@ -313,4 +321,75 @@ func (c *reconciler) listAPIServiceExports(ctx context.Context, cache cache.Cach
 		return nil, err
 	}
 	return exports, nil
+}
+
+func (c *reconciler) cleanupRBACResources(
+	ctx context.Context,
+	client client.Client,
+	cache cache.Cache,
+	sns *kubebindv1alpha2.APIServiceNamespace,
+	apiServiceExports *kubebindv1alpha2.APIServiceExportList,
+) error {
+	expected := make(map[string]bool)
+	for _, export := range apiServiceExports.Items {
+		name := fmt.Sprintf("kube-binder-export-%s-%s", sns.Name, export.Name)
+		expected[name] = true
+	}
+	prefix := fmt.Sprintf("kube-binder-export-%s-", sns.Name)
+
+	if c.scope == kubebindv1alpha2.ClusterScope {
+		if err := cleanup(ctx, cache, client, &rbacv1.ClusterRoleList{}, "ClusterRole", "", expected, prefix); err != nil {
+			return err
+		}
+
+		return cleanup(ctx, cache, client, &rbacv1.ClusterRoleBindingList{}, "ClusterRoleBinding", "", expected, prefix)
+	}
+
+	if sns.Status.Namespace != "" {
+		ns := sns.Status.Namespace
+		if err := cleanup(ctx, cache, client, &rbacv1.RoleList{}, "Role", ns, expected, prefix); err != nil {
+			return err
+		}
+		if err := cleanup(ctx, cache, client, &rbacv1.RoleBindingList{}, "RoleBinding", ns, expected, prefix); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func cleanup(
+	ctx context.Context,
+	cache cache.Cache,
+	cl client.Client,
+	list client.ObjectList,
+	kind, ns string,
+	expected map[string]bool,
+	prefix string,
+) error {
+	logger := klog.FromContext(ctx)
+	opts := []client.ListOption{}
+	if ns != "" {
+		opts = append(opts, client.InNamespace(ns))
+	}
+
+	if err := cache.List(ctx, list, opts...); err != nil {
+		logger.V(1).Info(fmt.Sprintf("Failed to list %s for cleanup", kind), "namespace", ns, "error", err)
+		return err
+	}
+
+	return meta.EachListItem(list, func(obj runtime.Object) error {
+		accessor, _ := meta.Accessor(obj)
+		name := accessor.GetName()
+		if strings.HasPrefix(name, prefix) && !expected[name] {
+			logger.V(1).Info(fmt.Sprintf("Deleting orphaned %s", kind),
+				"name", name, "namespace", ns)
+			if err := cl.Delete(ctx, obj.(client.Object)); err != nil {
+				if !errors.IsNotFound(err) {
+					return fmt.Errorf("failed to delete %s %s/%s: %w", kind, ns, name, err)
+				}
+			}
+		}
+		return nil
+	})
 }

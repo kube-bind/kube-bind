@@ -39,9 +39,9 @@ spec:
             properties:
               intent:
                 type: string
-              weapons:
+              secretRefs:
                 type: array
-                description: "Array of references to Secrets containing weapon permits and licenses"
+                description: "Array of references to Secrets containing cowboy credentials"
                 items:
                   type: object
                   properties:

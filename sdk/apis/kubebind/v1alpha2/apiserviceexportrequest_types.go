@@ -159,6 +159,31 @@ type Selector struct {
 	// LabelSelector is a label selector that selects objects of a GVR.
 	// +optional
 	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
+
+	// Reference is a reference to the object that contains jsonPath to select objects of a GVR.
+	// +optional
+	References []SelectorReference `json:"references,omitempty"`
+}
+
+// SelectorReference selects objects of a GVR via a reference to another object.
+type SelectorReference struct {
+	GroupResource `json:",inline"`
+	// versions is a list of versions that should be used to fetch the referenced object.
+	// If not specified and apiserviceexport contains versions for the same group/resource,
+	// those versions are used. Otherwise, references is considered invalid.
+	// +optional
+	// +kubebuilder:validation:Optional
+	Versions []string `json:"versions,omitempty"`
+	// JSONPath is a JSONPath expression that selects the name and namespace of the resource from the referenced object.
+	// +required
+	// +kubebuilder:validation:Required
+	JSONPath *JSONPath `json:"jsonPath,omitempty"`
+}
+
+// JSONPath specifies the JSONPath expression to select name and namespace of a resource.
+type JSONPath struct {
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // NamedResource selects a specific resource by name and namespace.

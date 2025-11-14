@@ -18,3 +18,4 @@ spec:
           app: cowboy
   namespaces:
   - name: wild-west
+

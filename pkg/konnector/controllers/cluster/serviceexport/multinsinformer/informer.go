@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -61,7 +60,6 @@ var _ GetterInformer = &DynamicMultiNamespaceInformer{}
 // by starting individual informers per namespace and aggregating all of these.
 type DynamicMultiNamespaceInformer struct {
 	gvr               schema.GroupVersionResource
-	labelSelector     *metav1.LabelSelector
 	providerNamespace string
 
 	providerDynamicClient dynamicclient.Interface
@@ -79,7 +77,6 @@ func NewDynamicMultiNamespaceInformer(
 	providerNamespace string,
 	providerConfig *rest.Config,
 	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister],
-	labelSelector *metav1.LabelSelector,
 ) (*DynamicMultiNamespaceInformer, error) {
 	providerConfig = rest.CopyConfig(providerConfig)
 	providerConfig = rest.AddUserAgent(providerConfig, controllerName)
@@ -91,7 +88,6 @@ func NewDynamicMultiNamespaceInformer(
 
 	inf := DynamicMultiNamespaceInformer{
 		gvr:                      gvr,
-		labelSelector:            labelSelector,
 		providerNamespace:        providerNamespace,
 		providerDynamicClient:    providerDynamicClient,
 		serviceNamespaceInformer: serviceNamespaceInformer,
@@ -189,19 +185,7 @@ func (inf *DynamicMultiNamespaceInformer) enqueueServiceNamespace(obj any) {
 	logger.V(1).Info("starting dynamic informer", "namespace", sns.Status.Namespace)
 	ctx, cancel := context.WithCancel(context.Background())
 
-	var tweakListOptions func(options *metav1.ListOptions)
-	if inf.labelSelector != nil {
-		tweakListOptions = func(options *metav1.ListOptions) {
-			selector, err := metav1.LabelSelectorAsSelector(inf.labelSelector)
-			if err != nil {
-				utilruntime.HandleError(fmt.Errorf("failed to convert label selector: %w", err))
-				return
-			}
-			options.LabelSelector = selector.String()
-		}
-	}
-
-	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(inf.providerDynamicClient, time.Minute*30, sns.Status.Namespace, tweakListOptions)
+	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(inf.providerDynamicClient, time.Minute*30, sns.Status.Namespace, nil)
 	gvrInf := factory.ForResource(inf.gvr)
 	gvrInf.Lister() // to wire the GVR up in the informer factory
 	inf.namespaceCancel[name] = cancel

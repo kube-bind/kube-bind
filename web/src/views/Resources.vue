@@ -173,6 +173,15 @@ interface Template {
           name: string
           namespace?: string
         }>
+        references?: Array<{
+          resource: string
+          group: string
+          versions?: string[]
+          jsonPath?: {
+            name: string
+            namespace?: string
+          }
+        }>
       }
     }>
     namespaces?: Array<{

@@ -54,12 +54,50 @@
                 <span class="permission-name">{{ claim.resource }}</span>
                 <span class="permission-group">{{ claim.group || 'core' }}</span>
                 <div v-if="claim.selector" class="permission-selector">
-                  <span v-if="claim.selector.labelSelector" class="selector-labels">
-                    Labels: {{ formatLabelSelector(claim.selector.labelSelector) }}
-                  </span>
-                  <span v-if="claim.selector.namedResources && claim.selector.namedResources.length > 0" class="selector-names">
-                    Named: {{ formatNamedResources(claim.selector.namedResources) }}
-                  </span>
+                  <div v-if="claim.selector.labelSelector" class="selector-section">
+                    <strong class="selector-title">Label Selector:</strong>
+                    <div class="selector-content">
+                      <div v-for="(value, key) in getLabelSelectorLabels(claim.selector.labelSelector)" :key="key" class="label-item">
+                        <span class="label-key">{{ key }}</span>
+                        <span class="label-separator">=</span>
+                        <span class="label-value">{{ value }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-if="claim.selector.namedResources && claim.selector.namedResources.length > 0" class="selector-section">
+                    <strong class="selector-title">Named Resources:</strong>
+                    <div class="selector-content">
+                      <div v-for="resource in claim.selector.namedResources" :key="getNamedResourceKey(resource)" class="named-resource-item">
+                        <span class="resource-name">{{ getNamedResourceName(resource) }}</span>
+                        <span v-if="getNamedResourceNamespace(resource)" class="resource-namespace">
+                          in {{ getNamedResourceNamespace(resource) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-if="claim.selector.references && claim.selector.references.length > 0" class="selector-section">
+                    <strong class="selector-title">References:</strong>
+                    <div class="selector-content">
+                      <div v-for="ref in claim.selector.references" :key="getReferenceKey(ref)" class="reference-item">
+                        <div class="reference-header">
+                          <span class="reference-resource">{{ ref.resource }}</span>
+                          <span class="reference-group">({{ ref.group || 'core' }})</span>
+                        </div>
+                        <div v-if="ref.jsonPath" class="reference-paths">
+                          <div v-if="ref.jsonPath.name" class="json-path">
+                            <span class="path-label">Name:</span>
+                            <code class="path-value">{{ ref.jsonPath.name }}</code>
+                          </div>
+                          <div v-if="ref.jsonPath.namespace" class="json-path">
+                            <span class="path-label">Namespace:</span>
+                            <code class="path-value">{{ ref.jsonPath.namespace }}</code>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -111,6 +149,15 @@ interface Template {
         namedResources?: Array<{
           name: string
           namespace?: string
+        }>
+        references?: Array<{
+          resource: string
+          group: string
+          versions?: string[]
+          jsonPath?: {
+            name: string
+            namespace?: string
+          }
         }>
       }
     }>
@@ -174,30 +221,37 @@ const handleBind = async () => {
   }
 }
 
-const formatLabelSelector = (selector: any): string => {
-  if (!selector) return ''
-  if (typeof selector === 'string') return selector
-  if (selector.matchLabels) {
-    return Object.entries(selector.matchLabels)
-      .map(([key, value]) => `${key}=${value}`)
-      .join(', ')
-  }
-  return JSON.stringify(selector)
+// Helper functions for formatted display
+const getLabelSelectorLabels = (selector: any): Record<string, string> => {
+  if (!selector) return {}
+  if (selector.matchLabels) return selector.matchLabels
+  return {}
 }
 
-const formatNamedResources = (namedResources: any[]): string => {
-  if (!namedResources || namedResources.length === 0) return ''
-  
-  return namedResources.map(resource => {
-    if (typeof resource === 'string') return resource
-    if (typeof resource === 'object' && resource.name) {
-      if (resource.namespace) {
-        return `${resource.namespace}/${resource.name}`
-      }
-      return resource.name
-    }
-    return JSON.stringify(resource)
-  }).join(', ')
+const getNamedResourceKey = (resource: any): string => {
+  if (typeof resource === 'string') return resource
+  if (typeof resource === 'object' && resource.name) {
+    return resource.namespace ? `${resource.namespace}/${resource.name}` : resource.name
+  }
+  return JSON.stringify(resource)
+}
+
+const getNamedResourceName = (resource: any): string => {
+  if (typeof resource === 'string') return resource
+  if (typeof resource === 'object' && resource.name) return resource.name
+  return JSON.stringify(resource)
+}
+
+const getNamedResourceNamespace = (resource: any): string => {
+  if (typeof resource === 'object' && resource.namespace) return resource.namespace
+  return ''
+}
+
+const getReferenceKey = (ref: any): string => {
+  if (typeof ref === 'object') {
+    return `${ref.group || 'core'}/${ref.resource || 'unknown'}`
+  }
+  return JSON.stringify(ref)
 }
 </script>
 
@@ -405,14 +459,143 @@ const formatNamedResources = (namedResources: any[]): string => {
 }
 
 .permission-selector {
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   font-size: 0.875rem;
 }
 
-.selector-labels, .selector-names {
+.selector-section {
+  margin-bottom: 0.75rem;
+}
+
+.selector-section:last-child {
+  margin-bottom: 0;
+}
+
+.selector-title {
   display: block;
-  color: #6b7280;
+  color: #374151;
+  font-size: 0.8rem;
+  margin-bottom: 0.375rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.selector-content {
+  margin-left: 0.5rem;
+}
+
+/* Label selector styles */
+.label-item {
+  display: inline-flex;
+  align-items: center;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  margin-right: 0.5rem;
   margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.label-key {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.label-separator {
+  color: #6b7280;
+  margin: 0 0.25rem;
+}
+
+.label-value {
+  color: #059669;
+  background: #d1fae5;
+  padding: 0.125rem 0.25rem;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+/* Named resources styles */
+.named-resource-item {
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 6px;
+  padding: 0.375rem 0.5rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.resource-name {
+  color: #92400e;
+  font-weight: 600;
+}
+
+.resource-namespace {
+  color: #d97706;
+  font-style: italic;
+  margin-left: 0.25rem;
+}
+
+/* References styles */
+.reference-item {
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  border-radius: 6px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.reference-item:last-child {
+  margin-bottom: 0;
+}
+
+.reference-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.375rem;
+}
+
+.reference-resource {
+  color: #1e40af;
+  font-weight: 600;
+  margin-right: 0.25rem;
+}
+
+.reference-group {
+  color: #3b82f6;
+  font-size: 0.7rem;
+  opacity: 0.8;
+}
+
+.reference-paths {
+  margin-top: 0.375rem;
+}
+
+.json-path {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.json-path:last-child {
+  margin-bottom: 0;
+}
+
+.path-label {
+  color: #374151;
+  font-weight: 500;
+  margin-right: 0.5rem;
+  min-width: 4rem;
+}
+
+.path-value {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.7rem;
 }
 
 .namespace-desc {

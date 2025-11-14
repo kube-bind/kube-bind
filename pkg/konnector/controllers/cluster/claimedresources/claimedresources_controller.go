@@ -51,7 +51,6 @@ const (
 
 // NewController returns a new controller reconciling downstream objects to upstream.
 func NewController(
-	//	scope kubebindv1alpha2.InformerScope,
 	gvr schema.GroupVersionResource,
 	claim kubebindv1alpha2.PermissionClaim,
 	apiServiceExport *kubebindv1alpha2.APIServiceExport,
@@ -209,8 +208,19 @@ type controller struct {
 	readReconciler
 }
 
-func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
-	return resources.IsClaimed(c.claim.Selector, obj)
+// isClaimed returns true if the given object is claimed by the controller's claim.
+// If consumerSide is true, the check is done for the consumer side (no namespace remapping), and if false, for the provider side object,
+// where namespace remapping via APIServiceNamespace is taken into account.
+func (c *controller) isClaimed(logger klog.Logger, obj *unstructured.Unstructured, consumerSide bool) bool {
+	return resources.IsClaimedWithReference(
+		logger,
+		obj,
+		consumerSide,
+		c.claim,
+		c.apiServiceExport,
+		c.consumerClient,
+		c.serviceNamespaceInformer.Lister().APIServiceNamespaces(c.providerNamespace),
+	)
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
@@ -223,7 +233,8 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 		runtime.HandleError(fmt.Errorf("unexpected type %T in enqueueConsumer", obj))
 		return
 	}
-	if !c.isClaimed(o) {
+
+	if !c.isClaimed(logger, o, true) {
 		return
 	}
 	logger.V(2).Info("queueing consumer object", "gvr", o.GroupVersionKind().String(), "key", fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName()))
@@ -282,7 +293,7 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 		runtime.HandleError(fmt.Errorf("unexpected type %T in enqueueProvider", obj))
 		return
 	}
-	if !c.isClaimed(o) {
+	if !c.isClaimed(logger, o, false) {
 		return
 	}
 
@@ -358,7 +369,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 		}
 
 		// Check if the provider object is actually claimed using the full selector logic.
-		if !c.isClaimed(unstructuredObj) {
+		if !c.isClaimed(logger, unstructuredObj, false) {
 			continue
 		}
 
@@ -404,7 +415,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 				continue
 			}
 			u, ok := obj.(*unstructured.Unstructured)
-			if !ok || !c.isClaimed(u) {
+			if !ok || !c.isClaimed(logger, u, true) {
 				continue
 			}
 			// Re-map to provider namespace key
@@ -423,7 +434,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj interface{}
 	}
 	for _, obj := range objects {
 		// Check if the object is actually claimed using the full selector logic
-		if !c.isClaimed(obj) {
+		if !c.isClaimed(logger, obj, true) {
 			continue
 		}
 		objKey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)

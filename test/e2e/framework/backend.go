@@ -18,11 +18,10 @@ package framework
 
 import (
 	"context"
-	"encoding/base64"
+	"fmt"
 	"net"
 	"testing"
 
-	"github.com/gorilla/securecookie"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -52,19 +51,6 @@ func InstallKubebindCRDs(t testing.TB, clientConfig *rest.Config) {
 }
 
 func StartBackend(t testing.TB, args ...string) (net.Addr, *backend.Server) {
-	signingKey := securecookie.GenerateRandomKey(32)
-	require.NotEmpty(t, signingKey, "error creating signing key")
-	encryptionKey := securecookie.GenerateRandomKey(32)
-	require.NotEmpty(t, encryptionKey, "error creating encryption key")
-
-	return StartBackendWithoutDefaultArgs(t, append([]string{
-		"--oidc-issuer-url=http://127.0.0.1:5556/dex",
-		"--cookie-signing-key=" + base64.StdEncoding.EncodeToString(signingKey),
-		"--cookie-encryption-key=" + base64.StdEncoding.EncodeToString(encryptionKey),
-	}, args...)...)
-}
-
-func StartBackendWithoutDefaultArgs(t testing.TB, args ...string) (net.Addr, *backend.Server) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
@@ -80,10 +66,9 @@ func StartBackendWithoutDefaultArgs(t testing.TB, args ...string) (net.Addr, *ba
 	require.NoError(t, err)
 	addr := opts.Serve.Listener.Addr()
 
-	dexId, dexSecret := CreateDexClient(t, addr)
-	opts.OIDC.IssuerClientID = dexId
-	opts.OIDC.IssuerClientSecret = dexSecret
-	opts.OIDC.CallbackURL = "http://" + addr.String() + "/api/callback"
+	opts.OIDC.Type = string(options.OIDCTypeEmbedded)
+	opts.OIDC.IssuerURL = fmt.Sprintf("http://%s/oidc", addr.String())
+	opts.OIDC.CallbackURL = fmt.Sprintf("http://%s/api/callback", addr.String())
 
 	// Skip name conflict validation - when run in-process with multiple
 	// controllers they all will register the same metric names, which

@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	dynamicclient "k8s.io/client-go/dynamic"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -51,6 +52,7 @@ func NewController(
 	apiServiceExport *kubebindv1alpha2.APIServiceExport,
 	providerNamespace string,
 	providerConfig *rest.Config,
+	consumerConfig *rest.Config,
 	consumerDynamicInformer informers.GenericInformer,
 	serviceNamespaceInformer dynamic.Informer[bindlisters.APIServiceNamespaceLister],
 	claimedResourcesEnqueueChan chan<- string,
@@ -62,16 +64,26 @@ func NewController(
 	providerConfig = rest.CopyConfig(providerConfig)
 	providerConfig = rest.AddUserAgent(providerConfig, controllerName)
 
+	consumerConfig = rest.CopyConfig(consumerConfig)
+	consumerConfig = rest.AddUserAgent(consumerConfig, controllerName)
+
 	bindClient, err := bindclientset.NewForConfig(providerConfig)
 	if err != nil {
 		return nil, err
 	}
+
+	consumerClient, err := dynamicclient.NewForConfig(consumerConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	c := &controller{
 		queue:            queue,
 		claim:            claim,
 		apiServiceExport: apiServiceExport,
 
 		providerBindClient: bindClient,
+		consumerClient:     consumerClient,
 
 		consumerDynamicInformer: consumerDynamicInformer,
 
@@ -102,6 +114,7 @@ type controller struct {
 	apiServiceExport *kubebindv1alpha2.APIServiceExport
 
 	providerBindClient bindclientset.Interface
+	consumerClient     dynamicclient.Interface
 
 	consumerDynamicInformer informers.GenericInformer
 
@@ -114,8 +127,16 @@ type controller struct {
 	claimedResourcesEnqueueChan chan<- string
 }
 
-func (c *controller) isClaimed(obj *unstructured.Unstructured) bool {
-	return resources.IsClaimed(c.claim.Selector, obj)
+func (c *controller) isClaimed(logger klog.Logger, obj *unstructured.Unstructured, consumerSide bool) bool {
+	return resources.IsClaimedWithReference(
+		logger,
+		obj,
+		consumerSide,
+		c.claim,
+		c.apiServiceExport,
+		c.consumerClient,
+		c.serviceNamespaceInformer.Lister().APIServiceNamespaces(c.providerNamespace),
+	)
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
@@ -128,7 +149,7 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 		runtime.HandleError(fmt.Errorf("unexpected type %T in enqueueConsumer", obj))
 		return
 	}
-	if !c.isClaimed(o) {
+	if !c.isClaimed(logger, o, true) {
 		return
 	}
 

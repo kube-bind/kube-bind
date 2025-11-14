@@ -98,7 +98,7 @@ var __yieldStar = (value) => {
 };
 var __forAwait = (obj, it, method) => (it = obj[__knownSymbol("asyncIterator")]) ? it.call(obj) : (obj = obj[__knownSymbol("iterator")](), it = {}, method = (key, fn) => (fn = obj[key]) && (it[key] = (arg) => new Promise((yes, no, done) => (arg = fn.call(obj, arg), done = arg.done, Promise.resolve(arg.value).then((value) => yes({ value, done }), no)))), method("next"), method("return"), it);
 var require_index_001 = __commonJS({
-  "assets/index.de8ca7a8.js"(exports) {
+  "assets/index.41dda553.js"(exports) {
     (function polyfill() {
       const relList = document.createElement("link").relList;
       if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -11611,26 +11611,57 @@ ${formattedObject}`;
     };
     const _hoisted_19$1 = {
       key: 0,
-      class: "selector-labels"
+      class: "selector-section"
     };
-    const _hoisted_20$1 = {
+    const _hoisted_20$1 = { class: "selector-content" };
+    const _hoisted_21$1 = { class: "label-key" };
+    const _hoisted_22$1 = { class: "label-value" };
+    const _hoisted_23$1 = {
       key: 1,
-      class: "selector-names"
+      class: "selector-section"
     };
-    const _hoisted_21$1 = {
+    const _hoisted_24$1 = { class: "selector-content" };
+    const _hoisted_25$1 = { class: "resource-name" };
+    const _hoisted_26$1 = {
+      key: 0,
+      class: "resource-namespace"
+    };
+    const _hoisted_27$1 = {
+      key: 2,
+      class: "selector-section"
+    };
+    const _hoisted_28$1 = { class: "selector-content" };
+    const _hoisted_29$1 = { class: "reference-header" };
+    const _hoisted_30$1 = { class: "reference-resource" };
+    const _hoisted_31$1 = { class: "reference-group" };
+    const _hoisted_32$1 = {
+      key: 0,
+      class: "reference-paths"
+    };
+    const _hoisted_33$1 = {
+      key: 0,
+      class: "json-path"
+    };
+    const _hoisted_34$1 = { class: "path-value" };
+    const _hoisted_35$1 = {
+      key: 1,
+      class: "json-path"
+    };
+    const _hoisted_36$1 = { class: "path-value" };
+    const _hoisted_37 = {
       key: 3,
       class: "detail-section"
     };
-    const _hoisted_22$1 = { class: "namespace-list" };
-    const _hoisted_23$1 = { class: "namespace-name" };
-    const _hoisted_24$1 = {
+    const _hoisted_38 = { class: "namespace-list" };
+    const _hoisted_39 = { class: "namespace-name" };
+    const _hoisted_40 = {
       key: 0,
       class: "namespace-desc"
     };
-    const _hoisted_25$1 = { class: "modal-footer" };
-    const _hoisted_26$1 = ["disabled"];
-    const _hoisted_27$1 = { key: 0 };
-    const _hoisted_28$1 = { key: 1 };
+    const _hoisted_41 = { class: "modal-footer" };
+    const _hoisted_42 = ["disabled"];
+    const _hoisted_43 = { key: 0 };
+    const _hoisted_44 = { key: 1 };
     const _sfc_main$1 = /* @__PURE__ */ defineComponent({
       __name: "TemplateBindingModal",
       props: {
@@ -11674,29 +11705,38 @@ ${formattedObject}`;
             binding.value = false;
           }
         });
-        const formatLabelSelector = (selector) => {
+        const getLabelSelectorLabels = (selector) => {
           if (!selector)
-            return "";
-          if (typeof selector === "string")
-            return selector;
-          if (selector.matchLabels) {
-            return Object.entries(selector.matchLabels).map(([key, value]) => `${key}=${value}`).join(", ");
-          }
-          return JSON.stringify(selector);
+            return {};
+          if (selector.matchLabels)
+            return selector.matchLabels;
+          return {};
         };
-        const formatNamedResources = (namedResources) => {
-          if (!namedResources || namedResources.length === 0)
-            return "";
-          return namedResources.map((resource) => {
-            if (typeof resource === "string")
-              return resource;
-            if (typeof resource === "object" && resource.name)
-              return resource.name;
-            if (typeof resource === "object" && resource.namespace && resource.name) {
-              return `${resource.namespace}/${resource.name}`;
-            }
-            return JSON.stringify(resource);
-          }).join(", ");
+        const getNamedResourceKey = (resource) => {
+          if (typeof resource === "string")
+            return resource;
+          if (typeof resource === "object" && resource.name) {
+            return resource.namespace ? `${resource.namespace}/${resource.name}` : resource.name;
+          }
+          return JSON.stringify(resource);
+        };
+        const getNamedResourceName = (resource) => {
+          if (typeof resource === "string")
+            return resource;
+          if (typeof resource === "object" && resource.name)
+            return resource.name;
+          return JSON.stringify(resource);
+        };
+        const getNamedResourceNamespace = (resource) => {
+          if (typeof resource === "object" && resource.namespace)
+            return resource.namespace;
+          return "";
+        };
+        const getReferenceKey = (ref2) => {
+          if (typeof ref2 === "object") {
+            return `${ref2.group || "core"}/${ref2.resource || "unknown"}`;
+          }
+          return JSON.stringify(ref2);
         };
         return (_ctx, _cache) => {
           return _ctx.show ? (openBlock(), createElementBlock("div", {
@@ -11735,7 +11775,7 @@ ${formattedObject}`;
                   isValidBindingName.value ? (openBlock(), createElementBlock("p", _hoisted_4$1, "This name will be used to identify your binding in the CLI.")) : (openBlock(), createElementBlock("p", _hoisted_5$1, "Name must be lowercase letters, numbers, and hyphens only. Must start and end with alphanumeric characters."))
                 ]),
                 createBaseVNode("div", _hoisted_6$1, [
-                  _cache[4] || (_cache[4] = createBaseVNode("h4", null, "Template Details", -1)),
+                  _cache[10] || (_cache[10] = createBaseVNode("h4", null, "Template Details", -1)),
                   _ctx.template.spec.description ? (openBlock(), createElementBlock("div", _hoisted_7$1, [
                     _cache[3] || (_cache[3] = createBaseVNode("h5", null, "Description", -1)),
                     createBaseVNode("p", _hoisted_8$1, toDisplayString(_ctx.template.spec.description), 1)
@@ -11766,30 +11806,83 @@ ${formattedObject}`;
                           createBaseVNode("span", _hoisted_16$1, toDisplayString(claim.resource), 1),
                           createBaseVNode("span", _hoisted_17$1, toDisplayString(claim.group || "core"), 1),
                           claim.selector ? (openBlock(), createElementBlock("div", _hoisted_18$1, [
-                            claim.selector.labelSelector ? (openBlock(), createElementBlock("span", _hoisted_19$1, " Labels: " + toDisplayString(formatLabelSelector(claim.selector.labelSelector)), 1)) : createCommentVNode("", true),
-                            claim.selector.namedResources && claim.selector.namedResources.length > 0 ? (openBlock(), createElementBlock("span", _hoisted_20$1, " Named: " + toDisplayString(formatNamedResources(claim.selector.namedResources)), 1)) : createCommentVNode("", true)
+                            claim.selector.labelSelector ? (openBlock(), createElementBlock("div", _hoisted_19$1, [
+                              _cache[5] || (_cache[5] = createBaseVNode("strong", { class: "selector-title" }, "Label Selector:", -1)),
+                              createBaseVNode("div", _hoisted_20$1, [
+                                (openBlock(true), createElementBlock(Fragment, null, renderList(getLabelSelectorLabels(claim.selector.labelSelector), (value, key) => {
+                                  return openBlock(), createElementBlock("div", {
+                                    key,
+                                    class: "label-item"
+                                  }, [
+                                    createBaseVNode("span", _hoisted_21$1, toDisplayString(key), 1),
+                                    _cache[4] || (_cache[4] = createBaseVNode("span", { class: "label-separator" }, "=", -1)),
+                                    createBaseVNode("span", _hoisted_22$1, toDisplayString(value), 1)
+                                  ]);
+                                }), 128))
+                              ])
+                            ])) : createCommentVNode("", true),
+                            claim.selector.namedResources && claim.selector.namedResources.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_23$1, [
+                              _cache[6] || (_cache[6] = createBaseVNode("strong", { class: "selector-title" }, "Named Resources:", -1)),
+                              createBaseVNode("div", _hoisted_24$1, [
+                                (openBlock(true), createElementBlock(Fragment, null, renderList(claim.selector.namedResources, (resource) => {
+                                  return openBlock(), createElementBlock("div", {
+                                    key: getNamedResourceKey(resource),
+                                    class: "named-resource-item"
+                                  }, [
+                                    createBaseVNode("span", _hoisted_25$1, toDisplayString(getNamedResourceName(resource)), 1),
+                                    getNamedResourceNamespace(resource) ? (openBlock(), createElementBlock("span", _hoisted_26$1, " in " + toDisplayString(getNamedResourceNamespace(resource)), 1)) : createCommentVNode("", true)
+                                  ]);
+                                }), 128))
+                              ])
+                            ])) : createCommentVNode("", true),
+                            claim.selector.references && claim.selector.references.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_27$1, [
+                              _cache[9] || (_cache[9] = createBaseVNode("strong", { class: "selector-title" }, "References:", -1)),
+                              createBaseVNode("div", _hoisted_28$1, [
+                                (openBlock(true), createElementBlock(Fragment, null, renderList(claim.selector.references, (ref2) => {
+                                  return openBlock(), createElementBlock("div", {
+                                    key: getReferenceKey(ref2),
+                                    class: "reference-item"
+                                  }, [
+                                    createBaseVNode("div", _hoisted_29$1, [
+                                      createBaseVNode("span", _hoisted_30$1, toDisplayString(ref2.resource), 1),
+                                      createBaseVNode("span", _hoisted_31$1, "(" + toDisplayString(ref2.group || "core") + ")", 1)
+                                    ]),
+                                    ref2.jsonPath ? (openBlock(), createElementBlock("div", _hoisted_32$1, [
+                                      ref2.jsonPath.name ? (openBlock(), createElementBlock("div", _hoisted_33$1, [
+                                        _cache[7] || (_cache[7] = createBaseVNode("span", { class: "path-label" }, "Name:", -1)),
+                                        createBaseVNode("code", _hoisted_34$1, toDisplayString(ref2.jsonPath.name), 1)
+                                      ])) : createCommentVNode("", true),
+                                      ref2.jsonPath.namespace ? (openBlock(), createElementBlock("div", _hoisted_35$1, [
+                                        _cache[8] || (_cache[8] = createBaseVNode("span", { class: "path-label" }, "Namespace:", -1)),
+                                        createBaseVNode("code", _hoisted_36$1, toDisplayString(ref2.jsonPath.namespace), 1)
+                                      ])) : createCommentVNode("", true)
+                                    ])) : createCommentVNode("", true)
+                                  ]);
+                                }), 128))
+                              ])
+                            ])) : createCommentVNode("", true)
                           ])) : createCommentVNode("", true)
                         ]);
                       }), 128))
                     ])
                   ])) : createCommentVNode("", true),
-                  _ctx.template.spec.namespaces && _ctx.template.spec.namespaces.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_21$1, [
+                  _ctx.template.spec.namespaces && _ctx.template.spec.namespaces.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_37, [
                     createBaseVNode("h5", null, "Namespaces (" + toDisplayString(_ctx.template.spec.namespaces.length) + ")", 1),
-                    createBaseVNode("div", _hoisted_22$1, [
+                    createBaseVNode("div", _hoisted_38, [
                       (openBlock(true), createElementBlock(Fragment, null, renderList(_ctx.template.spec.namespaces, (ns) => {
                         return openBlock(), createElementBlock("div", {
                           key: ns.name,
                           class: "namespace-item"
                         }, [
-                          createBaseVNode("span", _hoisted_23$1, toDisplayString(ns.name), 1),
-                          ns.description ? (openBlock(), createElementBlock("span", _hoisted_24$1, toDisplayString(ns.description), 1)) : createCommentVNode("", true)
+                          createBaseVNode("span", _hoisted_39, toDisplayString(ns.name), 1),
+                          ns.description ? (openBlock(), createElementBlock("span", _hoisted_40, toDisplayString(ns.description), 1)) : createCommentVNode("", true)
                         ]);
                       }), 128))
                     ])
                   ])) : createCommentVNode("", true)
                 ])
               ]),
-              createBaseVNode("div", _hoisted_25$1, [
+              createBaseVNode("div", _hoisted_41, [
                 createBaseVNode("button", {
                   onClick: closeModal,
                   class: "cancel-btn"
@@ -11799,16 +11892,16 @@ ${formattedObject}`;
                   disabled: !bindingName.value.trim() || binding.value || !isValidBindingName.value,
                   class: "bind-btn"
                 }, [
-                  binding.value ? (openBlock(), createElementBlock("span", _hoisted_27$1, "Binding...")) : (openBlock(), createElementBlock("span", _hoisted_28$1, toDisplayString(_ctx.isCliFlow ? "Bind for CLI" : "Bind Template"), 1))
-                ], 8, _hoisted_26$1)
+                  binding.value ? (openBlock(), createElementBlock("span", _hoisted_43, "Binding...")) : (openBlock(), createElementBlock("span", _hoisted_44, toDisplayString(_ctx.isCliFlow ? "Bind for CLI" : "Bind Template"), 1))
+                ], 8, _hoisted_42)
               ])
             ])
           ])) : createCommentVNode("", true);
         };
       }
     });
-    const TemplateBindingModal_vue_vue_type_style_index_0_scoped_456ee52f_lang = "";
-    const TemplateBindingModal = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-456ee52f"]]);
+    const TemplateBindingModal_vue_vue_type_style_index_0_scoped_4218c1a0_lang = "";
+    const TemplateBindingModal = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-4218c1a0"]]);
     var __async2 = (__this, __arguments, generator) => {
       return new Promise((resolve2, reject) => {
         var fulfilled = (value) => {
@@ -12140,8 +12233,8 @@ ${formattedObject}`;
         };
       }
     });
-    const Resources_vue_vue_type_style_index_0_scoped_1cfa8d3f_lang = "";
-    const Resources = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-1cfa8d3f"]]);
+    const Resources_vue_vue_type_style_index_0_scoped_c5a84217_lang = "";
+    const Resources = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-c5a84217"]]);
     const routes = [
       { path: "/", component: Resources },
       { path: "/resources", component: Resources }

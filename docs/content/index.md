@@ -14,9 +14,11 @@ We are actively working towards a stable release, and welcome feedback from the 
 - The service provider does not inject controllers/operators into the service consumer's cluster.
 - A single vendor-neutral, OpenSource agent - `konnector` per consumer cluster connects it with the requested services.
 
-## Quickstart
+## Getting Started
 
-To get started with trying out kube-bind on your local system, check out our [Quickstart](./setup/quickstart.md) instructions.
+- **[Quickstart](./setup/quickstart.md)** - Get up and running with kube-bind quickly
+- **[Setup Guide](./setup/index.md)** - Complete installation and deployment options
+- **[Usage Guide](./usage/index.md)** - Learn the core concepts and APIs
 
 ## Contributing
 

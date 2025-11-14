@@ -40,6 +40,114 @@ type ServiceNamespaceLister interface {
 	List(selector labels.Selector) ([]*kubebindv1alpha2.APIServiceNamespace, error)
 }
 
+func matchesLabelSelector(logger klog.Logger, selector *metav1.LabelSelector, obj *unstructured.Unstructured) bool {
+	if selector == nil {
+		return false
+	}
+
+	labelSelector, err := metav1.LabelSelectorAsSelector(selector)
+	if err != nil {
+		runtime.HandleError(fmt.Errorf("invalid label selector in permission claim: %w", err))
+		return false
+	}
+
+	objLabels := obj.GetLabels()
+	if objLabels == nil {
+		objLabels = make(map[string]string)
+	}
+
+	matches := labelSelector.Matches(labels.Set(objLabels))
+	if matches {
+		logger.Info("resource matched", "name", obj.GetName(), "namespace", obj.GetNamespace(), "claim-type", "labelSelector", "selector", labelSelector.String(), "objectLabels", objLabels)
+	}
+	return matches
+}
+
+func matchesNamedResources(logger klog.Logger, namedResources []kubebindv1alpha2.NamedResource, obj *unstructured.Unstructured) bool {
+	if len(namedResources) == 0 {
+		return false
+	}
+
+	for _, nr := range namedResources {
+		if nr.Namespace != "" && nr.Namespace != obj.GetNamespace() {
+			continue
+		}
+		if nr.Name == obj.GetName() {
+			logger.Info("resource matched", "name", obj.GetName(), "namespace", obj.GetNamespace(), "claim-type", "namedResource", "namedResource", nr)
+			return true
+		}
+	}
+	return false
+}
+
+func matchesReferences(logger klog.Logger, references []kubebindv1alpha2.SelectorReference, obj *unstructured.Unstructured, potentiallyReferencedResources *unstructured.UnstructuredList) bool {
+	if len(references) == 0 {
+		return false
+	}
+
+	if potentiallyReferencedResources == nil {
+		return false
+	}
+
+	for _, refObj := range potentiallyReferencedResources.Items {
+		jsonData, err := refObj.MarshalJSON()
+		if err != nil {
+			continue
+		}
+
+		for _, ref := range references {
+			selector := ref
+			nameResult := gjson.Get(string(jsonData), selector.JSONPath.Name)
+			var namespaceResult gjson.Result
+			if selector.JSONPath.Namespace != "" {
+				namespaceResult = gjson.Get(string(jsonData), selector.JSONPath.Namespace)
+			}
+
+			if nameResult.Exists() {
+				var nameValues []string
+				if nameResult.IsArray() {
+					for _, elem := range nameResult.Array() {
+						nameValues = append(nameValues, strings.TrimSpace(elem.String()))
+					}
+				} else {
+					nameValues = append(nameValues, strings.TrimSpace(nameResult.String()))
+				}
+
+				for _, extractedName := range nameValues {
+					nameMatches := (extractedName == obj.GetName())
+
+					namespaceMatches := true
+					if selector.JSONPath.Namespace != "" && namespaceResult.Exists() {
+						var namespaceValues []string
+						if namespaceResult.IsArray() {
+							for _, elem := range namespaceResult.Array() {
+								namespaceValues = append(namespaceValues, strings.TrimSpace(elem.String()))
+							}
+						} else {
+							namespaceValues = append(namespaceValues, strings.TrimSpace(namespaceResult.String()))
+						}
+
+						namespaceMatches = false
+						objNamespace := obj.GetNamespace()
+						for _, extractedNamespace := range namespaceValues {
+							if extractedNamespace == objNamespace {
+								namespaceMatches = true
+								break
+							}
+						}
+					}
+
+					if nameMatches && namespaceMatches {
+						logger.Info("resource matched", "name", obj.GetName(), "namespace", obj.GetNamespace(), "claim-type", "reference", "reference", selector)
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
 // IsClaimed returns true if the given object matches the given selector and named resources.
 // Logger here is already at V(4) level.
 func IsClaimed(logger klog.Logger, selector kubebindv1alpha2.Selector, obj *unstructured.Unstructured, potentiallyReferencedResources *unstructured.UnstructuredList) bool {
@@ -51,120 +159,9 @@ func IsClaimed(logger klog.Logger, selector kubebindv1alpha2.Selector, obj *unst
 		return false
 	}
 
-	// Both label selector and named resources must match if both are specified
-	labelSelectorMatches := false
-	namedResourceMatches := false
-	referenceMatches := false
-
-	// Check label selector if specified
-	if selector.LabelSelector != nil {
-		selector, err := metav1.LabelSelectorAsSelector(selector.LabelSelector)
-		if err != nil {
-			runtime.HandleError(fmt.Errorf("invalid label selector in permission claim: %w", err))
-			return false
-		}
-		l := obj.GetLabels()
-		if l == nil {
-			l = make(map[string]string)
-		}
-
-		labelSelectorMatches = selector.Matches(labels.Set(l))
-		if labelSelectorMatches {
-			logger.Info("resource matched", "name", obj.GetName(), "namespace", obj.GetNamespace(), "claim-type", "labelSelector", "selector", selector.String(), "objectLabels", l)
-		}
-	}
-
-	// Check named resources if specified
-	if len(selector.NamedResources) > 0 {
-		namedResourceMatches = false // Default to false, must match at least one
-		for _, nr := range selector.NamedResources {
-			if nr.Namespace != "" && nr.Namespace != obj.GetNamespace() {
-				continue
-			}
-			if nr.Name == obj.GetName() {
-				namedResourceMatches = true
-				logger.Info("resource matched", "name", obj.GetName(), "namespace", obj.GetNamespace(), "claim-type", "namedResource", "namedResource", nr)
-				break
-			}
-		}
-	}
-
-	if len(selector.References) > 0 {
-		if potentiallyReferencedResources == nil {
-			referenceMatches = false
-		} else {
-			referenceMatches = false // Default to false, must match at least one
-			for _, refObj := range potentiallyReferencedResources.Items {
-				// Marshal the referenced object to JSON for JSONPath evaluation
-				jsonData, err := refObj.MarshalJSON()
-				if err != nil {
-					continue // Skip this object if we can't marshal it
-				}
-
-				for _, ref := range selector.References {
-					selector := ref
-					// Extract name and namespace using JSONPath expressions
-					nameResult := gjson.Get(string(jsonData), selector.JSONPath.Name)
-					var namespaceResult gjson.Result
-					if selector.JSONPath.Namespace != "" {
-						namespaceResult = gjson.Get(string(jsonData), selector.JSONPath.Namespace)
-					}
-
-					// Check if the JSONPath results match the current object
-					if nameResult.Exists() {
-						// Handle both single values and arrays
-						var nameValues []string
-						if nameResult.IsArray() {
-							for _, elem := range nameResult.Array() {
-								nameValues = append(nameValues, strings.TrimSpace(elem.String()))
-							}
-						} else {
-							nameValues = append(nameValues, strings.TrimSpace(nameResult.String()))
-						}
-
-						// Check each extracted name
-						for _, extractedName := range nameValues {
-							nameMatches := (extractedName == obj.GetName())
-
-							// Check namespace if JSONPath was provided for namespace
-							namespaceMatches := true
-							if selector.JSONPath.Namespace != "" && namespaceResult.Exists() {
-								var namespaceValues []string
-								if namespaceResult.IsArray() {
-									for _, elem := range namespaceResult.Array() {
-										namespaceValues = append(namespaceValues, strings.TrimSpace(elem.String()))
-									}
-								} else {
-									namespaceValues = append(namespaceValues, strings.TrimSpace(namespaceResult.String()))
-								}
-
-								// For namespaced objects, check if extracted namespace matches
-								namespaceMatches = false
-								objNamespace := obj.GetNamespace()
-								for _, extractedNamespace := range namespaceValues {
-									if extractedNamespace == objNamespace {
-										namespaceMatches = true
-										break
-									}
-								}
-							}
-
-							// If both name and namespace match, we found a reference
-							if nameMatches && namespaceMatches {
-								referenceMatches = true
-								logger.Info("resource matched", "name", obj.GetName(), "namespace", obj.GetNamespace(), "claim-type", "reference", "reference", selector)
-								break
-							}
-						}
-
-						if referenceMatches {
-							break
-						}
-					}
-				}
-			}
-		}
-	}
+	labelSelectorMatches := matchesLabelSelector(logger, selector.LabelSelector, obj)
+	namedResourceMatches := matchesNamedResources(logger, selector.NamedResources, obj)
+	referenceMatches := matchesReferences(logger, selector.References, obj, potentiallyReferencedResources)
 
 	return labelSelectorMatches || namedResourceMatches || referenceMatches
 }
@@ -178,7 +175,6 @@ func IsClaimedWithReference(
 	consumerSide bool,
 	claim kubebindv1alpha2.PermissionClaim,
 	apiServiceExport *kubebindv1alpha2.APIServiceExport,
-	providerNamespace string,
 	consumerClient dynamicclient.Interface,
 	serviceNamespaceLister ServiceNamespaceLister,
 ) bool {
@@ -206,6 +202,8 @@ func IsClaimedWithReference(
 				}
 			}
 
+			// TODO(mjudeikis): We should wire informers per GVR from above. Now this is bit hack
+			// and there is no context available here.
 			ctx, cancel := context.WithTimeout(context.TODO(), time.Second*5)
 			defer cancel()
 

@@ -134,7 +134,6 @@ func (c *controller) isClaimed(logger klog.Logger, obj *unstructured.Unstructure
 		consumerSide,
 		c.claim,
 		c.apiServiceExport,
-		c.providerNamespace,
 		c.consumerClient,
 		c.serviceNamespaceInformer.Lister().APIServiceNamespaces(c.providerNamespace),
 	)

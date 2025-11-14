@@ -17,6 +17,7 @@ limitations under the License.
 package framework
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"testing"
@@ -50,7 +51,8 @@ func InstallKubebindCRDs(t testing.TB, clientConfig *rest.Config) {
 }
 
 func StartBackend(t testing.TB, args ...string) (net.Addr, *backend.Server) {
-	ctx := t.Context()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 
 	fs := pflag.NewFlagSet("backend", pflag.ContinueOnError)
 	opts := options.NewOptions()

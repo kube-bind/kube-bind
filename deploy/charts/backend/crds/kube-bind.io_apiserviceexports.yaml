@@ -585,6 +585,50 @@ spec:
                             - name
                             type: object
                           type: array
+                        references:
+                          description: Reference is a reference to the object that
+                            contains jsonPath to select objects of a GVR.
+                          items:
+                            description: SelectorReference selects objects of a GVR
+                              via a reference to another object.
+                            properties:
+                              group:
+                                default: ""
+                                description: |-
+                                  group is the name of an API group.
+                                  For core groups this is the empty string '""'.
+                                pattern: ^(|[a-z0-9]([-a-z0-9]*[a-z0-9](\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)?)$
+                                type: string
+                              jsonPath:
+                                description: JSONPath is a JSONPath expression that
+                                  selects the name and namespace of the resource from
+                                  the referenced object.
+                                properties:
+                                  name:
+                                    type: string
+                                  namespace:
+                                    type: string
+                                type: object
+                              resource:
+                                description: |-
+                                  resource is the name of the resource.
+                                  Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+                                  not provided by an service binding export.
+                                pattern: ^[a-z][-a-z0-9]*[a-z0-9]$
+                                type: string
+                              versions:
+                                description: |-
+                                  versions is a list of versions that should be used to fetch the referenced object.
+                                  If not specified and apiserviceexport contains versions for the same group/resource,
+                                  those versions are used. Otherwise, references is considered invalid.
+                                items:
+                                  type: string
+                                type: array
+                            required:
+                            - jsonPath
+                            - resource
+                            type: object
+                          type: array
                       type: object
                   required:
                   - resource

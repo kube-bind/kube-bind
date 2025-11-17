@@ -233,7 +233,6 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 			r.providerNamespace,
 			r.providerConfig,
 			r.serviceNamespaceInformer,
-			nil, // no label selector
 		)
 		if err != nil {
 			return err
@@ -365,68 +364,25 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
 	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
 
-	// Precompute label selector string if present
-	var selectorStr string
-	if claim.Selector.LabelSelector != nil {
-		selector, err := metav1.LabelSelectorAsSelector(claim.Selector.LabelSelector)
-		if err != nil {
-			return fmt.Errorf("failed to convert label selector: %w", err)
-		}
-		selectorStr = selector.String()
-		logger.V(2).Info("Using label selector for informer", "selector", selectorStr, "resource", claim.Resource)
-	}
+	// Create consumer informer factory. This is always unfiltered, as we might be geeting obejcts from referece,
+	// label or named. We need to see all objects to determine if they are claimed.
+	defaultConsumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
 
-	tweakListOptions := func(options *metav1.ListOptions) {
-		if selectorStr != "" {
-			options.LabelSelector = selectorStr
-		}
-	}
-
-	// Create consumer informer factory
-	var defaultConsumerInf dynamicinformer.DynamicSharedInformerFactory
-	if claim.Selector.LabelSelector != nil {
-		defaultConsumerInf = dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30, metav1.NamespaceAll, tweakListOptions)
-	} else {
-		defaultConsumerInf = dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
-	}
-
-	// Now if you reading this and thinking "What is happening here...", this is why this comment exists :)
-	// Provider informers can operate in 2 modes:
-	// 1. Cluster-scoped - in this case we create a single informer factory that watches all namespaces
-	//    for the given GVR.
-	// 2. Namespace-scoped - in this case we create a multi-namespace informer that watches only the
-	//    provider namespace and any service namespaces created for the binding.
-	// But in additon to that, for permission claims, we also need to consider label selectors
-	// If one is present, we need to filter the informers using that selector. So we have 4 possible
-	// combinations:
-	// 1A Cluster-scoped, no label selector - single informer factory watching all namespaces
-	// 1B Cluster-scoped, with label selector - single filtered informer factory watching all namespaces
-	// B1 Namespace-scoped, no label selector - multi-namespace informer watching provider + service namespaces
-	// B2 Namespace-scoped, with label selector - multi-namespace filtered informer watching provider + service namespaces
-	// The code below implements this logic. Follow the letters.
-	var defaultProviderInf multinsinformer.GetterInformer // will hold the default provider informer (A<x> or B<x>)
+	var defaultProviderInf multinsinformer.GetterInformer // will hold the default provider informer either for cluster or namespace scoped.
 	if isClusterScoped {
-		var factory dynamicinformer.DynamicSharedInformerFactory // Placeholder for A<x>.
-		if claim.Selector.LabelSelector != nil {                 // A2
-			factory = dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30, metav1.NamespaceAll, tweakListOptions)
-		} else { // A1
-			factory = dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
-		}
+		factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
 		factory.ForResource(claimGVR).Lister() // wire the GVR up in the informer factory
 		defaultProviderInf = multinsinformer.GetterInformerWrapper{
 			GVR:      claimGVR,
 			Delegate: factory,
 		}
 	} else {
-		// B<x> case for labels is implemented inside multinsinformer.NewDynamicMultiNamespaceInformer
-		// Logic in there is same as here - if label selector is present, create filtered informer factory
 		var err error
 		defaultProviderInf, err = multinsinformer.NewDynamicMultiNamespaceInformer(
 			claimGVR,
 			r.providerNamespace,
 			r.providerConfig,
 			r.serviceNamespaceInformer,
-			claim.Selector.LabelSelector,
 		)
 
 		if err != nil {
@@ -459,6 +415,7 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 		export,
 		r.providerNamespace,
 		r.providerConfig,
+		r.consumerConfig,
 		defaultConsumerInf.ForResource(claimGVR),
 		r.serviceNamespaceInformer,
 		serviceNamespaceChannel,

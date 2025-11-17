@@ -3567,6 +3567,158 @@ Namespaces field is ignored for namespaced isolation mode.</p>
 </div>
 </div>
 
+<div class="property depth-4">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.references">.spec.permissionClaims[*].selector.references</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>Reference is a reference to the object that contains jsonPath to select objects of a GVR.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-5">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.references[*]">.spec.permissionClaims[*].selector.references[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>SelectorReference selects objects of a GVR via a reference to another object.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-6">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.references[*].group">.spec.permissionClaims[*].selector.references[*].group</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>group is the name of an API group.
+For core groups this is the empty string &lsquo;&ldquo;&rdquo;&rsquo;.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-6">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.references[*].jsonPath">.spec.permissionClaims[*].selector.references[*].jsonPath</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>JSONPath is a JSONPath expression that selects the name and namespace of the resource from the referenced object.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.references[*].jsonPath.name">.spec.permissionClaims[*].selector.references[*].jsonPath.name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.references[*].jsonPath.namespace">.spec.permissionClaims[*].selector.references[*].jsonPath.namespace</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-6">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.references[*].resource">.spec.permissionClaims[*].selector.references[*].resource</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>resource is the name of the resource.
+Note: it is worth noting that you can not ask for permissions for resource provided by a CRD
+not provided by an service binding export.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-6">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.references[*].versions">.spec.permissionClaims[*].selector.references[*].versions</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>versions is a list of versions that should be used to fetch the referenced object.
+If not specified and apiserviceexport contains versions for the same group/resource,
+those versions are used. Otherwise, references is considered invalid.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-7">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.permissionClaims[*].selector.references[*].versions[*]">.spec.permissionClaims[*].selector.references[*].versions[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
 <div class="property depth-1">
 <div class="property-header">
 <h3 class="property-path" id="v1alpha2-.spec.resources">.spec.resources</h3>

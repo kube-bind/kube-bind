@@ -17,8 +17,51 @@
 set -e
 set -o pipefail
 
-VERSION=$(grep "go 1." go.mod | sed 's/go //' | sed 's/.0$//')
+gomod_version() {
+  awk '/^go / { print $2 }' "$1" | sed 's/.0$//'
+}
 
-grep "FROM golang:" Dockerfile | { ! grep -v "${VERSION}"; } || { echo "Wrong go version in Dockerfile, expected ${VERSION}"; exit 1; }
-grep "go-version:" .github/workflows/*.yaml | { ! grep -v "go-version: v${VERSION}"; } || { echo "Wrong go version in .github/workflows/*.yaml, expected ${VERSION}"; exit 1; }
-grep "golang:" .ko.yaml | { ! grep -v "golang:${VERSION}"; } || { echo "Wrong go version in .ko.yaml, expected ${VERSION}"; exit 1; }
+minimum_go_version="$(gomod_version go.mod)"
+build_go_version="$(awk '/go-build-version/ { print $3 }' go.mod)"
+errors=0
+
+echo "Verifying minimum Go version: $minimum_go_version"
+
+for gomod in $(git ls-files '**/go.mod'); do
+  if [[ "$(gomod_version $gomod)" != "$minimum_go_version" ]]; then
+    echo "  Wrong go version in $gomod, expected $minimum_go_version"
+    errors=$((errors + 1))
+  fi
+done
+
+echo "Verifying build Go version: $build_go_version"
+
+for dockerfile in $(git ls-files Dockerfile '**/Dockerfile'); do
+  for version in $(sed -nE -e '/^FROM .*golang:/ s#^.*:([1-9.-rc]+).*$#\1#p' "$dockerfile"); do
+    if [[ "$version" != "$build_go_version" ]]; then
+      echo "  Wrong go version in $dockerfile, expected $build_go_version, found $version"
+      errors=$((errors + 1))
+    fi
+  done
+done
+
+for workflow in $(git ls-files '.github/workflows/*.yaml' '.github/workflows/*.yml'); do
+  if grep -q 'go-version-file:' "$workflow"; then
+    echo "  Workflow $workflow uses go-version-file, should use go-version instead"
+    errors=$((errors + 1))
+  fi
+
+  for version in $(sed -nE -e '/go-version:/ s#^.*v([1-9.-rc]+)$#\1#p' "$workflow"); do
+    if [[ "$version" != "$build_go_version" ]]; then
+      echo "  Wrong go version in $workflow, expected v${build_go_version}, found v${version}"
+      errors=$((errors + 1))
+    fi
+  done
+done
+
+if [[ "$CI" == true ]] && ! go version | grep -q "go${build_go_version}"; then
+  echo "  Wrong go version detected, expected ${build_go_version}"
+  errors=$((errors + 1))
+fi
+
+exit $errors

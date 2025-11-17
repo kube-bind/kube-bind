@@ -1,6 +1,13 @@
 module github.com/kube-bind/kube-bind
 
-go 1.25.4
+// Two Go versions are maintained - the minimum supported Go version as
+// noted in the go directive and the build version used in PROW and GHA
+// jobs and Docker builds as noted in the comment.
+// The script hack/verify-go-versions.sh checks that all version
+// references across the codebase are consistent with the versions
+// maintained here.
+// go-build-version 1.25.4
+go 1.24.0
 
 replace (
 	github.com/kube-bind/kube-bind => ./
@@ -29,6 +36,7 @@ require (
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.9
 	github.com/stretchr/testify v1.11.1
+	github.com/tidwall/gjson v1.18.0
 	github.com/vmihailenco/msgpack/v4 v4.3.12
 	github.com/xrstf/mockoidc v0.0.0-20251110222947-8618052ad848
 	golang.org/x/oauth2 v0.30.0
@@ -115,7 +123,6 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
-	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/vmihailenco/tagparser v0.1.1 // indirect

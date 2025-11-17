@@ -359,7 +359,7 @@ verify-modules: modules  # Verify go modules are up to date
 	done
 
 .PHONY: verify
-verify: verify-go-versions verify-imports verify-codegen verify-boilerplate ## verify formal properties of the code
+verify: verify-go-versions verify-modules verify-imports verify-codegen verify-boilerplate ## verify formal properties of the code
 
 .PHONY: help
 help: ## Show this help
@@ -398,7 +398,7 @@ deploy-docs: venv ## Deploy docs
 build-web:
 	cd web && npm run build
 
-# Example: make IMAGE_REPO=ghcr.io/<username> image-local 
+# Example: make IMAGE_REPO=ghcr.io/<username> image-local
 # Set PLATFORMS to override default architectures (e.g., make PLATFORMS=linux/amd64,linux/arm64 image-local)
 # For local builds, default to current architecture on Linux platform to support --load
 PLATFORMS ?= linux/$(ARCH)

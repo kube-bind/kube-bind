@@ -19,6 +19,7 @@ package base
 import (
 	"context"
 	"fmt"
+	"os"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -146,4 +147,14 @@ func LoadRestConfigFromString(kubeconfig string) (*rest.Config, error) {
 		return nil, fmt.Errorf("failed to build config from kubeconfig: %w", err)
 	}
 	return config, nil
+}
+
+// LoadRestConfigFromFile loads a kubeconfig file and returns a rest.Config
+func LoadRestConfigFromFile(kubeconfig string) (*rest.Config, error) {
+	content, err := os.ReadFile(kubeconfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load kubeconfig: %w", err)
+	}
+
+	return LoadRestConfigFromString(string(content))
 }

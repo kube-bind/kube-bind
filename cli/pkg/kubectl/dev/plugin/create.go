@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -124,6 +125,8 @@ nodes:
 - role: control-plane
 `
 
+const dockerNetwork = "kube-bind-dev"
+
 // Color helper functions
 func blueCommand(text string) string {
 	return "\033[38;5;67m" + text + "\033[0m"
@@ -158,7 +161,7 @@ func (o *DevOptions) runWithColors(ctx context.Context) error {
 		return err
 	}
 
-	providerIP, err := o.getClusterIPAddress(ctx, o.ProviderClusterName, "kube-bind-dev")
+	providerIP, err := o.getClusterIPAddress(ctx, o.ProviderClusterName, dockerNetwork)
 	if err != nil {
 		fmt.Fprintf(o.Streams.ErrOut, "⚠️  Failed to get provider cluster IP address: %v\n", err)
 		providerIP = ""
@@ -197,7 +200,7 @@ func (o *DevOptions) runWithColors(ctx context.Context) error {
 	if providerIP != "" {
 		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias %s:kube-bind.dev.local", o.ConsumerClusterName, providerIP)))
 	} else {
-		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("PROVIDER_IP=$(docker inspect %s-control-plane | jq -r '.[0].NetworkSettings.Networks[\"kube-bind-dev\"].IPAddress') && KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local", o.ProviderClusterName, o.ConsumerClusterName)))
+		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("PROVIDER_IP=$(docker inspect %s-control-plane | jq -r '.[0].NetworkSettings.Networks[\"%s\"].IPAddress') && KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local", dockerNetwork, o.ProviderClusterName, o.ConsumerClusterName)))
 	}
 
 	return nil
@@ -229,7 +232,7 @@ func (o *DevOptions) setupHostEntries(ctx context.Context) error {
 
 func (o *DevOptions) createCluster(ctx context.Context, clusterName, clusterConfig string, installKubeBind bool) error {
 	// Set experimental Docker network for kind clusters to communicate
-	os.Setenv("KIND_EXPERIMENTAL_DOCKER_NETWORK", "kube-bind-dev")
+	os.Setenv("KIND_EXPERIMENTAL_DOCKER_NETWORK", dockerNetwork)
 
 	provider := cluster.NewProvider()
 
@@ -238,21 +241,17 @@ func (o *DevOptions) createCluster(ctx context.Context, clusterName, clusterConf
 		return err
 	}
 
-	var found bool
-	for _, c := range clusters {
-		if c == clusterName {
-			fmt.Fprint(o.Streams.ErrOut, "Kind cluster "+clusterName+" already exists, skipping creation\n")
-			found = true
-			break
-		}
-	}
+	kubeconfigPath := fmt.Sprintf("%s.kubeconfig", clusterName)
 
-	if !found {
-		fmt.Fprint(o.Streams.ErrOut, "Creating kind cluster "+clusterName+" with network kube-bind-dev\n")
+	if slices.Contains(clusters, clusterName) {
+		fmt.Fprint(o.Streams.ErrOut, "Kind cluster "+clusterName+" already exists, skipping creation\n")
+	} else {
+		fmt.Fprintf(o.Streams.ErrOut, "Creating kind cluster %s with network %s\n", clusterName, dockerNetwork)
 		err := provider.Create(clusterName,
 			cluster.CreateWithRawConfig([]byte(clusterConfig)),
 			cluster.CreateWithWaitForReady(o.WaitForReadyTimeout),
 			cluster.CreateWithDisplaySalutation(true),
+			cluster.CreateWithKubeconfigPath(kubeconfigPath),
 		)
 		if err != nil {
 			return err
@@ -260,24 +259,13 @@ func (o *DevOptions) createCluster(ctx context.Context, clusterName, clusterConf
 		fmt.Fprint(o.Streams.ErrOut, "Kind cluster "+clusterName+" created\n")
 	}
 
-	kubeConfigFile, err := provider.KubeConfig(clusterName, false)
-	if err != nil {
-		return err
-	}
-
-	kubeconfigPath := fmt.Sprintf("%s.kubeconfig", clusterName)
-	if err := os.WriteFile(kubeconfigPath, []byte(kubeConfigFile), 0600); err != nil {
-		return fmt.Errorf("failed to write kubeconfig file: %w", err)
-	}
-	fmt.Fprint(o.Streams.ErrOut, "Wrote kubeconfig "+kubeconfigPath+"\n")
-
 	if installKubeBind {
-		restConfig, err := base.LoadRestConfigFromString(kubeConfigFile)
+		restConfig, err := base.LoadRestConfigFromFile(kubeconfigPath)
 		if err != nil {
 			return err
 		}
 		if err := o.installHelmChart(ctx, restConfig); err != nil {
-			fmt.Fprint(o.Streams.ErrOut, "Failed to install helm chart\n")
+			fmt.Fprint(o.Streams.ErrOut, "Failed to install Helm chart\n")
 			return err
 		}
 		fmt.Fprint(o.Streams.ErrOut, "Helm chart installed successfully\n")

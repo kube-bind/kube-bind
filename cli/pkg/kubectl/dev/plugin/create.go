@@ -141,14 +141,7 @@ func (o *DevOptions) runWithColors(ctx context.Context) error {
 	fmt.Fprintf(o.Streams.ErrOut, "%s kube-bind dev command is in preview\n", redText("EXPERIMENTAL:"))
 	fmt.Fprintf(o.Streams.ErrOut, "Requirements: Docker must be installed and running\n\n")
 
-	hostEntryExisted := false
-	if err := o.setupHostEntries(ctx); err != nil {
-		fmt.Fprintf(o.Streams.ErrOut, "⚠️  Host entry setup warning: %v\n", err)
-		hostEntryExisted = false
-	} else {
-		fmt.Fprint(o.Streams.ErrOut, "✓ Host entry exists for kube-bind.dev.local\n")
-		hostEntryExisted = true
-	}
+	hostEntryExists := o.setupHostEntries(ctx)
 
 	if err := o.checkFileLimits(); err != nil {
 		fmt.Fprintf(o.Streams.ErrOut, "⚠️  File limit check warning: %v\n", err)
@@ -183,7 +176,7 @@ func (o *DevOptions) runWithColors(ctx context.Context) error {
 	stepNum := 1
 
 	// Only show /etc/hosts step if entry didn't already exist
-	if !hostEntryExisted {
+	if !hostEntryExists {
 		fmt.Fprintf(o.Streams.ErrOut, "%d. Add to /etc/hosts (if not already done):\n", stepNum)
 		fmt.Fprintf(o.Streams.ErrOut, "%s\n\n", blueCommand("echo '127.0.0.1 kube-bind.dev.local' | sudo tee -a /etc/hosts"))
 		stepNum++
@@ -208,12 +201,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	return o.runWithColors(ctx)
 }
 
-// SetupHostEntries sets up the host entries for the dev environment
-func (o *DevOptions) SetupHostEntries(ctx context.Context) error {
-	return o.setupHostEntries(ctx)
-}
-
-func (o *DevOptions) setupHostEntries(ctx context.Context) error {
+func (o *DevOptions) setupHostEntries(ctx context.Context) bool {
 	if err := addHostEntry("kube-bind.dev.local"); err != nil {
 		fmt.Fprintf(o.Streams.ErrOut, "Warning: Could not automatically add host entry. Please run:\n")
 		if runtime.GOOS == "windows" {
@@ -221,10 +209,12 @@ func (o *DevOptions) setupHostEntries(ctx context.Context) error {
 		} else {
 			fmt.Fprintf(o.Streams.ErrOut, "  echo '127.0.0.1 kube-bind.dev.local' | sudo tee -a /etc/hosts\n")
 		}
-	} else {
-		fmt.Fprint(o.Streams.ErrOut, "Host entry exists for kube-bind.dev.local\n")
+
+		return false
 	}
-	return nil
+
+	fmt.Fprint(o.Streams.ErrOut, "Host entry exists for kube-bind.dev.local\n")
+	return true
 }
 
 func (o *DevOptions) createCluster(ctx context.Context, clusterName, clusterConfig string, installKubeBind bool) error {

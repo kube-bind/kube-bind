@@ -6,15 +6,18 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Comprehensive guide to using kube-bind APIs, concepts, and workflows for service providers and consumers.
+">
       
       
-        <link rel="canonical" href="https://docs.kube-bind.io/main/contributing/">
+      
+        <link rel="canonical" href="https://docs.kube-bind.io/main/usage/">
       
       
-        <link rel="prev" href="../usage/api-concepts/">
+        <link rel="prev" href="../setup/quickstart/">
       
       
-        <link rel="next" href="../developers/">
+        <link rel="next" href="api-concepts/">
       
       
       <link rel="icon" href="../favicons/favicon.ico">
@@ -22,7 +25,7 @@
     
     
       
-        <title>Contributing to kube-bind - docs.kube-bind.io</title>
+        <title>Usage Guide - docs.kube-bind.io</title>
       
     
     
@@ -74,7 +77,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contributing-to-kube-bind" class="md-skip">
+        <a href="#kube-bind-usage-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Contributing to kube-bind
+              Usage Guide
             
           </span>
         </div>
@@ -266,11 +269,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../usage/api-concepts/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="api-concepts/" class="md-tabs__link">
           
   
     
@@ -286,13 +291,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../contributing/" class="md-tabs__link">
           
   
     
@@ -583,8 +586,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -593,19 +598,20 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -616,7 +622,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Usage
@@ -630,7 +636,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/api-concepts/" class="md-nav__link">
+      <a href="api-concepts/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -655,8 +661,6 @@
       
   
   
-    
-  
   
   
     
@@ -669,22 +673,21 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../contributing/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -696,7 +699,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Contributing
@@ -1976,11 +1979,170 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#certificate-of-origin" class="md-nav__link">
+  <a href="#core-concepts" class="md-nav__link">
     <span class="md-ellipsis">
-      Certificate of Origin
+      Core Concepts
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Core Concepts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#service-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service Provider
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#service-consumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Service Consumer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#konnector-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      Konnector Agent
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-api-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key API Types
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Key API Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#apiserviceexporttemplate" class="md-nav__link">
+    <span class="md-ellipsis">
+      APIServiceExportTemplate
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apiserviceexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      APIServiceExport
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apiserviceexportrequest" class="md-nav__link">
+    <span class="md-ellipsis">
+      APIServiceExportRequest
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apiservicenamespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      APIServiceNamespace
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Documentation Structure
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Documentation Structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      API Concepts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#template-references" class="md-nav__link">
+    <span class="md-ellipsis">
+      Template References
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common Workflows
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Common Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#for-service-providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      For Service Providers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-service-consumers" class="md-nav__link">
+    <span class="md-ellipsis">
+      For Service Consumers
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-platform-operators" class="md-nav__link">
+    <span class="md-ellipsis">
+      For Platform Operators
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1990,87 +2152,6 @@
       Getting Started
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Getting Started">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      Prerequisites
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#finding-areas-to-contribute" class="md-nav__link">
-    <span class="md-ellipsis">
-      Finding Areas to Contribute
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Finding Areas to Contribute">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#getting-your-pr-merged" class="md-nav__link">
-    <span class="md-ellipsis">
-      Getting your PR Merged
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#community-roles" class="md-nav__link">
-    <span class="md-ellipsis">
-      Community Roles
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Community Roles">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#reviewers" class="md-nav__link">
-    <span class="md-ellipsis">
-      Reviewers
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#approvers" class="md-nav__link">
-    <span class="md-ellipsis">
-      Approvers
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#management-of-owners-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      Management of OWNERS Files
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -2092,57 +2173,80 @@
   
 
 
-<h1 id="contributing-to-kube-bind">Contributing to kube-bind</h1>
-<p>kube-bind is <a href="https://github.com/kube-bind/kube-bind/tree/main/LICENSE">Apache 2.0 licensed</a> and we accept contributions via
-GitHub pull requests.</p>
-<p>Please read the following guide if you're interested in contributing to kube-bind.</p>
-<h2 id="certificate-of-origin">Certificate of Origin</h2>
-<p>By contributing to this project you agree to the Developer Certificate of
-Origin (DCO). This document was created by the Linux Kernel community and is a
-simple statement that you, as a contributor, have the legal right to make the
-contribution. See the <a href="https://github.com/kube-bind/kube-bind/tree/main/DCO">DCO</a> file for details.</p>
-<h2 id="getting-started">Getting Started</h2>
-<h3 id="prerequisites">Prerequisites</h3>
+<h1 id="kube-bind-usage-guide">kube-bind Usage Guide</h1>
+<p>This section provides comprehensive documentation on how to use kube-bind's core APIs and concepts. Whether you're a service provider looking to export APIs or a consumer wanting to bind to services, this guide covers the essential workflows and components.</p>
+<h2 id="core-concepts">Core Concepts</h2>
+<p>kube-bind operates on three fundamental concepts:</p>
+<h3 id="service-provider">Service Provider</h3>
+<p>The cluster that <strong>exports</strong> APIs and resources, making them available for other clusters to consume. Service providers create templates and handle permission claims.</p>
+<h3 id="service-consumer">Service Consumer</h3>
+<p>The cluster that <strong>imports</strong> and uses APIs from service providers. Consumers bind to templates and get access to resources through a secure, controlled process.</p>
+<h3 id="konnector-agent">Konnector Agent</h3>
+<p>The component that establishes and maintains the secure connection between provider and consumer clusters, synchronizing resources and handling permissions.</p>
+<h2 id="key-api-types">Key API Types</h2>
+<h3 id="apiserviceexporttemplate">APIServiceExportTemplate</h3>
+<p><strong>Purpose</strong>: Defines a reusable service template that groups related CRDs and permission claims.
+<strong>Used by</strong>: Service providers
+<strong>Scope</strong>: Template definition for multiple consumers</p>
+<h3 id="apiserviceexport">APIServiceExport</h3>
+<p><strong>Purpose</strong>: Represents an active export of a specific CRD to consumer clusters.
+<strong>Used by</strong>: Automatically created by konnector agents
+<strong>Scope</strong>: Per-CRD export instance</p>
+<h3 id="apiserviceexportrequest">APIServiceExportRequest</h3>
+<p><strong>Purpose</strong>: Consumer's request to bind to a specific service template.
+<strong>Used by</strong>: Service consumers (via CLI/UI)
+<strong>Scope</strong>: Per-binding request</p>
+<h3 id="apiservicenamespace">APIServiceNamespace</h3>
+<p><strong>Purpose</strong>: Manages namespace mapping and isolation between provider and consumer clusters.
+<strong>Used by</strong>: Automatically managed by konnector agents
+<strong>Scope</strong>: Per-namespace sync</p>
+<h2 id="documentation-structure">Documentation Structure</h2>
+<h3 id="api-concepts"><a href="api-concepts/">API Concepts</a></h3>
+<p>Deep dive into the core API types, their relationships, and how they work together in the kube-bind ecosystem.</p>
+<h3 id="template-references"><a href="template-references.md">Template References</a></h3>
+<p>Advanced guide for using dynamic resource selection through references in templates.</p>
+<h2 id="common-workflows">Common Workflows</h2>
+<h3 id="for-service-providers">For Service Providers</h3>
 <ol>
-<li>Clone this repository.</li>
-<li><a href="https://golang.org/doc/install">Install Go</a> (currently 1.22).</li>
-<li>Install <a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl</a>.</li>
+<li><strong>Create templates</strong> defining what APIs and resources to export, including permission claims</li>
+<li><strong>Implement service</strong> to act on the synced/bound objects so it can be returned to the consumer/user.</li>
 </ol>
-<p>More on the development environment setup can be found in the <a href="../developers/dev-environments/">developer guide</a>.</p>
-<h2 id="finding-areas-to-contribute">Finding Areas to Contribute</h2>
-<p>Starting to participate in a new project can sometimes be overwhelming, and you may not know where to begin. Fortunately, we are here to help! We track all of our tasks here in GitHub, and we label our issues to categorize them. Here are a couple of handy links to check out:</p>
-<ul>
-<li><a href="https://github.com/kube-bind/kube-bind/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22">Good first issue</a> issues</li>
-<li><a href="https://github.com/kube-bind/kube-bind/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22">Help wanted</a> issues</li>
-</ul>
-<p>You're certainly not limited to only these kinds of issues, though! If you're comfortable, please feel free to try working on anything that is open.</p>
-<p>We do use the assignee feature in GitHub for issues. If you find an unassigned issue, comment asking if you can be assigned, and ideally wait for a maintainer to respond. If you find an assigned issue and you want to work on it or help out, please reach out to the assignee first.</p>
-<p>Sometimes you might get an amazing idea and start working on a huge amount of code. We love and encourage excitement like this, but we do ask that before you embark on a giant pull request, please reach out to the community first for an initial discussion. You could <a href="https://github.com/kube-bind/kube-bind/issues/new/choose">file an issue</a>, send a discussion to our <a href="https://groups.google.com/g/kube-bind-dev">mailing list</a>, and/or join one of our <a href="https://docs.google.com/document/d/1qztpKOmdZu5iWq_4N9n3AZpcAPuPhBiGNbje5GPg0iM">community meetings</a>.</p>
-<p>Finally, we welcome and value all types of contributions, beyond "just code"! Other types include triaging bugs, tracking down and fixing flaky tests, improving our documentation, helping answer community questions, proposing and reviewing designs, etc.</p>
-<h3 id="getting-your-pr-merged">Getting your PR Merged</h3>
-<p>The <code>kube-bind</code> project uses <code>OWNERS</code> files to denote the collaborators who can assist you in getting your PR merged.  There
-are two roles: reviewer and approver.  Merging a PR requires sign off from both a reviewer and an approver.</p>
-<h2 id="community-roles">Community Roles</h2>
-<h3 id="reviewers">Reviewers</h3>
-<p>Reviewers are responsible for reviewing code for correctness and adherence to standards. Oftentimes reviewers will
-be able to advise on code efficiency and style as it relates to golang or project conventions as well as other considerations
-that might not be obvious to the contributor.</p>
-<h3 id="approvers">Approvers</h3>
-<p>Approvers are responsible for sign-off on the acceptance of the contribution. In essence, approval indicates that the
-change is desired and good for the project, aligns with code, API, and system conventions, and appears to follow all required
-process including adequate testing, documentation, follow ups, or notifications to other areas who might be interested
-or affected by the change.</p>
-<p>Approvers are also reviewers.</p>
-<h3 id="management-of-owners-files">Management of <code>OWNERS</code> Files</h3>
-<p>If a reviewer or approver no longer wishes to be in their current role it is requested that a PR
-be opened to update the <code>OWNERS</code> file. <code>OWNERS</code> files may be periodically reviewed and updated based on project activity
-or feedback to ensure an acceptable contributor experience is maintained.</p>
+<h3 id="for-service-consumers">For Service Consumers</h3>
+<ol>
+<li><strong>Authenticate</strong> to the kube-bind backend</li>
+<li><strong>Discover available templates</strong> through the web UI or CLI</li>
+<li><strong>Request bindings</strong> to specific templates</li>
+<li><strong>Authenticate and authorize</strong> access through OAuth2 flows</li>
+<li><strong>Use imported APIs</strong> in their local cluster</li>
+</ol>
+<h3 id="for-platform-operators">For Platform Operators</h3>
+<ol>
+<li><strong>Deploy kube-bind infrastructure</strong> on both provider and consumer sides (if using GitOps)</li>
+<li><strong>Configure authentication</strong> and security policies  </li>
+<li><strong>Monitor connections</strong> and resource synchronization</li>
+</ol>
+<h2 id="getting-started">Getting Started</h2>
+<p>If you're new to kube-bind:</p>
+<ol>
+<li><strong>Start with the <a href="../setup/quickstart/">Quickstart Guide</a></strong> for a hands-on introduction</li>
+<li><strong>Review <a href="api-concepts/">API Concepts</a></strong> to understand the fundamental types</li>
+<li><strong>Explore <a href="template-references.md">Template References</a></strong> for advanced use cases</li>
+<li><strong>Check the <a href="../reference/">Reference Documentation</a></strong> for complete API specifications</li>
+</ol>
+<p>The konnector agents establish a secure, authenticated connection that allows:
+- <strong>API schema synchronization</strong> from provider to consumer
+- <strong>Resource data flow</strong> based on permission claims
+- <strong>Namespace isolation</strong> and mapping
+- <strong>Authentication and authorization</strong> enforcement</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

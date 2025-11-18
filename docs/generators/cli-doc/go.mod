@@ -9,7 +9,7 @@ replace (
 )
 
 require (
-	github.com/kcp-dev/kcp v0.26.1
+	github.com/kcp-dev/kcp v0.28.2
 	github.com/kube-bind/kube-bind/cli v0.0.0-20250515145715-d9f20e7c840d
 )
 

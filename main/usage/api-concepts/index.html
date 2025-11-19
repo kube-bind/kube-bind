@@ -2798,8 +2798,8 @@
 <p>kube-bind uses several specialized Kubernetes custom resources to orchestrate the export and import of APIs between clusters. Understanding these types and their relationships is essential for effective use of kube-bind.</p>
 <h2 id="apiserviceexporttemplate">APIServiceExportTemplate</h2>
 <p><strong>Purpose</strong>: Defines a reusable template for exporting a group of related APIs and their permission requirements.</p>
-<p><strong>Used by</strong>: Service providers<br />
-<strong>Scope</strong>: Cluster-scoped<br />
+<p><strong>Used by</strong>: Service providers
+<strong>Scope</strong>: Cluster-scoped
 <strong>Lifecycle</strong>: Long-lived template definition</p>
 <h3 id="key-features">Key Features</h3>
 <ul>
@@ -2822,7 +2822,7 @@
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example.com</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">resource</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">widgets</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">versions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;v1&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;v1alpha1&quot;</span><span class="p p-Indicator">]</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example.com</span><span class="w">  </span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example.com</span>
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">resource</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gadgets</span>
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="nt">versions</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;v1&quot;</span><span class="p p-Indicator">]</span>
 <a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
@@ -2853,8 +2853,8 @@
 </ul>
 <h2 id="apiserviceexport">APIServiceExport</h2>
 <p><strong>Purpose</strong>: Represents an active, instantiated export of a specific set of CRD's and permission claims to consumer clusters.</p>
-<p><strong>Used by</strong>: Automatically created by konnector agents<br />
-<strong>Scope</strong>: Namespaced<br />
+<p><strong>Used by</strong>: Automatically created by konnector agents
+<strong>Scope</strong>: Namespaced
 <strong>Lifecycle</strong>: Created when consumers bind to templates</p>
 <h3 id="key-features_1">Key Features</h3>
 <ul>
@@ -2918,19 +2918,19 @@
 </code></pre></div>
 <h2 id="apiserviceexportrequest">APIServiceExportRequest</h2>
 <p><strong>Purpose</strong>: Represents a consumer's request to bind to a specific service template.</p>
-<p><strong>Used by</strong>: Service consumers (via CLI/UI)<br />
-<strong>Scope</strong>: Namespaced (on consumer side)<br />
+<p><strong>Used by</strong>: Service consumers (via CLI/UI)
+<strong>Scope</strong>: Namespaced (on consumer side)
 <strong>Lifecycle</strong>: Created during binding process, short lived until APIServiceExport is established.</p>
 <h3 id="key-features_2">Key Features</h3>
 <ul>
 <li><strong>Binding Initiation</strong>: Starts the binding process between consumer and provider</li>
-<li><strong>Authentication Context</strong>: Contains OAuth2 flow details and credentials  </li>
+<li><strong>Authentication Context</strong>: Contains OAuth2 flow details and credentials</li>
 <li><strong>Template Reference</strong>: Points to the specific template being requested</li>
 <li><strong>Status Tracking</strong>: Reports binding progress and any errors</li>
 </ul>
 <h3 id="structure_2">Structure</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-bind.io/v1alpha1</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">APIServiceExportRequest</span><span class="w">  </span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">APIServiceExportRequest</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">metadata</span><span class="p">:</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-widget-service-binding</span>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
@@ -2956,8 +2956,8 @@
 <a id="__codelineno-3-25" name="__codelineno-3-25" href="#__codelineno-3-25"></a><span class="w">    </span><span class="c1">#   resource:</span>
 <a id="__codelineno-3-26" name="__codelineno-3-26" href="#__codelineno-3-26"></a><span class="w">    </span><span class="c1">#   versions: []</span>
 <a id="__codelineno-3-27" name="__codelineno-3-27" href="#__codelineno-3-27"></a><span class="w">    </span><span class="c1">#   jsonPath:</span>
-<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="w">    </span><span class="c1">#    name: </span>
-<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="w">    </span><span class="c1">#    namespace: </span>
+<a id="__codelineno-3-28" name="__codelineno-3-28" href="#__codelineno-3-28"></a><span class="w">    </span><span class="c1">#    name:</span>
+<a id="__codelineno-3-29" name="__codelineno-3-29" href="#__codelineno-3-29"></a><span class="w">    </span><span class="c1">#    namespace:</span>
 <a id="__codelineno-3-30" name="__codelineno-3-30" href="#__codelineno-3-30"></a>
 <a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a>
 <a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="nt">status</span><span class="p">:</span>
@@ -2972,8 +2972,8 @@
 </code></pre></div>
 <h2 id="apiservicebinding">APIServiceBinding</h2>
 <p><strong>Purpose</strong>: Represents the consumer-side binding to a provider service, containing the applied CRDs and managing the resource synchronization.</p>
-<p><strong>Used by</strong>: Automatically created by consumer konnector agents<br />
-<strong>Scope</strong>: Namespaced (on consumer side)<br />
+<p><strong>Used by</strong>: Automatically created by consumer konnector agents
+<strong>Scope</strong>: Namespaced (on consumer side)
 <strong>Lifecycle</strong>: Created when APIServiceExportRequest is processed, long-lived</p>
 <h3 id="key-features_3">Key Features</h3>
 <ul>
@@ -3034,8 +3034,8 @@
 </code></pre></div>
 <h2 id="boundschema">BoundSchema</h2>
 <p><strong>Purpose</strong>: Contains the actual CRD definitions and schema information for resources bound from a provider.</p>
-<p><strong>Used by</strong>: Created alongside APIServiceExport on provider side<br />
-<strong>Scope</strong>: Namespaced (on provider side)<br />
+<p><strong>Used by</strong>: Created alongside APIServiceExport on provider side
+<strong>Scope</strong>: Namespaced (on provider side)
 <strong>Lifecycle</strong>: Mirrors APIServiceExport lifecycle</p>
 <h3 id="key-features_4">Key Features</h3>
 <ul>
@@ -3096,13 +3096,13 @@
 </code></pre></div>
 <h2 id="apiservicenamespace">APIServiceNamespace</h2>
 <p><strong>Purpose</strong>: Manages namespace mapping and isolation between provider and consumer clusters.</p>
-<p><strong>Used by</strong>: Automatically managed by konnector agents<br />
-<strong>Scope</strong>: Namespaced (on provider side)<br />
+<p><strong>Used by</strong>: Automatically managed by konnector agents
+<strong>Scope</strong>: Namespaced (on provider side)
 <strong>Lifecycle</strong>: Created as needed during resource synchronization or by provider, when namespace is desired on consumer side.</p>
 <h3 id="key-features_5">Key Features</h3>
 <ul>
 <li><strong>Namespace Isolation</strong>: Ensures consumer resources don't conflict</li>
-<li><strong>Mapping Logic</strong>: Handles namespace translation between clusters  </li>
+<li><strong>Mapping Logic</strong>: Handles namespace translation between clusters</li>
 <li><strong>Resource Organization</strong>: Groups related resources per consumer</li>
 <li><strong>Automatic Management</strong>: Created/deleted as bindings change</li>
 </ul>
@@ -3147,7 +3147,7 @@
 <p>kube-bind supports different isolation strategies:</p>
 <ul>
 <li><strong>Prefixed</strong>: Consumer namespace becomes <code>{consumer-id}-{original-name}</code></li>
-<li><strong>Namespaced</strong>: Consumer resources go into dedicated provider namespaces  </li>
+<li><strong>Namespaced</strong>: Consumer resources go into dedicated provider namespaces</li>
 <li><strong>None</strong>: For dedicated provider clusters where isolation isn't needed</li>
 </ul>
 <h2 id="api-relationships-and-data-flow">API Relationships and Data Flow</h2>
@@ -3165,7 +3165,7 @@
 <a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>          │                   │
 <a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>     [Secure Connection]      │
 <a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>          │                   │
-<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>┌─────────▼───────────────────▼───────┐ Consumer Cluster  
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>┌─────────▼───────────────────▼───────┐ Consumer Cluster
 <a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>│                                     │
 <a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>│  APIServiceExportRequest            │
 <a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>│         │                           │
@@ -3187,7 +3187,7 @@
 <p>Select resources based on labels:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">permissionClaims</span><span class="p">:</span>
 <a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">resource</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secrets</span><span class="w">  </span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">resource</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">secrets</span>
 <a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
 <a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="nt">labelSelector</span><span class="p">:</span>
 <a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">      </span><span class="nt">matchLabels</span><span class="p">:</span>
@@ -3199,7 +3199,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">permissionClaims</span><span class="p">:</span>
 <a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
 <a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nt">resource</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configmaps</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w">  </span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
 <a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">    </span><span class="nt">namedResources</span><span class="p">:</span>
 <a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service-config</span>
 <a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">      </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-system</span>
@@ -3214,19 +3214,27 @@
 <a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
 <a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">    </span><span class="nt">references</span><span class="p">:</span>
 <a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">resource</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">widgets</span>
-<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">      </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example.com</span><span class="w">  </span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">      </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">example.com</span>
 <a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">      </span><span class="nt">jsonPath</span><span class="p">:</span>
 <a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spec.secretRef.name</span>
 <a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">        </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">spec.secretRef.namespace</span>
 </code></pre></div></p>
 <h3 id="claim-evaluation">Claim Evaluation</h3>
-<p>Permission claims are evaluated when:
-1. <strong>Template binding occurs</strong> - Initial claim evaluation
-2. <strong>Reference sources change</strong> - Dynamic re-evaluation for reference claims
-3. <strong>Resource labels change</strong> - Re-evaluation for label selector claims</p>
+<p>Permission claims are evaluated when:</p>
+<ol>
+<li>
+<p><strong>Template binding occurs</strong> - Initial claim evaluation</p>
+</li>
+<li>
+<p><strong>Reference sources change</strong> - Dynamic re-evaluation for reference claims</p>
+</li>
+<li>
+<p><strong>Resource labels change</strong> - Re-evaluation for label selector claims</p>
+</li>
+</ol>
 <h2 id="related-documentation">Related Documentation</h2>
 <ul>
-<li><a href="../../reference/crd/kube-bind.io/">CRD Reference</a> - Complete API specifications  </li>
+<li><a href="../../reference/crd/kube-bind.io/">CRD Reference</a> - Complete API specifications</li>
 <li><a href="../../reference/">CLI Reference</a> - Command-line tool documentation</li>
 </ul>
 

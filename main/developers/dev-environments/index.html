@@ -2129,13 +2129,23 @@ This includes setting up workspace/provider and setting up all the APIResourceSc
 </code></pre></div></p>
 </div>
 <div class="tabbed-block">
-<p>This guide will walk you through setting up kube-bind between two Kubernetes clusters, where
-* <strong>Provider cluster</strong>:
-* Deploys kube-bind/backend
-* Provides kube-bind compatible backend for Sheriffs resources</p>
+<p>This guide will walk you through setting up kube-bind between two Kubernetes clusters, where</p>
 <ul>
-<li><strong>Consumer cluster</strong>:</li>
-<li>Provides an application consuming Sheriffs and Cowboys resources from the Provider cluster</li>
+<li>
+<p><strong>Provider cluster</strong>:</p>
+</li>
+<li>
+<p>Deploys kube-bind/backend</p>
+</li>
+<li>
+<p>Provides kube-bind compatible backend for Sheriffs resources</p>
+</li>
+<li>
+<p><strong>Consumer cluster</strong>:</p>
+</li>
+<li>
+<p>Provides an application consuming Sheriffs and Cowboys resources from the Provider cluster</p>
+</li>
 </ul>
 <p>This guide works best on Linux. macOS and Windows users may need to adjust some commands accordingly.</p>
 <h2 id="pre-requisites">Pre-requisites</h2>
@@ -2205,9 +2215,9 @@ This includes setting up workspace/provider and setting up all the APIResourceSc
 <a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>mangodbs.mangodb.com<span class="w">              </span><span class="m">2025</span>-11-12T08:10:56Z
 </code></pre></div>
 <p>Try creating an example MangoDB resource and observe it being synced to provider clusters:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>example<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>mangodbs.mangodb.com<span class="w">   </span>
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-provider.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>mangodbs.mangodb.com<span class="w"> </span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>example<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>-
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>mangodbs.mangodb.com
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-provider.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>mangodbs.mangodb.com
 </code></pre></div>
 <h2 id="cleanup">Cleanup</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>kind<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>delete

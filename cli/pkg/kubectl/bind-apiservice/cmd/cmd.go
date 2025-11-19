@@ -44,9 +44,22 @@ var (
 func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	opts := plugin.NewBindAPIServiceOptions(streams)
 	cmd := &cobra.Command{
-		Use:          "apiservice https://<url-to-a-APIServiceExportRequest>|-f <file-to-a-APIBindingRequest>",
-		Short:        "Bind to a remote API service",
-		Example:      help.Examplesf(bindAPIServiceExampleUses, "kubectl bind"),
+		Use:   "apiservice https://<url-to-a-APIServiceExportRequest>|-f <file-to-a-APIBindingRequest>",
+		Short: "Bind to a remote API service",
+		Long: help.Doc(`
+		Bind to a remote API service by creating an APIServiceExportRequest.
+
+		This command allows you to bind remote services into your cluster by either:
+
+		- Providing a URL to an APIServiceExportRequest resource
+		- Providing a file containing an APIServiceExportRequest manifest
+		- Using a template name to interactively create the binding
+
+		The command will authenticate with the remote service provider, create the necessary
+		APIServiceExportRequest, and deploy a konnector to establish the connection between
+		your cluster and the remote service.
+		`),
+		Example:      fmt.Sprintf(bindAPIServiceExampleUses, "kubectl bind"),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := logsv1.ValidateAndApply(opts.Logs, nil); err != nil {

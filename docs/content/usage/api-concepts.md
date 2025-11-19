@@ -17,8 +17,8 @@ kube-bind uses several specialized Kubernetes custom resources to orchestrate th
 
 **Purpose**: Defines a reusable template for exporting a group of related APIs and their permission requirements.
 
-**Used by**: Service providers  
-**Scope**: Cluster-scoped  
+**Used by**: Service providers
+**Scope**: Cluster-scoped
 **Lifecycle**: Long-lived template definition
 
 ### Key Features
@@ -38,16 +38,16 @@ metadata:
 spec:
   scope: Cluster # or Namespace
   description: "A comprehensive service template"
-  
+
   # Core APIs being exported
   resources:
   - group: example.com
     resource: widgets
     versions: ["v1", "v1alpha1"]
-  - group: example.com  
+  - group: example.com
     resource: gadgets
     versions: ["v1"]
-    
+
   # Additional resources the service needs access to
   permissionClaims:
   - group: ""
@@ -62,7 +62,7 @@ spec:
         jsonPath:
           name: spec.secretRef.name
           namespace: spec.secretRef.namespace
-  
+
   # Pre-created namespaces for this service. These will be owned by provider (service owned).
   namespaces:
   - name: my-service-system
@@ -74,12 +74,12 @@ spec:
 - **Template**: The definition (APIServiceExportTemplate) - shared and reusable
 - **Instance**: The actual export (APIServiceExport) - created per binding
 
-## APIServiceExport 
+## APIServiceExport
 
 **Purpose**: Represents an active, instantiated export of a specific set of CRD's and permission claims to consumer clusters.
 
-**Used by**: Automatically created by konnector agents  
-**Scope**: Namespaced  
+**Used by**: Automatically created by konnector agents
+**Scope**: Namespaced
 **Lifecycle**: Created when consumers bind to templates
 
 ### Key Features
@@ -102,7 +102,7 @@ spec:
   - group: example.com
     resource: widgets
     versions: ["v1"]
-    
+
   # Permission claims for this specific export
   permissionClaims:
   - group: ""
@@ -112,7 +112,7 @@ spec:
         matchLabels:
           component: widget-service
           consumer: consumer123
-          
+
   # How isolation is done at the provider side
   clusterScopedIsolation: Prefixed
   # informerScope is the scope of the APIServiceExport. It can be either Cluster or Namespace.
@@ -122,7 +122,7 @@ spec:
 	# Namespaced: The konnector has permission to watch only single namespaces.
 	#             This is more resource intensive. And it means cluster-scoped resources cannot be exported.
   informerScope: Cluster
-  
+
 status:
   conditions:
   - lastTransitionTime: "2025-11-14T12:02:29Z"
@@ -152,14 +152,14 @@ APIServiceBinding (consumer side)
 
 **Purpose**: Represents a consumer's request to bind to a specific service template.
 
-**Used by**: Service consumers (via CLI/UI)  
-**Scope**: Namespaced (on consumer side)  
+**Used by**: Service consumers (via CLI/UI)
+**Scope**: Namespaced (on consumer side)
 **Lifecycle**: Created during binding process, short lived until APIServiceExport is established.
 
 ### Key Features
 
 - **Binding Initiation**: Starts the binding process between consumer and provider
-- **Authentication Context**: Contains OAuth2 flow details and credentials  
+- **Authentication Context**: Contains OAuth2 flow details and credentials
 - **Template Reference**: Points to the specific template being requested
 - **Status Tracking**: Reports binding progress and any errors
 
@@ -167,7 +167,7 @@ APIServiceBinding (consumer side)
 
 ```yaml
 apiVersion: kube-bind.io/v1alpha1
-kind: APIServiceExportRequest  
+kind: APIServiceExportRequest
 metadata:
   name: my-widget-service-binding
   namespace: default
@@ -177,7 +177,7 @@ spec:
   - group: example.com
     resource: widgets
     versions: ["v1"]
-  
+
   permissionClaims:
   - group: core
     resource: configmaps
@@ -193,10 +193,10 @@ spec:
     #   resource:
     #   versions: []
     #   jsonPath:
-    #    name: 
-    #    namespace: 
-    
-    
+    #    name:
+    #    namespace:
+
+
 status:
   conditions:
   - lastTransitionTime: "2025-11-14T12:02:25Z"
@@ -212,8 +212,8 @@ status:
 
 **Purpose**: Represents the consumer-side binding to a provider service, containing the applied CRDs and managing the resource synchronization.
 
-**Used by**: Automatically created by consumer konnector agents  
-**Scope**: Namespaced (on consumer side)  
+**Used by**: Automatically created by consumer konnector agents
+**Scope**: Namespaced (on consumer side)
 **Lifecycle**: Created when APIServiceExportRequest is processed, long-lived
 
 ### Key Features
@@ -280,8 +280,8 @@ status:
 
 **Purpose**: Contains the actual CRD definitions and schema information for resources bound from a provider.
 
-**Used by**: Created alongside APIServiceExport on provider side  
-**Scope**: Namespaced (on provider side)  
+**Used by**: Created alongside APIServiceExport on provider side
+**Scope**: Namespaced (on provider side)
 **Lifecycle**: Mirrors APIServiceExport lifecycle
 
 ### Key Features
@@ -321,7 +321,7 @@ spec:
     subresources:
       status: {}
           # Complete OpenAPI schema definition
-          
+
 status:
   acceptedNames:
     kind: Sheriff
@@ -348,14 +348,14 @@ status:
 
 **Purpose**: Manages namespace mapping and isolation between provider and consumer clusters.
 
-**Used by**: Automatically managed by konnector agents  
-**Scope**: Namespaced (on provider side)  
+**Used by**: Automatically managed by konnector agents
+**Scope**: Namespaced (on provider side)
 **Lifecycle**: Created as needed during resource synchronization or by provider, when namespace is desired on consumer side.
 
 ### Key Features
 
 - **Namespace Isolation**: Ensures consumer resources don't conflict
-- **Mapping Logic**: Handles namespace translation between clusters  
+- **Mapping Logic**: Handles namespace translation between clusters
 - **Resource Organization**: Groups related resources per consumer
 - **Automatic Management**: Created/deleted as bindings change
 
@@ -373,13 +373,13 @@ APIServiceExportTemplate → defines service contract
 APIServiceExportRequest → consumer requests binding
 ```
 
-### 3. Provider Processing  
+### 3. Provider Processing
 ```yaml
 APIServiceExport + BoundSchema → provider creates export with schema
 ```
 
 ### 4. Consumer Binding
-```yaml  
+```yaml
 APIServiceBinding → consumer applies CRDs and establishes sync
 ```
 
@@ -416,7 +416,7 @@ status:
 kube-bind supports different isolation strategies:
 
 - **Prefixed**: Consumer namespace becomes `{consumer-id}-{original-name}`
-- **Namespaced**: Consumer resources go into dedicated provider namespaces  
+- **Namespaced**: Consumer resources go into dedicated provider namespaces
 - **None**: For dedicated provider clusters where isolation isn't needed
 
 ## API Relationships and Data Flow
@@ -436,7 +436,7 @@ kube-bind supports different isolation strategies:
           │                   │
      [Secure Connection]      │
           │                   │
-┌─────────▼───────────────────▼───────┐ Consumer Cluster  
+┌─────────▼───────────────────▼───────┐ Consumer Cluster
 │                                     │
 │  APIServiceExportRequest            │
 │         │                           │
@@ -463,7 +463,7 @@ Select resources based on labels:
 ```yaml
 permissionClaims:
 - group: ""
-  resource: secrets  
+  resource: secrets
   selector:
     labelSelector:
       matchLabels:
@@ -471,13 +471,13 @@ permissionClaims:
         environment: production
 ```
 
-#### Named Resource Claims  
+#### Named Resource Claims
 Select specific resources by name:
 ```yaml
 permissionClaims:
 - group: ""
   resource: configmaps
-  selector:  
+  selector:
     namedResources:
     - name: service-config
       namespace: kube-system
@@ -494,7 +494,7 @@ permissionClaims:
   selector:
     references:
     - resource: widgets
-      group: example.com  
+      group: example.com
       jsonPath:
         name: spec.secretRef.name
         namespace: spec.secretRef.namespace
@@ -503,11 +503,14 @@ permissionClaims:
 ### Claim Evaluation
 
 Permission claims are evaluated when:
+
 1. **Template binding occurs** - Initial claim evaluation
+
 2. **Reference sources change** - Dynamic re-evaluation for reference claims
+
 3. **Resource labels change** - Re-evaluation for label selector claims
 
 ## Related Documentation
 
-- [CRD Reference](../../reference/crd/kube-bind.io/) - Complete API specifications  
+- [CRD Reference](../../reference/crd/kube-bind.io/) - Complete API specifications
 - [CLI Reference](../../reference/) - Command-line tool documentation

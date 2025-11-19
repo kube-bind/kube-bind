@@ -322,7 +322,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj any) {
 			runtime.HandleError(err)
 			continue
 		}
-		logger.V(2).Info("queueing Unstructured", "key", key, "reason", "APIServiceNamespace", "ServiceNamespaceKey", key)
+		logger.V(2).Info("queueing Unstructured", "key", key, "reason", "APIServiceNamespace", "ServiceNamespaceKey", snKey)
 		c.queue.Add(key)
 	}
 }

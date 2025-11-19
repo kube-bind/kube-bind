@@ -156,11 +156,14 @@ All the instructions assume you have already cloned the kube-bind repository and
 === "Kind"
 
     This guide will walk you through setting up kube-bind between two Kubernetes clusters, where
+
     * **Provider cluster**:
+
     * Deploys kube-bind/backend
     * Provides kube-bind compatible backend for Sheriffs resources
 
     * **Consumer cluster**:
+
     * Provides an application consuming Sheriffs and Cowboys resources from the Provider cluster
 
     This guide works best on Linux. macOS and Windows users may need to adjust some commands accordingly.
@@ -244,7 +247,7 @@ All the instructions assume you have already cloned the kube-bind repository and
     ```
 
     Now in the consumer cluster you should see these CRDs:
-    
+
     ```bash
     kubectl get crd                                                                                        10:10:56
     NAME                              CREATED AT
@@ -255,13 +258,13 @@ All the instructions assume you have already cloned the kube-bind repository and
     Try creating an example MangoDB resource and observe it being synced to provider clusters:
 
     ```bash
-    kubectl bind dev example | kubectl create -f - 
-    KUBECONFIG=kind-consumer.kubeconfig kubectl get mangodbs.mangodb.com   
-    KUBECONFIG=kind-provider.kubeconfig kubectl get mangodbs.mangodb.com 
+    kubectl bind dev example | kubectl create -f -
+    KUBECONFIG=kind-consumer.kubeconfig kubectl get mangodbs.mangodb.com
+    KUBECONFIG=kind-provider.kubeconfig kubectl get mangodbs.mangodb.com
     ```
 
     ## Cleanup
-    
+
     ```sh
     kind bind dev delete
     ```

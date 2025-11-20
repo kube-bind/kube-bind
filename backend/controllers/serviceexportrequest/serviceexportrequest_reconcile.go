@@ -53,16 +53,9 @@ type reconciler struct {
 }
 
 func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
-	// We must ensure schemas are created in form of boundSchemas first for the validation.
-	// Worst case scenario if validation fails, we will reuse schemas for same consumer once issues are fixed.
 	if err := r.ensureBoundSchemas(ctx, cl, cache, req); err != nil {
 		conditions.SetSummary(req)
 		return fmt.Errorf("failed to ensure bound schemas: %w", err)
-	}
-
-	if err := r.validate(ctx, cl, req); err != nil {
-		conditions.SetSummary(req)
-		return fmt.Errorf("failed to validate APIServiceExportRequest: %w", err)
 	}
 
 	if err := r.ensureExports(ctx, cl, cache, req); err != nil {
@@ -268,109 +261,6 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 	}
 
 	return nil
-}
-
-// Validate validates if the APIServiceExportRequest is in a valid state.
-// Currently it validates if all requested schemas are of the same scope and
-// if claimable apis are allowed and valid.
-//
-// TODO: Move this to validatingAdmissionWebhook as this is not really part of reconciliation.
-// https://github.com/kube-bind/kube-bind/issues/325
-func (r *reconciler) validate(ctx context.Context, cl client.Client, req *kubebindv1alpha2.APIServiceExportRequest) error {
-	exportedSchemas, err := r.getExportedSchemas(ctx, cl)
-	if err != nil {
-		return err
-	}
-
-	if len(exportedSchemas) == 0 {
-		conditions.MarkFalse(
-			req,
-			kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
-			"SchemaNotFound",
-			conditionsapi.ConditionSeverityError,
-			"Schema not found",
-		)
-		return fmt.Errorf("no exported schemas found")
-	}
-
-	first := apiextensionsv1.ResourceScope("")
-	for _, res := range req.Spec.Resources {
-		boundSchema, ok := exportedSchemas[res.ResourceGroupName()]
-		if !ok {
-			conditions.MarkFalse(
-				req,
-				kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
-				"SchemaNotFound",
-				conditionsapi.ConditionSeverityError,
-				"Schema %s not found",
-				res.ResourceGroupName(),
-			)
-			return fmt.Errorf("schema %s not found", res.ResourceGroupName())
-		}
-		if first == apiextensionsv1.ResourceScope("") {
-			first = boundSchema.Spec.Scope
-			continue
-		}
-		if boundSchema.Spec.Scope != first {
-			conditions.MarkFalse(req,
-				kubebindv1alpha2.APIServiceExportRequestConditionExportsReady,
-				"DifferentScopes",
-				conditionsapi.ConditionSeverityError,
-				"Different scopes found: %v",
-				boundSchema.Spec.Scope,
-			)
-			return fmt.Errorf("different scopes found for claimed resources: %v", boundSchema.Name)
-		}
-	}
-
-	// Add validation if claimable apis are valid here
-	for _, claim := range req.Spec.PermissionClaims {
-		if !isClaimableAPI(claim) {
-			conditions.MarkFalse(
-				req,
-				kubebindv1alpha2.APIServiceExportConditionPermissionClaim,
-				"InvalidPermissionClaim",
-				conditionsapi.ConditionSeverityError,
-				"Resource %s is not a valid claimable API",
-				claim.GroupResource.String(),
-			)
-			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
-			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha2.APIServiceExportConditionPermissionClaim)
-			return fmt.Errorf("resource %s is not a valid claimable API", claim.GroupResource.String())
-		}
-	}
-
-	// Add validation for duplicate group/resource combinations
-	seenGroupResources := make(map[string]bool)
-	for _, claim := range req.Spec.PermissionClaims {
-		key := claim.Group + "/" + claim.Resource
-		if seenGroupResources[key] {
-			conditions.MarkFalse(
-				req,
-				kubebindv1alpha2.APIServiceExportConditionPermissionClaim,
-				"DuplicatePermissionClaim",
-				conditionsapi.ConditionSeverityError,
-				"Duplicate permission claim found for group/resource %s",
-				claim.GroupResource.String(),
-			)
-			req.Status.Phase = kubebindv1alpha2.APIServiceExportRequestPhaseFailed
-			req.Status.TerminalMessage = conditions.GetMessage(req, kubebindv1alpha2.APIServiceExportConditionPermissionClaim)
-			return fmt.Errorf("duplicate permission claim found for group/resource %s", claim.GroupResource.String())
-		}
-		seenGroupResources[key] = true
-	}
-
-	return nil
-}
-
-// isClaimableAPI checks if a permission claim is for a claimable API.
-func isClaimableAPI(claim kubebindv1alpha2.PermissionClaim) bool {
-	for _, api := range kubebindv1alpha2.ClaimableAPIs {
-		if claim.Group == api.GroupVersionResource.Group && claim.Resource == api.Names.Plural {
-			return true
-		}
-	}
-	return false
 }
 
 func (r *reconciler) ensureAPIServiceNamespaces(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {

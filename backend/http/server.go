@@ -49,7 +49,7 @@ func (s *Server) Addr() net.Addr {
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	log.Println("Starting HTTP server")
+	log.Println("Starting web server")
 	server := &http.Server{
 		Handler:           s.Router,
 		ReadHeaderTimeout: 1 * time.Minute,

@@ -10,8 +10,6 @@ The backend chart is available as an OCI image for service providers, with konne
 
 ## Quick Start
 
-**Important**: Current version of kube-bind uses application-level redirect (HTTP 302) to CLI. Your ingress controller must support this behavior.
-
 ## Prerequisites & Setup Guides
 
 The following prerequisites are required. Click the links below for detailed setup instructions:
@@ -20,6 +18,7 @@ The following prerequisites are required. Click the links below for detailed set
 - **[Helm 3.x](#helm)** - Package manager for Kubernetes
 - **[cert-manager](#cert-manager-setup)** - For TLS certificate management
 - **[OIDC provider](#oidc-provider-setup)** - For authentication (Dex, Keycloak, etc.)
+- **[Gateway API](#gateway-api-setup)** - (Optional) For advanced ingress management
 
 ### Install kube-bind Backend
 
@@ -31,7 +30,7 @@ The following prerequisites are required. Click the links below for detailed set
    VERSION=$(curl -s https://api.github.com/repos/kube-bind/kube-bind/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/v//')
 
    # Or use a specific development version:
-   # VERSION=0.0.0-<git-sha>
+   # VERSION=0.0.0-9fd9281e661c0d9a426a941111d3d8b08019ebc1
    ```
 
 2. **Configure your values:**
@@ -41,21 +40,34 @@ The following prerequisites are required. Click the links below for detailed set
    - Update hostnames to match your setup
 
 3. **Install the backend using OCI chart:**
-   ```bash
-   # Using latest release version
-   helm upgrade --install \
-       --namespace kube-bind \
-       --create-namespace \
-       --values ./deploy/charts/backend/examples/values-local-development.yaml \
-       kube-bind oci://ghcr.io/kube-bind/charts/backend --version ${VERSION}
 
-   # Or install a specific development version
-   helm upgrade --install \
-       --namespace kube-bind \
-       --create-namespace \
-       --values ./deploy/charts/backend/examples/values-local-development.yaml \
-       kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.0.0-a50df39d7e4c71f7808f4209ec23f294c5ac8f86
-   ```
+  Note !!!
+    To install production configuration, you will need to have OIDC provider. 
+    If you interested just to try - check quickstart [quickstart].
+
+```bash
+   # Using latest release version
+helm upgrade --install \
+      --namespace kube-bind \
+      --create-namespace \
+      --set certManager.enabled=true \
+      --set certManager.clusterIssuer=letsencrypt-prod \
+      --set backend.oidc.issuerUrl=https://auth.example.com \
+      --set backend.oidc.clientId=platform-mesh \
+      --set backend.oidc.clientSecret=<client-secret-from-oidc-provider> \
+      --set backend.oidc.callbackUrl=https://kube-bind.example.com/api/callback \
+      --set gatewayApi.enabled=true \
+      --set gatewayApi.gateway.className=nginx \
+      --set gatewayApi.gateway.httpsPort=443 \
+      --set 'gatewayApi.gateway.tls.certificateRefs[0].name=backend-tls-cert' \
+      --set 'gatewayApi.route.hostnames[0]=kube-bind.example.com' \
+      --set gatewayApi.route.path=/ \
+      --set gatewayApi.route.pathType=PathPrefix \
+      --set image.tag=${VERSION} \
+      kube-bind \
+      kube-bind oci://ghcr.io/kube-bind/charts/backend --version ${VERSION}
+```
+
 
 4. **Seed with example resources (optional):**
 ```bash
@@ -70,19 +82,29 @@ That's it! Your kube-bind backend is now ready to use.
 
 ---
 
-### Kubernetes Cluster
-You need a running Kubernetes cluster with `kubectl` configured. For testing, you can create a local cluster:
-
-```bash
-kind create cluster --name kube-bind-test
-```
-
 ### Helm
 Install Helm 3.x from [https://helm.sh/docs/intro/install/](https://helm.sh/docs/intro/install/)
 
 **Note**: Helm 3.8+ is required for OCI chart support. Enable experimental OCI support if needed:
 ```bash
 export HELM_EXPERIMENTAL_OCI=1
+```
+
+### Gateway API Setup
+
+Install gateway API CRDs and controller for advanced ingress management. Kube-bind supports Gateway API for routing traffic to the backend service.
+
+Follow the official Gateway API installation instructions:
+https://gateway-api.sigs.k8s.io/guides/ 
+
+```bash
+kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
+```
+
+We used NGINX Gateway controller for testing. Install it as follows:
+
+```bash
+helm upgrade --install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric --create-namespace -n nginx-gateway 
 ```
 
 ### cert-manager Setup
@@ -216,7 +238,7 @@ config:
       redirectURIs:
       - https://auth.example.com/callback
       - http://localhost:8000
-      - https://kube-bind.example.com/callback  # Replace with your domain
+      - https://kube-bind.example.com/api/callback  # Replace with your domain
       name: 'KubeBindApp'
       secret: ### REPLACE ME ###
 
@@ -281,20 +303,4 @@ curl -s https://api.github.com/repos/kube-bind/kube-bind/releases | grep '"tag_n
 # Get latest release version
 VERSION=$(curl -s https://api.github.com/repos/kube-bind/kube-bind/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/v//')
 echo "Latest version: ${VERSION}"
-```
-
-**Development versions:**
-Development charts are built from every commit to the main branch with the format `0.0.0-<short-git-sha>`.
-
-### Installing Different Versions
-
-```bash
-# Install latest stable release (recommended for production)
-helm upgrade --install kube-bind oci://ghcr.io/kube-bind/charts/backend --version ${VERSION}
-
-# Install specific release version
-helm upgrade --install kube-bind oci://ghcr.io/kube-bind/charts/backend --version 1.0.0
-
-# Install development build (for testing)
-helm upgrade --install kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.0.0-a1b2c3d
 ```

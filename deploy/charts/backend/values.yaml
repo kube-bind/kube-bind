@@ -10,11 +10,6 @@ backend:
   listenAddress: "0.0.0.0:8080"
   externalAddress: ""
   externalServerName: ""
-  tls:
-    enabled: false
-    certSecretName: ""
-    tlsCertFile: "/etc/kube-bind/tls/tls.crt"
-    tlsKeyFile: "/etc/kube-bind/tls/tls.key"
   # OIDC configuration. Empty values - will run embedded OIDC server.
   oidc:
     issuerUrl: ""
@@ -36,6 +31,28 @@ backend:
 certManager:
   enabled: false
   clusterIssuer: ""
+
+# Gateway API configuration
+gatewayApi:
+  enabled: false
+  gateway:
+    className: ""
+    httpPort: 80
+    httpsPort: 443
+    annotations: {}
+    tls:
+      certificateRefs: []
+      # Example:
+      # - name: tls-cert
+      #   namespace: default
+  route:
+    hostnames: []
+    # Example:
+    # - "example.com"
+    # - "api.example.com"
+    path: "/"
+    pathType: "PathPrefix"
+    annotations: {}
 
 examples:
   # Example resources to seed on first start

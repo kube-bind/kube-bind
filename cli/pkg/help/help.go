@@ -17,32 +17,33 @@ limitations under the License.
 package help
 
 import (
-	"io"
-	"regexp"
+	"fmt"
 	"strings"
-	"unicode"
 
 	"github.com/MakeNowJust/heredoc"
-	"github.com/muesli/reflow/wordwrap"
-	"github.com/spf13/cobra"
-	"k8s.io/component-base/term"
+	"github.com/muesli/reflow/indent"
 )
 
-var reEmptyLine = regexp.MustCompile(`(?m)([\w[:punct:]])[ ]*\n([\w[:punct:]])`)
-
 func Doc(s string) string {
-	s = heredoc.Doc(s)
-	s = reEmptyLine.ReplaceAllString(s, "$1 $2")
+	return RemoveIndentation(s)
+}
+
+func Examples(s string) string {
+	s = RemoveIndentation(s)
+
+	// apply a consistent, nice-looking indentation
+	s = indent.String(s, 2)
+
 	return s
 }
 
-func FitTerminal(out io.Writer) {
-	cols, _, err := term.TerminalSize(out)
-	if err != nil {
-		cols = 80
-	}
+func Examplesf(s string, args ...any) string {
+	return Examples(fmt.Sprintf(s, args...))
+}
 
-	cobra.AddTemplateFunc("trimTrailingWhitespaces", func(s string) string {
-		return strings.TrimRightFunc(wordwrap.String(s, cols), unicode.IsSpace)
-	})
+func RemoveIndentation(s string) string {
+	s = strings.TrimSpace(s)
+	s = heredoc.Doc(s)
+
+	return s
 }

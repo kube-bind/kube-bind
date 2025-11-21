@@ -24,6 +24,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 
+	"github.com/kube-bind/kube-bind/cli/pkg/help"
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-apiservice/plugin"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/exec"
@@ -45,7 +46,7 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:          "apiservice https://<url-to-a-APIServiceExportRequest>|-f <file-to-a-APIBindingRequest>",
 		Short:        "Bind to a remote API service",
-		Example:      fmt.Sprintf(bindAPIServiceExampleUses, "kubectl bind"),
+		Example:      help.Examplesf(bindAPIServiceExampleUses, "kubectl bind"),
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := logsv1.ValidateAndApply(opts.Logs, nil); err != nil {

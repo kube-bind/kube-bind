@@ -17,8 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	logsv1 "k8s.io/component-base/logs/api/v1"
@@ -28,7 +26,7 @@ import (
 )
 
 var (
-	LoginExampleUses = `
+	loginExampleUses = `
 	# Login to a kube-bind server
 	%[1]s login https://my-kube-bind-server.example.com
 
@@ -47,15 +45,15 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 		Short: "Login to a kube-bind server and store authentication credentials",
 		Long: help.Doc(`
 		Login to a kube-bind server using OAuth2 authentication flow.
-		
+
 		The command will open your browser to complete the OAuth2 flow and
 		store the resulting JWT token in ~/.kube-bind/config for use by
 		subsequent commands.
-		
+
 		The SERVER_URL should point to the root of your kube-bind server,
 		e.g. https://my-server.example.com
-	`),
-		Example:      fmt.Sprintf(LoginExampleUses, "kubectl bind"),
+		`),
+		Example:      help.Examplesf(loginExampleUses, "kubectl bind"),
 		SilenceUsage: true,
 		Args:         cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

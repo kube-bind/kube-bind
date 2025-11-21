@@ -23,8 +23,10 @@ import (
 	"os"
 
 	"github.com/kcp-dev/kcp/hack/third_party/github.com/spf13/cobra/doc"
+	"github.com/spf13/cobra"
 
 	bindcmd "github.com/kube-bind/kube-bind/cli/cmd/kubectl-bind/cmd"
+	"github.com/kube-bind/kube-bind/cli/pkg/help"
 )
 
 func main() {
@@ -40,7 +42,20 @@ func main() {
 		log.Fatalf("Failed to re-create docs directory: %v", err)
 	}
 
-	if err := doc.GenMarkdownTree(bindcmd.KubectlBindCommand(), *output); err != nil {
+	rootCmd := bindcmd.KubectlBindCommand()
+
+	// remove the indentation for examples, as they look weird in the rendered markdown
+	unindentExamples(rootCmd)
+
+	if err := doc.GenMarkdownTree(rootCmd, *output); err != nil {
 		log.Fatalf("Failed to generate docs: %v", err)
+	}
+}
+
+func unindentExamples(cmd *cobra.Command) {
+	cmd.Example = help.RemoveIndentation(cmd.Example)
+
+	for _, child := range cmd.Commands() {
+		unindentExamples(child)
 	}
 }

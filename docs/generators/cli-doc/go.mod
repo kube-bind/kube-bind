@@ -11,6 +11,7 @@ replace (
 require (
 	github.com/kcp-dev/kcp v0.28.2
 	github.com/kube-bind/kube-bind/cli v0.0.0-20250515145715-d9f20e7c840d
+	github.com/spf13/cobra v1.10.1
 )
 
 require (
@@ -111,7 +112,6 @@ require (
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
-	github.com/spf13/cobra v1.10.1 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect

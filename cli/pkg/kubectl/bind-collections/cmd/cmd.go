@@ -24,11 +24,12 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 
+	"github.com/kube-bind/kube-bind/cli/pkg/help"
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-collections/plugin"
 )
 
 var (
-	CollectionsExampleUses = `
+	collectionsExampleUses = `
 	# List collections from currently authenticated server
 	%[1]s collections
 
@@ -46,15 +47,17 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:   "collections [server-url]",
 		Short: "List available collections from a kube-bind server",
-		Long: `List all available collections from a kube-bind server.
+		Long: help.Doc(`
+		List all available collections from a kube-bind server.
 
-This command connects to a kube-bind server and displays all the collections
-that are available. By default, it uses the current authenticated
-server from your configuration.
+		This command connects to a kube-bind server and displays all the
+		collections that are available. By default, it uses the current
+		authenticated server from your configuration.
 
-If you haven't authenticated to any server yet, you must provide a server URL
-argument or use 'kubectl bind-login <server>' first.`,
-		Example:      fmt.Sprintf(CollectionsExampleUses, "kubectl"),
+		If you haven't authenticated to any server yet, you must provide
+		a server URL argument or use 'kubectl bind-login <server>' first.
+		`),
+		Example:      help.Examplesf(collectionsExampleUses, "kubectl"),
 		SilenceUsage: true,
 		Args: func(cmd *cobra.Command, args []string) error {
 			for _, arg := range args {

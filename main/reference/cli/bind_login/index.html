@@ -2124,19 +2124,22 @@
 
 <h3 id="synopsis">Synopsis</h3>
 <p>Login to a kube-bind server using OAuth2 authentication flow.</p>
-<p>The command will open your browser to complete the OAuth2 flow and store the resulting JWT token in ~/.kube-bind/config for use by subsequent commands.</p>
-<p>The SERVER_URL should point to the root of your kube-bind server, e.g. https://my-server.example.com</p>
+<p>The command will open your browser to complete the OAuth2 flow and
+store the resulting JWT token in ~/.kube-bind/config for use by
+subsequent commands.</p>
+<p>The SERVER_URL should point to the root of your kube-bind server,
+e.g. https://my-server.example.com</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>bind login [SERVER_URL] [flags]
 </code></pre></div>
 <h3 id="examples">Examples</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># Login to a kube-bind server
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    kubectl bind login https://my-kube-bind-server.example.com
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl bind login https://my-kube-bind-server.example.com
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    # Login with a custom callback port
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    kubectl bind login https://my-kube-bind-server.example.com --callback-port 8081
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a># Login with a custom callback port
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>kubectl bind login https://my-kube-bind-server.example.com --callback-port 8081
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    # Login and show authentication status
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    kubectl bind login https://my-kube-bind-server.example.com --show-token
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a># Login and show authentication status
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>kubectl bind login https://my-kube-bind-server.example.com --show-token
 </code></pre></div>
 <h3 id="options">Options</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>      --as-uid string                        UID to impersonate for the operation

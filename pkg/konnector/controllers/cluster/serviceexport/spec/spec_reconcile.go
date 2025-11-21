@@ -19,28 +19,32 @@ package spec
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/isolation"
+	konnectortypes "github.com/kube-bind/kube-bind/pkg/konnector/types"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type reconciler struct {
-	providerNamespace string
-	apiServiceExport  *kubebindv1alpha2.APIServiceExport // used to establish owner references when create happens from the consumer side.
+	isolationStrategy isolation.Strategy
+	clusterNamespace  string
 
 	getServiceNamespace    func(name string) (*kubebindv1alpha2.APIServiceNamespace, error)
 	createServiceNamespace func(ctx context.Context, sn *kubebindv1alpha2.APIServiceNamespace) (*kubebindv1alpha2.APIServiceNamespace, error)
 
 	getProviderObject    func(ns, name string) (*unstructured.Unstructured, error)
 	createProviderObject func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
-	updateProviderObject func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
+	updateProviderObject func(ctx context.Context, obj *unstructured.Unstructured) error
 	deleteProviderObject func(ctx context.Context, ns, name string) error
 
 	updateConsumerObject func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
@@ -51,48 +55,27 @@ type reconciler struct {
 // reconcile syncs downstream objects (metadata and spec) with upstream objects.
 func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructured) error {
 	logger := klog.FromContext(ctx)
-	if r.apiServiceExport == nil { // Should never happen, but we check to make sure we dont regress in the future.
-		return fmt.Errorf("internal error: apiServiceExport is nil")
-	}
 
-	ns := obj.GetNamespace()
-	if ns != "" {
-		sn, err := r.getServiceNamespace(ns)
-		if err != nil && !errors.IsNotFound(err) {
-			return err
-		} else if errors.IsNotFound(err) {
-			logger.V(1).Info("creating APIServiceNamespace", "namespace", ns)
-			sn, err = r.createServiceNamespace(ctx, &kubebindv1alpha2.APIServiceNamespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      ns,
-					Namespace: r.providerNamespace,
-					OwnerReferences: []metav1.OwnerReference{
-						*metav1.NewControllerRef(r.apiServiceExport, kubebindv1alpha2.SchemeGroupVersion.WithKind("APIServiceExport")),
-					},
-				},
-			})
-			if err != nil {
-				return err
-			}
-		}
-		if sn.Status.Namespace == "" {
-			// note: the service provider might implement this synchronously in admission. if so, we can skip the requeue.
-			logger.V(1).Info("waiting for APIServiceNamespace to be ready", "namespace", ns)
-			return r.requeue(obj, 1*time.Second)
-		}
+	// Translate the namespace/name from the consumer side to the provider side,
+	// potentially creating eventually-consistent resources, hence the returned
+	// providerKey can be nil to indicate a requeue is desired.
 
-		logger = logger.WithValues("upstreamNamespace", sn.Status.Namespace)
-		ctx = klog.NewContext(ctx, logger)
-
-		// continue with upstream namespace
-		ns = sn.Status.Namespace
-	}
-
-	upstream, err := r.getProviderObject(ns, obj.GetName())
-	if err != nil && !errors.IsNotFound(err) {
+	providerKey, err := r.isolationStrategy.EnsureProviderKey(ctx, types.NamespacedName{
+		Namespace: obj.GetNamespace(),
+		Name:      obj.GetName(),
+	})
+	if err != nil {
 		return err
-	} else if errors.IsNotFound(err) {
-		if obj.GetDeletionTimestamp() != nil && !obj.GetDeletionTimestamp().IsZero() {
+	}
+	if providerKey == nil {
+		return r.requeue(obj, 1*time.Second)
+	}
+
+	upstream, err := r.getProviderObject(providerKey.Namespace, providerKey.Name)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return err
+	} else if apierrors.IsNotFound(err) {
+		if !obj.GetDeletionTimestamp().IsZero() {
 			logger.V(2).Info("object is already deleting, don't sync")
 
 			if _, err := r.removeDownstreamFinalizer(ctx, obj); err != nil {
@@ -110,7 +93,6 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		upstream = obj.DeepCopy()
 		upstream.SetUID("")
 		upstream.SetResourceVersion("")
-		upstream.SetNamespace(ns)
 		upstream.SetManagedFields(nil)
 		upstream.SetDeletionTimestamp(nil)
 		upstream.SetDeletionGracePeriodSeconds(nil)
@@ -118,24 +100,35 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		upstream.SetFinalizers(nil)
 		unstructured.RemoveNestedField(upstream.Object, "status")
 
-		logger.Info("Creating upstream object")
-		if _, err := r.createProviderObject(ctx, upstream); err != nil && !errors.IsAlreadyExists(err) {
+		// Regardless of isolation mode, we always annotate every object with its
+		// owning cluster namespace.
+		if err := r.setClusterNamespaceAnnotation(upstream); err != nil {
 			return err
-		} else if errors.IsAlreadyExists(err) {
+		}
+
+		// let the isolation perform any changes it desires
+		if err := r.isolationStrategy.MutateMetadataAndSpec(upstream, *providerKey); err != nil {
+			return err
+		}
+
+		logger.Info("Creating upstream object")
+		if _, err := r.createProviderObject(ctx, upstream); err != nil && !apierrors.IsAlreadyExists(err) {
+			return err
+		} else if apierrors.IsAlreadyExists(err) {
 			logger.Info("Upstream object already exists. Waiting for requeue.") // the upstream object will lead to a requeue
 		}
 	}
 
 	// here the upstream already exists. Update everything but the status.
 
-	if obj.GetDeletionTimestamp() != nil && !obj.GetDeletionTimestamp().IsZero() {
-		if upstream.GetDeletionTimestamp() != nil && !upstream.GetDeletionTimestamp().IsZero() {
+	if !obj.GetDeletionTimestamp().IsZero() {
+		if !upstream.GetDeletionTimestamp().IsZero() {
 			logger.V(2).Info("upstream is already deleting, wait for it")
 			return nil // we will get an event when the upstream is deleted
 		}
 
 		logger.V(1).Info("object is already deleting downstream, deleting upstream too")
-		if err := r.deleteProviderObject(ctx, ns, obj.GetName()); err != nil && !errors.IsNotFound(err) {
+		if err := r.deleteProviderObject(ctx, providerKey.Namespace, providerKey.Name); err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
 
@@ -145,6 +138,12 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 
 		logger.V(2).Info("upstream deleted, finalizer removed in downstream, waiting for downstream deletion to finish")
 		return nil // we will get an event when the upstream is deleted
+	}
+
+	// (Re)set the annotation if it's missing, abort if for whatever reason the
+	// object is annotated with another cluster namespace.
+	if err := r.setClusterNamespaceAnnotation(upstream); err != nil {
+		return err
 	}
 
 	// just in case, checking for finalizer
@@ -182,27 +181,13 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 	}
 
 	logger.Info("Updating upstream object")
-	upstream.SetManagedFields(nil) // server side apply does not want this
-	if _, err := r.updateProviderObject(ctx, upstream); err != nil {
-		return err
-	}
-
-	return nil
+	return r.updateProviderObject(ctx, upstream)
 }
 
 func (r *reconciler) ensureDownstreamFinalizer(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	logger := klog.FromContext(ctx)
 
-	// check that downstream has our finalizer
-	found := false
-	for _, f := range obj.GetFinalizers() {
-		if f == kubebindv1alpha2.DownstreamFinalizer {
-			found = true
-			break
-		}
-	}
-
-	if !found {
+	if !slices.Contains(obj.GetFinalizers(), kubebindv1alpha2.DownstreamFinalizer) {
 		logger.V(2).Info("adding finalizer to downstream object")
 		obj = obj.DeepCopy()
 		obj.SetFinalizers(append(obj.GetFinalizers(), kubebindv1alpha2.DownstreamFinalizer))
@@ -239,4 +224,22 @@ func (r *reconciler) removeDownstreamFinalizer(ctx context.Context, obj *unstruc
 	}
 
 	return obj, nil
+}
+
+func (r *reconciler) setClusterNamespaceAnnotation(obj *unstructured.Unstructured) error {
+	annnotations := obj.GetAnnotations()
+	existing, annotationExists := annnotations[konnectortypes.ClusterNamespaceAnnotationKey]
+	if annotationExists && existing != r.clusterNamespace {
+		return errors.New("mismatch between existing cluster namespace and given cluster namespace")
+	}
+
+	if !annotationExists {
+		if annnotations == nil {
+			annnotations = map[string]string{}
+		}
+		annnotations[konnectortypes.ClusterNamespaceAnnotationKey] = r.clusterNamespace
+		obj.SetAnnotations(annnotations)
+	}
+
+	return nil
 }

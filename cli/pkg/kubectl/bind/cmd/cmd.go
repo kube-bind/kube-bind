@@ -35,7 +35,7 @@ var (
 	BindExampleUses = `
 	# %[1]s bind login --server https://my-kube-bind-server.com
 
-	# Open kube-bind UI for current server context 
+	# Open kube-bind UI for current server context
 	%[1]s bind
 
 	# List available templates (CLI mode)
@@ -61,8 +61,8 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 		By default, 'kubectl bind' opens the kube-bind web UI in your browser.
 
 		For more information, see: https://docs.kube-bind.io
-	`),
-		Example:      fmt.Sprintf(BindExampleUses, "kubectl"),
+		`),
+		Example:      help.Examplesf(BindExampleUses, "kubectl"),
 		SilenceUsage: true,
 		Args: func(cmd *cobra.Command, args []string) error {
 			// Allow 0 or 1 arguments

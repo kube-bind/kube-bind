@@ -17,8 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	logsv1 "k8s.io/component-base/logs/api/v1"
@@ -28,21 +26,21 @@ import (
 )
 
 var (
-	DevCreateExampleUses = `
+	devCreateExampleUses = `
 	# Create a development environment with kind cluster and default OCI chart
-	%[1]s dev create
+	%[1]s create
 
 	# Create a development environment with custom provider cluster name
-	%[1]s dev create --provider-cluster-name my-provider
+	%[1]s create --provider-cluster-name my-provider
 
 	# Create with custom chart path (local development)
-	%[1]s dev create --chart-path ../deploy/charts/backend
+	%[1]s create --chart-path ../deploy/charts/backend
 
 	# Create with specific chart version
-	%[1]s dev create --chart-version 0.1.0
+	%[1]s create --chart-version 0.1.0
 
 	# Create with custom OCI chart
-	%[1]s dev create --chart-path oci://registry.example.com/charts/backend --chart-version 1.0.0
+	%[1]s create --chart-path oci://registry.example.com/charts/backend --chart-version 1.0.0
 	`
 )
 
@@ -52,19 +50,19 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 		Short: "Manage development environment for kube-bind",
 		Long: help.Doc(`
 		Manage a development environment for kube-bind using kind clusters.
-		
+
 		This command provides subcommands to initialize and manage kind clusters
 		configured for kube-bind development.
-	`),
+		`),
 		SilenceUsage: true,
 	}
 
-	// Add init subcommand
-	initCmd, err := newInitCommand(streams)
+	// Add create subcommand
+	createCmd, err := newCreateCommand(streams)
 	if err != nil {
 		return nil, err
 	}
-	cmd.AddCommand(initCmd)
+	cmd.AddCommand(createCmd)
 
 	// Add delete subcommand
 	deleteCmd, err := newDeleteCommand(streams)
@@ -83,26 +81,28 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	return cmd, nil
 }
 
-func newInitCommand(streams genericclioptions.IOStreams) (*cobra.Command, error) {
+func newCreateCommand(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 	opts := plugin.NewDevOptions(streams)
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "Create development environment with kind cluster and kube-bind backend",
 		Long: help.Doc(`
 		Create a complete development environment for kube-bind using kind clusters.
-		
+
 		This command will:
+
 		- Create a kind cluster configured for kube-bind development
 		- Add kube-bind.dev.local to /etc/hosts (with sudo prompts if needed)
 		- Install kube-bind backend helm chart (default: OCI chart from ghcr.io)
 		- Configure necessary port mappings (8443, 15021)
-		
+
 		The backend chart can be sourced from:
+
 		- OCI registry (default): oci://ghcr.io/kube-bind/charts/backend
 		- Local filesystem: --chart-path ./deploy/charts/backend
 		- Custom OCI registry: --chart-path oci://custom.registry/charts/backend
-	`),
-		Example:      fmt.Sprintf(DevCreateExampleUses, "kubectl bind dev"),
+		`),
+		Example:      help.Examplesf(devCreateExampleUses, "kubectl bind dev"),
 		SilenceUsage: true,
 		Args:         cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -133,9 +133,9 @@ func newDeleteCommand(streams genericclioptions.IOStreams) (*cobra.Command, erro
 		Short: "Delete development environment",
 		Long: help.Doc(`
 		Delete the development environment for kube-bind.
-		
+
 		This command will delete the kind cluster created for kube-bind development.
-	`),
+		`),
 		SilenceUsage: true,
 		Args:         cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -166,7 +166,7 @@ func newExampleCommand(streams genericclioptions.IOStreams) (*cobra.Command, err
 		Short: "Get example manifest for MangoDB",
 		Long: help.Doc(`
 		This will print example CRD you can use for development environment testing.
-	`),
+		`),
 		SilenceUsage: true,
 		Args:         cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {

@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/yaml"
 
@@ -47,21 +49,25 @@ import (
 func TestClusterScoped(t *testing.T) {
 	t.Parallel()
 	// name & test type defined by letters - cc - cluster-cluster so its easier to identify failures in the logs.
-	testHappyCase(t, "cc", apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope)
+	testHappyCase(t, "cc-prefixed", apiextensionsv1.ClusterScoped, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope, kubebindv1alpha2.IsolationPrefixed)
+	testHappyCase(t, "cc-none", apiextensionsv1.ClusterScoped, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope, kubebindv1alpha2.IsolationNone)
+	testHappyCase(t, "cc-namespaced", apiextensionsv1.ClusterScoped, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope, kubebindv1alpha2.IsolationNamespaced)
 }
 
 func TestNamespacedScoped(t *testing.T) {
 	t.Parallel()
 
-	testHappyCase(t, "nn", apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope)
-	testHappyCase(t, "nc", apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope)
+	testHappyCase(t, "nn", apiextensionsv1.NamespaceScoped, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope, "")
+	testHappyCase(t, "nc", apiextensionsv1.NamespaceScoped, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope, "")
 }
 
 func testHappyCase(
 	t *testing.T,
 	name string,
-	resourceScope apiextensionsv1.ResourceScope,
+	consumerResourceScope apiextensionsv1.ResourceScope,
+	providerResourceScope apiextensionsv1.ResourceScope,
 	informerScope kubebindv1alpha2.InformerScope,
+	isolationStrategy kubebindv1alpha2.Isolation,
 ) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel) // Commented out to prevent cleanup of kcp assets
@@ -72,24 +78,36 @@ func testHappyCase(
 	providerConfig, providerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithName("%s-provider-%s", name, suffix))
 
 	t.Logf("Installing kubebind CRDs")
-	framework.InstallKubebindCRDs(t, providerConfig)
+	framework.InstallKubeBindCRDs(t, providerConfig)
 
 	t.Logf("Starting backend with random port")
-	addr, _ := framework.StartBackend(t, "--kubeconfig="+providerKubeconfig, "--listen-address=:0", "--consumer-scope="+string(informerScope))
+	addr, _ := framework.StartBackend(t,
+		"--kubeconfig="+providerKubeconfig,
+		"--listen-address=:0",
+		"--consumer-scope="+string(informerScope),
+		"--cluster-scoped-isolation="+string(isolationStrategy),
+	)
 
 	t.Logf("Creating CRD on provider side")
 	examples.Bootstrap(t, framework.DiscoveryClient(t, providerConfig), framework.DynamicClient(t, providerConfig), nil)
+
+	// For namespaced-isolated cluster-scoped objects, the CRD needs to be namespaced on the provider side,
+	// but cluster-scoped on the consumer side. To make this setup possible without introducing another CRD,
+	// we will simply "hack" the CRD here on the providerside to make it work.
+	if providerResourceScope == apiextensionsv1.NamespaceScoped && consumerResourceScope == apiextensionsv1.ClusterScoped {
+		t.Logf("Changing sheriff CRD scope to namespaced on the provider side")
+		toggleCRDScope(t, ctx, providerConfig, "sheriffs.wildwest.dev", apiextensionsv1.NamespaceScoped)
+	}
 
 	t.Logf("Creating consumer workspace and starting konnector")
 	consumerConfig, consumerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithName("%s-consumer-%s", name, suffix))
 	framework.StartKonnector(t, consumerConfig, "--kubeconfig="+consumerKubeconfig)
 
 	serviceGVR := schema.GroupVersionResource{Group: "wildwest.dev", Version: "v1alpha1", Resource: "cowboys"}
-	if resourceScope == apiextensionsv1.ClusterScoped {
-		serviceGVR = schema.GroupVersionResource{Group: "wildwest.dev", Version: "v1alpha1", Resource: "sheriffs"}
-	}
 	templateRef := "cowboys"
-	if resourceScope == apiextensionsv1.ClusterScoped {
+
+	if consumerResourceScope == apiextensionsv1.ClusterScoped {
+		serviceGVR = schema.GroupVersionResource{Group: "wildwest.dev", Version: "v1alpha1", Resource: "sheriffs"}
 		templateRef = "sheriffs"
 	}
 
@@ -100,7 +118,13 @@ func testHappyCase(
 	providerBindClient := framework.BindClient(t, providerConfig)
 
 	// Instance variables removed - now seeded directly in test
+	// These two namespaces are where the "main" object resides on each cluster.
 	consumerNs, providerNs := "wild-west", "unknown"
+
+	// When namespaced isolation is used (i.e. cluster-scoped objects on the consumer
+	// turn into namespaced objects on the provider cluster), permission claimed objects
+	// are still synced into their respective APIServiceNamespace-managed namespaces.
+	permClaimNs := "unknown"
 
 	// cluster namespace is the main "contract" namespace, i.e. where the BoundSchema and other
 	// bind-related objects reside.
@@ -113,7 +137,7 @@ func testHappyCase(
 	// For sheriffs: sheriff-badge-credentials (referenced), sheriff-jurisdiction-config (label selector)
 	var referencedSecretName, labelSelectedSecretName string
 	var filename string
-	if resourceScope == apiextensionsv1.NamespaceScoped {
+	if consumerResourceScope == apiextensionsv1.NamespaceScoped {
 		referencedSecretName = "colt-45-permit" //nolint:gosec
 		labelSelectedSecretName = "cowboy-gang-affiliation"
 		filename = "cr-cowboy.yaml"
@@ -368,7 +392,7 @@ func testHappyCase(
 				// We need to establish namespace only in cluster scope for cluster scoped resources.
 				// Else we can trust sync object namespace as it will be the same.
 				if informerScope == kubebindv1alpha2.ClusterScope &&
-					resourceScope == apiextensionsv1.ClusterScoped {
+					consumerResourceScope == apiextensionsv1.ClusterScoped {
 					if providerNs == "unknown" {
 						t.Fatal("providerNS is not set. Programming error in the test.")
 					}
@@ -383,14 +407,18 @@ func testHappyCase(
 
 						for _, namespace := range namespaces.Items {
 							if strings.Contains(namespace.Name, consumerNs) && namespace.Status.Namespace != "" {
-								providerNs = namespace.Status.Namespace
+								permClaimNs = namespace.Status.Namespace
 								return true
 							}
 						}
 
 						return false
 					}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for APIServiceNamespace to be created on provider side")
-					require.NotEmpty(t, providerNs, "No cluster namespaces found")
+					require.NotEmpty(t, permClaimNs, "No permission claim namespaces found")
+
+					t.Logf("permclaim namespace detected as: %q", permClaimNs)
+				} else {
+					permClaimNs = providerNs
 				}
 			},
 		},
@@ -399,13 +427,13 @@ func testHappyCase(
 			step: func(t *testing.T) {
 				t.Logf("Waiting for referenced secret to be synced to provider side")
 				require.Eventually(t, func() bool {
-					_, err := providerCoreClient.Secrets(providerNs).Get(ctx, referencedSecretName, metav1.GetOptions{})
+					_, err := providerCoreClient.Secrets(permClaimNs).Get(ctx, referencedSecretName, metav1.GetOptions{})
 					return err == nil
 				}, time.Minute*2, time.Millisecond*100, "waiting for referenced secret to be synced to provider side")
 
 				t.Logf("Waiting for label-selected secret to be synced to provider side")
 				require.Eventually(t, func() bool {
-					_, err := providerCoreClient.Secrets(providerNs).Get(ctx, labelSelectedSecretName, metav1.GetOptions{})
+					_, err := providerCoreClient.Secrets(permClaimNs).Get(ctx, labelSelectedSecretName, metav1.GetOptions{})
 					return err == nil
 				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for label-selected secret to be synced to provider side")
 
@@ -424,7 +452,7 @@ func testHappyCase(
 			name: "instance deleted upstream is recreated",
 			step: func(t *testing.T) {
 				var err error
-				if resourceScope == apiextensionsv1.NamespaceScoped {
+				if providerResourceScope == apiextensionsv1.NamespaceScoped {
 					err = providerClient.Namespace(providerNs).Delete(ctx, "test", metav1.DeleteOptions{})
 				} else {
 					err = providerClient.Delete(ctx, clusterScopedUpInsName, metav1.DeleteOptions{})
@@ -433,7 +461,7 @@ func testHappyCase(
 
 				require.Eventually(t, func() bool {
 					var err error
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if providerResourceScope == apiextensionsv1.NamespaceScoped {
 						_, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						_, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
@@ -448,13 +476,13 @@ func testHappyCase(
 				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if consumerResourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = consumerClient.Namespace(consumerNs).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = consumerClient.Get(ctx, "test", metav1.GetOptions{})
 					}
 					require.NoError(t, err)
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if consumerResourceScope == apiextensionsv1.NamespaceScoped {
 						unstructured.SetNestedField(obj.Object, "Updated cowboy intent", "spec", "intent") //nolint:errcheck
 						_, err = consumerClient.Namespace(consumerNs).Update(ctx, obj, metav1.UpdateOptions{})
 					} else {
@@ -468,7 +496,7 @@ func testHappyCase(
 				require.Eventually(t, func() bool {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if providerResourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
@@ -478,7 +506,7 @@ func testHappyCase(
 					value, _, err = unstructured.NestedString(obj.Object, "spec", "intent")
 
 					require.NoError(t, err)
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if consumerResourceScope == apiextensionsv1.NamespaceScoped {
 						return value == "Updated cowboy intent"
 					} else {
 						return value == "Updated sheriff intent"
@@ -492,14 +520,14 @@ func testHappyCase(
 				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if providerResourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
 					}
 					require.NoError(t, err)
 					unstructured.SetNestedField(obj.Object, "Ready to ride", "status", "result") //nolint:errcheck
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if providerResourceScope == apiextensionsv1.NamespaceScoped {
 						_, err = providerClient.Namespace(providerNs).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
 					} else {
 						_, err = providerClient.UpdateStatus(ctx, obj, metav1.UpdateOptions{})
@@ -511,7 +539,7 @@ func testHappyCase(
 				require.Eventually(t, func() bool {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if consumerResourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = consumerClient.Namespace(consumerNs).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = consumerClient.Get(ctx, "test", metav1.GetOptions{})
@@ -529,13 +557,13 @@ func testHappyCase(
 				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if providerResourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
 					}
 					require.NoError(t, err)
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if providerResourceScope == apiextensionsv1.NamespaceScoped {
 						unstructured.SetNestedField(obj.Object, "Drifted cowboy intent", "spec", "intent") //nolint:errcheck
 						_, err = providerClient.Namespace(providerNs).Update(ctx, obj, metav1.UpdateOptions{})
 					} else {
@@ -549,14 +577,14 @@ func testHappyCase(
 				require.Eventually(t, func() bool {
 					var obj *unstructured.Unstructured
 					var err error
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if providerResourceScope == apiextensionsv1.NamespaceScoped {
 						obj, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
 					}
 					require.NoError(t, err)
 					var value string
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if consumerResourceScope == apiextensionsv1.NamespaceScoped {
 						value, _, err = unstructured.NestedString(obj.Object, "spec", "intent")
 						require.NoError(t, err)
 						return value == "Updated cowboy intent"
@@ -572,7 +600,7 @@ func testHappyCase(
 			name: "instances deleted downstream are deleted upstream",
 			step: func(t *testing.T) {
 				var err error
-				if resourceScope == apiextensionsv1.NamespaceScoped {
+				if consumerResourceScope == apiextensionsv1.NamespaceScoped {
 					err = consumerClient.Namespace(consumerNs).Delete(ctx, "test", metav1.DeleteOptions{})
 				} else {
 					err = consumerClient.Delete(ctx, "test", metav1.DeleteOptions{})
@@ -581,7 +609,7 @@ func testHappyCase(
 
 				require.Eventually(t, func() bool {
 					var err error
-					if resourceScope == apiextensionsv1.NamespaceScoped {
+					if providerResourceScope == apiextensionsv1.NamespaceScoped {
 						_, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
 					} else {
 						_, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
@@ -676,4 +704,31 @@ func applyMultiDocYAML(ctx context.Context, t *testing.T, dynamicClient dynamic.
 	}
 
 	return nil
+}
+
+func toggleCRDScope(t *testing.T, ctx context.Context, config *rest.Config, name string, scope apiextensionsv1.ResourceScope) {
+	clientset, err := apiextensionsclient.NewForConfig(config)
+	require.NoError(t, err)
+
+	crdClient := clientset.ApiextensionsV1().CustomResourceDefinitions()
+
+	// copy existing CRD
+	crd, err := crdClient.Get(ctx, name, metav1.GetOptions{})
+	require.NoError(t, err)
+
+	// delete it
+	require.NoError(t, crdClient.Delete(ctx, name, metav1.DeleteOptions{}))
+
+	require.Eventually(t, func() bool {
+		_, err := crdClient.Get(ctx, name, metav1.GetOptions{})
+		return errors.IsNotFound(err)
+	}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the CRD to be deleted")
+
+	// re-create it
+	crd.Spec.Scope = scope
+	crd.ObjectMeta.ResourceVersion = ""
+	crd.ObjectMeta.UID = ""
+	crd.ObjectMeta.Generation = 0
+	_, err = crdClient.Create(ctx, crd, metav1.CreateOptions{})
+	require.NoError(t, err)
 }

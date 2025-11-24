@@ -167,8 +167,8 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, c
 				// we need to rewrite the BoundSchema's scope accordingly. For all
 				// other isolation strategies, as well as for namespaced schemas,
 				// no changes are necessary.
-				if boundSchema.Spec.Scope == apiextensionsv1.ClusterScoped && r.clusterScopedIsolation == kubebindv1alpha2.IsolationNamespaced {
-					boundSchema.Spec.Scope = apiextensionsv1.NamespaceScoped
+				if boundSchema.Spec.Scope == apiextensionsv1.NamespaceScoped && r.clusterScopedIsolation == kubebindv1alpha2.IsolationNamespaced {
+					boundSchema.Spec.Scope = apiextensionsv1.ClusterScoped
 				}
 
 				if err := r.createBoundSchema(ctx, cl, boundSchema); err != nil {

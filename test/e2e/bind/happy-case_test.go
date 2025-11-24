@@ -267,8 +267,8 @@ func testHappyCase(
 				var foundPreSeededNamespace bool
 				var actualProviderNamespace string
 				require.Eventually(t, func() bool {
-					// If are operating namespaced resources - namespace will be set, if cluster - we need to use
-					// extraced one from the cluster-scoped object.
+					// If we are operating namespaced resources - namespace will be set, if cluster - we need to use
+					// extracted one from the cluster-scoped object.
 					namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(clusterNs).List(ctx, metav1.ListOptions{})
 					if err != nil {
 						return false

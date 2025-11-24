@@ -37,7 +37,7 @@ type prefixedStrategy struct {
 // object on the provider cluster gets the name of the cluster namespace prepended
 // to their name (i.e. turning "my-obj" into "kube-bind-abc123-my-obj"). This is
 // effective and easy since no scoping changes need to be accounted for (i.e. the
-// BoundSchema does not need to be adjusted), but could theorically cause problems
+// BoundSchema does not need to be adjusted), but could theoretically cause problems
 // for objects with very long names that do not have enough room for such a prefix.
 func NewPrefixed(clusterNamespace string, clusterNamespaceUID string) Strategy {
 	return &prefixedStrategy{

@@ -47,7 +47,7 @@ func TestInjectClusterNamespace(t *testing.T) {
 			name:         "oneExistingClusterNs",
 			obj:          newObjectWithClusterNs("kube-bind-zlp9m"),
 			clusterNs:    "kube-bind-s85lc",
-			clusterNsUID: "real-indentity",
+			clusterNsUID: "real-identity",
 			expected:     "kube-bind-zlp9m",
 			wantErr:      true,
 		},

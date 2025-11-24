@@ -404,7 +404,7 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
 	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
 
-	// Create consumer informer factory. This is always unfiltered, as we might be geeting obejcts from referece,
+	// Create consumer informer factory. This is always unfiltered, as we might be getting objcts from reference,
 	// label or named. We need to see all objects to determine if they are claimed.
 	defaultConsumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
 

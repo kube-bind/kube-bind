@@ -14,7 +14,7 @@ replace (
 // Can use versioned when v0.28.2 releases
 replace github.com/kcp-dev/kcp/sdk => github.com/kcp-dev/kcp/sdk v0.28.1-0.20251003164010-742ce0ea6b8c
 
-// k/k 1.34 is leaking from main repo. This pins some deps to force depdendency tree to be on 1.34
+// k/k 1.34 is leaking from main repo. This pins some deps to force dependency tree to be on 1.34
 replace (
 	github.com/google/gnostic-models => github.com/google/gnostic-models v0.6.9
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff

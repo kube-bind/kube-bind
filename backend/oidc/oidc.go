@@ -91,7 +91,7 @@ func (s *Server) Config(callbackURL, issuerURL string) (*Config, error) {
 	c := &Config{
 		ClientID:     s.server.Config().ClientID,
 		ClientSecret: s.server.Config().ClientSecret,
-		Issuer:       issuerURL, // This overrided default fake OIDC issuer URL. Must match what it is served at.
+		Issuer:       issuerURL, // This overrides default fake OIDC issuer URL. Must match what it is served at.
 
 		AccessTTL:  s.server.Config().AccessTTL,
 		RefreshTTL: s.server.Config().RefreshTTL,

@@ -38,7 +38,7 @@ type ServiceNamespacedStrategy struct {
 
 // NewServiceNamespaced returns the one and only valid isolation strategy for
 // namespaced objects. It is special in a sense that it does not map consumer
-// namespaces 1:1 to provider namspaces, but uses APIServiceNamespace objects
+// namespaces 1:1 to provider namespaces, but uses APIServiceNamespace objects
 // to request the backend to assign a namespace on the provider cluster. This
 // strategy must not be used for cluster-scoped resources.
 func NewServiceNamespaced(

@@ -17,7 +17,6 @@ limitations under the License.
 package plugin
 
 import (
-	"context"
 	"fmt"
 )
 
@@ -29,7 +28,7 @@ metadata:
 spec:
   tier: Dedicated`
 
-func (o *DevOptions) RunPrintExample(ctx context.Context) error {
+func (o *DevOptions) RunPrintExample() error {
 	fmt.Fprintf(o.Streams.Out, "%s", example)
 	return nil
 }

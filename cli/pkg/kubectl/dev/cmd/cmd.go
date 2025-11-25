@@ -52,7 +52,7 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 		Short: "Manage development environment for kube-bind",
 		Long: help.Doc(`
 		Manage a development environment for kube-bind using kind clusters.
-		
+
 		This command provides subcommands to initialize and manage kind clusters
 		configured for kube-bind development.
 	`),
@@ -90,13 +90,13 @@ func newInitCommand(streams genericclioptions.IOStreams) (*cobra.Command, error)
 		Short: "Create development environment with kind cluster and kube-bind backend",
 		Long: help.Doc(`
 		Create a complete development environment for kube-bind using kind clusters.
-		
+
 		This command will:
 		- Create a kind cluster configured for kube-bind development
 		- Add kube-bind.dev.local to /etc/hosts (with sudo prompts if needed)
 		- Install kube-bind backend helm chart (default: OCI chart from ghcr.io)
 		- Configure necessary port mappings (8443, 15021)
-		
+
 		The backend chart can be sourced from:
 		- OCI registry (default): oci://ghcr.io/kube-bind/charts/backend
 		- Local filesystem: --chart-path ./deploy/charts/backend
@@ -133,7 +133,7 @@ func newDeleteCommand(streams genericclioptions.IOStreams) (*cobra.Command, erro
 		Short: "Delete development environment",
 		Long: help.Doc(`
 		Delete the development environment for kube-bind.
-		
+
 		This command will delete the kind cluster created for kube-bind development.
 	`),
 		SilenceUsage: true,
@@ -151,7 +151,7 @@ func newDeleteCommand(streams genericclioptions.IOStreams) (*cobra.Command, erro
 				return err
 			}
 
-			return opts.RunDelete(cmd.Context())
+			return opts.RunDelete()
 		},
 	}
 	opts.AddCmdFlags(cmd)
@@ -182,7 +182,7 @@ func newExampleCommand(streams genericclioptions.IOStreams) (*cobra.Command, err
 				return err
 			}
 
-			return opts.RunPrintExample(cmd.Context())
+			return opts.RunPrintExample()
 		},
 	}
 	opts.AddCmdFlags(cmd)

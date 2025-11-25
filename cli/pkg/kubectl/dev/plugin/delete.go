@@ -17,7 +17,6 @@ limitations under the License.
 package plugin
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -25,19 +24,19 @@ import (
 	"sigs.k8s.io/kind/pkg/cluster"
 )
 
-func (o *DevOptions) RunDelete(ctx context.Context) error {
-	if err := o.deleteCluster(ctx, o.ProviderClusterName); err != nil {
+func (o *DevOptions) RunDelete() error {
+	if err := o.deleteCluster(o.ProviderClusterName); err != nil {
 		return err
 	}
 
-	if err := o.deleteCluster(ctx, o.ConsumerClusterName); err != nil {
+	if err := o.deleteCluster(o.ConsumerClusterName); err != nil {
 		return err
 	}
 
-	return o.cleanupHostEntries(ctx)
+	return o.cleanupHostEntries()
 }
 
-func (o *DevOptions) deleteCluster(ctx context.Context, clusterName string) error {
+func (o *DevOptions) deleteCluster(clusterName string) error {
 	fmt.Fprintf(o.Streams.ErrOut, "Deleting kind cluster %s\n", clusterName)
 	provider := cluster.NewProvider()
 
@@ -56,7 +55,7 @@ func (o *DevOptions) deleteCluster(ctx context.Context, clusterName string) erro
 	return nil
 }
 
-func (o *DevOptions) cleanupHostEntries(ctx context.Context) error {
+func (o *DevOptions) cleanupHostEntries() error {
 	if err := removeHostEntry("kube-bind.dev.local"); err != nil {
 		fmt.Fprintf(o.Streams.ErrOut, "Failed to remove host entry: %v\n", err)
 		fmt.Fprintf(o.Streams.ErrOut, "Warning: Could not automatically remove host entry. Please run:\n")

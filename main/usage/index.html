@@ -14,7 +14,7 @@
         <link rel="canonical" href="https://docs.kube-bind.io/main/usage/">
       
       
-        <link rel="prev" href="../setup/quickstart/">
+        <link rel="prev" href="../setup/helm/">
       
       
         <link rel="next" href="api-concepts/">
@@ -275,7 +275,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="api-concepts/" class="md-tabs__link">
+        <a href="./" class="md-tabs__link">
           
   
     
@@ -594,6 +594,12 @@
     
       
         
+          
+        
+      
+        
+      
+        
       
     
     
@@ -611,16 +617,24 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="./" class="md-nav__link md-nav__link--active">
+              
   
   <span class="md-ellipsis">
     Usage
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link md-nav__link--active" for="__nav_3" id="__nav_3_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
@@ -628,6 +642,8 @@
             Usage
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
             
               
                 
@@ -641,6 +657,27 @@
   
   <span class="md-ellipsis">
     API Concepts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="synchronization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Resource Synchronization
   </span>
   
 
@@ -2222,7 +2259,7 @@
 <h3 id="for-platform-operators">For Platform Operators</h3>
 <ol>
 <li><strong>Deploy kube-bind infrastructure</strong> on both provider and consumer sides (if using GitOps)</li>
-<li><strong>Configure authentication</strong> and security policies  </li>
+<li><strong>Configure authentication</strong> and security policies</li>
 <li><strong>Monitor connections</strong> and resource synchronization</li>
 </ol>
 <h2 id="getting-started">Getting Started</h2>
@@ -2233,11 +2270,13 @@
 <li><strong>Explore <a href="template-references.md">Template References</a></strong> for advanced use cases</li>
 <li><strong>Check the <a href="../reference/">Reference Documentation</a></strong> for complete API specifications</li>
 </ol>
-<p>The konnector agents establish a secure, authenticated connection that allows:
-- <strong>API schema synchronization</strong> from provider to consumer
-- <strong>Resource data flow</strong> based on permission claims
-- <strong>Namespace isolation</strong> and mapping
-- <strong>Authentication and authorization</strong> enforcement</p>
+<p>The konnector agents establish a secure, authenticated connection that allows:</p>
+<ul>
+<li><strong>API schema synchronization</strong> from provider to consumer</li>
+<li><strong>Resource data flow</strong> based on permission claims</li>
+<li><strong>Namespace isolation</strong> and mapping</li>
+<li><strong>Authentication and authorization</strong> enforcement</li>
+</ul>
 
 
 

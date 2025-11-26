@@ -6,30 +6,33 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Overview over the general resource synchronization logic and different isolation modes.
+">
       
       
-        <link rel="canonical" href="https://docs.kube-bind.io/main/contributing/">
+      
+        <link rel="canonical" href="https://docs.kube-bind.io/main/usage/synchronization/">
       
       
-        <link rel="prev" href="../usage/synchronization/">
+        <link rel="prev" href="../api-concepts/">
       
       
-        <link rel="next" href="../developers/">
+        <link rel="next" href="../../contributing/">
       
       
-      <link rel="icon" href="../favicons/favicon.ico">
+      <link rel="icon" href="../../favicons/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
     
     
       
-        <title>Contributing to kube-bind - docs.kube-bind.io</title>
+        <title>Resource Synchronization - docs.kube-bind.io</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.6f8fc17f.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,7 +51,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -74,7 +77,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#contributing-to-kube-bind" class="md-skip">
+        <a href="#resource-synchronization" class="md-skip">
           Skip to content
         </a>
       
@@ -92,9 +95,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="docs.kube-bind.io" class="md-header__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
+    <a href="../.." title="docs.kube-bind.io" class="md-header__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
       
-  <img src="../logo.svg" alt="logo">
+  <img src="../../logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -111,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Contributing to kube-bind
+              Resource Synchronization
             
           </span>
         </div>
@@ -230,7 +233,7 @@
     
     
       <li class="md-tabs__item">
-        <a href=".." class="md-tabs__link">
+        <a href="../.." class="md-tabs__link">
           
   
     
@@ -250,32 +253,12 @@
     
     
       <li class="md-tabs__item">
-        <a href="../setup/" class="md-tabs__link">
+        <a href="../../setup/" class="md-tabs__link">
           
   
     
   
   Setup
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../usage/" class="md-tabs__link">
-          
-  
-    
-  
-  Usage
 
         </a>
       </li>
@@ -292,7 +275,27 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../" class="md-tabs__link">
+          
+  
+    
+  
+  Usage
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../contributing/" class="md-tabs__link">
           
   
     
@@ -312,7 +315,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../developers/" class="md-tabs__link">
+        <a href="../../developers/" class="md-tabs__link">
           
   
     
@@ -332,7 +335,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../reference/" class="md-tabs__link">
+        <a href="../../reference/" class="md-tabs__link">
           
   
     
@@ -367,9 +370,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="docs.kube-bind.io" class="md-nav__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
+    <a href="../.." title="docs.kube-bind.io" class="md-nav__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
       
-  <img src="../logo.svg" alt="logo">
+  <img src="../../logo.svg" alt="logo">
 
     </a>
     docs.kube-bind.io
@@ -419,7 +422,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href=".." class="md-nav__link ">
+            <a href="../.." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -483,7 +486,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../setup/" class="md-nav__link ">
+            <a href="../../setup/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -516,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../setup/kubectl-plugin/" class="md-nav__link">
+      <a href="../../setup/kubectl-plugin/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -537,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../setup/quickstart/" class="md-nav__link">
+      <a href="../../setup/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -558,7 +561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../setup/helm/" class="md-nav__link">
+      <a href="../../setup/helm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -583,6 +586,8 @@
       
   
   
+    
+  
   
   
     
@@ -599,21 +604,22 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../usage/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -624,13 +630,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Usage
@@ -646,7 +652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/api-concepts/" class="md-nav__link">
+      <a href="../api-concepts/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -664,10 +670,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../usage/synchronization/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Resource Synchronization
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -676,6 +702,143 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cluster-namespaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster Namespaces
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sync-direction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sync Direction
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#connectivity" class="md-nav__link">
+    <span class="md-ellipsis">
+      Connectivity
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      RBAC
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cluster-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster Isolation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cluster Isolation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#namespaced" class="md-nav__link">
+    <span class="md-ellipsis">
+      Namespaced
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-scoped" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster-Scoped
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cluster-Scoped">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#none-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      None Strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prefixed-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prefixed Strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#namespaced-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Namespaced Strategy
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -692,8 +855,6 @@
       
   
   
-    
-  
   
   
     
@@ -706,22 +867,21 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../../contributing/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -733,7 +893,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Contributing
@@ -787,7 +947,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../developers/" class="md-nav__link ">
+            <a href="../../developers/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -820,7 +980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/dev-environments/" class="md-nav__link">
+      <a href="../../developers/dev-environments/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -866,7 +1026,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../developers/backend/" class="md-nav__link ">
+            <a href="../../developers/backend/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -945,7 +1105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/backend/http/cluster-binding/" class="md-nav__link">
+      <a href="../../developers/backend/http/cluster-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -966,7 +1126,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/backend/http/api-binding/" class="md-nav__link">
+      <a href="../../developers/backend/http/api-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1028,7 +1188,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../developers/konnector/" class="md-nav__link ">
+            <a href="../../developers/konnector/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1109,7 +1269,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/konnector/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/konnector/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1130,7 +1290,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/apiservicebinding/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1201,7 +1361,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1222,7 +1382,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1243,7 +1403,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1264,7 +1424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1309,7 +1469,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/publishing-a-release/" class="md-nav__link">
+      <a href="../../developers/publishing-a-release/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1364,7 +1524,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/" class="md-nav__link ">
+            <a href="../../reference/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1457,7 +1617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind/" class="md-nav__link">
+      <a href="../../reference/cli/bind/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1478,7 +1638,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_apiservice/" class="md-nav__link">
+      <a href="../../reference/cli/bind_apiservice/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1499,7 +1659,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_collections/" class="md-nav__link">
+      <a href="../../reference/cli/bind_collections/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1520,7 +1680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_dev/" class="md-nav__link">
+      <a href="../../reference/cli/bind_dev/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1541,7 +1701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_dev_create/" class="md-nav__link">
+      <a href="../../reference/cli/bind_dev_create/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1562,7 +1722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_dev_delete/" class="md-nav__link">
+      <a href="../../reference/cli/bind_dev_delete/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1583,7 +1743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_dev_example/" class="md-nav__link">
+      <a href="../../reference/cli/bind_dev_example/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1604,7 +1764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_login/" class="md-nav__link">
+      <a href="../../reference/cli/bind_login/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1625,7 +1785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_templates/" class="md-nav__link">
+      <a href="../../reference/cli/bind_templates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1760,7 +1920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiconversions/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiconversions/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1781,7 +1941,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1802,7 +1962,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1823,7 +1983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1844,7 +2004,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiserviceexporttemplates/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiserviceexporttemplates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1865,7 +2025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1886,7 +2046,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/bindableresourcesrequests/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/bindableresourcesrequests/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1907,7 +2067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/boundschemas/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/boundschemas/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1928,7 +2088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/clusterbindings/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/clusterbindings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1949,7 +2109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/collections/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/collections/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2013,28 +2173,46 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#certificate-of-origin" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
-      Certificate of Origin
+      Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cluster-namespaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster Namespaces
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#getting-started" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#sync-direction" class="md-nav__link">
     <span class="md-ellipsis">
-      Getting Started
+      Sync Direction
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Getting Started">
-      <ul class="md-nav__list">
+</li>
         
           <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#connectivity" class="md-nav__link">
     <span class="md-ellipsis">
-      Prerequisites
+      Connectivity
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rbac" class="md-nav__link">
+    <span class="md-ellipsis">
+      RBAC
     </span>
   </a>
   
@@ -2046,19 +2224,56 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#finding-areas-to-contribute" class="md-nav__link">
+  <a href="#cluster-isolation" class="md-nav__link">
     <span class="md-ellipsis">
-      Finding Areas to Contribute
+      Cluster Isolation
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Finding Areas to Contribute">
+    <nav class="md-nav" aria-label="Cluster Isolation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#getting-your-pr-merged" class="md-nav__link">
+  <a href="#namespaced" class="md-nav__link">
     <span class="md-ellipsis">
-      Getting your PR Merged
+      Namespaced
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cluster-scoped" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster-Scoped
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cluster-Scoped">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#none-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      None Strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prefixed-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prefixed Strategy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#namespaced-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Namespaced Strategy
     </span>
   </a>
   
@@ -2066,43 +2281,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#community-roles" class="md-nav__link">
-    <span class="md-ellipsis">
-      Community Roles
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Community Roles">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#reviewers" class="md-nav__link">
-    <span class="md-ellipsis">
-      Reviewers
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#approvers" class="md-nav__link">
-    <span class="md-ellipsis">
-      Approvers
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#management-of-owners-files" class="md-nav__link">
-    <span class="md-ellipsis">
-      Management of OWNERS Files
-    </span>
-  </a>
   
 </li>
         
@@ -2129,57 +2307,144 @@
   
 
 
-<h1 id="contributing-to-kube-bind">Contributing to kube-bind</h1>
-<p>kube-bind is <a href="https://github.com/kube-bind/kube-bind/tree/main/LICENSE">Apache 2.0 licensed</a> and we accept contributions via
-GitHub pull requests.</p>
-<p>Please read the following guide if you're interested in contributing to kube-bind.</p>
-<h2 id="certificate-of-origin">Certificate of Origin</h2>
-<p>By contributing to this project you agree to the Developer Certificate of
-Origin (DCO). This document was created by the Linux Kernel community and is a
-simple statement that you, as a contributor, have the legal right to make the
-contribution. See the <a href="https://github.com/kube-bind/kube-bind/tree/main/DCO">DCO</a> file for details.</p>
-<h2 id="getting-started">Getting Started</h2>
-<h3 id="prerequisites">Prerequisites</h3>
-<ol>
-<li>Clone this repository.</li>
-<li><a href="https://golang.org/doc/install">Install Go</a> (currently 1.22).</li>
-<li>Install <a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl</a>.</li>
-</ol>
-<p>More on the development environment setup can be found in the <a href="../developers/dev-environments/">developer guide</a>.</p>
-<h2 id="finding-areas-to-contribute">Finding Areas to Contribute</h2>
-<p>Starting to participate in a new project can sometimes be overwhelming, and you may not know where to begin. Fortunately, we are here to help! We track all of our tasks here in GitHub, and we label our issues to categorize them. Here are a couple of handy links to check out:</p>
+<h1 id="resource-synchronization">Resource Synchronization</h1>
+<p>This document describes the way kube-bind synchronizes Kubernetes resources across clusters.</p>
+<h2 id="overview">Overview</h2>
+<p>kube-bind synchronizes objects between two kinds of clusters:</p>
 <ul>
-<li><a href="https://github.com/kube-bind/kube-bind/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22">Good first issue</a> issues</li>
-<li><a href="https://github.com/kube-bind/kube-bind/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22">Help wanted</a> issues</li>
+<li>The <strong>provider cluster</strong> is run by a service provider and hosts a service, operator, or any other kind of Kubernetes API. This is also where there kube-bind <strong>backend</strong> is running in order to offer these APIs to consumers.</li>
+<li>The <strong>consumer clusters</strong> are where endusers consume services/APIs offered by providers.</li>
 </ul>
-<p>You're certainly not limited to only these kinds of issues, though! If you're comfortable, please feel free to try working on anything that is open.</p>
-<p>We do use the assignee feature in GitHub for issues. If you find an unassigned issue, comment asking if you can be assigned, and ideally wait for a maintainer to respond. If you find an assigned issue and you want to work on it or help out, please reach out to the assignee first.</p>
-<p>Sometimes you might get an amazing idea and start working on a huge amount of code. We love and encourage excitement like this, but we do ask that before you embark on a giant pull request, please reach out to the community first for an initial discussion. You could <a href="https://github.com/kube-bind/kube-bind/issues/new/choose">file an issue</a>, send a discussion to our <a href="https://groups.google.com/g/kube-bind-dev">mailing list</a>, and/or join one of our <a href="https://docs.google.com/document/d/1qztpKOmdZu5iWq_4N9n3AZpcAPuPhBiGNbje5GPg0iM">community meetings</a>.</p>
-<p>Finally, we welcome and value all types of contributions, beyond "just code"! Other types include triaging bugs, tracking down and fixing flaky tests, improving our documentation, helping answer community questions, proposing and reviewing designs, etc.</p>
-<h3 id="getting-your-pr-merged">Getting your PR Merged</h3>
-<p>The <code>kube-bind</code> project uses <code>OWNERS</code> files to denote the collaborators who can assist you in getting your PR merged.  There
-are two roles: reviewer and approver.  Merging a PR requires sign off from both a reviewer and an approver.</p>
-<h2 id="community-roles">Community Roles</h2>
-<h3 id="reviewers">Reviewers</h3>
-<p>Reviewers are responsible for reviewing code for correctness and adherence to standards. Oftentimes reviewers will
-be able to advise on code efficiency and style as it relates to golang or project conventions as well as other considerations
-that might not be obvious to the contributor.</p>
-<h3 id="approvers">Approvers</h3>
-<p>Approvers are responsible for sign-off on the acceptance of the contribution. In essence, approval indicates that the
-change is desired and good for the project, aligns with code, API, and system conventions, and appears to follow all required
-process including adequate testing, documentation, follow ups, or notifications to other areas who might be interested
-or affected by the change.</p>
-<p>Approvers are also reviewers.</p>
-<h3 id="management-of-owners-files">Management of <code>OWNERS</code> Files</h3>
-<p>If a reviewer or approver no longer wishes to be in their current role it is requested that a PR
-be opened to update the <code>OWNERS</code> file. <code>OWNERS</code> files may be periodically reviewed and updated based on project activity
-or feedback to ensure an acceptable contributor experience is maintained.</p>
+<p>There exists a 1:n relationship, where one provider cluster can be connected to from many different consumer clusters.</p>
+<h3 id="cluster-namespaces">Cluster Namespaces</h3>
+<p>In kube-bind, each successful <code>bind</code> operation yields a new, so-called "cluster namespace" on the provider cluster. This namespace contains all kube-bind-related resources, like <code>APIServiceExports</code> or <code>BoundSchemas</code> and is communicated to the consumer by being included in the provided kubeconfig.</p>
+<p>By default the cluster namespaces are named <code>kube-bind-[random string]</code>, like <code>kube-bind-hd73s</code>. Their name also serves as a unique identifier for this "contract" between consumer and provider and is used in other places, for example as a prefix in the <code>prefixed</code> cluster isolation mode.</p>
+<h3 id="sync-direction">Sync Direction</h3>
+<p>In the kube-bind architecture, the consumer clusters represent the source of truth (the actual desired state by the enduser) and the provider clusters merely contain copies of those objects.</p>
+<p>During the synchronization,</p>
+<ul>
+<li>the <strong>spec</strong> (desired state) of an object is copied from the consumer cluster to the provider and</li>
+<li>the <strong>status</strong> (if any) is copied in the opposite direction, to the consumer.</li>
+</ul>
+<p>kube-bind will continuously watch the object and its copy on both clusters and update the other side as needed.</p>
+<h3 id="connectivity">Connectivity</h3>
+<p>The object synchronization logic lives in the kube-bind <strong>konnector</strong>, a Kubernetes agent that runs on each <em>consumer cluster</em>. It reads a local Secret that contains a kubeconfig pointing to <strong>a specific namespace</strong> on the <em>provider cluster</em>. In this namespace the konnector will find all resources describing the resources to sync (chiefly <code>APIServiceExports</code>, <code>APIServiceNamespaces</code> and  <code>BoundSchemas</code>).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This kubeconfig is automatically generated as part of the <code>kubectl bind</code> handshake with a service provider.</p>
+</div>
+<p>This design allows consumer clusters to be mostly firewalled off, but requires provider clusters to not only be reachable from all consumers, but also to ensure multiple consumers do not conflict with each other. This is achieved by a combination of RBAC and isolation modes, which are described further down in this document.</p>
+<h3 id="rbac">RBAC</h3>
+<p>Great care must be taken to ensure multiple consumers do not collide with each other on a single provider cluster. To achieve this, kube-bind offers two different informer scoping options:</p>
+<ul>
+<li><code>namespaced</code> will make the konnector watch and inform on each relevant namespace on the provider cluster individually.</li>
+<li><code>cluster</code> will instead make the konnector use a cluster-scoped (global) informer. This scoping method requires the konnector to have much wider permissions, but is more performant.</li>
+</ul>
+<p>Regardless of scoping mode, the konnector itself will take care to not overwrite/touch other consumers' objects. This however does not mean that an attacker with access to the konnector kubeconfig could not exploit an RBAC policy that is too wide.</p>
+<h2 id="cluster-isolation">Cluster Isolation</h2>
+<p>This section outlines how kube-bind deals with differently scoped Kubernetes objects.</p>
+<p>In Kubernetes, an object can be either namespaced or cluster-scoped. This scope greatly affects how kube-bind processes the object.</p>
+<h3 id="namespaced">Namespaced</h3>
+<p>For namespaced objects (like a <code>Deployment</code>), kube-bind will map the consumer-side namespace to a unique, but random provider-side namespace: first the konnector will create an <code>APIServiceNamespace</code> object on the provider cluster (inside the cluster namespace), with the name of the consumer-side namespace (so a namespace <code>app1</code> will lead to an <code>APIServiceNamespace</code> <code>app1</code> in the cluster namespace). After this, the konnector waits until the backend has assigned this <code>APIServiceNamespace</code> a provider-side namespace to use. Once that namespace is present in the <code>APIServiceNamespace</code>'s status, the konnector will use it for all objects originating in the same consumer-side namespace.</p>
+<p>In YAML, this means</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># consumer-side object</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provider.example.com/v1</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MangoDB</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-first-db</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team1</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">large</span>
+</code></pre></div>
+<p>will lead to</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># provider-side objects</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-bind.io/v1alpha2</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">APIServiceNamespace</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">team1</span><span class="w">                </span><span class="c1"># name of the namespace from the consumer</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-bind-hd73d</span><span class="w"> </span><span class="c1"># cluster namespace</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nt">spec</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="nt">status</span><span class="p">:</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="c1"># a common implementation in the backend is to construct the provider-side</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="c1"># namespace by just concatenating the two values, like so:</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-bind-hd73d-team1</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="nn">---</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Namespace</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-bind-hd73d-team1</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="nn">---</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provider.example.com/v1</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MangoDB</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-first-db</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-bind-hd73d-team1</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">  </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">large</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For natively namespaced resources (those that are namespaced in both the provider and consumer cluster), this is always the strategy being used by the konnector. The other isolation modes only influence how the konnector deals with cluster-scoped objects in the consumer cluster.</p>
+</div>
+<h3 id="cluster-scoped">Cluster-Scoped</h3>
+<p>Cluster-scoped objects require a different approach to isolation than namespaced objects. kube-bind offers three different so-called isolation strategies to deal with them. The strategy to use is configured globally via the <code>--cluster-scoped-isolation</code> CLI flag on the kube-bind backend and will from there affect all services offered by that backend.</p>
+<h4 id="none-strategy">None Strategy</h4>
+<p>The <code>none</code> strategy provides no consumer-separation at all. Any cluster-scoped object on the consumer side is copied 1:1 to the provider side.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Due to the obvious downsides of this approach, <code>none</code> should be used only in special circumstances.</p>
+</div>
+<h4 id="prefixed-strategy">Prefixed Strategy</h4>
+<p>The <code>prefixed</code> strategy is kube-bind's default strategy and will use the name of the cluster namespace as a prefix for object names.</p>
+<p>In YAML, this means</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># consumer-side</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provider.example.com/v1</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MangoDB</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-first-db</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">large</span>
+</code></pre></div>
+<p>will lead to</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># provider-side</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">provider.example.com/v1</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MangoDB</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-bind-hd73d-my-first-db</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="nt">size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">large</span>
+</code></pre></div>
+<p>This strategy works well for separating objects, but</p>
+<ul>
+<li>requires a broad RBAC policy, which will always grant too many permissions, and</li>
+<li>would technically break for Kubernetes objects with names close to the maximum allowed length (253 characters).</li>
+</ul>
+<h4 id="namespaced-strategy">Namespaced Strategy</h4>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Not to be confused with the strategy used for natively namespaced resources, described earlier.</p>
+</div>
+<p>The <code>namespaced</code> strategy will convert cluster-scoped objects into namespaced ones.</p>
+<p>For this to work, the original CRD on the provider cluster has to be <strong>namespaced</strong>. The backend will turn it into a cluster-scoped CRD (stored in the <code>BoundSchema</code>), so on the consumer cluster, all objects are cluster-scoped.</p>
+<p>During synchronization, the konnector will then place each cluster-scoped object into the cluster namespace (<code>kube-bind-hd73d</code>) on the provider side.</p>
+<p>This strategy provides excellent isolation between consumers, but requires that the original CRD from the provider still makes sense to the consumer when it's suddenly cluster-scoped. For example, if references were to be used, especially to Secrets in the same namespace, this concept would get mangled to some degree during the synchronization.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>At the moment, when the backend is started with <code>--cluster-scoped-isolation=namespaced</code>, it will convert <strong>all namespaced CRDs</strong> in all ServiceExports to become cluster-scoped on the consumer side, even if you intended for a namespaced CRD to stay namespaced on both sides of the sync.</p>
+</div>
 
 
 
 
 
 
+
+  
+  
 
 
 
@@ -2252,10 +2517,10 @@ or feedback to ensure an acceptable contributor experience is maintained.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
       
     
   </body>

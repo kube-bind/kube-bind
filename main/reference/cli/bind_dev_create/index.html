@@ -273,7 +273,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../usage/api-concepts/" class="md-tabs__link">
+        <a href="../../../usage/" class="md-tabs__link">
           
   
     
@@ -592,6 +592,12 @@
     
       
         
+          
+        
+      
+        
+      
+        
       
     
     
@@ -608,16 +614,24 @@
         <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../usage/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     Usage
   </span>
   
 
-            <span class="md-nav__icon md-icon"></span>
-          </label>
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
@@ -625,6 +639,8 @@
             Usage
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
             
               
                 
@@ -638,6 +654,27 @@
   
   <span class="md-ellipsis">
     API Concepts
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../usage/synchronization/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Resource Synchronization
   </span>
   
 
@@ -2168,24 +2205,25 @@
 <a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  -h, --help                                 help for create
 <a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>      --image string                         kube-bind backend image to use in dev mode (default &quot;ghcr.io/kube-bind/backend&quot;)
 <a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>      --insecure-skip-tls-verify             Skip TLS certificate verification (not recommended)
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>      --kubeconfig string                    path to the kubeconfig file
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>      --log-flush-frequency duration         Maximum number of seconds between log flushes (default 5s)
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>      --log-text-info-buffer-size quantity   [Alpha] In text format with split output streams, the info messages can be buffered for a while to increase performance. The default value of zero bytes disables buffering. The size can be specified as number of bytes (512), multiples of 1000 (1K), multiples of 1024 (2Ki), or powers of those (3M, 4G, 5Mi, 6Gi). Enable the LoggingAlphaOptions feature gate to use this.
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>      --log-text-split-stream                [Alpha] In text format, write error messages to stderr and info messages to stdout. The default is to write a single stream to stdout. Enable the LoggingAlphaOptions feature gate to use this.
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>      --logging-format string                Sets the log format. Permitted formats: &quot;text&quot;. (default &quot;text&quot;)
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>  -n, --namespace string                     If present, the namespace scope for this CLI request
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>      --password string                      Password for basic authentication to the API server
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>      --provider-cluster-name string         Name of the provider cluster in dev mode (default &quot;kind-provider&quot;)
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      --proxy-url string                     If provided, this URL will be used to connect via proxy
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>      --server string                        The kube-bind server name to use (overrides kube-bind config current server)
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>      --tag string                           kube-bind backend image tag to use in dev mode (default &quot;main&quot;)
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>      --tls-server-name string               If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>      --token string                         Bearer token for authentication to the API server
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>      --user string                          The name of the kubeconfig user to use
-<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>      --username string                      Username for basic authentication to the API server
-<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>  -v, --v Level                              number for the log level verbosity
-<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>      --vmodule pattern=N,...                comma-separated list of pattern=N settings for file-filtered logging (only works for text log format)
-<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>      --wait-for-ready-timeout duration      Timeout for waiting for the cluster to be ready (default 2m0s)
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>      --kind-network string                  kind network to use in dev mode (default &quot;kube-bind-dev&quot;)
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>      --kubeconfig string                    path to the kubeconfig file
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>      --log-flush-frequency duration         Maximum number of seconds between log flushes (default 5s)
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>      --log-text-info-buffer-size quantity   [Alpha] In text format with split output streams, the info messages can be buffered for a while to increase performance. The default value of zero bytes disables buffering. The size can be specified as number of bytes (512), multiples of 1000 (1K), multiples of 1024 (2Ki), or powers of those (3M, 4G, 5Mi, 6Gi). Enable the LoggingAlphaOptions feature gate to use this.
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>      --log-text-split-stream                [Alpha] In text format, write error messages to stderr and info messages to stdout. The default is to write a single stream to stdout. Enable the LoggingAlphaOptions feature gate to use this.
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>      --logging-format string                Sets the log format. Permitted formats: &quot;text&quot;. (default &quot;text&quot;)
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>  -n, --namespace string                     If present, the namespace scope for this CLI request
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>      --password string                      Password for basic authentication to the API server
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      --provider-cluster-name string         Name of the provider cluster in dev mode (default &quot;kind-provider&quot;)
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>      --proxy-url string                     If provided, this URL will be used to connect via proxy
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>      --server string                        The kube-bind server name to use (overrides kube-bind config current server)
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>      --tag string                           kube-bind backend image tag to use in dev mode (default &quot;main&quot;)
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>      --tls-server-name string               If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>      --token string                         Bearer token for authentication to the API server
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>      --user string                          The name of the kubeconfig user to use
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>      --username string                      Username for basic authentication to the API server
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>  -v, --v Level                              number for the log level verbosity
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>      --vmodule pattern=N,...                comma-separated list of pattern=N settings for file-filtered logging (only works for text log format)
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>      --wait-for-ready-timeout duration      Timeout for waiting for the cluster to be ready (default 2m0s)
 </code></pre></div>
 <h3 id="options-inherited-from-parent-commands">Options inherited from parent commands</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>      --add_dir_header                   If true, adds the file directory to the header of the log messages

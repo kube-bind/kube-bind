@@ -118,7 +118,7 @@ Cluster-scoped objects require a different approach to isolation than namespaced
 
 #### None Strategy
 
-The `none` strategy providers no consumer-separation at all. Any cluster-scoped object on the consumer side is copied 1:1 to the provider side.
+The `none` strategy provides no consumer-separation at all. Any cluster-scoped object on the consumer side is copied 1:1 to the provider side.
 
 !!! warning
     Due to the obvious downsides of this approach, `none` should be used only in special circumstances.

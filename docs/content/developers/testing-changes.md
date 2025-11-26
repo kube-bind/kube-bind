@@ -29,7 +29,8 @@ By default it will use TLS termination at the Gateway level.
 
 And run full helm install command with additional parameters:
 ```bash
-helm upgrade --install \
+helm upgrade \
+      --install \
       --namespace kube-bind \
       --create-namespace \
       --set certManager.enabled=true \

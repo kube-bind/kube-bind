@@ -82,15 +82,25 @@ spec:
             {{- if .Values.backend.cookieEncryptionKey }}
             - --cookie-encryption-key={{ .Values.backend.cookieEncryptionKey }}
             {{- end }}
+            {{- if .Values.backend.tls.enabled }}
+            - --tls-cert-file={{ .Values.backend.tls.tlsCertFile }}
+            - --tls-key-file={{ .Values.backend.tls.tlsKeyFile }}
+            {{- end }}
             {{- if eq .Values.backend.oidc.type "embedded" }}
             - --oidc-type=embedded
             {{- else if eq .Values.backend.oidc.type "external" }}
             - --oidc-type=external
             {{- end }}
           ports:
+            {{- if .Values.backend.tls.enabled }}
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+            {{- else }}
             - name: http
               containerPort: 8080
               protocol: TCP
+            {{- end }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
@@ -104,10 +114,20 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts:
+            {{- if .Values.backend.tls.enabled }}
+            - name: tls-certs
+              mountPath: /etc/kube-bind/tls
+              readOnly: true
+            {{- end }}
             {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
       volumes:
+        {{- if .Values.backend.tls.enabled }}
+        - name: tls-certs
+          secret:
+            secretName: {{ .Values.backend.tls.certSecretName }}
+        {{- end }}
         {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

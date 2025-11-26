@@ -10,6 +10,11 @@ backend:
   listenAddress: "0.0.0.0:8080"
   externalAddress: ""
   externalServerName: ""
+  tls:
+    enabled: false
+    certSecretName: ""
+    tlsCertFile: "/etc/kube-bind/tls/tls.crt"
+    tlsKeyFile: "/etc/kube-bind/tls/tls.key"
   # OIDC configuration. Empty values - will run embedded OIDC server.
   oidc:
     issuerUrl: ""

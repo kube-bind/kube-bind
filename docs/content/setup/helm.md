@@ -43,11 +43,12 @@ The following prerequisites are required. Click the links below for detailed set
 
   Note !!!
     To install production configuration, you will need to have OIDC provider. 
-    If you interested just to try - check quickstart [quickstart].
+    For more information, just check out the [quickstart guide].(./quickstart.md)
 
 ```bash
    # Using latest release version
-helm upgrade --install \
+helm upgrade \
+      --install \
       --namespace kube-bind \
       --create-namespace \
       --set certManager.enabled=true \

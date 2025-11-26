@@ -64,6 +64,7 @@ type DevOptions struct {
 	WaitForReadyTimeout time.Duration
 	ChartPath           string
 	ChartVersion        string
+	KindNetwork         string
 }
 
 // NewDevOptions creates a new DevOptions
@@ -86,13 +87,14 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 	o.Options.BindFlags(cmd)
 	logsv1.AddFlags(o.Logs, cmd.Flags())
 
-	cmd.Flags().StringVarP(&o.ProviderClusterName, "provider-cluster-name", "", "kind-provider", "Name of the provider cluster in dev mode")
-	cmd.Flags().StringVarP(&o.ConsumerClusterName, "consumer-cluster-name", "", "kind-consumer", "Name of the consumer cluster in dev mode")
-	cmd.Flags().DurationVarP(&o.WaitForReadyTimeout, "wait-for-ready-timeout", "", 2*time.Minute, "Timeout for waiting for the cluster to be ready")
-	cmd.Flags().StringVarP(&o.ChartPath, "chart-path", "", o.ChartPath, "Helm chart path or OCI registry URL")
-	cmd.Flags().StringVarP(&o.ChartVersion, "chart-version", "", o.ChartVersion, "Helm chart version")
-	cmd.Flags().StringVarP(&o.Image, "image", "", "ghcr.io/kube-bind/backend", "kube-bind backend image to use in dev mode")
-	cmd.Flags().StringVarP(&o.Tag, "tag", "", "main", "kube-bind backend image tag to use in dev mode")
+	cmd.Flags().StringVar(&o.ProviderClusterName, "provider-cluster-name", "kind-provider", "Name of the provider cluster in dev mode")
+	cmd.Flags().StringVar(&o.ConsumerClusterName, "consumer-cluster-name", "kind-consumer", "Name of the consumer cluster in dev mode")
+	cmd.Flags().DurationVar(&o.WaitForReadyTimeout, "wait-for-ready-timeout", 2*time.Minute, "Timeout for waiting for the cluster to be ready")
+	cmd.Flags().StringVar(&o.ChartPath, "chart-path", o.ChartPath, "Helm chart path or OCI registry URL")
+	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", o.ChartVersion, "Helm chart version")
+	cmd.Flags().StringVar(&o.Image, "image", "ghcr.io/kube-bind/backend", "kube-bind backend image to use in dev mode")
+	cmd.Flags().StringVar(&o.Tag, "tag", "main", "kube-bind backend image tag to use in dev mode")
+	cmd.Flags().StringVar(&o.KindNetwork, "kind-network", "kube-bind-dev", "kind network to use in dev mode")
 }
 
 // Complete completes the options
@@ -125,8 +127,6 @@ nodes:
 - role: control-plane
 `
 
-const dockerNetwork = "kube-bind-dev"
-
 // Color helper functions
 func blueCommand(text string) string {
 	return "\033[38;5;67m" + text + "\033[0m"
@@ -144,7 +144,7 @@ func (o *DevOptions) runWithColors(ctx context.Context) error {
 	fmt.Fprintf(o.Streams.ErrOut, "%s kube-bind dev command is in preview\n", redText("EXPERIMENTAL:"))
 	fmt.Fprintf(o.Streams.ErrOut, "Requirements: Docker must be installed and running\n\n")
 
-	hostEntryExists := o.setupHostEntries(ctx)
+	hostEntryExists := o.setupHostEntries()
 
 	if err := o.checkFileLimits(); err != nil {
 		fmt.Fprintf(o.Streams.ErrOut, "⚠️  File limit check warning: %v\n", err)
@@ -154,7 +154,7 @@ func (o *DevOptions) runWithColors(ctx context.Context) error {
 		return err
 	}
 
-	providerIP, err := o.getClusterIPAddress(ctx, o.ProviderClusterName, dockerNetwork)
+	providerIP, err := o.getClusterIPAddress(ctx, o.ProviderClusterName, o.KindNetwork)
 	if err != nil {
 		fmt.Fprintf(o.Streams.ErrOut, "⚠️  Failed to get provider cluster IP address: %v\n", err)
 		providerIP = ""
@@ -193,7 +193,7 @@ func (o *DevOptions) runWithColors(ctx context.Context) error {
 	if providerIP != "" {
 		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias %s:kube-bind.dev.local", o.ConsumerClusterName, providerIP)))
 	} else {
-		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("PROVIDER_IP=$(docker inspect %s-control-plane | jq -r '.[0].NetworkSettings.Networks[\"%s\"].IPAddress') && KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local", dockerNetwork, o.ProviderClusterName, o.ConsumerClusterName)))
+		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("PROVIDER_IP=$(docker inspect %s-control-plane | jq -r '.[0].NetworkSettings.Networks[\"%s\"].IPAddress') && KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local", o.KindNetwork, o.ProviderClusterName, o.ConsumerClusterName)))
 	}
 
 	return nil
@@ -204,7 +204,7 @@ func (o *DevOptions) Run(ctx context.Context) error {
 	return o.runWithColors(ctx)
 }
 
-func (o *DevOptions) setupHostEntries(ctx context.Context) bool {
+func (o *DevOptions) setupHostEntries() bool {
 	if err := addHostEntry("kube-bind.dev.local"); err != nil {
 		fmt.Fprintf(o.Streams.ErrOut, "Warning: Could not automatically add host entry. Please run:\n")
 		if runtime.GOOS == "windows" {
@@ -222,7 +222,7 @@ func (o *DevOptions) setupHostEntries(ctx context.Context) bool {
 
 func (o *DevOptions) createCluster(ctx context.Context, clusterName, clusterConfig string, installKubeBind bool) error {
 	// Set experimental Docker network for kind clusters to communicate
-	os.Setenv("KIND_EXPERIMENTAL_DOCKER_NETWORK", dockerNetwork)
+	os.Setenv("KIND_EXPERIMENTAL_DOCKER_NETWORK", o.KindNetwork)
 
 	provider := cluster.NewProvider()
 
@@ -236,7 +236,7 @@ func (o *DevOptions) createCluster(ctx context.Context, clusterName, clusterConf
 	if slices.Contains(clusters, clusterName) {
 		fmt.Fprint(o.Streams.ErrOut, "Kind cluster "+clusterName+" already exists, skipping creation\n")
 	} else {
-		fmt.Fprintf(o.Streams.ErrOut, "Creating kind cluster %s with network %s\n", clusterName, dockerNetwork)
+		fmt.Fprintf(o.Streams.ErrOut, "Creating kind cluster %s with network %s\n", clusterName, o.KindNetwork)
 		err := provider.Create(clusterName,
 			cluster.CreateWithRawConfig([]byte(clusterConfig)),
 			cluster.CreateWithWaitForReady(o.WaitForReadyTimeout),
@@ -304,7 +304,7 @@ func (o *DevOptions) getClusterIPAddress(ctx context.Context, clusterName, netwo
 func (o *DevOptions) installHelmChart(_ context.Context, restConfig *rest.Config) error {
 	actionConfig := new(action.Configuration)
 
-	if err := actionConfig.Init(&restConfigGetter{config: restConfig}, "kube-bind", "secret", func(format string, v ...interface{}) {}); err != nil {
+	if err := actionConfig.Init(&restConfigGetter{config: restConfig}, "kube-bind", "secret", func(format string, v ...any) {}); err != nil {
 		return fmt.Errorf("failed to initialize helm action config: %w", err)
 	}
 
@@ -315,32 +315,32 @@ func (o *DevOptions) installHelmChart(_ context.Context, restConfig *rest.Config
 	}
 	actionConfig.RegistryClient = registryClient
 
-	values := map[string]interface{}{
-		"image": map[string]interface{}{
+	values := map[string]any{
+		"image": map[string]any{
 			"repository": o.Image,
 			"tag":        o.Tag,
 		},
-		"examples": map[string]interface{}{
+		"examples": map[string]any{
 			"enabled": true,
 		},
-		"backend": map[string]interface{}{
+		"backend": map[string]any{
 			"listenAddress":      "0.0.0.0:8080",
 			"namespacePrefix":    "kube-bind-",
 			"externalAddress":    "https://kube-bind.dev.local:6443",
 			"externalServerName": "kind-provider-control-plane",
 			"consumerScope":      "cluster",
-			"oidc": map[string]interface{}{
+			"oidc": map[string]any{
 				"callbackUrl": "http://kube-bind.dev.local:8080/api/callback",
 				"issuerUrl":   "http://kube-bind.dev.local:8080/oidc",
 				"type":        "embedded",
 			},
 		},
-		"service": map[string]interface{}{
+		"service": map[string]any{
 			"type":     "NodePort",
 			"port":     8080,
 			"nodePort": 31000,
 		},
-		"hostAliases": []map[string]interface{}{
+		"hostAliases": []map[string]any{
 			{
 				"ip":        "0.0.0.0",
 				"hostnames": []string{"kube-bind.dev.local"},

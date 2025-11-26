@@ -151,7 +151,7 @@ func newDeleteCommand(streams genericclioptions.IOStreams) (*cobra.Command, erro
 				return err
 			}
 
-			return opts.RunDelete(cmd.Context())
+			return opts.RunDelete()
 		},
 	}
 	opts.AddCmdFlags(cmd)
@@ -182,7 +182,7 @@ func newExampleCommand(streams genericclioptions.IOStreams) (*cobra.Command, err
 				return err
 			}
 
-			return opts.RunPrintExample(cmd.Context())
+			return opts.RunPrintExample()
 		},
 	}
 	opts.AddCmdFlags(cmd)

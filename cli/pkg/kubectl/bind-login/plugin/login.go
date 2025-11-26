@@ -58,7 +58,7 @@ type LoginOptions struct {
 }
 
 // TokenResponse represents the response from the OAuth callback
-// Important: this stuct must match one on backend/auth/types.go
+// Important: this struct must match one on backend/auth/types.go
 type TokenResponse struct {
 	// OAuth2 token fields
 	AccessToken  string    `json:"access_token"`

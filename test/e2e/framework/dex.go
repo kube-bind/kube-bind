@@ -72,7 +72,7 @@ func StartDex(t testing.TB) {
 			dexConfig,
 		)
 
-		// Set os-dependend killing
+		// Set os-dependent killing
 		dexKill(t, dexCmd)
 
 		require.NoError(t, dexCmd.Start())

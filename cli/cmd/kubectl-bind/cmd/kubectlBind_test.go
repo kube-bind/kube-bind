@@ -30,7 +30,7 @@ func TestKubectlBindCommand(t *testing.T) {
 
 	require.Equal(t, "kubectl-bind", rootCmd.Use, "Unexpected one-line command description")
 	require.Equal(t, "kubectl plugin for kube-bind, bind different remote types into the current cluster.", rootCmd.Short, "Unexpected short command description")
-	require.Contains(t, rootCmd.Long, "To bind a remote service, use the 'kubectl bind' command.", "Unexpected lond command Long")
+	require.Contains(t, rootCmd.Long, "To bind a remote service, use the 'kubectl bind' command.", "Unexpected long command")
 	require.Equal(t, rootCmd.Example, fmt.Sprintf(bindcmd.BindExampleUses, "kubectl"), "Unexpected command Example")
 }
 

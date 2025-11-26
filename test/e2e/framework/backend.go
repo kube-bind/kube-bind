@@ -34,7 +34,7 @@ import (
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
-func InstallKubebindCRDs(t testing.TB, clientConfig *rest.Config) {
+func InstallKubeBindCRDs(t testing.TB, clientConfig *rest.Config) {
 	crdClient, err := apiextensionsclient.NewForConfig(clientConfig)
 	require.NoError(t, err)
 	err = crd.Create(t.Context(),

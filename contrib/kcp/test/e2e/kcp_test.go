@@ -155,7 +155,7 @@ func testKcpIntegration(t *testing.T, name string, scope kubebindv1alpha2.Inform
 	// Can assume that the last entry is now the cluster-id, grab it and
 	// sanity check that it's not empty
 	providerClusterID := providerClusterSplit[len(providerClusterSplit)-1]
-	require.NotEmpty(t, providerClusterID, "Retreived cluster id is empty, source URL: %s", providerCluster.Status.URL)
+	require.NotEmpty(t, providerClusterID, "Retrieved cluster id is empty, source URL: %s", providerCluster.Status.URL)
 
 	// kube-bind process
 	t.Log("Perform binding process with browser")

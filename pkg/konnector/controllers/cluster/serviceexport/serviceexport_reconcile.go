@@ -38,6 +38,7 @@ import (
 
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/claimedresources"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/claimedresourcesnamespaces"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/isolation"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/multinsinformer"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/spec"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/status"
@@ -46,6 +47,7 @@ import (
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
+	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	bindlisters "github.com/kube-bind/kube-bind/sdk/client/listers/kubebind/v1alpha2"
 )
 
@@ -219,6 +221,7 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 	consumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
 
 	var providerInf multinsinformer.GetterInformer
+
 	if schema.Spec.Scope == apiextensionsv1.ClusterScoped || schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope {
 		factory := dynamicinformer.NewDynamicSharedInformerFactory(dynamicProviderClient, time.Minute*30)
 		factory.ForResource(gvr).Lister() // wire the GVR up in the informer factory
@@ -239,7 +242,43 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 		}
 	}
 
+	var isolationStrategy isolation.Strategy
+	switch {
+	case schema.Spec.Scope == apiextensionsv1.NamespaceScoped:
+		providerBindClient, err := bindclient.NewForConfig(r.providerConfig)
+		if err != nil {
+			return err
+		}
+
+		isolationStrategy = isolation.NewServiceNamespaced(
+			r.providerNamespace,
+			r.serviceNamespaceInformer,
+			func(ctx context.Context, name string) (*kubebindv1alpha2.APIServiceNamespace, error) {
+				sn := &kubebindv1alpha2.APIServiceNamespace{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: r.providerNamespace,
+						OwnerReferences: []metav1.OwnerReference{
+							*metav1.NewControllerRef(export, kubebindv1alpha2.SchemeGroupVersion.WithKind("APIServiceExport")),
+						},
+					},
+				}
+
+				return providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(sn.Namespace).Create(ctx, sn, metav1.CreateOptions{})
+			})
+
+	case export.Spec.ClusterScopedIsolation == kubebindv1alpha2.IsolationNone:
+		isolationStrategy = isolation.NewNone(r.providerNamespace, providerNamespaceUID)
+
+	case export.Spec.ClusterScopedIsolation == kubebindv1alpha2.IsolationPrefixed:
+		isolationStrategy = isolation.NewPrefixed(r.providerNamespace, providerNamespaceUID)
+
+	case export.Spec.ClusterScopedIsolation == kubebindv1alpha2.IsolationNamespaced:
+		isolationStrategy = isolation.NewNamespaced(r.providerNamespace)
+	}
+
 	specCtrl, err := spec.NewController(
+		isolationStrategy,
 		export, // pass the export to establish owner references on ServiceNamespace creation
 		gvr,
 		r.providerNamespace,
@@ -256,6 +295,7 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 	}
 
 	statusCtrl, err := status.NewController(
+		isolationStrategy,
 		gvr,
 		r.providerNamespace,
 		providerNamespaceUID,
@@ -364,7 +404,7 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 	dynamicProviderClient := dynamicclient.NewForConfigOrDie(r.providerConfig)
 	dynamicConsumerClient := dynamicclient.NewForConfigOrDie(r.consumerConfig)
 
-	// Create consumer informer factory. This is always unfiltered, as we might be geeting obejcts from referece,
+	// Create consumer informer factory. This is always unfiltered, as we might be getting objcts from reference,
 	// label or named. We need to see all objects to determine if they are claimed.
 	defaultConsumerInf := dynamicinformer.NewDynamicSharedInformerFactory(dynamicConsumerClient, time.Minute*30)
 

@@ -22,14 +22,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 
-	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/isolation"
 )
 
 type reconciler struct {
-	getServiceNamespace func(upstreamNamespace string) (*kubebindv1alpha2.APIServiceNamespace, error)
+	isolationStrategy isolation.Strategy
 
 	getConsumerObject          func(ns, name string) (*unstructured.Unstructured, error)
 	updateConsumerObjectStatus func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
@@ -41,37 +42,43 @@ type reconciler struct {
 func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructured) error {
 	logger := klog.FromContext(ctx)
 
-	ns := obj.GetNamespace()
-	if ns != "" {
-		sn, err := r.getServiceNamespace(ns)
-		if err != nil && !errors.IsNotFound(err) {
+	// Map the provider object namespace/name to the consumer side. Technically
+	// consumerKey should never be nil (for it to be nil, the namespace in the
+	// APIServiceNamespace's status must be blank, but it's blank, how could we
+	// have found an object in a non-defined namespace)?, but we are on the safe
+	// side and handle it anyway.
+	consumerKey, err := r.isolationStrategy.ToConsumerKey(types.NamespacedName{
+		Namespace: obj.GetNamespace(),
+		Name:      obj.GetName(),
+	})
+	if err != nil {
+		if !errors.IsNotFound(err) {
 			return err
-		} else if errors.IsNotFound(err) {
-			runtime.HandleError(err)
-			return err // hoping the APIServiceNamespace will be created soon. Otherwise, this item goes into backoff.
-		}
-		if sn.Status.Namespace == "" {
-			runtime.HandleError(err)
-			return err // hoping the status is set soon.
 		}
 
-		logger = logger.WithValues("upstreamNamespace", sn.Status.Namespace)
-		ctx = klog.NewContext(ctx, logger)
-
-		// continue with downstream namespace
-		ns = sn.Name
+		return nil
+	}
+	if consumerKey == nil {
+		return nil
 	}
 
-	downstream, err := r.getConsumerObject(ns, obj.GetName())
+	logger = logger.WithValues("downstream", consumerKey)
+
+	downstream, err := r.getConsumerObject(consumerKey.Namespace, consumerKey.Name)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// downstream is gone. Delete upstream too. Note that we cannot rely on the spec controller because
 			// due to konnector restart it might have missed the deletion event.
-			logger.Info("Deleting upstream object because downstream is gone", "downstreamNamespace", ns, "downstreamName", obj.GetName())
+			logger.Info("Deleting upstream object because downstream is gone")
 			return r.deleteProviderObject(ctx, obj.GetNamespace(), obj.GetName())
 		}
 
-		logger.Info("failed to get downstream object", "error", err, "downstreamNamespace", ns, "downstreamName", obj.GetName())
+		logger.Error(err, "failed to get downstream object")
+		return err
+	}
+
+	// let the isolation perform any changes it desires
+	if err := r.isolationStrategy.MutateStatus(downstream, *consumerKey); err != nil {
 		return err
 	}
 
@@ -90,6 +97,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 	} else {
 		unstructured.RemoveNestedField(downstream.Object, "status")
 	}
+
 	if !reflect.DeepEqual(orig, downstream) {
 		logger.Info("Updating downstream object status")
 		if _, err := r.updateConsumerObjectStatus(ctx, downstream); err != nil {

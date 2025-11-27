@@ -88,8 +88,7 @@ If you're new to kube-bind:
 
 1. **Start with the [Quickstart Guide](../setup/quickstart.md)** for a hands-on introduction
 2. **Review [API Concepts](api-concepts.md)** to understand the fundamental types
-3. **Explore [Template References](template-references.md)** for advanced use cases
-4. **Check the [Reference Documentation](../reference/)** for complete API specifications
+3. **Check the [Reference Documentation](../reference/)** for complete API specifications
 
 The konnector agents establish a secure, authenticated connection that allows:
 

@@ -64,8 +64,7 @@ helm upgrade \
       --set 'gatewayApi.route.hostnames[0]=kube-bind.example.com' \
       --set gatewayApi.route.path=/ \
       --set gatewayApi.route.pathType=PathPrefix \
-      --set image.tag=${VERSION} \
-      kube-bind \
+      --set image.tag=v${VERSION} \
       kube-bind oci://ghcr.io/kube-bind/charts/backend --version ${VERSION}
 ```
 

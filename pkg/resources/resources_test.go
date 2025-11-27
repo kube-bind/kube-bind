@@ -788,6 +788,154 @@ func TestSelector_IsClaimed(t *testing.T) {
 			},
 			want: false, // Should NOT match because it doesn't have app=sheriff label and is not referenced by Sheriff
 		},
+		{
+			name: "cert-manager secret reference - should match when certificate references secret via secretName",
+			potentiallyReferencedResources: &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]any{
+							"apiVersion": "cert-manager.io/v1",
+							"kind":       "Certificate",
+							"metadata": map[string]any{
+								"name":      "my-tls-cert",
+								"namespace": "default",
+							},
+							"spec": map[string]any{
+								"secretName": "my-tls-cert",
+								"commonName": "my-ca",
+								"isCA":       true,
+								"issuerRef": map[string]any{
+									"kind": "ClusterIssuer",
+									"name": "kcp-ca",
+								},
+							},
+						},
+					},
+				},
+			},
+			selector: kubebindv1alpha2.Selector{
+				References: []kubebindv1alpha2.SelectorReference{
+					{
+						GroupResource: kubebindv1alpha2.GroupResource{
+							Group:    "cert-manager.io",
+							Resource: "certificates",
+						},
+						JSONPath: &kubebindv1alpha2.JSONPath{
+							Name: "spec.secretName",
+						},
+					},
+				},
+			},
+			obj: &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "v1",
+					"kind":       "Secret",
+					"metadata": map[string]any{
+						"name":      "my-tls-cert",
+						"namespace": "default",
+						"annotations": map[string]any{
+							"cert-manager.io/certificate-name": "my-tls-cert",
+						},
+					},
+					"type": "kubernetes.io/tls",
+				},
+			},
+			want: true, // Should match because certificate's .spec.secretName equals secret name and no namespace JSONPath means namespace matching is handled by caller
+		},
+		{
+			name: "cert-manager secret reference - should not match when certificate references different secret",
+			potentiallyReferencedResources: &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]any{
+							"apiVersion": "cert-manager.io/v1",
+							"kind":       "Certificate",
+							"metadata": map[string]any{
+								"name":      "my-tls-cert",
+								"namespace": "default",
+							},
+							"spec": map[string]any{
+								"secretName": "other-secret",
+								"commonName": "my-ca",
+								"isCA":       true,
+							},
+						},
+					},
+				},
+			},
+			selector: kubebindv1alpha2.Selector{
+				References: []kubebindv1alpha2.SelectorReference{
+					{
+						GroupResource: kubebindv1alpha2.GroupResource{
+							Group:    "cert-manager.io",
+							Resource: "certificates",
+						},
+						JSONPath: &kubebindv1alpha2.JSONPath{
+							Name: "spec.secretName",
+						},
+					},
+				},
+			},
+			obj: &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "v1",
+					"kind":       "Secret",
+					"metadata": map[string]any{
+						"name":      "my-tls-cert",
+						"namespace": "default",
+					},
+					"type": "kubernetes.io/tls",
+				},
+			},
+			want: false, // Should not match because certificate's .spec.secretName is "other-secret", not "my-tls-cert"
+		},
+		{
+			name: "cert-manager secret reference - cross-namespace scenario with no namespace JSONPath",
+			potentiallyReferencedResources: &unstructured.UnstructuredList{
+				Items: []unstructured.Unstructured{
+					{
+						Object: map[string]any{
+							"apiVersion": "cert-manager.io/v1",
+							"kind":       "Certificate",
+							"metadata": map[string]any{
+								"name":      "my-tls-cert",
+								"namespace": "default",
+							},
+							"spec": map[string]any{
+								"secretName": "my-tls-cert",
+								"commonName": "my-ca",
+								"isCA":       true,
+							},
+						},
+					},
+				},
+			},
+			selector: kubebindv1alpha2.Selector{
+				References: []kubebindv1alpha2.SelectorReference{
+					{
+						GroupResource: kubebindv1alpha2.GroupResource{
+							Group:    "cert-manager.io",
+							Resource: "certificates",
+						},
+						JSONPath: &kubebindv1alpha2.JSONPath{
+							Name: "spec.secretName",
+						},
+					},
+				},
+			},
+			obj: &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "v1",
+					"kind":       "Secret",
+					"metadata": map[string]any{
+						"name":      "my-tls-cert",
+						"namespace": "remapped-namespace", // Different namespace simulating provider-side remapping
+					},
+					"type": "kubernetes.io/tls",
+				},
+			},
+			want: true, // Should match because when no namespace JSONPath is provided, namespace matching is delegated to caller
+		},
 	}
 
 	for _, tt := range tests {

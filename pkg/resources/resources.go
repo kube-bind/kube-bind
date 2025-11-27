@@ -85,6 +85,8 @@ func matchesReferences(logger klog.Logger, references []kubebindv1alpha2.Selecto
 		return false
 	}
 
+	logger.V(4).Info("checking references", "references", references, "object", obj, "potentiallyReferencedResources", potentiallyReferencedResources)
+
 	if potentiallyReferencedResources == nil {
 		return false
 	}
@@ -156,6 +158,7 @@ func IsClaimed(logger klog.Logger, selector kubebindv1alpha2.Selector, obj *unst
 	}
 	// Empty selector selects nothing
 	if selector.LabelSelector == nil && len(selector.NamedResources) == 0 && len(selector.References) == 0 {
+		logger.V(4).Info("no selector provided")
 		return false
 	}
 
@@ -178,7 +181,7 @@ func IsClaimedWithReference(
 	consumerClient dynamicclient.Interface,
 	serviceNamespaceLister ServiceNamespaceLister,
 ) bool {
-	logger = logger.V(4).WithValues("gvr", obj.GroupVersionKind().String(), "namespace", obj.GetNamespace(), "name", obj.GetName())
+	logger = logger.V(4).WithValues("gvr", obj.GroupVersionKind().String(), "namespace", obj.GetNamespace(), "name", obj.GetName(), "claim", claim)
 	logger.Info("checking if object is claimed")
 	copy := obj.DeepCopy()
 
@@ -208,6 +211,13 @@ func IsClaimedWithReference(
 			defer cancel()
 
 			for _, version := range versions {
+				gvr := schema.GroupVersionResource{
+					Group:    ref.Group,
+					Resource: ref.Resource,
+					Version:  version,
+				}
+				logger.V(4).Info("listing objects for reference claim", "gvr", gvr)
+
 				objs, err := consumerClient.Resource(schema.GroupVersionResource{
 					Group:    ref.Group,
 					Resource: ref.Resource,
@@ -248,10 +258,11 @@ func IsClaimedWithReference(
 		}
 	}
 	if sn != nil {
+		logger.V(4).Info("remapping namespace for provider side claimed check", "originalNamespace", copy.GetNamespace(), "remappedNamespace", sn.Name)
 		copy.SetNamespace(sn.Name)
 	}
 
 	result := IsClaimed(logger, claim.Selector, copy, potentiallyReferencedResources)
-	logger.Info("IsClaimed result (provider side)", "result", result)
+	logger.V(4).Info("IsClaimed result (provider side)", "result", result)
 	return result
 }

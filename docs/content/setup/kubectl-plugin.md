@@ -35,9 +35,12 @@ The `kubectl bind` plugin is the primary command-line interface for interacting 
 
     ```bash
     # Download and install for Linux/macOS
-    curl -LO https://github.com/kube-bind/kube-bind/releases/latest/download/kubectl-bind-linux-amd64
-    chmod +x kubectl-bind-linux-amd64
-    sudo mv kubectl-bind-linux-amd64 /usr/local/bin/kubectl-bind
+    OS=$(uname | tr '[:upper:]' '[:lower:]')
+    ARCH=$(uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
+    VERSION=$(curl -s https://api.github.com/repos/kube-bind/kube-bind/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+    curl -LO https://github.com/kube-bind/kube-bind/releases/download/${VERSION}/kubectl-bind_${VERSION#v}_${OS}_${ARCH}.tar.gz
+    tar -xzf kubectl-bind_${VERSION#v}_${OS}_${ARCH}.tar.gz
+    sudo mv bin/kubectl-bind /usr/local/bin/kubectl-bind
     ```
 
 ## Basic Usage

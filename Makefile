@@ -482,6 +482,11 @@ helm-build-local: ## Build and package Helm charts locally for testing
 helm-clean: ## Clean up built helm charts
 	rm -f ./bin/*.tgz
 
+.PHONY: goreleaser-test
+goreleaser-test: ## Test GoReleaser flow locally
+	@command -v goreleaser >/dev/null 2>&1 || { echo "goreleaser not found. Install from: https://goreleaser.com/install/"; exit 1; }
+	LDFLAGS="$(LDFLAGS)" goreleaser release --snapshot --clean
+
 .PHONY: helm-push-local
 helm-push-local: ## Push Helm charts to IMAGE_REPO registry
 	@echo "Pushing Helm charts to registry: $(IMAGE_REPO)"

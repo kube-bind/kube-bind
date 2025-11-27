@@ -218,11 +218,7 @@ func IsClaimedWithReference(
 				}
 				logger.V(4).Info("listing objects for reference claim", "gvr", gvr)
 
-				objs, err := consumerClient.Resource(schema.GroupVersionResource{
-					Group:    ref.Group,
-					Resource: ref.Resource,
-					Version:  version,
-				}).List(ctx, metav1.ListOptions{})
+				objs, err := consumerClient.Resource(gvr).List(ctx, metav1.ListOptions{})
 				if err != nil {
 					logger.Error(err, "failed to list objects for reference claim. Invalidating all claim.", "group", ref.Group, "resource", ref.Resource, "version", version)
 					return false

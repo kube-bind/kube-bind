@@ -773,6 +773,8 @@
       
         
       
+        
+      
     
     
       
@@ -1317,6 +1319,27 @@
   
   <span class="md-ellipsis">
     Publishing a release
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../developers/testing-changes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Testing changes
   </span>
   
 
@@ -2066,11 +2089,13 @@ We will use experimental support for dedicated networking between kind clusters 
 <p>export KIND_EXPERIMENTAL_DOCKER_NETWORK=kube-bind
 kind create cluster --name provider 
 kubectl cluster-info --context kind-provider</p>
-<p>helm upgrade --install \
+<p>helm upgrade \
+    --install \
     --namespace kube-bind \
     --create-namespace \
     kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.0.0-a50df39d7e4c71f7808f4209ec23f294c5ac8f86</p>
-<p>helm upgrade --install \
+<p>helm upgrade \
+    --install \
     --namespace kube-bind \
     --create-namespace \
     --set image.repository=ghcr.io/mjudeikis/kube-bind/backend \

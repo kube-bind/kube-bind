@@ -282,4 +282,10 @@
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/usage/synchronization/"/>
     </url>
+    <url>
+        <loc>https://docs.kube-bind.io/main/usage/integrations/cert-manager/</loc>
+        <lastmod>2025-11-27</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/usage/integrations/cert-manager/"/>
+    </url>
 </urlset>

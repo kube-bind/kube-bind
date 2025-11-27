@@ -1,5 +1,5 @@
 ---
-title: Cert-Manager Integration
+title: Cert-Manager
 description: |
     Guide on integrating kube-bind with cert-manager for automated TLS certificate management.
 weight: 10
@@ -71,8 +71,8 @@ Resources bound successfully!
 
 5. **Create a `Certificate` resource** in your consumer cluster. The cert-manager in the provider cluster will handle the issuance and management of the TLS certificate.
 
-!!! note: 
-    `my-selfsigned-issuer` must be present in the provider cluster for this example to work.
+!!! note
+        my-selfsigned-issuer must be present in the provider cluster for this example to work.
     
 ```yaml
 kubectl apply -f - <<EOF

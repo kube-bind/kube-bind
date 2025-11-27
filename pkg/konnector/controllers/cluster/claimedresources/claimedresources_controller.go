@@ -294,6 +294,7 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 		return
 	}
 	if !c.isClaimed(logger, o, false) {
+		logger.V(4).Info("object is not claimed, skipping", "object", o.GetObjectKind().GroupVersionKind(), "name", o.GetName())
 		return
 	}
 

@@ -185,7 +185,7 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj any) {
 	// Try to map the provider name back to the consumer name,
 	// but only to check if we "own" the object; we will actually
 	// enqueue the provider key after all.
-	consumerKey, err := c.isolationStrategy.ToConsumerKey(types.NamespacedName{
+	consumerKey, err := c.reconciler.isolationStrategy.ToConsumerKey(types.NamespacedName{
 		Namespace: ns,
 		Name:      name,
 	})
@@ -216,7 +216,7 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj any) {
 		return
 	}
 
-	providerKey, err := c.isolationStrategy.ToProviderKey(types.NamespacedName{
+	providerKey, err := c.reconciler.isolationStrategy.ToProviderKey(types.NamespacedName{
 		Namespace: ns,
 		Name:      name,
 	})
@@ -250,7 +250,7 @@ func (c *controller) enqueueServiceNamespace(logger klog.Logger, obj any) {
 		return // not for us
 	}
 
-	strategy := c.isolationStrategy.(*isolation.ServiceNamespacedStrategy)
+	strategy := c.reconciler.isolationStrategy.(*isolation.ServiceNamespacedStrategy)
 	nsOnProviderCluster, err := strategy.ProviderNamespace(name)
 	if err != nil {
 		runtime.HandleError(err)
@@ -289,7 +289,7 @@ func (c *controller) Start(ctx context.Context, numThreads int) {
 	// APIServiceNamespaces are only of interest when syncing namespaced
 	// objects, and since these event handlers need the appropriate isolation
 	// strategy, we only start them when necessary.
-	if _, ok := c.isolationStrategy.(*isolation.ServiceNamespacedStrategy); ok {
+	if _, ok := c.reconciler.isolationStrategy.(*isolation.ServiceNamespacedStrategy); ok {
 		c.serviceNamespaceInformer.Informer().AddDynamicEventHandler(ctx, controllerName, cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				c.enqueueServiceNamespace(logger, obj)

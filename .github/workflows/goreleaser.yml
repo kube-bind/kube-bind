@@ -25,6 +25,8 @@ jobs:
         go-version: v1.25.4
     - name: Delete non-semver tags
       run: 'git tag -d $(git tag -l | grep -v "^v")'
+    - name: Set LDFLAGS
+      run: echo LDFLAGS="$(make ldflags)" >> $GITHUB_ENV
     - name: Run GoReleaser on tag
       if: github.event_name != 'pull_request'
       uses: goreleaser/goreleaser-action@v3

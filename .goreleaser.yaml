@@ -1,9 +1,18 @@
 version: 2
+
+git:
+  tag_sort: -version:refname
+  ignore_tags:
+  - "cli/*"
+  - "sdk/*"
+
 builds:
 - id: "kubectl-bind"
   dir: cli
   main: ./cmd/kubectl-bind
   binary: bin/kubectl-bind
+  ldflags:
+  - "{{ .Env.LDFLAGS }}"
   goos:
   - linux
   - darwin

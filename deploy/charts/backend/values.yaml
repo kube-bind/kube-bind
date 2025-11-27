@@ -37,6 +37,28 @@ certManager:
   enabled: false
   clusterIssuer: ""
 
+# Gateway API configuration
+gatewayApi:
+  enabled: false
+  gateway:
+    className: ""
+    httpPort: 80
+    httpsPort: 443
+    annotations: {}
+    tls:
+      certificateRefs: []
+      # Example:
+      # - name: tls-cert
+      #   namespace: default
+  route:
+    hostnames: []
+    # Example:
+    # - "example.com"
+    # - "api.example.com"
+    path: "/"
+    pathType: "PathPrefix"
+    annotations: {}
+
 examples:
   # Example resources to seed on first start
   enabled: false

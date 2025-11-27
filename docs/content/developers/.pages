@@ -4,3 +4,4 @@ nav:
   - Backend: backend
   - Konnector: konnector
   - Publishing a release: publishing-a-release.md
+  - Testing changes: testing-changes.md

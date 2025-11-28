@@ -76,6 +76,9 @@ spec:
             {{- if .Values.backend.consumerScope }}
             - --consumer-scope={{ .Values.backend.consumerScope }}
             {{- end }}
+            {{- if .Values.backend.informerScope }}
+            - --cluster-scoped-isolation={{ .Values.backend.informerScope }}
+            {{- end }}
             {{- if .Values.backend.cookieSigningKey }}
             - --cookie-signing-key={{ .Values.backend.cookieSigningKey }}
             {{- end }}
@@ -90,6 +93,9 @@ spec:
             - --oidc-type=embedded
             {{- else if eq .Values.backend.oidc.type "external" }}
             - --oidc-type=external
+            {{- end }}
+            {{- if .Values.backend.loggingLevel }}
+            - -v={{ .Values.backend.loggingLevel }}
             {{- end }}
           ports:
             {{- if .Values.backend.tls.enabled }}

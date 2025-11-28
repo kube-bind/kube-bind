@@ -10,6 +10,7 @@ backend:
   listenAddress: "0.0.0.0:8080"
   externalAddress: ""
   externalServerName: ""
+  loggingLevel: 2
   tls:
     enabled: false
     certSecretName: ""
@@ -25,8 +26,9 @@ backend:
   # General backend configuration
   prettyName: ""
   namespacePrefix: "kube-bind-"
-  consumerScope: "cluster"
-  
+  consumerScope: "namespaced"
+  clusterScopeIsolation: "prefix" # Options: none, prefix, namespaced
+
   # Cookie configuration - these should be base64 encoded keys
   # Empty values - will generate random keys on each start (not for production!)
   cookieSigningKey: ""

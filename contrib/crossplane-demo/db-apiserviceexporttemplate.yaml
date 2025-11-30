@@ -1,0 +1,15 @@
+apiVersion: kube-bind.io/v1alpha2
+kind: APIServiceExportTemplate
+metadata:
+  name: mysqldatabase
+spec:
+  resources:
+    - group: mangodb.com
+      resource: mysqldatabases
+      versions:
+        - v1
+  permissionClaims:
+    - group: ""
+      resource: secrets
+      selector: {}
+  scope: Cluster

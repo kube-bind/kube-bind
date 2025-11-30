@@ -64,7 +64,7 @@ kubectl create secret generic db-conn --from-literal endpoint=mysql.default.svc.
     Create and setup Deployment, PersistentVolume, PersistentVolumeClaim and Service for MySQL instance
 
 ```bash
-kubectl apply -f contrib/crossplane-demo/mysql
+kubectl apply -f hack/crossplane-demo/mysql
 ```
 
 4. **Create a Crossplane XRD and Composition for a managed MySQL database**
@@ -72,7 +72,7 @@ kubectl apply -f contrib/crossplane-demo/mysql
     Apply both manifests:
 
 ```bash
-kubectl apply -f contrib/crossplane-demo/xrd
+kubectl apply -f hack/crossplane-demo/xrd
 ```
 
 5. **Export the database API using kube-bind.**
@@ -98,7 +98,7 @@ spec:
     Apply it to the provider cluster:
 
 ```bash
-kubectl apply -f contrib/crossplane-demo/db-apiserviceexport-database.yaml
+kubectl apply -f hack/crossplane-demo/db-apiserviceexport-database.yaml
  ```
 
 6. **Login to kube-bind and request a binding to the exported database API.**
@@ -149,7 +149,7 @@ spec:
 ```
 
 ```bash
- kubectl apply -f contrib/crossplane-demo/consumer-db.yaml
+ kubectl apply -f hack/crossplane-demo/consumer-db.yaml
 ```
 
 9. **Observe the provisioned database and connection secret in the provider cluster.**

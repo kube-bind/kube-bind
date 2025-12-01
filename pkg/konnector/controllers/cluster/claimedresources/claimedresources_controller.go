@@ -237,7 +237,7 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 	// If owner label is set - it was claimed before and might not be claimed now (example: reference gone or changed).
 	// So we need to enqueue it to check if it is still needed.
 	_, wasClaimedBefore := o.GetLabels()[kubebindv1alpha2.ObjectOwnerLabel]
-	if !c.isClaimed(logger, o, true) && !wasClaimedBefore {
+	if !wasClaimedBefore && !c.isClaimed(logger, o, true) {
 		return
 	}
 	logger.V(2).Info("queueing consumer object", "gvr", o.GroupVersionKind().String(), "key", fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName()))
@@ -299,7 +299,7 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 	// If owner label is set - it was claimed before and might not be claimed now (example: reference gone or changed).
 	// So we need to enqueue it to check if it is still needed.
 	_, wasClaimedBefore := o.GetLabels()[kubebindv1alpha2.ObjectOwnerLabel]
-	if !c.isClaimed(logger, o, false) && !wasClaimedBefore {
+	if !wasClaimedBefore && !c.isClaimed(logger, o, false) {
 		logger.V(4).Info("object is not claimed, skipping", "object", o.GetObjectKind().GroupVersionKind(), "name", o.GetName())
 		return
 	}

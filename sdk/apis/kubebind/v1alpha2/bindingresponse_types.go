@@ -84,9 +84,9 @@ type BindingResponseAuthenticationOAuth2CodeGrant struct {
 // authentication and resource selection on the service provider website.
 type BindableResourcesRequest struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
-	TemplateRef APIServiceExportTemplateRef `json:"templateRef,omitempty"`
+	TemplateRef APIServiceExportTemplateRef `json:"templateRef"`
 }
 
 type APIServiceExportTemplateRef struct {

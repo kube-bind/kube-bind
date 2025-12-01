@@ -45,7 +45,7 @@ const (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
 type APIServiceExportRequest struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	// spec specifies how an API service from a service provider should be bound in the
 	// local consumer cluster.
@@ -234,7 +234,7 @@ type PermissionClaim struct {
 	// Selector is a resource selector that selects objects of a GVR.
 	// +required
 	// +kubebuilder:validation:Required
-	Selector Selector `json:"selector,omitempty"`
+	Selector Selector `json:"selector"`
 }
 
 // Owner is the owner of the resource.

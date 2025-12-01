@@ -41,13 +41,13 @@ const (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
 type APIServiceNamespace struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	// spec specifies a service namespace.
 	Spec APIServiceNamespaceSpec `json:"spec"`
 
 	// status contains reconciliation information for a service namespace
-	Status APIServiceNamespaceStatus `json:"status,omitempty"`
+	Status APIServiceNamespaceStatus `json:"status"`
 }
 
 type APIServiceNamespaceSpec struct {

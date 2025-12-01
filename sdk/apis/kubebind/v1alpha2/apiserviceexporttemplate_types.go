@@ -36,7 +36,7 @@ import (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
 type APIServiceExportTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	// spec specifies the template.
 	// +required
@@ -44,7 +44,7 @@ type APIServiceExportTemplate struct {
 	Spec APIServiceExportTemplateSpec `json:"spec"`
 
 	// status contains reconciliation information for the template.
-	Status APIServiceExportTemplateStatus `json:"status,omitempty"`
+	Status APIServiceExportTemplateStatus `json:"status"`
 }
 
 func (in *APIServiceExportTemplate) GetConditions() conditionsapi.Conditions {

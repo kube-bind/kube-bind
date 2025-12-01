@@ -41,10 +41,10 @@ type ExportedSchemas map[string]*BoundSchema
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 type BoundSchema struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	Spec   BoundSchemaSpec   `json:"spec"`
-	Status BoundSchemaStatus `json:"status,omitempty"`
+	Status BoundSchemaStatus `json:"status"`
 }
 
 // ResourceGroupName returns the group name of the resource.

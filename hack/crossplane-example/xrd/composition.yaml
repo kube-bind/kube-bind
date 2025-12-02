@@ -1,0 +1,92 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: mysql-database-simple
+spec:
+  compositeTypeRef:
+    apiVersion: mangodb.com/v1
+    kind: MySQLDatabase
+  mode: Pipeline
+  pipeline:
+    - step: create-mysql-resources
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{ $objName := .observed.composite.resource.metadata.name }}
+            {{ $dbName := .observed.composite.resource.spec.name }}
+            {{ $userName := printf "%s-user" $dbName }}
+            {{ $secretName := printf "%s-secret" $dbName }}
+            {{ $credentials := printf "%s-credentials" $objName }}
+            ---
+            apiVersion: mysql.sql.crossplane.io/v1alpha1
+            kind: Database
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: database
+                {{ if eq (.observed.resources.database | getResourceCondition "Synced").Status "True" }}
+                gotemplating.fn.crossplane.io/ready: "True"
+                {{ end }}
+              name: {{ $dbName }}
+            spec:
+              forProvider: {}
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: secret-exposed
+                gotemplating.fn.crossplane.io/ready: "True"
+              labels:
+                kube-bind.io/selector: consumer-database
+              namespace: default
+              name: {{ $credentials }}
+            {{ if eq $.observed.resources nil }}
+            stringData: {}
+            {{ else }}
+            stringData:
+              username: {{ ( index $.observed.resources "user" ).connectionDetails.username }}
+              password: {{ ( index $.observed.resources "user" ).connectionDetails.password }}
+              port: {{ ( index $.observed.resources "user" ).connectionDetails.port }}
+              endpoint: {{ ( index $.observed.resources "user" ).connectionDetails.endpoint }}
+            {{ end }}
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: secret
+                gotemplating.fn.crossplane.io/ready: "True"
+              namespace: default
+              name: {{ $secretName }}
+            data:
+              password: {{ randAlphaNum 16 | b64enc }}
+            ---
+            apiVersion: mysql.sql.crossplane.io/v1alpha1
+            kind: User
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: user
+                {{ if eq (.observed.resources.user | getResourceCondition "Synced").Status "True" }}
+                gotemplating.fn.crossplane.io/ready: "True"
+                {{ end }}
+              name: {{ $userName }}
+            spec:
+              forProvider:
+                passwordSecretRef:
+                  name: {{ $secretName }}
+                  namespace: default
+                  key: password
+              writeConnectionSecretToRef:
+                name: {{ printf "%s-connection-secret" $dbName }}
+                namespace: default
+            ---
+            apiVersion: mangodb.com/v1
+            kind: MySQLDatabase
+            status:
+              ready: {{ and (eq (.observed.resources.database | getResourceCondition "Synced").Status "True") (eq (.observed.resources.user | getResourceCondition "Synced").Status "True") }}
+              connectionSecret: {{ printf "%s-connection-secret" $dbName }}

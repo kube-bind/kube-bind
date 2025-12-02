@@ -1,0 +1,21 @@
+apiVersion: kube-bind.io/v1alpha2
+kind: APIServiceExportTemplate
+metadata:
+  name: mysqldatabase
+spec:
+  resources:
+    - group: mangodb.com
+      resource: mysqldatabases
+      versions:
+        - v1
+  permissionClaims:
+  - group: ""
+    resource: secrets
+    selector:
+      references:
+        - resource: users
+          group: mysql.sql.crossplane.io
+          jsonPath:
+            name: 'spec.writeConnectionSecretToRef.name'
+            namespace: 'spec.writeConnectionSecretToRef.namespace'
+  scope: Cluster

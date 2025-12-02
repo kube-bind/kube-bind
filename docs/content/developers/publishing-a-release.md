@@ -29,7 +29,7 @@ kube-bind has 3 go modules, and a unique tag is needed for each module every tim
 
     ```shell
     REF=upstream/main
-    TAG=v0.5.1
+    TAG=v0.6.0
     git tag --sign --message "$TAG" "$TAG" "$REF"
     ```
 
@@ -37,7 +37,7 @@ kube-bind has 3 go modules, and a unique tag is needed for each module every tim
 
    ```shell
       REF=upstream/main
-      TAG=v0.5.1
+      TAG=v0.6.0
       git tag --sign --message "sdk/$TAG" "sdk/$TAG" "$REF"
    ```
     
@@ -45,7 +45,7 @@ kube-bind has 3 go modules, and a unique tag is needed for each module every tim
 
     ```shell
     REF=upstream/main
-    TAG=v0.5.1
+    TAG=v0.6.0
     git tag --sign --message "cli/$TAG" "cli/$TAG" "$REF"
     ```
 
@@ -53,9 +53,23 @@ kube-bind has 3 go modules, and a unique tag is needed for each module every tim
 
    ```shell
    REMOTE=upstream
-   TAG=v0.5.1
+   TAG=v0.6.0
    git push "$REMOTE" "$TAG" "sdk/$TAG" "cli/$TAG"
    ```
+
+### Create a Release Branch
+
+Set `REMOTE`, `REF`, and `VERSION` as appropriate.
+
+```shell
+REMOTE=upstream
+REF="$REMOTE/main"
+VERSION=0.6 # e.g. 1.2
+git checkout -b "release-$VERSION" "$REF"
+git push "$REMOTE" "release-$VERSION"
+```
+
+Once you tag and push the new release branch, don't forget to run the documentation deployment as described in [Trigger Documentation Deployment](#trigger-documentation-deployment).
 
 ## If it's a New Minor Version
 
@@ -79,8 +93,8 @@ To use `release-notes` you will need to generate a GitHub API token (Settings ->
 Then, run the `release-notes` tool (set `PREV_VERSION` to the version released before the one you have just released).
 
 ```shell
-TAG=v0.5.0
-PREV_TAG=v0.4.8
+TAG=v0.6.0
+PREV_TAG=v0.5.1
 release-notes \
   --required-author='' \
   --org kube-bind \

@@ -9,6 +9,18 @@ weight: 10
 
 1. **Install cert-manager** in your Kubernetes cluster, where kube-bind backend is running, if you haven't already. You can follow the official installation guide [here](https://cert-manager.io/docs/installation/kubernetes/).
 
+2. **Create SelfSigned issuer** in the provider cluster.
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: my-selfsigned-issuer
+spec:
+  selfSigned: {}
+EOF
+```
 
 2. **Create a `kube-bind` template for `Certificate` resources** to allow service consumers to request TLS certificates. Below is an example template:
 

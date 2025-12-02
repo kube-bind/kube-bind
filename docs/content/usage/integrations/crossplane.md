@@ -9,16 +9,18 @@ weight: 20
 
 This document provides an example deployment walkthrough showing how to integrate kube-bind with Crossplane and how to deploy a sample managed MySQL resource using two kind clusters: a provider cluster (where Crossplane runs and kube-bind backend to export APIs) and a consumer cluster (which allows to bind those APIs using kube-bind konnector).
 
+![Crossplane example architecture diagram](crossplane.png)
+
 1. **Install Crossplane** in your Kubernetes cluster where the kube-bind backend will run.
    You can follow the official installation guide [here](https://crossplane.io/docs/v1.14/getting-started/install-configure.html).
 
 ```bash
-    helm repo add crossplane-stable https://charts.crossplane.io/stable
-    helm repo update
+helm repo add crossplane-stable https://charts.crossplane.io/stable
+helm repo update
 
-    helm install crossplane crossplane-stable/crossplane \
-    --namespace crossplane-system \
-    --create-namespace
+helm install crossplane crossplane-stable/crossplane \
+  --namespace crossplane-system \
+  --create-namespace
 ```
 
 2. **Install a Crossplane provider-sql and set up the ProviderConfig.**

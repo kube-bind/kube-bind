@@ -66,6 +66,12 @@ func StartBackend(t testing.TB, args ...string) (net.Addr, *backend.Server) {
 	require.NoError(t, err)
 	addr := opts.Serve.Listener.Addr()
 
+	webhookListener, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	webhookAddr := webhookListener.Addr().(*net.TCPAddr)
+	opts.WebhookPort = webhookAddr.Port
+	webhookListener.Close()
+
 	opts.OIDC.Type = string(options.OIDCTypeEmbedded)
 	opts.OIDC.IssuerURL = fmt.Sprintf("http://%s/oidc", addr.String())
 	opts.OIDC.CallbackURL = fmt.Sprintf("http://%s/api/callback", addr.String())

@@ -35,7 +35,7 @@ import (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
 type Collection struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	// spec specifies the collection.
 	// +required
@@ -43,7 +43,7 @@ type Collection struct {
 	Spec CollectionSpec `json:"spec"`
 
 	// status contains reconciliation information for the collection.
-	Status CollectionStatus `json:"status,omitempty"`
+	Status CollectionStatus `json:"status"`
 }
 
 func (in *Collection) GetConditions() conditionsapi.Conditions {

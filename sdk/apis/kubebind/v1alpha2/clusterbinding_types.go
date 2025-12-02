@@ -50,7 +50,7 @@ const (
 // +kubebuilder:validation:XValidation:rule="self.metadata.name == \"cluster\"",message="cluster binding name should be cluster"
 type ClusterBinding struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	// spec represents the data in the newly created ClusterBinding.
 	// +required
@@ -58,7 +58,7 @@ type ClusterBinding struct {
 	Spec ClusterBindingSpec `json:"spec"`
 
 	// status contains reconciliation information for the service binding.
-	Status ClusterBindingStatus `json:"status,omitempty"`
+	Status ClusterBindingStatus `json:"status"`
 }
 
 func (in *ClusterBinding) GetConditions() conditionsapi.Conditions {

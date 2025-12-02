@@ -60,7 +60,7 @@ const (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
 type APIServiceExport struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
 	// spec specifies the resource.
 	// +required
@@ -68,7 +68,7 @@ type APIServiceExport struct {
 	Spec APIServiceExportSpec `json:"spec"`
 
 	// status contains reconciliation information for the resource.
-	Status APIServiceExportStatus `json:"status,omitempty"`
+	Status APIServiceExportStatus `json:"status"`
 }
 
 func (in *APIServiceExport) GetConditions() conditionsapi.Conditions {

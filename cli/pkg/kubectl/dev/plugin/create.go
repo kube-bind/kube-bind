@@ -235,6 +235,12 @@ func (o *DevOptions) createCluster(ctx context.Context, clusterName, clusterConf
 
 	if slices.Contains(clusters, clusterName) {
 		fmt.Fprint(o.Streams.ErrOut, "Kind cluster "+clusterName+" already exists, skipping creation\n")
+
+		// Export kubeconfig for existing cluster
+		err := provider.ExportKubeConfig(clusterName, kubeconfigPath, false)
+		if err != nil {
+			return fmt.Errorf("failed to export kubeconfig for existing cluster %s: %w", clusterName, err)
+		}
 	} else {
 		fmt.Fprintf(o.Streams.ErrOut, "Creating kind cluster %s with network %s\n", clusterName, o.KindNetwork)
 		err := provider.Create(clusterName,

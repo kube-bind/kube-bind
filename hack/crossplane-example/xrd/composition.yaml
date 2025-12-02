@@ -20,8 +20,8 @@ spec:
             {{ $objName := .observed.composite.resource.metadata.name }}
             {{ $dbName := .observed.composite.resource.spec.name }}
             {{ $userName := printf "%s-user" $dbName }}
-            {{ $secretName := .observed.composite.resource.spec.name }}
-            {{ $credentials := .observed.composite.resource.spec.name }}
+            {{ $secretName := printf "%s-secret" $dbName }}
+            {{ $credentials := printf "%s-credentials" $objName }}
             ---
             apiVersion: mysql.sql.crossplane.io/v1alpha1
             kind: Database
@@ -41,12 +41,14 @@ spec:
               annotations:
                 gotemplating.fn.crossplane.io/composition-resource-name: secret-exposed
                 gotemplating.fn.crossplane.io/ready: "True"
+              labels:
+                kube-bind.io/selector: consumer-database
               namespace: default
               name: {{ $credentials }}
             {{ if eq $.observed.resources nil }}
-            data: {}
+            stringData: {}
             {{ else }}
-            data:
+            stringData:
               username: {{ ( index $.observed.resources "user" ).connectionDetails.username }}
               password: {{ ( index $.observed.resources "user" ).connectionDetails.password }}
               port: {{ ( index $.observed.resources "user" ).connectionDetails.port }}
@@ -80,11 +82,11 @@ spec:
                   namespace: default
                   key: password
               writeConnectionSecretToRef:
-                name: {{ $dbName }}
+                name: {{ printf "%s-connection-secret" $dbName }}
                 namespace: default
             ---
             apiVersion: mangodb.com/v1
             kind: MySQLDatabase
             status:
               ready: {{ and (eq (.observed.resources.database | getResourceCondition "Synced").Status "True") (eq (.observed.resources.user | getResourceCondition "Synced").Status "True") }}
-              connectionSecret: {{ $dbName }}
+              connectionSecret: {{ printf "%s-connection-secret" $dbName }}

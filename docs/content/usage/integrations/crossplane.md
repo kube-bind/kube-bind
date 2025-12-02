@@ -64,7 +64,7 @@ kubectl create secret generic db-conn --from-literal endpoint=mysql.default.svc.
     Create and setup Deployment, PersistentVolume, PersistentVolumeClaim and Service for MySQL instance
 
 ```bash
-kubectl apply -f hack/crossplane-demo/mysql
+kubectl apply -f hack/crossplane-example/mysql
 ```
 
 4. **Create a Crossplane XRD and Composition for a managed MySQL database**
@@ -72,13 +72,14 @@ kubectl apply -f hack/crossplane-demo/mysql
     Apply both manifests:
 
 ```bash
-kubectl apply -f hack/crossplane-demo/xrd
+kubectl apply -f hack/crossplane-example/xrd
 ```
 
 5. **Export the database API using kube-bind.**
    Create an APIServiceExportTemplate for the mysqldatabase.mangodb.com resource:
 
 ```yaml
+kubectl apply -f - <<EOF
 apiVersion: kube-bind.io/v1alpha2
 kind: APIServiceExportTemplate
 metadata:
@@ -90,15 +91,22 @@ spec:
       versions:
         - v1
   permissionClaims:
-    - group: ""
-      resource: secrets
-      selector: {}
+  - group: ""
+    resource: secrets
+    selector:
+      references:
+        - resource: users
+          group: mysql.sql.crossplane.io
+          jsonPath:
+            name: 'spec.writeConnectionSecretToRef.name'
+            namespace: 'spec.writeConnectionSecretToRef.namespace'
   scope: Cluster
+EOF
 ```
     Apply it to the provider cluster:
 
 ```bash
-kubectl apply -f hack/crossplane-demo/db-apiserviceexport-database.yaml
+kubectl apply -f hack/crossplane-example/db-apiserviceexport-database.yaml
  ```
 
 6. **Login to kube-bind and request a binding to the exported database API.**
@@ -123,7 +131,7 @@ Waiting for binding completion from UI...
 
 Binding completed successfully!
 🔒 Updated secret kube-bind/kubeconfig-zxrdn for host https://kube-bind.example.com, namespace kube-bind-bp52k
-🚀 Deploying konnector v0.6.0 to namespace kube-bind with custom image "ghcr.io/kube-bind/konnector:v0.6.0-rc1".
+🚀 Deploying konnector v0.6.0 to namespace kube-bind with custom image "ghcr.io/kube-bind/konnector:v0.6.0".
 ✅ Created APIServiceBinding mysqldatabase-6rvjt for 1 resources
 Created 1 APIServiceBinding(s):
   - mysqldatabase-6rvjt
@@ -149,7 +157,7 @@ spec:
 ```
 
 ```bash
- kubectl apply -f hack/crossplane-demo/consumer-db.yaml
+ kubectl apply -f hack/crossplane-example/consumer-db.yaml
 ```
 
 9. **Observe the provisioned database and connection secret in the provider cluster.**
@@ -162,10 +170,16 @@ kube-bind-bp52k-consumer-database   True     True    mysql-database-simple   18m
 ```
 
 ```bash
-kubectl get mysqldatabases.mangodb.com kube-bind-bp52k-consumer-database -o yaml
+kubectl get secrets -n default
+NAME                                                              TYPE                                DATA   AGE
+consumer-database-connection-secret                               connection.crossplane.io/v1alpha1   4      18m
+consumer-database-secret                                          Opaque                              1      18m
+db-conn                                                           Opaque                              4      20m
+kube-bind-tvq46-consumer-database-credentials                     Opaque                              4      18m
+```
 
-NAME                                SYNCED   READY   COMPOSITION             AGE
-kube-bind-bp52k-consumer-database   True     True    mysql-database-simple   18m
+```bash
+kubectl get mysqldatabases.mangodb.com kube-bind-bp52k-consumer-database -o yaml
 ```
 ```yaml
 apiVersion: mangodb.com/v1
@@ -203,10 +217,6 @@ spec:
     - apiVersion: mysql.sql.crossplane.io/v1alpha1
       kind: User
       name: consumer-database-user
-    - apiVersion: v1
-      kind: Secret
-      name: consumer-database
-      namespace: default
     - apiVersion: v1
       kind: Secret
       name: consumer-database

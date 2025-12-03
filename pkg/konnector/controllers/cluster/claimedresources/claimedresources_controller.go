@@ -212,15 +212,23 @@ type controller struct {
 // If consumerSide is true, the check is done for the consumer side (no namespace remapping), and if false, for the provider side object,
 // where namespace remapping via APIServiceNamespace is taken into account.
 func (c *controller) isClaimed(logger klog.Logger, obj *unstructured.Unstructured, consumerSide bool) bool {
-	return resources.IsClaimedWithReference(
+	// If owner label is set - it was claimed before and might not be claimed now (example: reference gone or changed).
+	// So we need to enqueue it to check if it is still needed.
+	_, wasClaimedBefore := obj.GetLabels()[kubebindv1alpha2.ObjectOwnerLabel]
+
+	currentlyClaimed := resources.IsClaimedWithReference(
 		logger,
 		obj,
 		consumerSide,
 		c.claim,
 		c.apiServiceExport,
 		c.consumerClient,
-		c.serviceNamespaceInformer.Lister().APIServiceNamespaces(c.providerNamespace),
+		c.serviceNamespaceInformer.
+			Lister().
+			APIServiceNamespaces(c.providerNamespace),
 	)
+
+	return wasClaimedBefore || currentlyClaimed
 }
 
 func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
@@ -234,10 +242,7 @@ func (c *controller) enqueueConsumer(logger klog.Logger, obj interface{}) {
 		return
 	}
 
-	// If owner label is set - it was claimed before and might not be claimed now (example: reference gone or changed).
-	// So we need to enqueue it to check if it is still needed.
-	_, wasClaimedBefore := o.GetLabels()[kubebindv1alpha2.ObjectOwnerLabel]
-	if !wasClaimedBefore && !c.isClaimed(logger, o, true) {
+	if !c.isClaimed(logger, o, true) {
 		return
 	}
 	logger.V(2).Info("queueing consumer object", "gvr", o.GroupVersionKind().String(), "key", fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName()))
@@ -296,10 +301,8 @@ func (c *controller) enqueueProvider(logger klog.Logger, obj interface{}) {
 		runtime.HandleError(fmt.Errorf("unexpected type %T in enqueueProvider", obj))
 		return
 	}
-	// If owner label is set - it was claimed before and might not be claimed now (example: reference gone or changed).
-	// So we need to enqueue it to check if it is still needed.
-	_, wasClaimedBefore := o.GetLabels()[kubebindv1alpha2.ObjectOwnerLabel]
-	if !wasClaimedBefore && !c.isClaimed(logger, o, false) {
+
+	if !c.isClaimed(logger, o, false) {
 		logger.V(4).Info("object is not claimed, skipping", "object", o.GetObjectKind().GroupVersionKind(), "name", o.GetName())
 		return
 	}

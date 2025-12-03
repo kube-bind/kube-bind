@@ -128,13 +128,9 @@ All the instructions assume you have already cloned the kube-bind repository and
     ./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 2myqz7lt9i0u5kzb
     ./bin/kubectl-bind --dry-run -o yaml > apiserviceexport.yaml
 
-    # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
-    # name by running `kubectl get secret -n kube-bind`
-    kubectl get secrets -n kube-bind -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d > remote.kubeconfig
-
-    namespace=$(yq '.contexts[0].context.namespace' remote.kubeconfig)
-
-    ./bin/kubectl-bind apiservice -v 6 --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml --skip-konnector --remote-namespace "$namespace"
+    # The dry-run saves assets locally and does not create any resources on the consumer cluster.
+    # Use --from-dry-run with the session ID (printed at the end of dry-run output, or find it in ~/.kube-bind/dry-run/)
+    ./bin/kubectl-bind apiservice --from-dry-run <session-id> --skip-konnector
     ```
 
     This will keep running, so switch to a new terminal.

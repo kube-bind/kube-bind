@@ -46,6 +46,7 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
+
 	"sigs.k8s.io/kind/pkg/cluster"
 
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/base"
@@ -77,8 +78,7 @@ func NewDevOptions(streams genericclioptions.IOStreams) *DevOptions {
 		ProviderClusterName: "kind-provider",
 		ConsumerClusterName: "kind-consumer",
 		ChartPath:           "oci://ghcr.io/kube-bind/charts/backend",
-		// TODO: Update to released version
-		ChartVersion: "0.0.0-667783a5861bb10113d6e10e355bfe87e731a314",
+		ChartVersion:        "v0.6.0",
 	}
 }
 

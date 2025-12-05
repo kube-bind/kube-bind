@@ -12,44 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# We need bash for some conditional logic below.
-SHELL := /usr/bin/env bash -e
+ROOT_DIR = $(abspath ../..)
 
-ROOT_DIR=$(abspath ../..)
-GO_INSTALL = $(ROOT_DIR)/hack/go-install.sh
-TOOLS_GOBIN_DIR = $(ROOT_DIR)/hack/tools
-GOBIN_DIR = $(ROOT_DIR)/bin
-PATH := $(GOBIN_DIR):$(TOOLS_GOBIN_DIR):$(PATH)
-TMPDIR := $(shell mktemp -d)
+export UGET_DIRECTORY := $(ROOT_DIR)/hack/tools
+export UGET_CHECKSUMS := $(ROOT_DIR)/hack/tools.checksums
+export UGET_VERSIONED_BINARIES = true
 
-# Detect the path used for the install target
-ifeq (,$(shell go env GOBIN))
-INSTALL_GOBIN=$(shell go env GOPATH)/bin
-else
-INSTALL_GOBIN=$(shell go env GOBIN)
-endif
+KCP_APIGEN_VERSION := v0.28.0
 
-
-KCP_APIGEN_VER := v0.28.0
-KCP_APIGEN_BIN := apigen
-KCP_APIGEN_GEN := $(TOOLS_GOBIN_DIR)/$(KCP_APIGEN_BIN)-$(KCP_APIGEN_VER)
-export KCP_APIGEN_GEN # so hack scripts can use it
-
-all: build
 .PHONY: all
+all: build
 
-.PHONY: require-%
-require-%:
-	@if ! command -v $* 1> /dev/null 2>&1; then echo "$* not found in \$$PATH"; exit 1; fi
+.PHONY: install-apigen
+install-apigen:
+	@GO_MODULE=true $(ROOT_DIR)/hack/uget.sh github.com/kcp-dev/kcp/sdk/cmd/apigen apigen $(KCP_APIGEN_VERSION)
 
-# KCP tool installation targets
-$(KCP_APIGEN_GEN):
-	GOBIN=$(TOOLS_GOBIN_DIR) $(GO_INSTALL) github.com/kcp-dev/kcp/sdk/cmd/apigen $(KCP_APIGEN_BIN) $(KCP_APIGEN_VER)
-
-# KCP runtime targets
-run-kcp: $(KCP) ## Start KCP server
-	$(KCP) start -v=8
-
-# Generate KCP API resources
-codegen: $(KCP_APIGEN_GEN) ## Generate KCP API resources from CRDs
+codegen: ## Generate KCP API resources from CRDs
 	./hack/update-kcp-codegen.sh

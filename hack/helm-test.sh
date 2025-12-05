@@ -14,13 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
-set -o pipefail
+set -eu
 
-cd "$(dirname "$0")/../../.."
+echo "Testing Helm chart installation..."
 
-APIGEN="$(UGET_PRINT_PATH=absolute make -C contrib/kcp --no-print-directory install-apigen)"
+HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"
+CHART_VERSION="0.0.0-$REV"
 
-# Generate kcp API resources from CRDs
-"$APIGEN" --input-dir deploy/crd --output-dir contrib/kcp/deploy/resources
+for chart_dir in deploy/charts/*/; do
+   if [ -f "${chart_dir}Chart.yaml" ]; then
+      chart_name=$(basename "$chart_dir")
+      echo "Testing chart: $chart_name"
+      "$HELM" install test-$chart_name "./bin/$chart_name-$CHART_VERSION.tgz" --dry-run --debug
+      echo "✓ Chart $chart_name passes dry-run test"
+   fi
+done

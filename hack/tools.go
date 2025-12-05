@@ -19,11 +19,5 @@ limitations under the License.
 package tools
 
 import (
-	_ "github.com/kcp-dev/code-generator/v3/cmd/cluster-client-gen"
-	_ "github.com/kcp-dev/kcp/sdk/cmd/apigen"
 	_ "k8s.io/code-generator"
-	_ "k8s.io/code-generator/cmd/conversion-gen"
-	_ "k8s.io/code-generator/cmd/deepcopy-gen"
-	_ "k8s.io/code-generator/cmd/defaulter-gen"
-	_ "sigs.k8s.io/controller-tools/cmd/controller-gen"
 )

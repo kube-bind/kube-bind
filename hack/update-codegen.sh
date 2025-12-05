@@ -17,48 +17,47 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o xtrace
 
-if [[ -z "${MAKELEVEL:-}" ]]; then
-    echo 'You must invoke this script via make'
-    exit 1
-fi
+cd "$(dirname "$0")/.."
 
-"$(dirname "${BASH_SOURCE[0]}")/update-codegen-clients.sh"
-REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+CONTROLLER_GEN="$(UGET_PRINT_PATH=absolute make --no-print-directory install-controller-gen)"
+YAML_PATCH="$(UGET_PRINT_PATH=absolute make --no-print-directory install-yaml-patch)"
 
 # Update generated CRD YAML
-cd sdk/apis
-../../${CONTROLLER_GEN} \
-    crd \
-    rbac:roleName=manager-role \
-    webhook \
-    paths="./..." \
-    output:crd:artifacts:config=../../deploy/crd
+(
+   cd sdk/apis
+   "$CONTROLLER_GEN" \
+      crd \
+      rbac:roleName=manager-role \
+      webhook \
+      paths="./..." \
+      output:crd:artifacts:config=../../deploy/crd
 
-../../${CONTROLLER_GEN} \
-    crd \
-    rbac:roleName=manager-role \
-    webhook \
-    paths="./..." \
-    output:crd:artifacts:config=../../deploy/charts/backend/crds
+   "$CONTROLLER_GEN" \
+      crd \
+      rbac:roleName=manager-role \
+      webhook \
+      paths="./..." \
+      output:crd:artifacts:config=../../deploy/charts/backend/crds
 
-# Generate RBAC manifests for Helm chart from backend controllers
-../../${CONTROLLER_GEN} \
-    rbac:roleName=kube-bind-role \
-    paths="../../backend/controllers/..." \
-    output:rbac:artifacts:config=../../deploy/charts/backend/templates
+   # Generate RBAC manifests for Helm chart from backend controllers
+   "$CONTROLLER_GEN" \
+      rbac:roleName=kube-bind-role \
+      paths="../../backend/controllers/..." \
+      output:rbac:artifacts:config=../../deploy/charts/backend/templates
+)
 
-cd -
+(
+   cd deploy/crd
+   for CRD in *.yaml; do
+      if [ -f "../patches/${CRD}-patch" ]; then
+         echo "Applying ${CRD}-patch"
+         "$YAML_PATCH" -o "../patches/${CRD}-patch" < "${CRD}" > "${CRD}.patched"
+         mv "${CRD}.patched" "${CRD}"
+      fi
+   done
+)
 
-cd deploy/crd
-for CRD in *.yaml; do
-    if [ -f "../patches/${CRD}-patch" ]; then
-        echo "Applying ${CRD}-patch"
-        ../../${YAML_PATCH} -o "../patches/${CRD}-patch" < "${CRD}" > "${CRD}.patched"
-        mv "${CRD}.patched" "${CRD}"
-    fi
-done
-
-cd ../../contrib/kcp
-make codegen
+(
+   make -C contrib/kcp codegen
+)

@@ -17,13 +17,10 @@
 set -o errexit
 set -o nounset
 set -o pipefail
-set -o xtrace
 
-export GOPATH=$(go env GOPATH)
+cd "$(dirname "$0")/.."
 
-SCRIPT_ROOT=$(dirname "${BASH_SOURCE[0]}")/..
-CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; go list -f '{{.Dir}}' -m k8s.io/code-generator)}
-
+CODEGEN_PKG="${CODEGEN_PKG:-$(go list -f '{{.Dir}}' -m k8s.io/code-generator)}"
 source "${CODEGEN_PKG}/kube_codegen.sh"
 
 pushd sdk

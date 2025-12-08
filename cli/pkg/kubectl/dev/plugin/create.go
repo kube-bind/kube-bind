@@ -77,8 +77,7 @@ func NewDevOptions(streams genericclioptions.IOStreams) *DevOptions {
 		ProviderClusterName: "kind-provider",
 		ConsumerClusterName: "kind-consumer",
 		ChartPath:           "oci://ghcr.io/kube-bind/charts/backend",
-		// TODO: Update to released version
-		ChartVersion: "0.0.0-667783a5861bb10113d6e10e355bfe87e731a314",
+		ChartVersion:        "v0.6.0",
 	}
 }
 

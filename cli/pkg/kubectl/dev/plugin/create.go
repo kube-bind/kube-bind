@@ -46,7 +46,6 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
-
 	"sigs.k8s.io/kind/pkg/cluster"
 
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/base"

@@ -9,10 +9,14 @@ weight: 20
 
 This document provides an example deployment walkthrough showing how to integrate kube-bind with Crossplane and how to deploy a sample managed MySQL resource using two kind clusters: a provider cluster (where Crossplane runs and kube-bind backend to export APIs) and a consumer cluster (which allows to bind those APIs using kube-bind konnector).
 
+!!! note
+        Currently for permission claims to work properly, it is required to run namespaced Crossplane resources.
+
+
 ![Crossplane example architecture diagram](crossplane.png)
 
 1. **Install Crossplane** in your Kubernetes cluster where the kube-bind backend will run.
-   You can follow the official installation guide [here](https://crossplane.io/docs/v1.14/getting-started/install-configure.html).
+   You can follow the official installation guide [here](https://docs.crossplane.io/v2.1/get-started/install).
 
 ```bash
 helm repo add crossplane-stable https://charts.crossplane.io/stable
@@ -43,15 +47,15 @@ EOF
 
 ```yaml
 kubectl apply -f - <<EOF
-apiVersion: mysql.sql.crossplane.io/v1alpha1
+apiVersion: mysql.sql.m.crossplane.io/v1alpha1
 kind: ProviderConfig
 metadata:
-  name: default
+  name: mysql-cfg
+  namespace: default
 spec:
   credentials:
     source: MySQLConnectionSecret
     connectionSecretRef:
-      namespace: mysql
       name: db-conn
   tls: preferred
 EOF
@@ -66,15 +70,174 @@ kubectl create secret generic db-conn --from-literal endpoint=mysql.default.svc.
     Create and setup Deployment, PersistentVolume, PersistentVolumeClaim and Service for MySQL instance
 
 ```bash
-kubectl apply -f hack/crossplane-example/mysql
+kubectl apply -f https://raw.githubusercontent.com/cnvergence/crossplane-kube-bind-setup/refs/heads/main/mysql.yaml
 ```
 
 4. **Create a Crossplane XRD and Composition for a managed MySQL database**
 
     Apply both manifests:
 
-```bash
-kubectl apply -f hack/crossplane-example/xrd
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: apiextensions.crossplane.io/v2
+kind: CompositeResourceDefinition
+metadata:
+  name: mysqldatabases.mangodb.com
+  labels:
+    kube-bind.io/exported: "true"
+spec:
+  scope: Namespaced
+  group: mangodb.com
+  names:
+    kind: MySQLDatabase
+    plural: mysqldatabases
+  versions:
+  - name: v1
+    served: true
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              name:
+                description: The name of the database to create
+                type: string
+            required:
+            - name
+          status:
+            type: object
+            properties:
+              ready:
+                description: Whether the database setup is ready
+                type: boolean
+              connectionSecret:
+                description: Name of the connection secret
+                type: string
+
+EOF
+```
+
+```yaml
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: mysql-database-simple
+spec:
+  compositeTypeRef:
+    apiVersion: mangodb.com/v1
+    kind: MySQLDatabase
+  mode: Pipeline
+  pipeline:
+    - step: create-mysql-resources
+      functionRef:
+        name: function-go-templating
+      input:
+        apiVersion: gotemplating.fn.crossplane.io/v1beta1
+        kind: GoTemplate
+        source: Inline
+        inline:
+          template: |
+            {{ $objName := .observed.composite.resource.metadata.name }}
+            {{ $dbName := .observed.composite.resource.spec.name }}
+            {{ $objNamespace := .observed.composite.resource.metadata.namespace }}
+            {{ $userName := printf "%s-user" $dbName }}
+            {{ $secretName := printf "%s-secret" $dbName }}
+            {{ $credentials := printf "%s-credentials" $objName }}
+            ---
+            apiVersion: mysql.sql.m.crossplane.io/v1alpha1
+            kind: Database
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: database
+                {{ if eq (.observed.resources.database | getResourceCondition "Synced").Status "True" }}
+                gotemplating.fn.crossplane.io/ready: "True"
+                {{ end }}
+              name: {{ $dbName }}
+              namespace: default
+            spec:
+              forProvider: {}
+              providerConfigRef:
+                kind: ProviderConfig
+                name: mysql-cfg
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: secret-exposed
+                gotemplating.fn.crossplane.io/ready: "True"
+              labels:
+                kube-bind.io/selector: consumer-database
+              namespace: default
+              name: {{ $credentials }}
+            {{ if eq $.observed.resources nil }}
+            stringData: {}
+            {{ else }}
+            stringData:
+              username: {{ ( index $.observed.resources "user" ).connectionDetails.username }}
+              password: {{ ( index $.observed.resources "user" ).connectionDetails.password }}
+              port: {{ ( index $.observed.resources "user" ).connectionDetails.port }}
+              endpoint: {{ ( index $.observed.resources "user" ).connectionDetails.endpoint }}
+            {{ end }}
+            ---
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: secret
+                gotemplating.fn.crossplane.io/ready: "True"
+              namespace: default
+              name: {{ $secretName }}
+            data:
+              password: {{ randAlphaNum 16 | b64enc }}
+            ---
+            apiVersion: mysql.sql.m.crossplane.io/v1alpha1
+            kind: User
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: user
+                {{ if eq (.observed.resources.user | getResourceCondition "Synced").Status "True" }}
+                gotemplating.fn.crossplane.io/ready: "True"
+                {{ end }}
+              name: {{ $userName }}
+              namespace: default
+            spec:
+              forProvider:
+                passwordSecretRef:
+                  name: {{ $secretName }}
+                  key: password
+              writeConnectionSecretToRef:
+                name: {{ printf "%s-connection-secret" $dbName }}
+              providerConfigRef:
+                kind: ProviderConfig
+                name: mysql-cfg
+            ---
+            apiVersion: mangodb.com/v1
+            kind: MySQLDatabase
+            metadata:
+              name: {{ $objName }}
+              namespace: default
+            status:
+              ready: {{ and (eq (.observed.resources.database | getResourceCondition "Synced").Status "True") (eq (.observed.resources.user | getResourceCondition "Synced").Status "True") }}
+              connectionSecret: {{ printf "%s-connection-secret" $dbName }}
+            ---
+            apiVersion: mysql.sql.m.crossplane.io/v1alpha1
+            kind: ProviderConfig
+            metadata:
+              name: mysql-cfg
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: provider-cfg
+                gotemplating.fn.crossplane.io/ready: "True"
+            spec:
+              credentials:
+                source: MySQLConnectionSecret
+                connectionSecretRef:
+                  name: db-conn
+              tls: preferred
+EOF
 ```
 
 5. **Export the database API using kube-bind.**
@@ -96,20 +259,12 @@ spec:
   - group: ""
     resource: secrets
     selector:
-      references:
-        - resource: users
-          group: mysql.sql.crossplane.io
-          jsonPath:
-            name: 'spec.writeConnectionSecretToRef.name'
-            namespace: 'spec.writeConnectionSecretToRef.namespace'
-  scope: Cluster
+      labelSelector:
+        matchLabels:
+          kube-bind.io/selector: consumer-database
+  scope: Namespaced
 EOF
 ```
-    Apply it to the provider cluster:
-
-```bash
-kubectl apply -f hack/crossplane-example/db-apiserviceexport-database.yaml
- ```
 
 6. **Login to kube-bind and request a binding to the exported database API.**
 
@@ -150,16 +305,15 @@ mysqldatabases.mangodb.com   2025-11-27T14:22:18Z
     Order a new consumer-database instance in the provider cluster
 
 ```yaml
+kubectl apply -f - <<EOF
 apiVersion: mangodb.com/v1
 kind: MySQLDatabase
 metadata:
   name: consumer-database
+  namespace: default
 spec:
   name: consumer-database
-```
-
-```bash
- kubectl apply -f hack/crossplane-example/consumer-db.yaml
+EOF
 ```
 
 9. **Observe the provisioned database and connection secret in the provider cluster.**
@@ -167,8 +321,8 @@ spec:
 ```bash
 kubectl get mysqldatabases.mangodb.com kube-bind-bp52k-consumer-database
 
-NAME                                SYNCED   READY   COMPOSITION             AGE
-kube-bind-bp52k-consumer-database   True     True    mysql-database-simple   18m
+NAME                                SYNCED   READY   COMPOSITION                        AGE
+kube-bind-bp52k-default             True     True    mysql-database-simple              18m
 ```
 
 ```bash
@@ -241,6 +395,16 @@ status:
 ```
 
 You should see your MySQL instance created in the provider cluster and a secret with connection details, once Crossplane finish up provisioning of the database.
+
+Observe that the requested secret with connection details for user is synced to consumer cluster.
+
+```bash
+kubectl get secrets
+
+NAMESPACE     NAME                            TYPE                            DATA   AGE
+default       consumer-database-credentials   Opaque                          4      5m21s
+```
+
 
 ---
 

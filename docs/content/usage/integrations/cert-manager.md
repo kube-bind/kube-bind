@@ -9,6 +9,12 @@ weight: 10
 
 1. **Install cert-manager** in your Kubernetes cluster, where kube-bind backend is running, if you haven't already. You can follow the official installation guide [here](https://cert-manager.io/docs/installation/kubernetes/).
 
+2. **Add kube-bind export label** to certificate CRD.
+
+```bash
+kubectl label crd certificates.cert-manager.io kube-bind.io/exported=true --overwrite
+```
+
 2. **Create SelfSigned issuer** in the provider cluster.
 
 ```yaml

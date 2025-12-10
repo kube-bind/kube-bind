@@ -23,11 +23,15 @@ import (
 	"net"
 	"sync"
 
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
+	admissionpkg "github.com/kube-bind/kube-bind/backend/admission"
 	"github.com/kube-bind/kube-bind/backend/auth"
 	"github.com/kube-bind/kube-bind/backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexport"
@@ -35,6 +39,7 @@ import (
 	"github.com/kube-bind/kube-bind/backend/controllers/servicenamespace"
 	http "github.com/kube-bind/kube-bind/backend/http"
 	kube "github.com/kube-bind/kube-bind/backend/kubernetes"
+	webhookpkg "github.com/kube-bind/kube-bind/backend/webhook"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -202,6 +207,10 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest controller with manager: %w", err)
 	}
 
+	if err := registerAPIServiceExportRequestWebhook(ctx, s.Config); err != nil {
+		return nil, fmt.Errorf("error setting up APIServiceExportRequest webhook: %w", err)
+	}
+
 	return s, nil
 }
 
@@ -253,6 +262,54 @@ func (s *Server) GetOIDCProvider(ctx context.Context) (*auth.OIDCServiceProvider
 		return nil, err
 	}
 	return s.OIDC, nil
+}
+
+func registerAPIServiceExportRequestWebhook(ctx context.Context, c *Config) error {
+	webhookServer := c.Manager.GetWebhookServer()
+
+	decoder := admission.NewDecoder(c.Scheme)
+
+	validator := admissionpkg.NewAPIServiceExportRequestValidator(
+		c.Manager,
+		decoder,
+		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
+		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
+		c.Options.SchemaSource,
+	)
+
+	webhookServer.Register(webhookpkg.WebhookPath, &admission.Webhook{
+		Handler: validator,
+	})
+
+	logger := klog.FromContext(ctx)
+	kubeClient, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create kubernetes client: %w", err)
+	}
+
+	crClient, err := ctrlclient.New(c.ClientConfig, ctrlclient.Options{Scheme: c.Scheme})
+	if err != nil {
+		return fmt.Errorf("failed to create controller-runtime client: %w", err)
+	}
+
+	webhookURL, err := webhookpkg.GetWebhookURL(ctx, c.ClientConfig, c.Options.WebhookPort)
+	if err != nil {
+		return fmt.Errorf("failed to determine webhook URL: %w", err)
+	}
+	logger.V(1).Info("Using webhook URL from kubeconfig", "url", webhookURL)
+
+	if err := webhookpkg.EnsureValidatingWebhookConfiguration(
+		ctx,
+		crClient,
+		kubeClient,
+		webhookURL,
+		webhookpkg.WebhookCertDirectory,
+	); err != nil {
+		logger.V(1).Info("Failed to create ValidatingWebhookConfiguration", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 func (s *Server) Addr() net.Addr {

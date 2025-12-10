@@ -25,20 +25,26 @@ import (
 	apisv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha1"
 	apisv1alpha2 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha2"
 	"github.com/kcp-dev/multicluster-provider/apiexport"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlconfig "sigs.k8s.io/controller-runtime/pkg/config"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
 	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/backend/options"
+	webhookpkg "github.com/kube-bind/kube-bind/backend/webhook"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
@@ -82,6 +88,9 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	if err := apiextensionsv1.AddToScheme(scheme); err != nil {
 		return nil, fmt.Errorf("error adding apiextensions scheme: %w", err)
 	}
+	if err := admissionregistrationv1.AddToScheme(scheme); err != nil {
+		return nil, fmt.Errorf("error adding admissionregistration scheme: %w", err)
+	}
 	if err := kubebindv1alpha1.AddToScheme(scheme); err != nil {
 		return nil, fmt.Errorf("error adding kubebind scheme: %w", err)
 	}
@@ -118,6 +127,34 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 		config.Provider = nil
 	}
 
+	// Try to generate certificates using cert-manager
+	ctx := context.Background()
+	logger := klog.FromContext(ctx)
+
+	kubeClient, err := kubernetes.NewForConfig(config.ClientConfig)
+	if err == nil {
+		if crClient, err := ctrlclient.New(config.ClientConfig, ctrlclient.Options{Scheme: scheme}); err == nil {
+			if err := webhookpkg.EnsureWebhookCertificates(ctx, config.ClientConfig, kubeClient, crClient, scheme); err != nil {
+				logger.V(2).Info("Could not generate certificates via cert-manager", "error", err)
+			}
+		}
+
+		hasCertManager, err := webhookpkg.CheckCertManagerInstalled(ctx, config.ClientConfig)
+		if err == nil && hasCertManager {
+			webhookpkg.StartWebhookCertificateWatcher(ctx, kubeClient)
+			logger.V(1).Info("Started webhook certificate watcher for automatic rotation")
+		}
+	} else {
+		logger.V(1).Info("Failed to create kubeClient for webhook certificates", "error", err)
+	}
+
+	webhookServer := webhook.NewServer(webhook.Options{
+		Port:    options.WebhookPort,
+		CertDir: webhookpkg.WebhookCertDirectory,
+	})
+
+	logger.V(1).Info("Webhook server enabled with certificates", "certDir", webhookpkg.WebhookCertDirectory)
+
 	opts := ctrl.Options{
 		Controller: ctrlconfig.Controller{
 			SkipNameValidation: ptr.To(config.Options.ExtraOptions.TestingSkipNameValidation),
@@ -125,7 +162,8 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 		Metrics: metricsserver.Options{
 			BindAddress: "0",
 		},
-		Scheme: scheme,
+		Scheme:        scheme,
+		WebhookServer: webhookServer,
 	}
 
 	manager, err := mcmanager.New(config.ClientConfig, config.Provider, opts)

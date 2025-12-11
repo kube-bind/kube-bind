@@ -90,7 +90,7 @@ func NewHandler(
 	authHandler := auth.NewAuthHandler(oidcProvider, jwtService, cookieSigningKey, cookieEncryptionKey)
 
 	// Create auth middleware for request authentication
-	authMiddleware := auth.NewAuthMiddleware(jwtService, cookieSigningKey, cookieEncryptionKey)
+	authMiddleware := auth.NewAuthMiddleware(jwtService, cookieSigningKey, cookieEncryptionKey, mgr)
 
 	return &handler{
 		oidcProvider:        oidcProvider,
@@ -251,6 +251,13 @@ func (h *handler) handleTemplates(w http.ResponseWriter, r *http.Request) {
 	logger := getLogger(r)
 	prepareNoCache(w)
 	logger.Info("getting templates")
+
+	authenticated := auth.GetAuthContext(r.Context()).IsValid
+	if !authenticated {
+		logger.Info("unauthenticated request to get templates")
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	params := client.GetQueryParams(r)
 

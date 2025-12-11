@@ -25,6 +25,7 @@ import (
 	"github.com/gorilla/securecookie"
 	"k8s.io/klog/v2"
 
+	"github.com/kube-bind/kube-bind/backend/kubernetes"
 	"github.com/kube-bind/kube-bind/backend/session"
 )
 
@@ -49,15 +50,21 @@ type AuthContext struct {
 
 type AuthMiddleware struct {
 	jwtService          *JWTService
+	kubernetesMananger  *kubernetes.Manager
 	cookieSigningKey    []byte
 	cookieEncryptionKey []byte
 }
 
-func NewAuthMiddleware(jwtService *JWTService, cookieSigningKey, cookieEncryptionKey []byte) *AuthMiddleware {
+func NewAuthMiddleware(
+	jwtService *JWTService,
+	cookieSigningKey, cookieEncryptionKey []byte,
+	kubernetesMananger *kubernetes.Manager,
+) *AuthMiddleware {
 	return &AuthMiddleware{
 		jwtService:          jwtService,
 		cookieSigningKey:    cookieSigningKey,
 		cookieEncryptionKey: cookieEncryptionKey,
+		kubernetesMananger:  kubernetesMananger,
 	}
 }
 

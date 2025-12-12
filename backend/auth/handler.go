@@ -49,14 +49,16 @@ type AuthHandler struct {
 	jwtService          *JWTService
 	cookieSigningKey    []byte
 	cookieEncryptionKey []byte
+	sessionStore        session.Store
 }
 
-func NewAuthHandler(oidc OIDCProvider, jwtService *JWTService, cookieSigningKey, cookieEncryptionKey []byte) *AuthHandler {
+func NewAuthHandler(oidc OIDCProvider, jwtService *JWTService, cookieSigningKey, cookieEncryptionKey []byte, sessionStore session.Store) *AuthHandler {
 	return &AuthHandler{
 		oidc:                oidc,
 		jwtService:          jwtService,
 		cookieSigningKey:    cookieSigningKey,
 		cookieEncryptionKey: cookieEncryptionKey,
+		sessionStore:        sessionStore,
 	}
 }
 
@@ -181,6 +183,13 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
+	// Set session expiration and store in middleware
+	err = ah.sessionStore.Save(sessionState)
+	if err != nil {
+		logger.Error(err, "failed to save session state")
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
 
 	// Detect client type from redirect URL or user agent
 	clientType := authCode.ClientType
@@ -224,6 +233,7 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 
 	// UI flow - set cookie and redirect to UI
 	cookieName := ah.generateCookieName(authCode.ClusterID)
+
 	s := securecookie.New(ah.cookieSigningKey, ah.cookieEncryptionKey)
 	encoded, err := s.Encode(cookieName, sessionState)
 	if err != nil {
@@ -289,7 +299,7 @@ func (ah *AuthHandler) createSessionState(authCode *AuthorizeRequest, token *oau
 		return nil, fmt.Errorf("failed to parse ID token: %w", err)
 	}
 
-	return &session.State{
+	s := &session.State{
 		Token: session.TokenInfo{
 			Subject: idToken.Subject,
 			Issuer:  idToken.Issuer,
@@ -297,7 +307,9 @@ func (ah *AuthHandler) createSessionState(authCode *AuthorizeRequest, token *oau
 		SessionID:   authCode.SessionID,
 		ClusterID:   authCode.ClusterID,
 		RedirectURL: authCode.RedirectURL,
-	}, nil
+	}
+	s.SetExpiration(time.Hour)
+	return s, nil
 }
 
 func (ah *AuthHandler) unwrapJWT(p string) ([]byte, error) {

@@ -21,13 +21,16 @@ import (
 	"fmt"
 	"strings"
 
+	authzv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	authorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -239,4 +242,47 @@ func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk 
 	}
 
 	return list, nil
+}
+
+func (m *Manager) AuthorizeRequest(ctx context.Context, subject, cluster, method, path string) error {
+	logger := klog.FromContext(ctx).WithValues("subject", subject, "cluster", cluster, "method", method, "path", path)
+
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	cfg := cl.GetConfig()
+
+	// Create the authorization clientset
+	authClient, err := authorizationv1.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
+
+	// Check if user has access to create pods (basic permission test)
+	sar := &authzv1.SubjectAccessReview{
+		Spec: authzv1.SubjectAccessReviewSpec{
+			User:   subject,
+			Groups: []string{subject, "system:authenticated"},
+			ResourceAttributes: &authzv1.ResourceAttributes{
+				Verb:  "bind",
+				Group: "kube-bind.io",
+			},
+		},
+	}
+	// Perform the SubjectAccessReview using the specific clientset
+	sarResponse, err := authClient.SubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+	if err != nil {
+		logger.Error(err, "Failed to create SubjectAccessReview")
+		return err
+	}
+
+	if sarResponse.Status.Allowed {
+		logger.Info("User is allowed to bind", "user", subject)
+		// Proceed with your controller logic
+	} else {
+		logger.Info("User is not allowed to bind", "user", subject, "reason", sarResponse.Status)
+		return fmt.Errorf("user %q is not allowed to bind: %s", subject, sarResponse.Status.Reason)
+	}
+	return nil
 }

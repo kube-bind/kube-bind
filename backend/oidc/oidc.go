@@ -56,6 +56,20 @@ func New(caBundleFile string, listener net.Listener, addrOverride string) (*Serv
 		return nil, fmt.Errorf("failed to create mock OIDC server: %w", err)
 	}
 	s.server = server
+
+	// Set default user for embedded OIDC server
+	user := &mockoidc.MockUser{
+		Subject:           "kube-bind-embedded-user",
+		Email:             "embedded@kube-bind.io",
+		PreferredUsername: "kube-bind",
+		Phone:             "+1234567890",
+		Address:           "123 Kube St, Bind City, KB 12345",
+		Groups:            []string{"engineering", "devops"},
+		EmailVerified:     true,
+	}
+
+	server.UserQueue.Push(user)
+
 	return s, nil
 }
 

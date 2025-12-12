@@ -30,6 +30,10 @@ spec:
   - resource: secrets
     verbs:
     - '*'
+  - group: authorization.k8s.io
+    resource: subjectaccessreviews
+    verbs:
+    - '*'
   - resource: namespaces
     verbs:
     - '*'

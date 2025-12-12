@@ -35,6 +35,7 @@ import (
 	"github.com/kube-bind/kube-bind/backend/client"
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
 	"github.com/kube-bind/kube-bind/backend/oidc"
+	"github.com/kube-bind/kube-bind/backend/session"
 	"github.com/kube-bind/kube-bind/backend/spaserver"
 	bindversion "github.com/kube-bind/kube-bind/pkg/version"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -86,11 +87,13 @@ func NewHandler(
 		return nil, fmt.Errorf("failed to create JWT service: %w", err)
 	}
 
-	// Create auth handler with OIDC provider
-	authHandler := auth.NewAuthHandler(oidcProvider, jwtService, cookieSigningKey, cookieEncryptionKey)
+	sessionStore := session.NewInMemoryStore()
 
 	// Create auth middleware for request authentication
-	authMiddleware := auth.NewAuthMiddleware(jwtService, cookieSigningKey, cookieEncryptionKey, mgr)
+	authMiddleware := auth.NewAuthMiddleware(jwtService, cookieSigningKey, cookieEncryptionKey, mgr, sessionStore)
+
+	// Create auth handler with OIDC provider
+	authHandler := auth.NewAuthHandler(oidcProvider, jwtService, cookieSigningKey, cookieEncryptionKey, sessionStore)
 
 	return &handler{
 		oidcProvider:        oidcProvider,

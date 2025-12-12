@@ -27,7 +27,7 @@ helm install crossplane crossplane-stable/crossplane \
   --create-namespace
 ```
 
-2. **Install a Crossplane provider-sql and set up the ProviderConfig.**
+2. **Install a Crossplane provider-sql**
 
    In the example, we will set up mysql database:
 
@@ -38,39 +38,30 @@ kind: Provider
 metadata:
     name: provider-sql
 spec:
-    package: xpkg.upbound.io/crossplane-contrib/provider-sql:v0.12.0
+    package: xpkg.upbound.io/crossplane-contrib/provider-sql:v0.13.0
 EOF
 ```
 
-
-    Create a secret and ProviderConfig:
+Deploy also Crossplane function for Go templating:
 
 ```yaml
 kubectl apply -f - <<EOF
-apiVersion: mysql.sql.m.crossplane.io/v1alpha1
-kind: ProviderConfig
+apiVersion: pkg.crossplane.io/v1
+kind: Function
 metadata:
-  name: mysql-cfg
-  namespace: default
+  name: function-go-templating
 spec:
-  credentials:
-    source: MySQLConnectionSecret
-    connectionSecretRef:
-      name: db-conn
-  tls: preferred
+  package: xpkg.crossplane.io/crossplane-contrib/function-go-templating:v0.9.2
 EOF
 ```
 
-```bash
-kubectl create secret generic db-conn --from-literal endpoint=mysql.default.svc.cluster.local --from-literal port=3306 --from-literal username=root --from-literal password=password
-```
 
 3. **Setup the mysql deployment in the provider cluster**
 
     Create and setup Deployment, PersistentVolume, PersistentVolumeClaim and Service for MySQL instance
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/cnvergence/crossplane-kube-bind-setup/refs/heads/main/mysql.yaml
+kubectl apply -f examples/crossplane/mysql.yaml
 ```
 
 4. **Create a Crossplane XRD and Composition for a managed MySQL database**
@@ -116,11 +107,11 @@ spec:
               connectionSecret:
                 description: Name of the connection secret
                 type: string
-
 EOF
 ```
 
 ```yaml
+kubectl apply -f - <<EOF
 apiVersion: apiextensions.crossplane.io/v1
 kind: Composition
 metadata:

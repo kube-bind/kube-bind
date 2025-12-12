@@ -1,0 +1,7 @@
+apiVersion: mangodb.com/v1
+kind: MySQLDatabase
+metadata:
+  name: consumer-database
+  namespace: default
+spec:
+  name: consumer-database

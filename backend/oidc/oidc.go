@@ -47,18 +47,8 @@ func New(caBundleFile string, listener net.Listener, addrOverride string) (*Serv
 		s.tlsConfig = tlsConfig
 	}
 
-	server, err := mockoidc.NewServer(&mockoidc.ServerConfig{
-		TLSConfig:    tlsConfig,
-		Listener:     listener,
-		AddrOverride: addrOverride,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create mock OIDC server: %w", err)
-	}
-	s.server = server
-
-	// Set default user for embedded OIDC server
-	user := &mockoidc.MockUser{
+	statisUserProvider := NewStaticUserProvider()
+	statisUserProvider.Set(&mockoidc.MockUser{
 		Subject:           "kube-bind-embedded-user",
 		Email:             "embedded@kube-bind.io",
 		PreferredUsername: "kube-bind",
@@ -66,9 +56,18 @@ func New(caBundleFile string, listener net.Listener, addrOverride string) (*Serv
 		Address:           "123 Kube St, Bind City, KB 12345",
 		Groups:            []string{"engineering", "devops"},
 		EmailVerified:     true,
-	}
+	})
 
-	server.UserQueue.Push(user)
+	server, err := mockoidc.NewServer(&mockoidc.ServerConfig{
+		TLSConfig:    tlsConfig,
+		Listener:     listener,
+		AddrOverride: addrOverride,
+		UserProvider: statisUserProvider,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create mock OIDC server: %w", err)
+	}
+	s.server = server
 
 	return s, nil
 }

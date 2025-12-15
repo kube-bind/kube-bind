@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	componentbaseversion "k8s.io/component-base/version"
@@ -47,6 +48,36 @@ var noCacheHeaders = map[string]string{
 	"Expires":         time.Unix(0, 0).Format(time.RFC1123),
 	"Cache-Control":   "no-cache, no-store, must-revalidate, max-age=0",
 	"X-Accel-Expires": "0", // https://www.nginx.com/resources/wiki/start/topics/examples/x-accel/
+}
+
+// writeErrorResponse writes a structured error response to the HTTP response writer
+func writeErrorResponse(w http.ResponseWriter, statusCode int, code, message, details string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	errorResponse := kubebindv1alpha2.NewError(code, message, details)
+	if err := json.NewEncoder(w).Encode(errorResponse); err != nil {
+		// Fallback to plain text if JSON encoding fails
+		http.Error(w, message, statusCode)
+	}
+}
+
+// mapErrorToCode maps common errors to structured error codes
+func mapErrorToCode(err error) (statusCode int, code string, details string) {
+	if apierrors.IsNotFound(err) {
+		return http.StatusNotFound, kubebindv1alpha2.ErrorCodeResourceNotFound, err.Error()
+	}
+	if apierrors.IsUnauthorized(err) {
+		return http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, err.Error()
+	}
+	if apierrors.IsForbidden(err) {
+		return http.StatusForbidden, kubebindv1alpha2.ErrorCodeAuthorizationFailed, err.Error()
+	}
+	if apierrors.IsBadRequest(err) {
+		return http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, err.Error()
+	}
+	// Default to internal server error
+	return http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, err.Error()
 }
 
 type handler struct {
@@ -242,7 +273,7 @@ func (h *handler) handleServiceExport(w http.ResponseWriter, r *http.Request) {
 	bs, err := json.Marshal(provider)
 	if err != nil {
 		logger.Error(err, "failed to marshal provider")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to marshal provider information", err.Error())
 		return
 	}
 
@@ -258,7 +289,7 @@ func (h *handler) handleTemplates(w http.ResponseWriter, r *http.Request) {
 	authenticated := auth.GetAuthContext(r.Context()).IsValid
 	if !authenticated {
 		logger.Info("unauthenticated request to get templates")
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Valid authentication credentials are required to access templates")
 		return
 	}
 
@@ -267,8 +298,8 @@ func (h *handler) handleTemplates(w http.ResponseWriter, r *http.Request) {
 	templates, err := h.listTemplates(r.Context(), params.ClusterID)
 	if err != nil {
 		logger.Error(err, "failed to get template resources")
-		http.Error(w, "internal error", http.StatusInternalServerError)
-
+		statusCode, code, details := mapErrorToCode(err)
+		writeErrorResponse(w, statusCode, code, "Failed to retrieve templates", details)
 		return
 	}
 
@@ -276,7 +307,7 @@ func (h *handler) handleTemplates(w http.ResponseWriter, r *http.Request) {
 	// For UI, return direct result as before
 	if err := json.NewEncoder(w).Encode(templates); err != nil {
 		logger.Error(err, "failed to encode JSON response")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to encode response", err.Error())
 	}
 }
 
@@ -290,7 +321,8 @@ func (h *handler) handleCollections(w http.ResponseWriter, r *http.Request) {
 	collections, err := h.listCollections(r.Context(), params.ClusterID)
 	if err != nil {
 		logger.Error(err, "failed to get collection resources")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		statusCode, code, details := mapErrorToCode(err)
+		writeErrorResponse(w, statusCode, code, "Failed to retrieve collections", details)
 		return
 	}
 
@@ -298,7 +330,7 @@ func (h *handler) handleCollections(w http.ResponseWriter, r *http.Request) {
 	// For UI, return direct result as before
 	if err := json.NewEncoder(w).Encode(collections); err != nil {
 		logger.Error(err, "failed to encode JSON response")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to encode response", err.Error())
 	}
 }
 
@@ -315,7 +347,8 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, params.ClusterID)
 	if err != nil {
 		logger.Error(err, "failed to handle resources")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		statusCode, code, details := mapErrorToCode(err)
+		writeErrorResponse(w, statusCode, code, "Failed to handle cluster resources", details)
 		return
 	}
 
@@ -327,9 +360,9 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		logger.Error(err, "failed to parse JSON request body")
 		var maxBytesError *http.MaxBytesError
 		if errors.As(err, &maxBytesError) {
-			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			writeErrorResponse(w, http.StatusRequestEntityTooLarge, kubebindv1alpha2.ErrorCodeBadRequest, "Request body too large", "The request body exceeds the maximum allowed size")
 		} else {
-			http.Error(w, "invalid JSON request body", http.StatusBadRequest)
+			writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Invalid JSON request body", err.Error())
 		}
 		return
 	}
@@ -338,7 +371,8 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	template, err := h.kubeManager.GetTemplates(r.Context(), params.ClusterID, bindRequest.TemplateRef.Name)
 	if err != nil {
 		logger.Error(err, "failed to get template", "template", bindRequest.TemplateRef.Name, "cluster", params.ClusterID)
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		statusCode, code, details := mapErrorToCode(err)
+		writeErrorResponse(w, statusCode, code, "Failed to retrieve template", details)
 		return
 	}
 
@@ -361,7 +395,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	requestBytes, err := json.Marshal(&request)
 	if err != nil {
 		logger.Error(err, "failed to marshal request")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to marshal request", err.Error())
 		return
 	}
 
@@ -383,7 +417,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	payload, err := json.Marshal(&response)
 	if err != nil {
 		logger.Error(err, "failed to marshal binding response")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to marshal binding response", err.Error())
 		return
 	}
 
@@ -418,7 +452,7 @@ func (h *handler) handleBindableResources(w http.ResponseWriter, r *http.Request
 	bs, err := json.Marshal(&kubebindv1alpha2.ClaimableAPIs)
 	if err != nil {
 		logger.Error(err, "failed to marshal resources")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to marshal bindable resources", err.Error())
 		return
 	}
 

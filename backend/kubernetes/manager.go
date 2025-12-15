@@ -262,8 +262,7 @@ func (m *Manager) AuthorizeRequest(ctx context.Context, subject, cluster, method
 	// Check if user has access to create pods (basic permission test)
 	sar := &authzv1.SubjectAccessReview{
 		Spec: authzv1.SubjectAccessReviewSpec{
-			User:   subject,
-			Groups: []string{subject, "system:authenticated"},
+			User: subject,
 			ResourceAttributes: &authzv1.ResourceAttributes{
 				Verb:  "bind",
 				Group: "kube-bind.io",
@@ -282,7 +281,12 @@ func (m *Manager) AuthorizeRequest(ctx context.Context, subject, cluster, method
 		// Proceed with your controller logic
 	} else {
 		logger.Info("User is not allowed to bind", "user", subject, "reason", sarResponse.Status)
-		return fmt.Errorf("user %q is not allowed to bind: %s", subject, sarResponse.Status.Reason)
+		// Return a structured authorization error
+		return errors.NewForbidden(
+			schema.GroupResource{Group: "kube-bind.io", Resource: "bind"},
+			"",
+			fmt.Errorf("user %q is not authorized to bind resources: %s", subject, sarResponse.Status.Reason),
+		)
 	}
 	return nil
 }

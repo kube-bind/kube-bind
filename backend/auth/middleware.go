@@ -24,10 +24,12 @@ import (
 	"time"
 
 	"github.com/gorilla/securecookie"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
 	"github.com/kube-bind/kube-bind/backend/session"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type contextKey string
@@ -55,6 +57,36 @@ type AuthMiddleware struct {
 	cookieSigningKey    []byte
 	cookieEncryptionKey []byte
 	sessionStore        session.Store
+}
+
+// writeErrorResponse writes a structured error response to the HTTP response writer
+func writeErrorResponse(w http.ResponseWriter, statusCode int, code, message, details string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	errorResponse := kubebindv1alpha2.NewError(code, message, details)
+	if err := json.NewEncoder(w).Encode(errorResponse); err != nil {
+		// Fallback to plain text if JSON encoding fails
+		http.Error(w, message, statusCode)
+	}
+}
+
+// mapErrorToCode maps common errors to structured error codes
+func mapErrorToCode(err error) (statusCode int, code string, details string) {
+	if apierrors.IsNotFound(err) {
+		return http.StatusNotFound, kubebindv1alpha2.ErrorCodeResourceNotFound, err.Error()
+	}
+	if apierrors.IsUnauthorized(err) {
+		return http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, err.Error()
+	}
+	if apierrors.IsForbidden(err) {
+		return http.StatusForbidden, kubebindv1alpha2.ErrorCodeAuthorizationFailed, err.Error()
+	}
+	if apierrors.IsBadRequest(err) {
+		return http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, err.Error()
+	}
+	// Default to internal server error
+	return http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, err.Error()
 }
 
 func NewAuthMiddleware(
@@ -141,7 +173,7 @@ func (am *AuthMiddleware) verifyState(next http.Handler) http.Handler {
 		authCtx := GetAuthContext(r.Context())
 		if authCtx.SessionState == nil {
 			logger.V(2).Info("No session state found in auth context")
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "No valid session found")
 			return
 		}
 
@@ -177,7 +209,7 @@ func (am *AuthMiddleware) authorizeK8S(next http.Handler) http.Handler {
 		authCtx := GetAuthContext(r.Context())
 		if !authCtx.IsValid { // should not happen if AuthenticateRequest is used before
 			logger.V(2).Info("Authentication context is not valid")
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Authentication context is not valid")
 			return
 		}
 
@@ -185,7 +217,8 @@ func (am *AuthMiddleware) authorizeK8S(next http.Handler) http.Handler {
 		err := am.kubernetesMananger.AuthorizeRequest(r.Context(), authCtx.SessionState.Token.Subject, authCtx.SessionState.ClusterID, r.Method, r.URL.Path)
 		if err != nil {
 			logger.V(2).Info("Kubernetes RBAC authorization failed", "error", err)
-			http.Error(w, "cluster does not have required permissions to bind", http.StatusForbidden)
+			statusCode, code, details := mapErrorToCode(err)
+			writeErrorResponse(w, statusCode, code, "Cluster authorization failed. Missing required permissions in the cluster to access bindings.", details)
 			return
 		}
 
@@ -205,14 +238,9 @@ func RequireAuth(next http.Handler) http.Handler {
 		authCtx := GetAuthContext(r.Context())
 		if !authCtx.IsValid {
 			if authCtx.ClientType == ClientTypeCLI {
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusUnauthorized)
-				err := json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized", "message": "Valid JWT token required"})
-				if err != nil {
-					http.Error(w, "internal error", http.StatusInternalServerError)
-				}
+				writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Valid JWT token required")
 			} else {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Valid authentication credentials required")
 			}
 			return
 		}

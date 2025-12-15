@@ -56,9 +56,9 @@ EOF
 ```
 
 
-3. **Setup the mysql deployment in the provider cluster**
+3. **Set up the mysql deployment in the provider cluster**
 
-    Create and setup Deployment, PersistentVolume, PersistentVolumeClaim and Service for MySQL instance
+    Create and set up Deployment, PersistentVolume, PersistentVolumeClaim and Service for MySQL instance
 
 ```bash
 kubectl apply -f examples/crossplane/mysql.yaml
@@ -287,7 +287,7 @@ Resources bound successfully!
 ```
 
 8. **Create a managed database in your consumer cluster.**
-    Verify that mysqldatabase.mongodb.com CRD is synced to the consumer cluster:
+    Verify that mysqldatabases.mangodb.com CRD is synced to the consumer cluster:
 ```bash
 k get crd mysqldatabases.mangodb.com
 NAME                         CREATED AT
@@ -312,8 +312,8 @@ EOF
 ```bash
 kubectl get mysqldatabases.mangodb.com kube-bind-bp52k-consumer-database
 
-NAME                                SYNCED   READY   COMPOSITION                        AGE
-kube-bind-bp52k-default             True     True    mysql-database-simple              18m
+NAME                                           SYNCED   READY   COMPOSITION                        AGE
+kube-bind-bp52k-consumer-database              True     True    mysql-database-simple              18m
 ```
 
 ```bash
@@ -385,7 +385,7 @@ status:
   ready: true
 ```
 
-You should see your MySQL instance created in the provider cluster and a secret with connection details, once Crossplane finish up provisioning of the database.
+You should see your MySQL instance created in the provider cluster and a secret with connection details, once Crossplane finishes provisioning of the database.
 
 Observe that the requested secret with connection details for user is synced to consumer cluster.
 

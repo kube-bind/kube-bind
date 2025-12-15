@@ -15,7 +15,7 @@ weight: 10
 kubectl label crd certificates.cert-manager.io kube-bind.io/exported=true --overwrite
 ```
 
-2. **Create SelfSigned issuer** in the provider cluster.
+3. **Create SelfSigned issuer** in the provider cluster.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -28,7 +28,7 @@ spec:
 EOF
 ```
 
-2. **Create a `kube-bind` template for `Certificate` resources** to allow service consumers to request TLS certificates. Below is an example template:
+4. **Create a `kube-bind` template for `Certificate` resources** to allow service consumers to request TLS certificates. Below is an example template:
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -57,7 +57,7 @@ spec:
 EOF
 ```
 
-3. **Login into the kube-bind CLI** and request a binding to the `certificate` template created above. This will allow you to create `Certificate` resources in your consumer cluster.
+5. **Login into the kube-bind CLI** and request a binding to the `certificate` template created above. This will allow you to create `Certificate` resources in your consumer cluster.
 
 ```bash
 kubectl bind login https://kube-bind.example.com
@@ -65,7 +65,7 @@ kubectl bind login https://kube-bind.example.com
 kubectl bind
 ```
 
-4. **Wait for the binding to be established.** Once the binding is active, you can create `Certificate` resources in your consumer cluster, and you will get `Certificate` objects synced from the provider cluster.
+6. **Wait for the binding to be established.** Once the binding is active, you can create `Certificate` resources in your consumer cluster, and you will get `Certificate` objects synced from the provider cluster.
 
 ```bash
 kubectl bind
@@ -87,7 +87,7 @@ Created 1 APIServiceBinding(s):
 Resources bound successfully!
 ```
 
-5. **Create a `Certificate` resource** in your consumer cluster. The cert-manager in the provider cluster will handle the issuance and management of the TLS certificate.
+7. **Create a `Certificate` resource** in your consumer cluster. The cert-manager in the provider cluster will handle the issuance and management of the TLS certificate.
 
 !!! note
         my-selfsigned-issuer must be present in the provider cluster for this example to work.
@@ -109,7 +109,7 @@ spec:
 EOF
 ```
 
-6. Observe that the `Certificate` resource is created in the consumer cluster and the corresponding TLS secret is generated.
+8. Observe that the `Certificate` resource is created in the consumer cluster and the corresponding TLS secret is generated.
 
 ```bash
 kubectl get certificates

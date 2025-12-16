@@ -34,6 +34,8 @@ type Interface interface {
 	APIServiceNamespaces() APIServiceNamespaceInformer
 	// BoundSchemas returns a BoundSchemaInformer.
 	BoundSchemas() BoundSchemaInformer
+	// Clusters returns a ClusterInformer.
+	Clusters() ClusterInformer
 	// ClusterBindings returns a ClusterBindingInformer.
 	ClusterBindings() ClusterBindingInformer
 	// Collections returns a CollectionInformer.
@@ -74,6 +76,11 @@ func (v *version) APIServiceNamespaces() APIServiceNamespaceInformer {
 // BoundSchemas returns a BoundSchemaInformer.
 func (v *version) BoundSchemas() BoundSchemaInformer {
 	return &boundSchemaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Clusters returns a ClusterInformer.
+func (v *version) Clusters() ClusterInformer {
+	return &clusterInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // ClusterBindings returns a ClusterBindingInformer.

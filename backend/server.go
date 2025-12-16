@@ -29,6 +29,7 @@ import (
 	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kube-bind/kube-bind/backend/auth"
+	"github.com/kube-bind/kube-bind/backend/controllers/cluster"
 	"github.com/kube-bind/kube-bind/backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexport"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexportrequest"
@@ -55,6 +56,7 @@ type Controllers struct {
 	ServiceExport        *serviceexport.APIServiceExportReconciler
 	ServiceExportRequest *serviceexportrequest.APIServiceExportRequestReconciler
 	ServiceNamespace     *servicenamespace.APIServiceNamespaceReconciler
+	Cluster              *cluster.ClusterReconciler
 }
 
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
@@ -185,6 +187,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	if err := s.ServiceNamespace.SetupWithManager(s.Config.Manager); err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceNamespace controller with manager: %w", err)
 	}
+
 	s.ServiceExportRequest, err = serviceexportrequest.NewAPIServiceExportRequestReconciler(
 		ctx,
 		s.Config.Manager,
@@ -196,10 +199,21 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest Controller: %w", err)
 	}
-
-	// Register the ServiceExportRequest controller with the manager
 	if err := s.ServiceExportRequest.SetupWithManager(s.Config.Manager); err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest controller with manager: %w", err)
+	}
+
+	s.Cluster, err = cluster.NewClusterReconciler(
+		ctx,
+		s.Config.Manager,
+		opts,
+		c.Options.OIDC.Type == kubebindv1alpha2.OIDCProviderTypeEmbedded,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error setting up LogicalCluster Controller: %w", err)
+	}
+	if err := s.Cluster.SetupWithManager(s.Config.Manager); err != nil {
+		return nil, fmt.Errorf("error setting up LogicalCluster controller with manager: %w", err)
 	}
 
 	return s, nil

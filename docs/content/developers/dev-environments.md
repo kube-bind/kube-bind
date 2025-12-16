@@ -55,7 +55,6 @@ All the instructions assume you have already cloned the kube-bind repository and
 
     ./bin/backend \
     --multicluster-runtime-provider kcp \
-    --server-url=$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}") \
     --oidc-issuer-url=http://127.0.0.1:8080/oidc \
     --oidc-callback-url=http://127.0.0.1:8080/api/callback \
     --oidc-type=embedded \

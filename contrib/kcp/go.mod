@@ -9,35 +9,24 @@ replace (
 	github.com/kube-bind/kube-bind/web => ../../web
 )
 
-// kcp pinned to a commit on main as sdk/testing requires
-// features not in the latest release
-// Can use versioned when v0.28.2 releases
-replace github.com/kcp-dev/kcp/sdk => github.com/kcp-dev/kcp/sdk v0.28.1-0.20251003164010-742ce0ea6b8c
-
-// k/k 1.34 is leaking from main repo. This pins some deps to force dependency tree to be on 1.34
-replace (
-	github.com/google/gnostic-models => github.com/google/gnostic-models v0.6.9
-	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff
-	sigs.k8s.io/kustomize/api => sigs.k8s.io/kustomize/api v0.19.0 // indirect
-	sigs.k8s.io/kustomize/kyaml => sigs.k8s.io/kustomize/kyaml v0.19.0 // indirect
-)
+replace github.com/kcp-dev/kcp => github.com/kcp-dev/kcp v0.0.0-20251211081525-180afa9d0125
 
 require (
-	github.com/kcp-dev/client-go v0.0.0-20250728134101-0355faa9361b
+	github.com/kcp-dev/client-go v0.28.1-0.20251112153209-b37f4c1ff9a2
 	github.com/kcp-dev/kcp v0.28.3
-	github.com/kcp-dev/kcp/sdk v0.28.1
+	github.com/kcp-dev/kcp/sdk v0.28.3
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5
 	github.com/kube-bind/kube-bind v0.0.0-00010101000000-000000000000
 	github.com/kube-bind/kube-bind/cli v0.0.0-20250515145715-d9f20e7c840d
 	github.com/kube-bind/kube-bind/sdk v0.4.1
 	github.com/spf13/pflag v1.0.9
 	github.com/stretchr/testify v1.11.1
-	k8s.io/apiextensions-apiserver v0.34.0
-	k8s.io/apimachinery v0.34.0
-	k8s.io/apiserver v0.34.0
+	k8s.io/apiextensions-apiserver v0.34.2
+	k8s.io/apimachinery v0.34.2
+	k8s.io/apiserver v0.34.2
 	k8s.io/cli-runtime v0.34.0
-	k8s.io/client-go v0.34.0
-	k8s.io/component-base v0.34.0
+	k8s.io/client-go v0.34.2
+	k8s.io/component-base v0.34.2
 	k8s.io/klog/v2 v2.130.1
 )
 
@@ -78,7 +67,6 @@ require (
 	github.com/google/cel-go v0.26.0 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
@@ -89,9 +77,10 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250728122101-adbf20db3e51 // indirect
+	github.com/kcp-dev/apimachinery/v2 v2.29.1-0.20251209121225-cf3c0b624983 // indirect
 	github.com/kcp-dev/kcp/pkg/apis v0.11.0 // indirect
-	github.com/kcp-dev/multicluster-provider v0.2.1-0.20251002133408-9a8d21dc2872 // indirect
+	github.com/kcp-dev/multicluster-provider v0.3.3 // indirect
+	github.com/kcp-dev/sdk v0.28.1-0.20251209130449-436a0347809b // indirect
 	github.com/kube-bind/kube-bind/web v0.0.0-00010101000000-000000000000 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
@@ -137,15 +126,15 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.45.0 // indirect
-	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
-	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sync v0.18.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/term v0.37.0 // indirect
-	golang.org/x/text v0.31.0 // indirect
-	golang.org/x/time v0.12.0 // indirect
+	golang.org/x/crypto v0.46.0 // indirect
+	golang.org/x/exp v0.0.0-20251125195548-87e1e737ad39 // indirect
+	golang.org/x/net v0.48.0 // indirect
+	golang.org/x/oauth2 v0.34.0 // indirect
+	golang.org/x/sync v0.19.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/term v0.38.0 // indirect
+	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/time v0.14.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb // indirect
@@ -155,17 +144,18 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.34.0 // indirect
+	k8s.io/api v0.34.2 // indirect
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b // indirect
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 // indirect
-	sigs.k8s.io/controller-runtime v0.21.0 // indirect
+	sigs.k8s.io/controller-runtime v0.22.4 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/kustomize/api v0.20.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.20.1 // indirect
-	sigs.k8s.io/multicluster-runtime v0.21.0-alpha.9.0.20251002124257-36facc7fbe82 // indirect
+	sigs.k8s.io/multicluster-runtime v0.22.4-beta.1 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 

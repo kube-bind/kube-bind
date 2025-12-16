@@ -24,13 +24,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/kube-bind/kube-bind/backend/oidc"
-)
-
-type OIDCType string
-
-const (
-	OIDCTypeEmbedded OIDCType = "embedded"
-	OIDCTypeExternal OIDCType = "external"
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 type OIDC struct {
@@ -49,7 +43,7 @@ type OIDC struct {
 
 func NewOIDC() *OIDC {
 	return &OIDC{
-		Type: string(OIDCTypeExternal),
+		Type: string(kubebindv1alpha2.OIDCProviderTypeExternal),
 	}
 }
 
@@ -64,7 +58,7 @@ func (options *OIDC) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (options *OIDC) Complete(listener net.Listener) error {
-	if options.Type == string(OIDCTypeEmbedded) {
+	if options.Type == string(kubebindv1alpha2.OIDCProviderTypeEmbedded) {
 		oidcServer, err := oidc.New(options.CAFile, listener, options.IssuerURL)
 		if err != nil {
 			return err

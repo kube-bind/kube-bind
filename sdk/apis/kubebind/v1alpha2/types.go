@@ -14,4 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package v1alpha2
+
+const (
+	// OIDCProviderTypeEmbedded represents an embedded OIDC provider managed by kube-bind.
+	OIDCProviderTypeEmbedded = "embedded"
+	// OIDCProviderTypeExternal represents an external OIDC provider managed outside of kube-bind.
+	OIDCProviderTypeExternal = "external"
+)

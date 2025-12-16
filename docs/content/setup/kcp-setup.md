@@ -29,6 +29,7 @@ export KUBECONFIG=.kcp/provider.kubeconfig
 kubectl ws create provider --enter
 
 kubectl apply -f deploy/crd
+kubectl apply -f deploy/config/cluster.yaml
 ```
 
 Apply example manifests:
@@ -52,8 +53,7 @@ bin/backend \
   --oidc-type=embedded \
   --pretty-name="BigCorp.com" \
   --namespace-prefix="kube-bind-" \
-  --consumer-scope=cluster \
-  --frontend=http://localhost:3000
+  --consumer-scope=cluster
 ```
 
 This process will keep running, so open a new terminal.

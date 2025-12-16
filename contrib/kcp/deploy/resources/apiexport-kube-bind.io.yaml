@@ -92,6 +92,11 @@ spec:
     storage:
       crd: {}
   - group: kube-bind.io
+    name: clusters
+    schema: v251215-7d342944.clusters.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
     name: collections
     schema: v251106-640871f.collections.kube-bind.io
     storage:

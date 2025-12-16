@@ -29,7 +29,6 @@ export KUBECONFIG=.kcp/provider.kubeconfig
 kubectl ws create provider --enter
 
 kubectl apply -f deploy/crd
-kubectl apply -f deploy/config/cluster.yaml
 ```
 
 Apply example manifests:

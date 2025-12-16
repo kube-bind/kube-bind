@@ -19,7 +19,6 @@ package kcp
 import (
 	"context"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/kcp-dev/logicalcluster/v3"
 	provider "github.com/kcp-dev/multicluster-provider/apiexport"
 	"github.com/kcp-dev/multicluster-provider/pkg/handlers"
@@ -116,15 +115,10 @@ func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.
 		Spec: kubebindv1alpha2.ClusterSpec{},
 	}
 
-	// TODO: Check if embedded and pre-create rbac
-	// TODO: add group support
-
 	err := cl.Create(ctx, obj)
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	}
-	spew.Dump("Created kube-bind Cluster object in logical cluster", logicalcluster.From(obj))
-
 	return a.Aware.Engage(ctx, name, cluster)
 }
 

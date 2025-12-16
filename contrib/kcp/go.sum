@@ -128,8 +128,6 @@ github.com/kcp-dev/client-go v0.0.0-20251211053925-0c25555f33dd h1:jFb6BJ1msx8hy
 github.com/kcp-dev/client-go v0.0.0-20251211053925-0c25555f33dd/go.mod h1:SWYbL1dVmUvLQ8DpcQq+tIH14R1i5e4wh1NTW4YaUYc=
 github.com/kcp-dev/kcp v0.0.0-20251211081525-180afa9d0125 h1:nu7sZ9EXtA94cyZ82iLE/30AgWIwhoat3uT+Dyikagc=
 github.com/kcp-dev/kcp v0.0.0-20251211081525-180afa9d0125/go.mod h1:wltrdBFiWiEu+IpM94pe8zl/Ubq4re5ENbEpjbfYfJI=
-github.com/kcp-dev/kcp/sdk v0.28.3 h1:TS2nJOVBjenBd3fz1+y3aNrqZWqmakalNAIcQM9SukQ=
-github.com/kcp-dev/kcp/sdk v0.28.3/go.mod h1:8oZpWxkoMu2TDpx5DgdIGDigByKHKkeqVMA4GiWneoI=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20251209073509-71e0f2506325 h1:xjt3y1Uw+x1LQbtBesGohvyoQ2YRzz4c0rv3BwG0vkA=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20251209073509-71e0f2506325/go.mod h1:3Y5V97lz2MrKYzHlUaXejkj+coCmqde9E9WwVFuWRXE=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/apiextensions-apiserver v0.0.0-20251209073509-71e0f2506325 h1:MmzvuhedtyTW49qG0VWf9X54OwaRslUk6KyC7vhsuI4=
@@ -150,8 +148,8 @@ github.com/kcp-dev/logicalcluster/v3 v3.0.5 h1:JbYakokb+5Uinz09oTXomSUJVQsqfxEvU
 github.com/kcp-dev/logicalcluster/v3 v3.0.5/go.mod h1:EWBUBxdr49fUB1cLMO4nOdBWmYifLbP1LfoL20KkXYY=
 github.com/kcp-dev/multicluster-provider v0.3.3 h1:wTu1Zbk6+kVlB/d/K9TM7KPjUEe/Dg8SYzKQsVDiDFY=
 github.com/kcp-dev/multicluster-provider v0.3.3/go.mod h1:4QGU39wyNztoYNatdWqbdOV6/R9ZzaIh4DdSj30dm9o=
-github.com/kcp-dev/sdk v0.28.1-0.20251209130449-436a0347809b h1:hPwN5SK3L5bx4Ymeb5NeYN0lqIXd+Xt1cAr3qcSlQxU=
-github.com/kcp-dev/sdk v0.28.1-0.20251209130449-436a0347809b/go.mod h1:kdlYfujcotSPrBzwtI6qrsNo4JQ+GB1o04buOfKUo2c=
+github.com/kcp-dev/sdk v0.0.0-20251210172228-11364df3071c h1:ZyBY4E+loLt7fsQ6uDovEJAu0DSDYrX/OUauMfFzcxQ=
+github.com/kcp-dev/sdk v0.0.0-20251210172228-11364df3071c/go.mod h1:IcSuKkvMTJ8Igt95mc0nERhsz/Wf+ECTYg2TKdncgOc=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=
@@ -171,6 +169,8 @@ github.com/mailru/easyjson v0.9.0 h1:PrnmzHw7262yW8sTBwxi1PdJA3Iw/EKBa8psRf7d9a4
 github.com/mailru/easyjson v0.9.0/go.mod h1:1+xMtQp2MRNVL/V1bOzuP3aP8VNwRW55fQUto+XFtTU=
 github.com/martinlindhe/base36 v1.1.1 h1:1F1MZ5MGghBXDZ2KJ3QfxmiydlWOGB8HCEtkap5NkVg=
 github.com/martinlindhe/base36 v1.1.1/go.mod h1:vMS8PaZ5e/jV9LwFKlm0YLnXl/hpOihiBxKkIoc3g08=
+github.com/mjudeikis/mockoidc v0.0.0-20251215121937-c75f164e38b5 h1:79Blv5YDyGQDi2qE2z4BJVoCJOU8vlkydvFqnBM3Wnc=
+github.com/mjudeikis/mockoidc v0.0.0-20251215121937-c75f164e38b5/go.mod h1:1S3+yz/sau3wSTpmFOwg+JmOudpq6KA6vTuvmP5VReM=
 github.com/moby/term v0.5.2 h1:6qk3FJAFDs6i/q3W/pQ97SX192qKfZgGjCQqfCJkgzQ=
 github.com/moby/term v0.5.2/go.mod h1:d3djjFCrjnB+fl8NJux+EJzu0msscUP+f8it8hPkFLc=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
@@ -247,8 +247,6 @@ github.com/xiang90/probing v0.0.0-20221125231312-a49e3df8f510 h1:S2dVYn90KE98chq
 github.com/xiang90/probing v0.0.0-20221125231312-a49e3df8f510/go.mod h1:UETIi67q53MR2AWcXfiuqkDkRtnGDLqkBTpCHuJHxtU=
 github.com/xlab/treeprint v1.2.0 h1:HzHnuAF1plUN2zGlAFHbSQP2qJ0ZAD3XF5XD7OesXRQ=
 github.com/xlab/treeprint v1.2.0/go.mod h1:gj5Gd3gPdKtR1ikdDK6fnFLdmIS0X30kTTuNd/WEJu0=
-github.com/xrstf/mockoidc v0.0.0-20251110222947-8618052ad848 h1:a+htA0+gdDXONEhY2dSCtz3AuUjbM6ZpRXl8qL0dC5I=
-github.com/xrstf/mockoidc v0.0.0-20251110222947-8618052ad848/go.mod h1:1S3+yz/sau3wSTpmFOwg+JmOudpq6KA6vTuvmP5VReM=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=

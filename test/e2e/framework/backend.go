@@ -46,6 +46,7 @@ func InstallKubeBindCRDs(t testing.TB, clientConfig *rest.Config) {
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "boundschemas"},
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiserviceexporttemplates"},
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "collections"},
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "clusters"},
 	)
 	require.NoError(t, err)
 }

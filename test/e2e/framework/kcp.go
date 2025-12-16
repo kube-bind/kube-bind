@@ -126,8 +126,14 @@ func NewWorkspace(t *testing.T, config *rest.Config, options ...ClusterWorkspace
 	for _, opt := range options {
 		opt(ws)
 	}
-	err = tenancyClient.Create(ctx, ws)
-	require.NoError(t, err)
+	// retry as on startup kcp might be busy
+	require.Eventually(t, func() bool {
+		err = tenancyClient.Create(ctx, ws)
+		if err != nil && !errors.IsAlreadyExists(err) {
+			return false
+		}
+		return true
+	}, wait.ForeverTestTimeout, time.Millisecond*100, "failed to create workspace %s", ws.Name)
 
 	ret := rest.CopyConfig(config)
 	ret.Host += ":" + ws.Name

@@ -1,7 +1,6 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
-  creationTimestamp: null
   name: v251215-7d342944.clusters.kube-bind.io
 spec:
   group: kube-bind.io

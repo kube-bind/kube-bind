@@ -224,8 +224,7 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 		},
 	}
 
-	switch options.Provider {
-	case "kcp":
+	if options.Provider == "kcp" {
 		opts, err := options.ProviderKcp.Complete()
 		if err != nil {
 			return nil, err
@@ -233,7 +232,6 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 		co.completedOptions.ProviderKcp = opts
 	}
 	return co, nil
-
 }
 
 func (options *CompletedOptions) Validate() error {

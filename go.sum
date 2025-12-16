@@ -128,8 +128,8 @@ github.com/kcp-dev/logicalcluster/v3 v3.0.5 h1:JbYakokb+5Uinz09oTXomSUJVQsqfxEvU
 github.com/kcp-dev/logicalcluster/v3 v3.0.5/go.mod h1:EWBUBxdr49fUB1cLMO4nOdBWmYifLbP1LfoL20KkXYY=
 github.com/kcp-dev/multicluster-provider v0.3.3 h1:wTu1Zbk6+kVlB/d/K9TM7KPjUEe/Dg8SYzKQsVDiDFY=
 github.com/kcp-dev/multicluster-provider v0.3.3/go.mod h1:4QGU39wyNztoYNatdWqbdOV6/R9ZzaIh4DdSj30dm9o=
-github.com/kcp-dev/sdk v0.28.1-0.20251209130449-436a0347809b h1:hPwN5SK3L5bx4Ymeb5NeYN0lqIXd+Xt1cAr3qcSlQxU=
-github.com/kcp-dev/sdk v0.28.1-0.20251209130449-436a0347809b/go.mod h1:kdlYfujcotSPrBzwtI6qrsNo4JQ+GB1o04buOfKUo2c=
+github.com/kcp-dev/sdk v0.0.0-20251210172228-11364df3071c h1:ZyBY4E+loLt7fsQ6uDovEJAu0DSDYrX/OUauMfFzcxQ=
+github.com/kcp-dev/sdk v0.0.0-20251210172228-11364df3071c/go.mod h1:IcSuKkvMTJ8Igt95mc0nERhsz/Wf+ECTYg2TKdncgOc=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zttxdo=

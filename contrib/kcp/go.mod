@@ -9,14 +9,19 @@ replace (
 	github.com/kube-bind/kube-bind/web => ../../web
 )
 
-replace github.com/kcp-dev/kcp => github.com/kcp-dev/kcp v0.0.0-20251211081525-180afa9d0125
+// kcp pre-release
+replace (
+	github.com/kcp-dev/client-go => github.com/kcp-dev/client-go v0.0.0-20251211053925-0c25555f33dd
+	github.com/kcp-dev/kcp => github.com/kcp-dev/kcp v0.0.0-20251211081525-180afa9d0125
+	github.com/kcp-dev/sdk => github.com/kcp-dev/sdk v0.0.0-20251210172228-11364df3071c
+)
 
-replace github.com/kcp-dev/client-go => github.com/kcp-dev/client-go v0.0.0-20251211053925-0c25555f33dd
+// https://github.com/xrstf/mockoidc/pull/3
+replace github.com/xrstf/mockoidc => github.com/mjudeikis/mockoidc v0.0.0-20251215121937-c75f164e38b5
 
 require (
 	github.com/kcp-dev/client-go v0.28.1-0.20251112153209-b37f4c1ff9a2
 	github.com/kcp-dev/kcp v0.0.0-00010101000000-000000000000
-	github.com/kcp-dev/kcp/sdk v0.28.3
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5
 	github.com/kcp-dev/sdk v0.28.1-0.20251209130449-436a0347809b
 	github.com/kube-bind/kube-bind v0.0.0-00010101000000-000000000000

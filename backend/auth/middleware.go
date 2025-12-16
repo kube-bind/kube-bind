@@ -179,13 +179,21 @@ func (am *AuthMiddleware) verifyState(next http.Handler) http.Handler {
 
 		state := authCtx.SessionState
 		// Validate session fields are present
-		if state.Token.Subject == "" || state.Token.Issuer == "" || state.SessionID == "" {
+		switch {
+		case state.Token.Subject == "" || state.Token.Issuer == "" || state.SessionID == "":
 			logger.V(2).Info("Invalid session state: missing required fields")
-		} else if state.IsExpired() {
+			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Invalid session state: missing required fields")
+			return
+		case state.IsExpired():
 			logger.V(2).Info("Session expired", "sessionID", state.SessionID)
-		} else if !am.isValidSession(state.SessionID) {
+			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Session has expired")
+			return
+		case !am.isValidSession(state.SessionID):
 			logger.V(2).Info("Session ID not found or expired", "sessionID", state.SessionID)
-		} else {
+			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Session ID not found or expired")
+			return
+		default:
+			// Session is valid
 			authCtx.IsValid = true
 		}
 		ctx := context.WithValue(r.Context(), AuthContextKey, authCtx)

@@ -290,3 +290,21 @@ func (m *Manager) AuthorizeRequest(ctx context.Context, subject, cluster, method
 	}
 	return nil
 }
+
+func (m *Manager) SeedDefaultCluster(ctx context.Context) error {
+	logger := klog.FromContext(ctx)
+
+	cl, err := m.manager.GetCluster(ctx, "")
+	if err != nil {
+		return err
+	}
+	c := cl.GetClient()
+
+	_, err = kuberesources.CreateDefaultCluster(ctx, c)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		logger.Error(err, "Failed to create default Cluster resource")
+		return err
+	}
+	logger.Info("Default Cluster resource ensured")
+	return nil
+}

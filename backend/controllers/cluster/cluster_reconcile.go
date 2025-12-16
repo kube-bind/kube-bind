@@ -19,7 +19,6 @@ package cluster
 import (
 	"context"
 
-	"github.com/davecgh/go-spew/spew"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,8 +38,6 @@ type reconciler struct {
 func (r *reconciler) reconcile(ctx context.Context, client client.Client, _ cache.Cache, cluster *kubebindv1alpha2.Cluster) error {
 	var errs []error
 
-	spew.Dump("Reconciling cluster:", cluster.Name)
-
 	if r.isEmbeddedOIDC {
 		if err := r.ensureEmbeddedOIDCRBAC(ctx, client, cluster); err != nil {
 			errs = append(errs, err)
@@ -54,12 +51,7 @@ func (r *reconciler) ensureEmbeddedOIDCRBAC(ctx context.Context, client client.C
 	if err := r.ensureEmbeddedUserClusterRole(ctx, client, cluster); err != nil {
 		return err
 	}
-
-	if err := r.ensureEmbeddedUserClusterRoleBinding(ctx, client, cluster); err != nil {
-		return err
-	}
-
-	return nil
+	return r.ensureEmbeddedUserClusterRoleBinding(ctx, client, cluster)
 }
 
 func (r *reconciler) ensureEmbeddedUserClusterRole(ctx context.Context, client client.Client, cluster *kubebindv1alpha2.Cluster) error {

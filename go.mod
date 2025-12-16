@@ -16,13 +16,14 @@ replace (
 	github.com/kube-bind/kube-bind/web => ./web
 )
 
-replace github.com/kcp-dev/kcp-multicluster-provider => github.com/mjudeikis/kcp-multicluster-provider v0.0.0-20250612123456-4c8214db4657
+// kcp pre-release
+replace github.com/kcp-dev/sdk => github.com/kcp-dev/sdk v0.0.0-20251210172228-11364df3071c
 
+// https://github.com/xrstf/mockoidc/pull/3
 replace github.com/xrstf/mockoidc => github.com/mjudeikis/mockoidc v0.0.0-20251215121937-c75f164e38b5
 
 require (
 	github.com/coreos/go-oidc/v3 v3.16.0
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/dexidp/dex/api/v2 v2.3.0
 	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/golang-jwt/jwt/v5 v5.3.0
@@ -74,6 +75,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
@@ -167,5 +169,3 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 )
-
-exclude google.golang.org/genproto v0.0.0-20220107163113-42d7afdf6368

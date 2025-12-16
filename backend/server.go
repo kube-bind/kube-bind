@@ -284,8 +284,24 @@ func (s *Server) Run(ctx context.Context) error {
 	}()
 
 	go func() {
+		// When using native k8s provider/singelton cluster - provider is set to nil
+		// so we need to seed the default cluster. If provider is set - it is provider responsibility
+		// to seed the default cluster in each managed cluster either via provider machinery or via provider
+		// wrapper (see kcp example).
+		if s.Config.Provider == nil {
+			if err := s.seedCluster(ctx); err != nil {
+				logger.Error(err, "Failed to seed default cluster")
+			}
+		}
+	}()
+
+	go func() {
 		<-ctx.Done()
 		logger.Info("Context done")
 	}()
 	return s.WebServer.Start(ctx)
+}
+
+func (s *Server) seedCluster(ctx context.Context) error {
+	return s.Kubernetes.SeedDefaultCluster(ctx)
 }

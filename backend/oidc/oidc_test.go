@@ -23,7 +23,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kcp-dev/kcp/sdk/testing/third_party/library-go/crypto"
+	"github.com/kcp-dev/sdk/testing/third_party/library-go/crypto"
 	"github.com/xrstf/mockoidc"
 )
 

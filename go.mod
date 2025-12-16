@@ -30,8 +30,6 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/headzoo/surf v1.0.1
-	github.com/kcp-dev/kcp/pkg/apis v0.11.0
-	github.com/kcp-dev/kcp/sdk v0.28.1
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5
 	github.com/kcp-dev/multicluster-provider v0.3.3
 	github.com/kcp-dev/sdk v0.28.1-0.20251209130449-436a0347809b

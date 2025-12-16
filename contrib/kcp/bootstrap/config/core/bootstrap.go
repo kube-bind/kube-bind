@@ -21,8 +21,8 @@ import (
 
 	kcpapiextensionsclientset "github.com/kcp-dev/client-go/apiextensions/client"
 	kcpdynamic "github.com/kcp-dev/client-go/dynamic"
-	kcpclientset "github.com/kcp-dev/kcp/sdk/client/clientset/versioned/cluster"
 	"github.com/kcp-dev/logicalcluster/v3"
+	kcpclientset "github.com/kcp-dev/sdk/client/clientset/versioned/cluster"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/config/core/resources"

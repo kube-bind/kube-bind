@@ -23,9 +23,9 @@ import (
 	"testing"
 	"time"
 
-	kcpclientset "github.com/kcp-dev/kcp/sdk/client/clientset/versioned/cluster"
-	kcptestinghelpers "github.com/kcp-dev/kcp/sdk/testing/helpers"
 	"github.com/kcp-dev/logicalcluster/v3"
+	kcpclientset "github.com/kcp-dev/sdk/client/clientset/versioned/cluster"
+	kcptestinghelpers "github.com/kcp-dev/sdk/testing/helpers"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

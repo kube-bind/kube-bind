@@ -185,6 +185,22 @@ spec:
             data:
               password: {{ randAlphaNum 16 | b64enc }}
             ---
+            # Hardcoded demo Secret used by ProviderConfig (in default namespace)
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              annotations:
+                gotemplating.fn.crossplane.io/composition-resource-name: provider-db-conn
+                gotemplating.fn.crossplane.io/ready: "True"
+              namespace: default
+              name: db-conn
+            type: Opaque
+            stringData:
+              endpoint: mysql.default.svc.cluster.local
+              port: "3306"
+              username: root
+              password: password
+            ---
             apiVersion: mysql.sql.m.crossplane.io/v1alpha1
             kind: User
             metadata:
@@ -322,7 +338,7 @@ NAME                                                              TYPE          
 consumer-database-connection-secret                               connection.crossplane.io/v1alpha1   4      18m
 consumer-database-secret                                          Opaque                              1      18m
 db-conn                                                           Opaque                              4      20m
-kube-bind-tvq46-consumer-database-credentials                     Opaque                              4      18m
+kube-bind-bp52k-consumer-database-credentials                     Opaque                              4      18m
 ```
 
 ```bash
@@ -358,10 +374,10 @@ spec:
       name: mysql-database-simple-c36a727
     compositionUpdatePolicy: Automatic
     resourceRefs:
-    - apiVersion: mysql.sql.crossplane.io/v1alpha1
+    - apiVersion: mysql.sql.m.crossplane.io/v1alpha1
       kind: Database
       name: consumer-database
-    - apiVersion: mysql.sql.crossplane.io/v1alpha1
+    - apiVersion: mysql.sql.m.crossplane.io/v1alpha1
       kind: User
       name: consumer-database-user
     - apiVersion: v1

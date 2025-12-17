@@ -108,6 +108,11 @@ type awareWrapper struct {
 }
 
 func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.Cluster) error {
+	err := a.Aware.Engage(ctx, name, cluster)
+	if err != nil {
+		return err
+	}
+
 	cl := cluster.GetClient()
 
 	obj := &kubebindv1alpha2.Cluster{
@@ -118,18 +123,16 @@ func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.
 	}
 
 	const maxRetries = 3
-	var err error
-	
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		err = cl.Create(ctx, obj)
 		if err == nil || apierrors.IsAlreadyExists(err) {
 			break
 		}
-		
+
 		if !apierrors.IsForbidden(err) {
 			return err
 		}
-		
+
 		if attempt < maxRetries-1 {
 			backoff := time.Duration(math.Pow(2, float64(attempt))) * time.Second
 			select {
@@ -139,11 +142,11 @@ func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.
 			}
 		}
 	}
-	
+
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	}
-	return a.Aware.Engage(ctx, name, cluster)
+	return nil
 }
 
 type pathHandler struct {

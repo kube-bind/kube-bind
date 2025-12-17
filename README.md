@@ -69,3 +69,4 @@ These limitations are part of the roadmap and will be addressed in the future.
 
 * Currently we don't support related resources, like ConfigMaps, Secrets.
 * We don't support lifecycle of `BoundSchema` resources, like schema changes.
+* The backend currently does not support running with replicas > 1 due to missing external session storage implementation. Session storage is currently in-memory only, which prevents proper session sharing across multiple backend instances.

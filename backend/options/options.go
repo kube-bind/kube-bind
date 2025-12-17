@@ -53,6 +53,7 @@ type ExtraOptions struct {
 	ExternalCAFile         string
 	ExternalCA             []byte
 	TLSExternalServerName  string
+	WebhookPort            int
 	// Defines the source of the schema for the bind screen.
 	// Options are:
 	// CustomResourceDefinition.v1.apiextensions.k8s.io
@@ -100,6 +101,7 @@ func NewOptions() *Options {
 			ServerURL:              "",
 			SchemaSource:           CustomResourceDefinitionSource.String(),
 			Frontend:               "embedded", // Not used, but indicates to use embedded frontend using SPA.
+			WebhookPort:            9443,
 		},
 	}
 }
@@ -144,6 +146,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.ExternalAddress, "external-address", options.ExternalAddress, "The external address for the service provider cluster, including https:// and port. If not specified, service account's hosts are used.")
 	fs.StringVar(&options.ExternalCAFile, "external-ca-file", options.ExternalCAFile, "The external CA file for the service provider cluster. If not specified, service account's CA is used.")
 	fs.StringVar(&options.TLSExternalServerName, "external-server-name", options.TLSExternalServerName, "The external (TLS) server name used by consumers to talk to the service provider cluster. This can be useful to select the right certificate via SNI.")
+	fs.IntVar(&options.WebhookPort, "webhook-port", options.WebhookPort, "The port on which the webhook server listens. Defaults to 9443.")
 	fs.StringVar(&options.Frontend, "frontend", options.Frontend, "If starts with http:// it is treated as a URL to a SPA server Else - it is treated as a path to static files to be served.")
 
 	fs.StringVar(&options.Provider, "multicluster-runtime-provider", options.Provider,

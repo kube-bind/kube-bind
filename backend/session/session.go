@@ -38,8 +38,9 @@ type State struct {
 }
 
 type TokenInfo struct {
-	Subject string `msgpack:"sub,omitempty"`
-	Issuer  string `msgpack:"iss,omitempty"`
+	Subject string   `msgpack:"sub,omitempty"`
+	Issuer  string   `msgpack:"iss,omitempty"`
+	Groups  []string `msgpack:"grp,omitempty"`
 }
 
 func (s *State) Encode() ([]byte, error) {

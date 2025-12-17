@@ -244,8 +244,8 @@ func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk 
 	return list, nil
 }
 
-func (m *Manager) AuthorizeRequest(ctx context.Context, subject, cluster, method, path string) error {
-	logger := klog.FromContext(ctx).WithValues("subject", subject, "cluster", cluster, "method", method, "path", path)
+func (m *Manager) AuthorizeRequest(ctx context.Context, subject string, groups []string, cluster, method, path string) error {
+	logger := klog.FromContext(ctx).WithValues("subject", subject, "cluster", cluster, "method", method, "path", path, "groups", groups)
 
 	cl, err := m.manager.GetCluster(ctx, cluster)
 	if err != nil {
@@ -262,7 +262,8 @@ func (m *Manager) AuthorizeRequest(ctx context.Context, subject, cluster, method
 	// Check if user has access to create pods (basic permission test)
 	sar := &authzv1.SubjectAccessReview{
 		Spec: authzv1.SubjectAccessReviewSpec{
-			User: subject,
+			User:   subject,
+			Groups: groups,
 			ResourceAttributes: &authzv1.ResourceAttributes{
 				Verb:  "bind",
 				Group: "kube-bind.io",

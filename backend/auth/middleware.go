@@ -222,7 +222,7 @@ func (am *AuthMiddleware) authorizeK8S(next http.Handler) http.Handler {
 		}
 
 		// Authorize against Kubernetes RBAC
-		err := am.kubernetesMananger.AuthorizeRequest(r.Context(), authCtx.SessionState.Token.Subject, authCtx.SessionState.ClusterID, r.Method, r.URL.Path)
+		err := am.kubernetesMananger.AuthorizeRequest(r.Context(), authCtx.SessionState.Token.Subject, authCtx.SessionState.Token.Groups, authCtx.SessionState.ClusterID, r.Method, r.URL.Path)
 		if err != nil {
 			logger.V(2).Info("Kubernetes RBAC authorization failed", "error", err)
 			statusCode, code, details := mapErrorToCode(err)

@@ -89,7 +89,7 @@ func (ah *AuthHandler) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	scopes := []string{"openid", "profile", "email", "offline_access"}
+	scopes := []string{"openid", "profile", "email", "offline_access", "groups"}
 	dataCode, err := json.Marshal(authReq)
 	if err != nil {
 		logger.Info("failed to marshal auth code", "error", err)
@@ -292,8 +292,9 @@ func (ah *AuthHandler) createSessionState(authCode *AuthorizeRequest, token *oau
 	}
 
 	var idToken struct {
-		Subject string `json:"sub"`
-		Issuer  string `json:"iss"`
+		Subject string   `json:"sub"`
+		Issuer  string   `json:"iss"`
+		Groups  []string `json:"groups,omitempty"`
 	}
 	if err := json.Unmarshal(jwt, &idToken); err != nil {
 		return nil, fmt.Errorf("failed to parse ID token: %w", err)
@@ -303,6 +304,7 @@ func (ah *AuthHandler) createSessionState(authCode *AuthorizeRequest, token *oau
 		Token: session.TokenInfo{
 			Subject: idToken.Subject,
 			Issuer:  idToken.Issuer,
+			Groups:  idToken.Groups,
 		},
 		SessionID:   authCode.SessionID,
 		ClusterID:   authCode.ClusterID,

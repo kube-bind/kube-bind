@@ -52,7 +52,7 @@ bin/backend \
   --oidc-type=embedded \
   --pretty-name="BigCorp.com" \
   --namespace-prefix="kube-bind-" \
-  --consumer-scope=cluster
+  --consumer-scope=cluster --frontend http://localhost:3000
 ```
 
 This process will keep running, so open a new terminal.

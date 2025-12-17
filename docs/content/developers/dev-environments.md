@@ -53,7 +53,7 @@ All the instructions assume you have already cloned the kube-bind repository and
     ```
     k ws use :root:kube-bind
 
-    ./bin/backend \
+    go run ./cmd/backend \
     --multicluster-runtime-provider kcp \
     --oidc-issuer-url=http://127.0.0.1:8080/oidc \
     --oidc-callback-url=http://127.0.0.1:8080/api/callback \
@@ -63,6 +63,7 @@ All the instructions assume you have already cloned the kube-bind repository and
     --schema-source apiresourceschemas \
     --consumer-scope=cluster
     ```
+    optionally add `--fronend=http://localhost:3000` to point to local frontend (must be running separately).
 
     This process will keep running, so open a new terminal.
 
@@ -125,7 +126,7 @@ All the instructions assume you have already cloned the kube-bind repository and
     10. Bind the thing:
 
     ```bash
-    ./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 2uoiu445cp94dkrz
+    ./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 1xiy1uyh4qckje8z
     ./bin/kubectl-bind --dry-run -o yaml > apiserviceexport.yaml
 
     # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret

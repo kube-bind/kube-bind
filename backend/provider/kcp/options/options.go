@@ -45,7 +45,7 @@ func NewOptions() *Options {
 }
 
 func (options *Options) AddFlags(fs *pflag.FlagSet) {
-	fs.StringVar(&options.ExtraOptions.APIExportEndpointSliceName, "api-export-endpoint-slice-name", options.ExtraOptions.APIExportEndpointSliceName, "name of the APIExport EndpointSlice to watch")
+	fs.StringVar(&options.ExtraOptions.APIExportEndpointSliceName, "apiexport-endpointslice-name", options.ExtraOptions.APIExportEndpointSliceName, "name of the APIExport EndpointSlice to watch")
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {

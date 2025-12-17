@@ -24,7 +24,7 @@ The backend can be configured to use different providers:
 ```bash
 ./bin/backend \
   --multicluster-runtime-provider kcp \
-  --server-url=$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}") \
+  --apiexport-endpointslice-name=kube-bind.io \
   # ... other options
 ```
 

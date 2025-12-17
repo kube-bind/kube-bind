@@ -67,7 +67,7 @@ func bootstrapBackend(t *testing.T, rest *rest.Config, scope kubebindv1alpha2.In
 	addr, _ := framework.StartBackend(t,
 		"--kubeconfig="+backendKubeconfig,
 		"--multicluster-runtime-provider=kcp",
-		"--server-url="+exportUrl,
+		"--apiexport-endpointslice-name=kube-bind.io",
 		"--pretty-name=BigCorp.com",
 		"--namespace-prefix=kube-bind-",
 		"--schema-source=apiresourceschemas",

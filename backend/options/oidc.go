@@ -39,6 +39,14 @@ type OIDC struct {
 	// TLSConfig is set if an embedded OIDC server is used.
 	TLSConfig  *tls.Config
 	OIDCServer *oidc.Server
+
+	// If specified, bindings will be provisioned for these permissions in each cluster kube-bind manages.
+	// In additon, if type is embedded, embedded groups will added automatically.
+
+	// AllowedGroups is a list of groups allowed to access bindings inside the cluster
+	AllowedGroups []string
+	// AllowedUsers is a list of users allowed to access bindings inside the cluster
+	AllowedUsers []string
 }
 
 func NewOIDC() *OIDC {
@@ -55,6 +63,8 @@ func (options *OIDC) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.AuthorizeURL, "oidc-authorize-url", options.AuthorizeURL, "OpenID authorize URL")
 	fs.StringVar(&options.CAFile, "oidc-ca-file", options.CAFile, "Path to a CA bundle to use when verifying the OIDC provider's TLS certificate.")
 	fs.StringVar(&options.Type, "oidc-type", options.Type, "Type of OIDC provider (embedded or external)")
+	fs.StringSliceVar(&options.AllowedGroups, "oidc-allowed-groups", options.AllowedGroups, "List of groups allowed to access bindings inside the cluster. If using embedded OIDC provider, system:authenticated will be added automatically.")
+	fs.StringSliceVar(&options.AllowedUsers, "oidc-allowed-users", options.AllowedUsers, "List of users allowed to access bindings inside the cluster")
 }
 
 func (options *OIDC) Complete(listener net.Listener) error {
@@ -84,6 +94,8 @@ func (options *OIDC) Complete(listener net.Listener) error {
 		}
 		options.TLSConfig = tlsConfig
 	}
+
+	options.AllowedGroups = append(options.AllowedGroups, "system:authenticated")
 
 	return nil
 }

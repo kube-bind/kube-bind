@@ -50,13 +50,15 @@ func NewClusterReconciler(
 	_ context.Context,
 	mgr mcmanager.Manager,
 	opts controller.TypedOptions[mcreconcile.Request],
-	embeddedOIDC bool,
+	allowedGroups []string,
+	allowedUsers []string,
 ) (*ClusterReconciler, error) {
 	r := &ClusterReconciler{
 		manager: mgr,
 		opts:    opts,
 		reconciler: reconciler{
-			isEmbeddedOIDC: embeddedOIDC,
+			allowedGroups: allowedGroups,
+			allowedUsers:  allowedUsers,
 		},
 	}
 

@@ -259,6 +259,8 @@ func (m *Manager) AuthorizeRequest(ctx context.Context, subject string, groups [
 		return err
 	}
 
+	groups = append(groups, "system:authenticated")
+
 	// Check if user has access to create pods (basic permission test)
 	sar := &authzv1.SubjectAccessReview{
 		Spec: authzv1.SubjectAccessReviewSpec{

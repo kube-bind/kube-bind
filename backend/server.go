@@ -207,7 +207,8 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		ctx,
 		s.Config.Manager,
 		opts,
-		c.Options.OIDC.Type == kubebindv1alpha2.OIDCProviderTypeEmbedded,
+		c.Options.OIDC.AllowedGroups,
+		c.Options.OIDC.AllowedUsers,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up LogicalCluster Controller: %w", err)

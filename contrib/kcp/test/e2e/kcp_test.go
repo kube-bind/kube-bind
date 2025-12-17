@@ -103,6 +103,7 @@ func testKcpIntegration(t *testing.T, name string, scope kubebindv1alpha2.Inform
 			"namespaces.core",
 			"roles.rbac.authorization.k8s.io",
 			"rolebindings.rbac.authorization.k8s.io",
+			"subjectaccessreviews.authorization.k8s.io",
 			"apiresourceschemas.apis.kcp.io",
 		),
 	)

@@ -85,6 +85,8 @@ func (options *OIDC) Complete(listener net.Listener) error {
 		options.IssuerClientSecret = cfg.ClientSecret
 		// This should be provided from outside, but in embedded - we detect.
 		options.CallbackURL = cfg.CallbackURL
+
+		options.AllowedGroups = append(options.AllowedGroups, "system:authenticated")
 	}
 
 	if options.CAFile != "" {
@@ -94,8 +96,6 @@ func (options *OIDC) Complete(listener net.Listener) error {
 		}
 		options.TLSConfig = tlsConfig
 	}
-
-	options.AllowedGroups = append(options.AllowedGroups, "system:authenticated")
 
 	return nil
 }
@@ -115,6 +115,14 @@ func (options *OIDC) Validate() error {
 	}
 	if options.CAFile != "" && options.TLSConfig != nil {
 		return fmt.Errorf("cannot use both CA file and embedded OIDC server")
+	}
+
+	if options.Type != string(kubebindv1alpha2.OIDCProviderTypeEmbedded) && options.Type != string(kubebindv1alpha2.OIDCProviderTypeExternal) {
+		return fmt.Errorf("invalid OIDC provider type: %s", options.Type)
+	}
+
+	if options.Type == string(kubebindv1alpha2.OIDCProviderTypeExternal) && len(options.AllowedGroups) == 0 && len(options.AllowedUsers) == 0 {
+		return fmt.Errorf("when using external OIDC provider, at least one of allowed groups or allowed users must be specified")
 	}
 
 	return nil

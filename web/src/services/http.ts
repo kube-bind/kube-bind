@@ -1,5 +1,18 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
-import { authService } from './auth'
+import { isKubeBindError, type KubeBindError, ErrorCodes } from '../types/binding'
+
+// Custom error class for structured errors
+export class StructuredError extends Error {
+  public readonly kubeBindError: KubeBindError
+  public readonly httpStatus: number
+
+  constructor(kubeBindError: KubeBindError, httpStatus: number) {
+    super(kubeBindError.message)
+    this.kubeBindError = kubeBindError
+    this.httpStatus = httpStatus
+    this.name = 'StructuredError'
+  }
+}
 
 class HttpClient {
   private client: AxiosInstance
@@ -30,15 +43,26 @@ class HttpClient {
       }
     )
 
-    // Response interceptor to handle auth errors
+    // Response interceptor to handle structured errors
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
-          // Session expired or invalid - emit event for App.vue to handle
-          console.warn('Authentication expired, need to re-authenticate')
-          window.dispatchEvent(new CustomEvent('auth-expired'))
+        const status = error.response?.status
+        const responseData = error.response?.data
+
+        // Check if we received a structured error from the backend
+        if (responseData && isKubeBindError(responseData)) {
+          // Handle specific error codes
+          if (responseData.code === ErrorCodes.AUTHENTICATION_FAILED) {
+            // Session expired or invalid - emit event for App.vue to handle
+            console.warn('Authentication expired, need to re-authenticate')
+            window.dispatchEvent(new CustomEvent('auth-expired'))
+          }
+          
+          // Throw our custom structured error
+          return Promise.reject(new StructuredError(responseData, status))
         }
+
         return Promise.reject(error)
       }
     )

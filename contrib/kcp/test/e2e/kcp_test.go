@@ -23,9 +23,9 @@ import (
 	"testing"
 	"time"
 
-	kcpclientset "github.com/kcp-dev/kcp/sdk/client/clientset/versioned/cluster"
-	kcptestinghelpers "github.com/kcp-dev/kcp/sdk/testing/helpers"
 	"github.com/kcp-dev/logicalcluster/v3"
+	kcpclientset "github.com/kcp-dev/sdk/client/clientset/versioned/cluster"
+	kcptestinghelpers "github.com/kcp-dev/sdk/testing/helpers"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -103,6 +103,7 @@ func testKcpIntegration(t *testing.T, name string, scope kubebindv1alpha2.Inform
 			"namespaces.core",
 			"roles.rbac.authorization.k8s.io",
 			"rolebindings.rbac.authorization.k8s.io",
+			"subjectaccessreviews.authorization.k8s.io",
 			"apiresourceschemas.apis.kcp.io",
 		),
 	)

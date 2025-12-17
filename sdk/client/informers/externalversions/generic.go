@@ -76,6 +76,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIServiceNamespaces().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("boundschemas"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().BoundSchemas().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("clusters"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().Clusters().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("clusterbindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().ClusterBindings().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("collections"):

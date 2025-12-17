@@ -18,14 +18,14 @@ export UGET_DIRECTORY := $(ROOT_DIR)/hack/tools
 export UGET_CHECKSUMS := $(ROOT_DIR)/hack/tools.checksums
 export UGET_VERSIONED_BINARIES = true
 
-KCP_APIGEN_VERSION := v0.28.0
+KCP_APIGEN_VERSION := 11364df3071c021e96b4ed8c48aa9cd63e8f0115
 
 .PHONY: all
 all: build
 
 .PHONY: install-apigen
 install-apigen:
-	@GO_MODULE=true $(ROOT_DIR)/hack/uget.sh github.com/kcp-dev/kcp/sdk/cmd/apigen apigen $(KCP_APIGEN_VERSION)
+	@GO_MODULE=true $(ROOT_DIR)/hack/uget.sh github.com/kcp-dev/sdk/cmd/apigen apigen $(KCP_APIGEN_VERSION)
 
 codegen: ## Generate KCP API resources from CRDs
 	./hack/update-kcp-codegen.sh

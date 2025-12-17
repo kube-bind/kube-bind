@@ -27,6 +27,7 @@ import (
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
 
+	providerkcp "github.com/kube-bind/kube-bind/backend/provider/kcp/options"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -36,14 +37,15 @@ type Options struct {
 	Cookie *Cookie
 	Serve  *Serve
 
+	ProviderKcp *providerkcp.Options
+
 	ExtraOptions
 }
 
 type ExtraOptions struct {
 	KubeConfig string
 
-	Provider  string
-	ServerURL string
+	Provider string
 
 	NamespacePrefix        string
 	PrettyName             string
@@ -73,6 +75,9 @@ type completedOptions struct {
 	Cookie *Cookie
 	Serve  *Serve
 
+	// Provider specific options
+	ProviderKcp *providerkcp.CompletedOptions
+
 	ExtraOptions
 }
 
@@ -85,11 +90,12 @@ func NewOptions() *Options {
 	logs := logs.NewOptions()
 	logs.Verbosity = logsv1.VerbosityLevel(2)
 
-	return &Options{
-		Logs:   logs,
-		OIDC:   NewOIDC(),
-		Cookie: NewCookie(),
-		Serve:  NewServe(),
+	opts := &Options{
+		Logs:        logs,
+		OIDC:        NewOIDC(),
+		Cookie:      NewCookie(),
+		Serve:       NewServe(),
+		ProviderKcp: providerkcp.NewOptions(),
 
 		ExtraOptions: ExtraOptions{
 			Provider:               "kubernetes",
@@ -97,11 +103,11 @@ func NewOptions() *Options {
 			PrettyName:             "Backend",
 			ConsumerScope:          string(kubebindv1alpha2.NamespacedScope),
 			ClusterScopedIsolation: string(kubebindv1alpha2.IsolationPrefixed),
-			ServerURL:              "",
 			SchemaSource:           CustomResourceDefinitionSource.String(),
 			Frontend:               "embedded", // Not used, but indicates to use embedded frontend using SPA.
 		},
 	}
+	return opts
 }
 
 var providerAliases = map[string]string{
@@ -135,6 +141,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	options.OIDC.AddFlags(fs)
 	options.Cookie.AddFlags(fs)
 	options.Serve.AddFlags(fs)
+	options.ProviderKcp.AddFlags(fs)
 
 	fs.StringVar(&options.KubeConfig, "kubeconfig", options.KubeConfig, "path to a kubeconfig. Only required if out-of-cluster")
 	fs.StringVar(&options.NamespacePrefix, "namespace-prefix", options.NamespacePrefix, "The prefix to use for cluster namespaces")
@@ -159,8 +166,6 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 		fmt.Sprintf("Defines the source of the schema in Kind.Version.Group format for the bind screen. Defaults to CustomResourceDefinition.v1.apiextensions.k8s.io. Possible values are: %v",
 			values),
 	)
-
-	fs.StringVar(&options.ServerURL, "server-url", options.ServerURL, "The URL of the backend server. If not specified, it will be derived from the kubeconfig or service account's hosts.")
 
 	fs.StringVar(&options.TestingAutoSelect, "testing-auto-select", options.TestingAutoSelect, "<resource>.<group> that is automatically selected on th bind screen for testing")
 	fs.MarkHidden("testing-auto-select") //nolint:errcheck
@@ -209,7 +214,7 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 		}
 		options.ExternalCA = ca
 	}
-	return &CompletedOptions{
+	co := &CompletedOptions{
 		completedOptions: &completedOptions{
 			Logs:         options.Logs,
 			OIDC:         options.OIDC,
@@ -217,7 +222,16 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 			Serve:        options.Serve,
 			ExtraOptions: options.ExtraOptions,
 		},
-	}, nil
+	}
+
+	if options.Provider == "kcp" {
+		opts, err := options.ProviderKcp.Complete()
+		if err != nil {
+			return nil, err
+		}
+		co.completedOptions.ProviderKcp = opts
+	}
+	return co, nil
 }
 
 func (options *CompletedOptions) Validate() error {

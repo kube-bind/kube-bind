@@ -1,7 +1,6 @@
 apiVersion: apis.kcp.io/v1alpha2
 kind: APIExport
 metadata:
-  creationTimestamp: null
   name: kube-bind.io
 spec:
   permissionClaims:
@@ -28,6 +27,10 @@ spec:
     verbs:
     - '*'
   - resource: secrets
+    verbs:
+    - '*'
+  - group: authorization.k8s.io
+    resource: subjectaccessreviews
     verbs:
     - '*'
   - resource: namespaces
@@ -85,6 +88,11 @@ spec:
   - group: kube-bind.io
     name: clusterbindings
     schema: v250925-56669b8.clusterbindings.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
+    name: clusters
+    schema: v251215-7d342944.clusters.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io

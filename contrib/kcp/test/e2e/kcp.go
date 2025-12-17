@@ -22,10 +22,10 @@ import (
 	"testing"
 	"time"
 
-	kcpapisv1alpha2 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha2"
-	kcpclientset "github.com/kcp-dev/kcp/sdk/client/clientset/versioned/cluster"
-	kcptestinghelpers "github.com/kcp-dev/kcp/sdk/testing/helpers"
 	"github.com/kcp-dev/logicalcluster/v3"
+	kcpapisv1alpha2 "github.com/kcp-dev/sdk/apis/apis/v1alpha2"
+	kcpclientset "github.com/kcp-dev/sdk/client/clientset/versioned/cluster"
+	kcptestinghelpers "github.com/kcp-dev/sdk/testing/helpers"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

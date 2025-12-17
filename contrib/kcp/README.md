@@ -45,7 +45,7 @@ k ws use :root:kube-bind
 
 ./bin/backend \
   --multicluster-runtime-provider kcp \
-  --server-url=$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}") \
+  --apiexport-endpointslice-name=kube-bind.io \
   --pretty-name="BigCorp.com" \
   --oidc-type=embedded \
   --oidc-issuer-url=http://127.0.0.1:8080/oidc \

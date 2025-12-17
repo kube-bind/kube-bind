@@ -191,10 +191,10 @@ update-tools: clean-tools install-golangci-lint install-gotestsum install-boiler
 .PHONY: lint
 lint: install-golangci-lint install-logcheck ## Run golangci-lint
 	@if [ -n "$(WHAT)" ]; then \
-		$(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) -c $(ROOT_DIR)/.golangci.yaml --timeout 20m $(WHAT); \
+		$(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) -c $(ROOT_DIR)/.golangci.yaml --timeout 20m $(WHAT) --fix; \
 	else \
 		for MOD in $(GOMODS); do \
-			(cd $$MOD; echo "Linting $$MOD"; $(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) -c $(ROOT_DIR)/.golangci.yaml --timeout 20m); \
+			(cd $$MOD; echo "Linting $$MOD"; $(GOLANGCI_LINT) run $(GOLANGCI_LINT_FLAGS) -c $(ROOT_DIR)/.golangci.yaml --timeout 20m --fix); \
 		done; \
 	fi
 

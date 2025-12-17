@@ -23,9 +23,9 @@ import (
 	kcpapiextensionsclientset "github.com/kcp-dev/client-go/apiextensions/client"
 	kcpdynamic "github.com/kcp-dev/client-go/dynamic"
 	confighelpers "github.com/kcp-dev/kcp/config/helpers"
-	"github.com/kcp-dev/kcp/sdk/apis/core"
-	kcpclientset "github.com/kcp-dev/kcp/sdk/client/clientset/versioned/cluster"
 	"github.com/kcp-dev/logicalcluster/v3"
+	"github.com/kcp-dev/sdk/apis/core"
+	kcpclientset "github.com/kcp-dev/sdk/client/clientset/versioned/cluster"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 

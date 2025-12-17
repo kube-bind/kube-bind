@@ -33,6 +33,7 @@ type KubeBindV1alpha2Interface interface {
 	APIServiceExportRequestsGetter
 	APIServiceNamespacesGetter
 	BoundSchemasGetter
+	ClustersGetter
 	ClusterBindingsGetter
 	CollectionsGetter
 }
@@ -60,6 +61,10 @@ func (c *KubeBindV1alpha2Client) APIServiceNamespaces(namespace string) APIServi
 
 func (c *KubeBindV1alpha2Client) BoundSchemas(namespace string) BoundSchemaInterface {
 	return newBoundSchemas(c, namespace)
+}
+
+func (c *KubeBindV1alpha2Client) Clusters(namespace string) ClusterInterface {
+	return newClusters(c, namespace)
 }
 
 func (c *KubeBindV1alpha2Client) ClusterBindings(namespace string) ClusterBindingInterface {

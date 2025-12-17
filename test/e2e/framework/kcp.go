@@ -26,8 +26,8 @@ import (
 	"testing"
 	"time"
 
-	corev1alpha1 "github.com/kcp-dev/kcp/pkg/apis/core/v1alpha1"
-	tenancyv1alpha1 "github.com/kcp-dev/kcp/pkg/apis/tenancy/v1alpha1"
+	corev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
+	tenancyv1alpha1 "github.com/kcp-dev/sdk/apis/tenancy/v1alpha1"
 	"github.com/martinlindhe/base36"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -126,8 +126,14 @@ func NewWorkspace(t *testing.T, config *rest.Config, options ...ClusterWorkspace
 	for _, opt := range options {
 		opt(ws)
 	}
-	err = tenancyClient.Create(ctx, ws)
-	require.NoError(t, err)
+	// retry as on startup kcp might be busy
+	require.Eventually(t, func() bool {
+		err = tenancyClient.Create(ctx, ws)
+		if err != nil && !errors.IsAlreadyExists(err) {
+			return false
+		}
+		return true
+	}, wait.ForeverTestTimeout, time.Millisecond*100, "failed to create workspace %s", ws.Name)
 
 	ret := rest.CopyConfig(config)
 	ret.Host += ":" + ws.Name

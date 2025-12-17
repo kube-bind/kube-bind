@@ -17,6 +17,8 @@ limitations under the License.
 package session
 
 import (
+	"time"
+
 	"github.com/vmihailenco/msgpack/v4"
 )
 
@@ -31,13 +33,27 @@ type State struct {
 	SessionID   string    `msgpack:"sid,omitempty"`
 	ClusterID   string    `msgpack:"cid,omitempty"`
 	RedirectURL string    `msgpack:"red,omitempty"`
+	CreatedAt   time.Time `msgpack:"cat,omitempty"`
+	ExpiresAt   time.Time `msgpack:"eat,omitempty"`
 }
 
 type TokenInfo struct {
-	Subject string `msgpack:"sub,omitempty"`
-	Issuer  string `msgpack:"iss,omitempty"`
+	Subject string   `msgpack:"sub,omitempty"`
+	Issuer  string   `msgpack:"iss,omitempty"`
+	Groups  []string `msgpack:"grp,omitempty"`
 }
 
 func (s *State) Encode() ([]byte, error) {
 	return msgpack.Marshal(s)
+}
+
+// IsExpired checks if the session has expired
+func (s *State) IsExpired() bool {
+	return !s.ExpiresAt.IsZero() && time.Now().After(s.ExpiresAt)
+}
+
+// SetExpiration sets the session expiration time
+func (s *State) SetExpiration(duration time.Duration) {
+	s.CreatedAt = time.Now()
+	s.ExpiresAt = s.CreatedAt.Add(duration)
 }

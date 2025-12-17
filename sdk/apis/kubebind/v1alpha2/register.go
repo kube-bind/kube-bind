@@ -64,6 +64,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&APIServiceExportTemplateList{},
 		&Collection{},
 		&CollectionList{},
+		&Cluster{},
+		&ClusterList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

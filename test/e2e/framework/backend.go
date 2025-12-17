@@ -46,6 +46,7 @@ func InstallKubeBindCRDs(t testing.TB, clientConfig *rest.Config) {
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "boundschemas"},
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiserviceexporttemplates"},
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "collections"},
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "clusters"},
 	)
 	require.NoError(t, err)
 }
@@ -66,7 +67,7 @@ func StartBackend(t testing.TB, args ...string) (net.Addr, *backend.Server) {
 	require.NoError(t, err)
 	addr := opts.Serve.Listener.Addr()
 
-	opts.OIDC.Type = string(options.OIDCTypeEmbedded)
+	opts.OIDC.Type = string(kubebindv1alpha2.OIDCProviderTypeEmbedded)
 	opts.OIDC.IssuerURL = fmt.Sprintf("http://%s/oidc", addr.String())
 	opts.OIDC.CallbackURL = fmt.Sprintf("http://%s/api/callback", addr.String())
 

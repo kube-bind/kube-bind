@@ -54,6 +54,14 @@ type BoundSchemaListerExpansion interface{}
 // BoundSchemaNamespaceLister.
 type BoundSchemaNamespaceListerExpansion interface{}
 
+// ClusterListerExpansion allows custom methods to be added to
+// ClusterLister.
+type ClusterListerExpansion interface{}
+
+// ClusterNamespaceListerExpansion allows custom methods to be added to
+// ClusterNamespaceLister.
+type ClusterNamespaceListerExpansion interface{}
+
 // ClusterBindingListerExpansion allows custom methods to be added to
 // ClusterBindingLister.
 type ClusterBindingListerExpansion interface{}

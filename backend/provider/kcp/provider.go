@@ -18,6 +18,8 @@ package kcp
 
 import (
 	"context"
+	"math"
+	"time"
 
 	"github.com/kcp-dev/logicalcluster/v3"
 	provider "github.com/kcp-dev/multicluster-provider/apiexport"
@@ -115,7 +117,29 @@ func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.
 		Spec: kubebindv1alpha2.ClusterSpec{},
 	}
 
-	err := cl.Create(ctx, obj)
+	const maxRetries = 3
+	var err error
+	
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		err = cl.Create(ctx, obj)
+		if err == nil || apierrors.IsAlreadyExists(err) {
+			break
+		}
+		
+		if !apierrors.IsForbidden(err) {
+			return err
+		}
+		
+		if attempt < maxRetries-1 {
+			backoff := time.Duration(math.Pow(2, float64(attempt))) * time.Second
+			select {
+			case <-time.After(backoff):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+	}
+	
 	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return err
 	}

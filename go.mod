@@ -16,6 +16,9 @@ replace (
 	github.com/kube-bind/kube-bind/web => ./web
 )
 
+// kcp pre-release
+replace github.com/kcp-dev/sdk => github.com/kcp-dev/sdk v0.0.0-20251210172228-11364df3071c
+
 require (
 	github.com/coreos/go-oidc/v3 v3.16.0
 	github.com/dexidp/dex/api/v2 v2.3.0
@@ -26,8 +29,8 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/headzoo/surf v1.0.1
 	github.com/kcp-dev/kcp/pkg/apis v0.11.0
-	github.com/kcp-dev/kcp/sdk v0.28.1
-	github.com/kcp-dev/multicluster-provider v0.2.1-0.20251002133408-9a8d21dc2872
+	github.com/kcp-dev/multicluster-provider v0.3.3
+	github.com/kcp-dev/sdk v0.28.1-0.20251209130449-436a0347809b
 	github.com/kube-bind/kube-bind/cli v0.0.0-20250515145715-d9f20e7c840d
 	github.com/kube-bind/kube-bind/sdk v0.4.1
 	github.com/kube-bind/kube-bind/web v0.0.0-00010101000000-000000000000
@@ -37,22 +40,22 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.18.0
 	github.com/vmihailenco/msgpack/v4 v4.3.12
-	github.com/xrstf/mockoidc v0.0.0-20251110222947-8618052ad848
+	github.com/xrstf/mockoidc v0.0.0-20251217111820-5b7a850f338a
 	golang.org/x/oauth2 v0.30.0
 	google.golang.org/grpc v1.72.1
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.34.0
-	k8s.io/apiextensions-apiserver v0.34.0
-	k8s.io/apimachinery v0.34.0
-	k8s.io/apiserver v0.34.0
+	k8s.io/api v0.34.2
+	k8s.io/apiextensions-apiserver v0.34.2
+	k8s.io/apimachinery v0.34.2
+	k8s.io/apiserver v0.34.2
 	k8s.io/cli-runtime v0.34.0
-	k8s.io/client-go v0.34.0
-	k8s.io/code-generator v0.34.0
-	k8s.io/component-base v0.34.0
+	k8s.io/client-go v0.34.2
+	k8s.io/code-generator v0.34.2
+	k8s.io/component-base v0.34.2
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
-	sigs.k8s.io/controller-runtime v0.21.0
-	sigs.k8s.io/multicluster-runtime v0.21.0-alpha.9.0.20251002124257-36facc7fbe82
+	sigs.k8s.io/controller-runtime v0.22.4
+	sigs.k8s.io/multicluster-runtime v0.22.4-beta.1
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -96,7 +99,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kcp-dev/apimachinery/v2 v2.0.1-0.20250728122101-adbf20db3e51 // indirect
+	github.com/kcp-dev/apimachinery/v2 v2.29.1-0.20251209121225-cf3c0b624983 // indirect
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect

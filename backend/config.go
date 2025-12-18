@@ -22,9 +22,9 @@ import (
 	"net/url"
 	"strings"
 
-	apisv1alpha1 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha1"
-	apisv1alpha2 "github.com/kcp-dev/kcp/sdk/apis/apis/v1alpha2"
 	"github.com/kcp-dev/multicluster-provider/apiexport"
+	apisv1alpha1 "github.com/kcp-dev/sdk/apis/apis/v1alpha1"
+	apisv1alpha2 "github.com/kcp-dev/sdk/apis/apis/v1alpha2"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -39,6 +39,7 @@ import (
 
 	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/backend/options"
+	kcpprovider "github.com/kube-bind/kube-bind/backend/provider/kcp"
 	kubebindv1alpha1 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha1"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
@@ -70,10 +71,6 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	config.ClientConfig = rest.CopyConfig(config.ClientConfig)
 	config.ClientConfig = rest.AddUserAgent(config.ClientConfig, "kube-bind-backend")
 
-	if options.ServerURL != "" {
-		config.ClientConfig.Host = options.ServerURL
-	}
-
 	// Set up controller-runtime manager
 	scheme := runtime.NewScheme()
 	if err := clientgoscheme.AddToScheme(scheme); err != nil {
@@ -93,13 +90,16 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 
 	switch options.Provider {
 	case "kcp":
+		if options.ProviderKcp == nil {
+			return nil, fmt.Errorf("kcp provider options must be provided when provider is kcp")
+		}
 		if err := apisv1alpha1.AddToScheme(scheme); err != nil {
 			return nil, fmt.Errorf("error adding apis scheme: %w", err)
 		}
 		if err := apisv1alpha2.AddToScheme(scheme); err != nil {
 			return nil, fmt.Errorf("error adding apis scheme: %w", err)
 		}
-		provider, err := apiexport.New(config.ClientConfig, apiexport.Options{
+		provider, err := kcpprovider.New(config.ClientConfig, options.ProviderKcp.APIExportEndpointSliceName, apiexport.Options{
 			Scheme: scheme,
 		})
 		if err != nil {

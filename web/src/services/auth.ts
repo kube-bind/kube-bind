@@ -1,12 +1,25 @@
 
+import { httpClient, StructuredError } from './http'
+import { ErrorCodes } from '../types/binding'
+
 export interface AuthStatus {
   isAuthenticated: boolean
   sessionId?: string
   clusterId?: string
 }
 
+export interface AuthCheckResult {
+  isAuthenticated: boolean
+  error?: string
+}
+
 class AuthService {
   async isAuthenticated(): Promise<boolean> {
+    const result = await this.checkAuthentication()
+    return result.isAuthenticated
+  }
+
+  async checkAuthentication(): Promise<AuthCheckResult> {
     try {
       // Since cookies are HTTP-only, we need to check authentication by making an API call
       const urlParams = new URLSearchParams(window.location.search)
@@ -15,18 +28,40 @@ class AuthService {
       // Make a simple API call to check if we're authenticated
       const authCheckUrl = clusterId ? `/ping?cluster_id=${clusterId}` : '/ping'
       
-      const response = await fetch(`/api${authCheckUrl}`, {
-        method: 'GET',
-        credentials: 'include' // Include cookies
-      })
+      const response = await httpClient.get(authCheckUrl)
       
       const isAuth = response.status === 200
       console.log('Auth check:', { clusterId, status: response.status, isAuth })
       
-      return isAuth
+      return { isAuthenticated: isAuth }
     } catch (error) {
+      // Handle structured errors
+      if (error instanceof StructuredError) {
+        const kubeError = error.kubeBindError
+        
+        // Return structured error message for auth/authorization failures
+        if (kubeError.code === ErrorCodes.AUTHENTICATION_FAILED || kubeError.code === ErrorCodes.AUTHORIZATION_FAILED) {
+          return { 
+            isAuthenticated: false, 
+            error: kubeError.message 
+          }
+        }
+      }
+      
+      // Handle cases where we get 401/403 but don't have the expected structured error
+      if ((error as any)?.response?.status === 401 || (error as any)?.response?.status === 403) {
+        console.log('Auth check failed with authentication error but no structured response')
+        return {
+          isAuthenticated: false,
+          error: 'Authentication required'
+        }
+      }
+      
       console.error('Auth check error:', error)
-      return false
+      return { 
+        isAuthenticated: false, 
+        error: 'Authentication check failed' 
+      }
     }
   }
 
@@ -65,10 +100,7 @@ class AuthService {
         : '/api/logout'
       
       // Make POST request to logout endpoint
-      const response = await fetch(logoutUrl, {
-        method: 'POST',
-        credentials: 'include' // Include cookies in the request
-      })
+      const response = await httpClient.post(logoutUrl)
       
       console.log('Logout response:', { status: response.status, clusterId })
       
@@ -76,6 +108,7 @@ class AuthService {
       window.location.href = window.location.origin + window.location.pathname
     } catch (error) {
       console.error('Logout error:', error)
+      
       // Still try to reload even if there was an error
       window.location.reload()
     }

@@ -32,8 +32,18 @@
     <main class="main">
       <div v-if="!authStatus.isAuthenticated" class="auth-placeholder">
         <h2>Authentication Required</h2>
-        <p>Please authenticate to access resources.</p>
-        <button @click="authenticate" class="auth-btn">Authenticate</button>
+        <div v-if="authStatus.error" class="auth-error">
+          <div class="error-icon">⚠️</div>
+          <div class="error-content">
+            <h3>Authentication Error</h3>
+            <p>{{ authStatus.error }}</p>
+          </div>
+        </div>
+        <p v-else>Please authenticate to access resources.</p>
+        <button @click="authenticate" class="auth-btn" :disabled="authStatus.loading">
+          <span v-if="authStatus.loading">Authenticating...</span>
+          <span v-else>{{ authStatus.error ? 'Try Again' : 'Authenticate' }}</span>
+        </button>
       </div>
       
       <router-view v-else :auth-status="authStatus"></router-view>
@@ -44,7 +54,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { authService } from './services/auth'
+import { authService, type AuthCheckResult } from './services/auth'
 
 const route = useRoute()
 
@@ -54,10 +64,14 @@ const authStatus = ref({
   error: null as string | null
 })
 
+// Track if we've already attempted authentication to prevent hot loops
+const hasAttemptedAuth = ref(false)
+
 const checkAuthStatus = async () => {
   try {
-    const authenticated = await authService.isAuthenticated()
-    authStatus.value.isAuthenticated = authenticated
+    const result: AuthCheckResult = await authService.checkAuthentication()
+    authStatus.value.isAuthenticated = result.isAuthenticated
+    authStatus.value.error = result.error || null
   } catch (error) {
     console.error('Auth check failed:', error)
     authStatus.value.error = 'Authentication check failed'
@@ -68,6 +82,7 @@ const checkAuthStatus = async () => {
 
 const authenticate = async () => {
   try {
+    hasAttemptedAuth.value = true
     const cluster = route.query.cluster_id as string || ''
     const sessionId = route.query.session_id as string || generateSessionId()
     const clientSideRedirectUrl = route.query.redirect_url as string || ''
@@ -100,6 +115,18 @@ onMounted(() => {
     console.log('Received auth-expired event, updating authentication status')
     authStatus.value.isAuthenticated = false
     authStatus.value.error = 'Session expired. Please re-authenticate.'
+    
+    // Automatically trigger authentication redirect if we have the necessary parameters
+    // and haven't already attempted authentication (to prevent hot loops)
+    const hasRequiredParams = route.query.cluster_id || route.query.session_id
+    if (hasRequiredParams && !hasAttemptedAuth.value) {
+      console.log('Auto-redirecting to authentication due to auth-expired event')
+      authenticate()
+    } else if (!hasRequiredParams) {
+      console.log('No cluster_id or session_id parameters found, requiring manual authentication')
+    } else {
+      console.log('Authentication already attempted, preventing hot loop')
+    }
   })
 })
 </script>
@@ -263,5 +290,39 @@ onMounted(() => {
   background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.auth-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  max-width: 500px;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
+}
+
+.error-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  margin-top: 0.125rem;
+}
+
+.error-content h3 {
+  margin: 0 0 0.5rem 0;
+  color: #dc2626;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.error-content p {
+  margin: 0;
+  color: #991b1b;
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 </style>

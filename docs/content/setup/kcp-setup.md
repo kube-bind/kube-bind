@@ -44,15 +44,13 @@ kubectl apply -f deploy/examples/template-sheriffs.yaml
 
 3. Run the backend:
 ```
-make build
-
-bin/backend \
+go run ./cmd/backend \
   --oidc-issuer-url=http://127.0.0.1:8080/oidc \
   --oidc-callback-url=http://127.0.0.1:8080/api/callback \
   --oidc-type=embedded \
   --pretty-name="BigCorp.com" \
   --namespace-prefix="kube-bind-" \
-  --consumer-scope=cluster
+  --consumer-scope=cluster --frontend http://localhost:3000
 ```
 
 This process will keep running, so open a new terminal.

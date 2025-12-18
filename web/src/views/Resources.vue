@@ -149,6 +149,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { httpClient } from '../services/http'
 import type { BindableResourcesRequest, BindingResponse } from '../types/binding'
+import { StructuredError } from '../services/http'
 import BindingResult from '../components/BindingResult.vue'
 import TemplateBindingModal from '../components/TemplateBindingModal.vue'
 import { authService } from '../services/auth'
@@ -235,13 +236,37 @@ const loadResources = async () => {
     collections.value = collectionsResponse.data.items || []
   } catch (err: any) {
     console.error('Failed to load resources:', err)
-    // Don't show generic error for auth failures - let the HTTP interceptor handle them
-    if (err.response?.status === 401) {
-      // Authentication error - the HTTP interceptor will handle logout/redirect
-      // Don't set error state, just let the auth flow take over
-      return
+    
+    // Handle structured errors
+    if (err instanceof StructuredError) {
+      const kubeError = err.kubeBindError
+      
+      // Don't show error for auth failures - let the HTTP interceptor handle them
+      if (kubeError.code === 'AUTHENTICATION_FAILED') {
+        return
+      }
+      
+      // Show specific error messages based on error code
+      switch (kubeError.code) {
+        case 'AUTHORIZATION_FAILED':
+          error.value = `Authorization failed: ${kubeError.details || kubeError.message}`
+          break
+        case 'CLUSTER_CONNECTION_FAILED':
+          error.value = `Could not connect to cluster: ${kubeError.details || kubeError.message}`
+          break
+        case 'RESOURCE_NOT_FOUND':
+          error.value = `Resources not found: ${kubeError.details || kubeError.message}`
+          break
+        default:
+          error.value = `Error: ${kubeError.message}`
+      }
+    } else {
+      // Fallback for non-structured errors
+      if (err.response?.status === 401) {
+        return
+      }
+      error.value = 'Failed to load resources. Please try again.'
     }
-    error.value = 'Failed to load resources. Please try again.'
   } finally {
     loading.value = false
   }
@@ -298,12 +323,40 @@ const handleBind = async (templateName: string, bindingName: string) => {
     }
   } catch (err: any) {
     console.error('Failed to bind template:', err)
-    // Don't show alert for auth failures - let the HTTP interceptor handle them
-    if (err.response?.status === 401) {
-      // Authentication error - the HTTP interceptor will handle logout/redirect
-      return
+    
+    // Handle structured errors
+    if (err instanceof StructuredError) {
+      const kubeError = err.kubeBindError
+      
+      // Don't show alert for auth failures - let the HTTP interceptor handle them
+      if (kubeError.code === 'AUTHENTICATION_FAILED') {
+        return
+      }
+      
+      // Show specific error messages based on error code
+      let errorMessage: string
+      switch (kubeError.code) {
+        case 'AUTHORIZATION_FAILED':
+          errorMessage = `Authorization failed: You don't have permission to bind resources in this cluster.\n\nDetails: ${kubeError.details || kubeError.message}`
+          break
+        case 'CLUSTER_CONNECTION_FAILED':
+          errorMessage = `Cluster connection failed: Unable to connect to the target cluster.\n\nDetails: ${kubeError.details || kubeError.message}`
+          break
+        case 'RESOURCE_NOT_FOUND':
+          errorMessage = `Template not found: The requested template could not be found.\n\nDetails: ${kubeError.details || kubeError.message}`
+          break
+        default:
+          errorMessage = `Failed to bind template: ${kubeError.message}\n\nDetails: ${kubeError.details || 'No additional details available'}`
+      }
+      
+      alert(errorMessage)
+    } else {
+      // Fallback for non-structured errors
+      if (err.response?.status === 401) {
+        return
+      }
+      alert(`Failed to bind template: ${templateName}. Check console for details.`)
     }
-    alert(`Failed to bind template: ${templateName}. Check console for details.`)
   }
 }
 

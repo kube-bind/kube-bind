@@ -29,6 +29,7 @@ type Error struct {
 	// Code is the error code that can be used for programmatic handling
 	Code string `json:"code"`
 	// Details provides additional context about the error
+	// +optional
 	Details string `json:"details,omitempty"`
 }
 

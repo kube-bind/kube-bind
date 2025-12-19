@@ -30,13 +30,12 @@ type Store interface {
 }
 
 type InMemoryStore struct {
-	lock     sync.Mutex
+	lock     sync.RWMutex
 	sessions map[string]*State
 }
 
 func NewInMemoryStore() *InMemoryStore {
 	return &InMemoryStore{
-		lock:     sync.Mutex{},
 		sessions: make(map[string]*State),
 	}
 }
@@ -49,8 +48,8 @@ func (s *InMemoryStore) Save(state *State) error {
 }
 
 func (s *InMemoryStore) Load(sessionID string) (*State, error) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	state, exists := s.sessions[sessionID]
 	if !exists {
 		return nil, ErrSessionNotFound

@@ -52,7 +52,7 @@ type AuthContext struct {
 
 type AuthMiddleware struct {
 	jwtService          *JWTService
-	kubernetesMananger  *kubernetes.Manager
+	kubernetesManager   *kubernetes.Manager
 	cookieSigningKey    []byte
 	cookieEncryptionKey []byte
 	sessionStore        session.Store
@@ -73,14 +73,14 @@ func writeErrorResponse(w http.ResponseWriter, statusCode int, code, message, de
 func NewAuthMiddleware(
 	jwtService *JWTService,
 	cookieSigningKey, cookieEncryptionKey []byte,
-	kubernetesMananger *kubernetes.Manager,
+	kubernetesManager *kubernetes.Manager,
 	sessionStore session.Store,
 ) *AuthMiddleware {
 	return &AuthMiddleware{
 		jwtService:          jwtService,
 		cookieSigningKey:    cookieSigningKey,
 		cookieEncryptionKey: cookieEncryptionKey,
-		kubernetesMananger:  kubernetesMananger,
+		kubernetesManager:   kubernetesManager,
 		sessionStore:        sessionStore,
 	}
 }
@@ -161,23 +161,21 @@ func (am *AuthMiddleware) verifyState(next http.Handler) http.Handler {
 
 		state := authCtx.SessionState
 		// Validate session fields are present
-		switch {
-		case state.Token.Subject == "" || state.Token.Issuer == "" || state.SessionID == "":
+		if state.Token.Subject == "" || state.Token.Issuer == "" || state.SessionID == "" {
 			logger.V(2).Info("Invalid session state: missing required fields")
 			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Invalid session state: missing required fields")
 			return
-		case state.IsExpired():
-			logger.V(2).Info("Session expired", "sessionID", state.SessionID)
-			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Session has expired")
-			return
-		case !am.isValidSession(state.SessionID):
-			logger.V(2).Info("Session ID not found or expired", "sessionID", state.SessionID)
-			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Session ID not found or expired")
-			return
-		default:
-			// Session is valid
-			authCtx.IsValid = true
 		}
+
+		if state.IsExpired() || !am.isValidSession(state.SessionID) {
+			logger.V(2).Info("Session expired or invalid", "sessionID", state.SessionID)
+			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Session has expired or is invalid")
+			return
+		}
+
+		// Session is valid
+		authCtx.IsValid = true
+
 		ctx := context.WithValue(r.Context(), AuthContextKey, authCtx)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

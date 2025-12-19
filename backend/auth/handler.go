@@ -50,15 +50,17 @@ type AuthHandler struct {
 	cookieSigningKey    []byte
 	cookieEncryptionKey []byte
 	sessionStore        session.Store
+	tokenExpiry         time.Duration
 }
 
-func NewAuthHandler(oidc OIDCProvider, jwtService *JWTService, cookieSigningKey, cookieEncryptionKey []byte, sessionStore session.Store) *AuthHandler {
+func NewAuthHandler(oidc OIDCProvider, jwtService *JWTService, cookieSigningKey, cookieEncryptionKey []byte, sessionStore session.Store, tokenExpiry time.Duration) *AuthHandler {
 	return &AuthHandler{
 		oidc:                oidc,
 		jwtService:          jwtService,
 		cookieSigningKey:    cookieSigningKey,
 		cookieEncryptionKey: cookieEncryptionKey,
 		sessionStore:        sessionStore,
+		tokenExpiry:         tokenExpiry,
 	}
 }
 
@@ -310,7 +312,7 @@ func (ah *AuthHandler) createSessionState(authCode *AuthorizeRequest, token *oau
 		ClusterID:   authCode.ClusterID,
 		RedirectURL: authCode.RedirectURL,
 	}
-	s.SetExpiration(time.Hour)
+	s.SetExpiration(ah.tokenExpiry)
 	return s, nil
 }
 

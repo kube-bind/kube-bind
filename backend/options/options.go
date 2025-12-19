@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -67,6 +68,8 @@ type ExtraOptions struct {
 	// If ControllerFrontend starts with http:// it is treated as a URL to a SPA server
 	// Else - it is treated as a path to static files to be served.
 	Frontend string
+
+	TokenExpiry time.Duration
 }
 
 type completedOptions struct {
@@ -105,6 +108,7 @@ func NewOptions() *Options {
 			ClusterScopedIsolation: string(kubebindv1alpha2.IsolationPrefixed),
 			SchemaSource:           CustomResourceDefinitionSource.String(),
 			Frontend:               "embedded", // Not used, but indicates to use embedded frontend using SPA.
+			TokenExpiry:            1 * time.Hour,
 		},
 	}
 	return opts
@@ -152,6 +156,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.ExternalCAFile, "external-ca-file", options.ExternalCAFile, "The external CA file for the service provider cluster. If not specified, service account's CA is used.")
 	fs.StringVar(&options.TLSExternalServerName, "external-server-name", options.TLSExternalServerName, "The external (TLS) server name used by consumers to talk to the service provider cluster. This can be useful to select the right certificate via SNI.")
 	fs.StringVar(&options.Frontend, "frontend", options.Frontend, "If starts with http:// it is treated as a URL to a SPA server Else - it is treated as a path to static files to be served.")
+	fs.DurationVar(&options.TokenExpiry, "token-expiry", options.TokenExpiry, "The duration for which tokens are valid. Default is 1h.")
 
 	fs.StringVar(&options.Provider, "multicluster-runtime-provider", options.Provider,
 		fmt.Sprintf("The multicluster runtime provider. Possible values are: %v", sets.List(sets.Set[string](sets.StringKeySet(providerAliases)))),

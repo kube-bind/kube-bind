@@ -111,6 +111,7 @@ func NewHandler(
 	scope kubebindv1alpha2.InformerScope,
 	mgr *kubernetes.Manager,
 	frontend string,
+	tokenExpiry time.Duration,
 ) (*handler, error) {
 	// Create JWT service for CLI authentication
 	jwtService, err := auth.NewJWTService("kube-bind-backend")
@@ -124,7 +125,7 @@ func NewHandler(
 	authMiddleware := auth.NewAuthMiddleware(jwtService, cookieSigningKey, cookieEncryptionKey, mgr, sessionStore)
 
 	// Create auth handler with OIDC provider
-	authHandler := auth.NewAuthHandler(oidcProvider, jwtService, cookieSigningKey, cookieEncryptionKey, sessionStore)
+	authHandler := auth.NewAuthHandler(oidcProvider, jwtService, cookieSigningKey, cookieEncryptionKey, sessionStore, tokenExpiry)
 
 	return &handler{
 		oidcProvider:        oidcProvider,

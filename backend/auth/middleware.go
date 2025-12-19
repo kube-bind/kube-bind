@@ -132,13 +132,14 @@ func (am *AuthMiddleware) authenticate(next http.Handler) http.Handler {
 			if cookie, err := r.Cookie(cookieName); err == nil {
 				s := securecookie.New(am.cookieSigningKey, am.cookieEncryptionKey)
 				state := &session.State{}
-				if err := s.Decode(cookieName, cookie.Value, state); err == nil {
+				err := s.Decode(cookieName, cookie.Value, state)
+				if err != nil {
+					logger.V(2).Info("Failed to decode session cookie", "error", err)
+				} else {
 					// Only set as valid after all checks pass
 					authCtx.SessionState = state
 					authCtx.ClientType = ClientTypeUI
 				}
-			} else {
-				logger.V(2).Info("Failed to decode session cookie", "error", err)
 			}
 		}
 

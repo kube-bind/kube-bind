@@ -86,7 +86,6 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kcp-dev/apimachinery/v2 v2.29.1-0.20251209121225-cf3c0b624983 // indirect
-	github.com/kcp-dev/kcp/pkg/apis v0.11.0 // indirect
 	github.com/kcp-dev/multicluster-provider v0.3.3 // indirect
 	github.com/kube-bind/kube-bind/web v0.0.0-00010101000000-000000000000 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect

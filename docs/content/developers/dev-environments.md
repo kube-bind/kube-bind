@@ -53,9 +53,8 @@ All the instructions assume you have already cloned the kube-bind repository and
     ```
     k ws use :root:kube-bind
 
-    ./bin/backend \
+    go run ./cmd/backend \
     --multicluster-runtime-provider kcp \
-    --server-url=$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}") \
     --oidc-issuer-url=http://127.0.0.1:8080/oidc \
     --oidc-callback-url=http://127.0.0.1:8080/api/callback \
     --oidc-type=embedded \
@@ -64,6 +63,7 @@ All the instructions assume you have already cloned the kube-bind repository and
     --schema-source apiresourceschemas \
     --consumer-scope=cluster
     ```
+    optionally add `--fronend=http://localhost:3000` to point to local frontend (must be running separately).
 
     This process will keep running, so open a new terminal.
 

@@ -275,6 +275,9 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 
 	case export.Spec.ClusterScopedIsolation == kubebindv1alpha2.IsolationNamespaced:
 		isolationStrategy = isolation.NewNamespaced(r.providerNamespace)
+	default:
+		// Default to None isolation strategy if no valid isolation strategy is specified
+		isolationStrategy = isolation.NewNone(r.providerNamespace, providerNamespaceUID)
 	}
 
 	specCtrl, err := spec.NewController(

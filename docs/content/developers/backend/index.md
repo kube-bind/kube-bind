@@ -24,7 +24,7 @@ The backend can be configured to use different providers:
 ```bash
 ./bin/backend \
   --multicluster-runtime-provider kcp \
-  --server-url=$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath="{.status.endpoints[0].url}") \
+  --apiexport-endpointslice-name=kube-bind.io \
   # ... other options
 ```
 
@@ -63,3 +63,17 @@ The backend includes several controllers for managing the export/binding lifecyc
 - **ServiceExport Controller**: Handles APIServiceExport resources
 - **ServiceExportRequest Controller**: Processes export requests
 - **ServiceNamespace Controller**: Manages namespace isolation
+
+## Deployment Limitations
+
+### Session Storage
+
+The backend currently uses in-memory session storage for OIDC authentication sessions. This creates the following limitation:
+
+- **Single Replica Constraint**: The backend cannot be run with replicas > 1 due to the lack of external session storage implementation
+- **Session Persistence**: Sessions are not persisted across backend restarts
+- **Load Balancer Issues**: If deployed behind a load balancer with multiple replicas, users may lose their sessions when requests are routed to different backend instances
+
+**Workaround**: Deploy the backend as a single replica (replicas: 1) until external session storage support is implemented.
+
+**Future Enhancement**: Implementation of external session storage (Redis, database, etc.) would resolve this limitation and enable high availability deployments. See https://github.com/kube-bind/kube-bind/issues/424

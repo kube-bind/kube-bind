@@ -128,8 +128,6 @@ github.com/kcp-dev/client-go v0.0.0-20251211053925-0c25555f33dd h1:jFb6BJ1msx8hy
 github.com/kcp-dev/client-go v0.0.0-20251211053925-0c25555f33dd/go.mod h1:SWYbL1dVmUvLQ8DpcQq+tIH14R1i5e4wh1NTW4YaUYc=
 github.com/kcp-dev/kcp v0.0.0-20251211081525-180afa9d0125 h1:nu7sZ9EXtA94cyZ82iLE/30AgWIwhoat3uT+Dyikagc=
 github.com/kcp-dev/kcp v0.0.0-20251211081525-180afa9d0125/go.mod h1:wltrdBFiWiEu+IpM94pe8zl/Ubq4re5ENbEpjbfYfJI=
-github.com/kcp-dev/kcp/pkg/apis v0.11.0 h1:K6p+tNHNcvfACCPLcHgY0EMLeaIwR1jS491FyLfXMII=
-github.com/kcp-dev/kcp/pkg/apis v0.11.0/go.mod h1:8cUAmfMJcksauz53UtsLYG8Phhx62rvuCnd/5t/Zihk=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20251209073509-71e0f2506325 h1:xjt3y1Uw+x1LQbtBesGohvyoQ2YRzz4c0rv3BwG0vkA=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20251209073509-71e0f2506325/go.mod h1:3Y5V97lz2MrKYzHlUaXejkj+coCmqde9E9WwVFuWRXE=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/apiextensions-apiserver v0.0.0-20251209073509-71e0f2506325 h1:MmzvuhedtyTW49qG0VWf9X54OwaRslUk6KyC7vhsuI4=

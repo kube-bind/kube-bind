@@ -49,7 +49,7 @@ func (s *State) Encode() ([]byte, error) {
 
 // IsExpired checks if the session has expired
 func (s *State) IsExpired() bool {
-	return !s.ExpiresAt.IsZero() && time.Now().After(s.ExpiresAt)
+	return s.ExpiresAt.IsZero() || time.Now().After(s.ExpiresAt)
 }
 
 // SetExpiration sets the session expiration time

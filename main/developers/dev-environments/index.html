@@ -2170,17 +2170,17 @@ This includes setting up workspace/provider and setting up all the APIResourceSc
 <li>Run the backend:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>k ws use :root:kube-bind
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>./bin/backend \
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>go run ./cmd/backend \
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>--multicluster-runtime-provider kcp \
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>--server-url=$(kubectl get apiexportendpointslice kube-bind.io -o jsonpath=&quot;{.status.endpoints[0].url}&quot;) \
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>--oidc-issuer-url=http://127.0.0.1:8080/oidc \
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>--oidc-callback-url=http://127.0.0.1:8080/api/callback \
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>--oidc-type=embedded \
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>--pretty-name=&quot;BigCorp.com&quot; \
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>--namespace-prefix=&quot;kube-bind-&quot; \
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>--schema-source apiresourceschemas \
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>--consumer-scope=cluster
-</code></pre></div></li>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>--oidc-issuer-url=http://127.0.0.1:8080/oidc \
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>--oidc-callback-url=http://127.0.0.1:8080/api/callback \
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>--oidc-type=embedded \
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>--pretty-name=&quot;BigCorp.com&quot; \
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>--namespace-prefix=&quot;kube-bind-&quot; \
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>--schema-source apiresourceschemas \
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>--consumer-scope=cluster
+</code></pre></div>
+optionally add <code>--fronend=http://localhost:3000</code> to point to local frontend (must be running separately).</li>
 </ol>
 <p>This process will keep running, so open a new terminal.</p>
 <h2 id="provider">Provider</h2>

@@ -2209,6 +2209,30 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#deployment-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deployment Limitations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deployment Limitations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#session-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Session Storage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2246,7 +2270,7 @@
 <p>The backend can be configured to use different providers:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./bin/backend<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--multicluster-runtime-provider<span class="w"> </span>kcp<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--server-url<span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>apiexportendpointslice<span class="w"> </span>kube-bind.io<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s2">&quot;{.status.endpoints[0].url}&quot;</span><span class="k">)</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--apiexport-endpointslice-name<span class="o">=</span>kube-bind.io<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="c1"># ... other options</span>
 </code></pre></div>
 <h3 id="provider-configuration">Provider Configuration</h3>
@@ -2280,6 +2304,16 @@
 <li><strong>ServiceExportRequest Controller</strong>: Processes export requests</li>
 <li><strong>ServiceNamespace Controller</strong>: Manages namespace isolation</li>
 </ul>
+<h2 id="deployment-limitations">Deployment Limitations</h2>
+<h3 id="session-storage">Session Storage</h3>
+<p>The backend currently uses in-memory session storage for OIDC authentication sessions. This creates the following limitation:</p>
+<ul>
+<li><strong>Single Replica Constraint</strong>: The backend cannot be run with replicas &gt; 1 due to the lack of external session storage implementation</li>
+<li><strong>Session Persistence</strong>: Sessions are not persisted across backend restarts</li>
+<li><strong>Load Balancer Issues</strong>: If deployed behind a load balancer with multiple replicas, users may lose their sessions when requests are routed to different backend instances</li>
+</ul>
+<p><strong>Workaround</strong>: Deploy the backend as a single replica (replicas: 1) until external session storage support is implemented.</p>
+<p><strong>Future Enhancement</strong>: Implementation of external session storage (Redis, database, etc.) would resolve this limitation and enable high availability deployments. See https://github.com/kube-bind/kube-bind/issues/424</p>
 
 
 

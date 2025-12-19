@@ -76,4 +76,4 @@ The backend currently uses in-memory session storage for OIDC authentication ses
 
 **Workaround**: Deploy the backend as a single replica (replicas: 1) until external session storage support is implemented.
 
-**Future Enhancement**: Implementation of external session storage (Redis, database, etc.) would resolve this limitation and enable high availability deployments.
+**Future Enhancement**: Implementation of external session storage (Redis, database, etc.) would resolve this limitation and enable high availability deployments. See https://github.com/kube-bind/kube-bind/issues/424

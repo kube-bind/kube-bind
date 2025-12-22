@@ -9,8 +9,26 @@ weight: 10
 
 1. **Install cert-manager** in your Kubernetes cluster, where kube-bind backend is running, if you haven't already. You can follow the official installation guide [here](https://cert-manager.io/docs/installation/kubernetes/).
 
+2. **Add kube-bind export label** to certificate CRD.
 
-2. **Create a `kube-bind` template for `Certificate` resources** to allow service consumers to request TLS certificates. Below is an example template:
+```bash
+kubectl label crd certificates.cert-manager.io kube-bind.io/exported=true --overwrite
+```
+
+3. **Create SelfSigned issuer** in the provider cluster.
+
+```yaml
+kubectl apply -f - <<EOF
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: my-selfsigned-issuer
+spec:
+  selfSigned: {}
+EOF
+```
+
+4. **Create a `kube-bind` template for `Certificate` resources** to allow service consumers to request TLS certificates. Below is an example template:
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -39,18 +57,18 @@ spec:
 EOF
 ```
 
-3. **Login into the kube-bind CLI** and request a binding to the `certificate` template created above. This will allow you to create `Certificate` resources in your consumer cluster.
+5. **Login into the kube-bind CLI** and request a binding to the `certificate` template created above. This will allow you to create `Certificate` resources in your consumer cluster.
 
 ```bash
 kubectl bind login https://kube-bind.example.com
 # you will get redirected to UI to authenticate and pick the template
-kubectl bind 
+kubectl bind
 ```
 
-4. **Wait for the binding to be established.** Once the binding is active, you can create `Certificate` resources in your consumer cluster, and you will get `Certificate` objects synced from the provider cluster.
+6. **Wait for the binding to be established.** Once the binding is active, you can create `Certificate` resources in your consumer cluster, and you will get `Certificate` objects synced from the provider cluster.
 
 ```bash
-kubectl bind 
+kubectl bind
 🌐 Opening kube-bind UI in your browser...
     https://kube-bind.genericcontrolplane.io?redirect_url=....
 
@@ -69,11 +87,11 @@ Created 1 APIServiceBinding(s):
 Resources bound successfully!
 ```
 
-5. **Create a `Certificate` resource** in your consumer cluster. The cert-manager in the provider cluster will handle the issuance and management of the TLS certificate.
+7. **Create a `Certificate` resource** in your consumer cluster. The cert-manager in the provider cluster will handle the issuance and management of the TLS certificate.
 
 !!! note
         my-selfsigned-issuer must be present in the provider cluster for this example to work.
-    
+
 ```yaml
 kubectl apply -f - <<EOF
 apiVersion: cert-manager.io/v1
@@ -91,10 +109,10 @@ spec:
 EOF
 ```
 
-6. Observe that the `Certificate` resource is created in the consumer cluster and the corresponding TLS secret is generated.
+8. Observe that the `Certificate` resource is created in the consumer cluster and the corresponding TLS secret is generated.
 
 ```bash
-kubectl get certificates 
+kubectl get certificates
 NAME          READY   SECRET        AGE
 my-tls-cert   True    my-tls-cert   6m55s
 kubectl get secrets

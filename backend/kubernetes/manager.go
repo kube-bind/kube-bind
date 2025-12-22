@@ -21,13 +21,16 @@ import (
 	"fmt"
 	"strings"
 
+	authzv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	authorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -239,4 +242,72 @@ func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk 
 	}
 
 	return list, nil
+}
+
+func (m *Manager) AuthorizeRequest(ctx context.Context, subject string, groups []string, cluster, method, path string) error {
+	logger := klog.FromContext(ctx).WithValues("subject", subject, "cluster", cluster, "method", method, "path", path, "groups", groups)
+
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return err
+	}
+	cfg := cl.GetConfig()
+
+	// Create the authorization clientset
+	authClient, err := authorizationv1.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
+
+	groups = append(groups, "system:authenticated")
+
+	// Check if user has access to create pods (basic permission test)
+	sar := &authzv1.SubjectAccessReview{
+		Spec: authzv1.SubjectAccessReviewSpec{
+			User:   subject,
+			Groups: groups,
+			ResourceAttributes: &authzv1.ResourceAttributes{
+				Verb:  "bind",
+				Group: "kube-bind.io",
+			},
+		},
+	}
+	// Perform the SubjectAccessReview using the specific clientset
+	sarResponse, err := authClient.SubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+	if err != nil {
+		logger.Error(err, "Failed to create SubjectAccessReview")
+		return err
+	}
+
+	if sarResponse.Status.Allowed {
+		logger.Info("User is allowed to bind", "user", subject)
+		// Proceed with your controller logic
+	} else {
+		logger.Info("User is not allowed to bind", "user", subject, "reason", sarResponse.Status)
+		// Return a structured authorization error
+		return errors.NewForbidden(
+			schema.GroupResource{Group: "kube-bind.io", Resource: "bind"},
+			"",
+			fmt.Errorf("user %q is not authorized to bind resources: %s", subject, sarResponse.Status.Reason),
+		)
+	}
+	return nil
+}
+
+func (m *Manager) SeedDefaultCluster(ctx context.Context) error {
+	logger := klog.FromContext(ctx)
+
+	cl, err := m.manager.GetCluster(ctx, "")
+	if err != nil {
+		return err
+	}
+	c := cl.GetClient()
+
+	_, err = kuberesources.CreateDefaultCluster(ctx, c)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		logger.Error(err, "Failed to create default Cluster resource")
+		return err
+	}
+	logger.Info("Default Cluster resource ensured")
+	return nil
 }

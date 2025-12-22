@@ -22,6 +22,12 @@ backend:
     clientId: ""
     clientSecret: ""
     callbackUrl: ""
+    type: "embedded"  # Options: "embedded" or "external"
+    # List of groups allowed to access bindings inside the cluster
+    # If using embedded OIDC provider, system:authenticated will be added automatically
+    allowedGroups: []
+    # List of users allowed to access bindings inside the cluster
+    allowedUsers: []
   
   # General backend configuration
   prettyName: ""

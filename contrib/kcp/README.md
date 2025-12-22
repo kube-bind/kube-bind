@@ -43,7 +43,7 @@ export KUBECONFIG=.kcp/backend.kubeconfig
 ```
 k ws use :root:kube-bind
 
-./bin/backend \
+go run ./cmd/backend \
   --multicluster-runtime-provider kcp \
   --apiexport-endpoint-slice-name=kube-bind.io \
   --pretty-name="BigCorp.com" \
@@ -78,6 +78,7 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
   --accept-permission-claim secrets.core \
   --accept-permission-claim namespaces.core \
   --accept-permission-claim roles.rbac.authorization.k8s.io \
+  --accept-permission-claim subjectaccessreviews.authorization.k8s.io \
   --accept-permission-claim rolebindings.rbac.authorization.k8s.io \
   --accept-permission-claim apiresourceschemas.apis.kcp.io
 ```

@@ -29,6 +29,7 @@ import (
 	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kube-bind/kube-bind/backend/auth"
+	"github.com/kube-bind/kube-bind/backend/controllers/cluster"
 	"github.com/kube-bind/kube-bind/backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexport"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexportrequest"
@@ -55,6 +56,7 @@ type Controllers struct {
 	ServiceExport        *serviceexport.APIServiceExportReconciler
 	ServiceExportRequest *serviceexportrequest.APIServiceExportRequestReconciler
 	ServiceNamespace     *servicenamespace.APIServiceNamespaceReconciler
+	Cluster              *cluster.ClusterReconciler
 }
 
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
@@ -186,6 +188,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	if err := s.ServiceNamespace.SetupWithManager(s.Config.Manager); err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceNamespace controller with manager: %w", err)
 	}
+
 	s.ServiceExportRequest, err = serviceexportrequest.NewAPIServiceExportRequestReconciler(
 		ctx,
 		s.Config.Manager,
@@ -197,10 +200,22 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest Controller: %w", err)
 	}
-
-	// Register the ServiceExportRequest controller with the manager
 	if err := s.ServiceExportRequest.SetupWithManager(s.Config.Manager); err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest controller with manager: %w", err)
+	}
+
+	s.Cluster, err = cluster.NewClusterReconciler(
+		ctx,
+		s.Config.Manager,
+		opts,
+		c.Options.OIDC.AllowedGroups,
+		c.Options.OIDC.AllowedUsers,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error setting up LogicalCluster Controller: %w", err)
+	}
+	if err := s.Cluster.SetupWithManager(s.Config.Manager); err != nil {
+		return nil, fmt.Errorf("error setting up LogicalCluster controller with manager: %w", err)
 	}
 
 	return s, nil
@@ -271,8 +286,24 @@ func (s *Server) Run(ctx context.Context) error {
 	}()
 
 	go func() {
+		// When using native k8s provider/singelton cluster - provider is set to nil
+		// so we need to seed the default cluster. If provider is set - it is provider responsibility
+		// to seed the default cluster in each managed cluster either via provider machinery or via provider
+		// wrapper (see kcp example).
+		if s.Config.Provider == nil {
+			if err := s.seedCluster(ctx); err != nil {
+				logger.Error(err, "Failed to seed default cluster")
+			}
+		}
+	}()
+
+	go func() {
 		<-ctx.Done()
 		logger.Info("Context done")
 	}()
 	return s.WebServer.Start(ctx)
+}
+
+func (s *Server) seedCluster(ctx context.Context) error {
+	return s.Kubernetes.SeedDefaultCluster(ctx)
 }

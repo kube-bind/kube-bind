@@ -1,0 +1,5 @@
+apiVersion: kube-bind.io/v1alpha2
+kind: Cluster
+metadata:
+  name: default
+spec: {}

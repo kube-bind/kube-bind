@@ -50,7 +50,7 @@ go run ./cmd/backend \
   --oidc-type=embedded \
   --pretty-name="BigCorp.com" \
   --namespace-prefix="kube-bind-" \
-  --consumer-scope=cluster --frontend http://localhost:3000
+  --consumer-scope=cluster
 ```
 
 This process will keep running, so open a new terminal.

@@ -18,12 +18,18 @@ package kcp
 
 import (
 	"context"
+	"math"
+	"time"
 
 	provider "github.com/kcp-dev/multicluster-provider/apiexport"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
+
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 var _ multicluster.Provider = &Provider{}
@@ -73,6 +79,49 @@ type awareWrapper struct {
 }
 
 func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.Cluster) error {
-	// TODO: Add cluster seeding here in the follow-up PRS.
-	return a.Aware.Engage(ctx, name, cluster)
+	ctx, cancel := context.WithCancel(ctx) //nolint:govet // cancel is called in the error case only.
+
+	err := a.Aware.Engage(ctx, name, cluster)
+	if err != nil {
+		cancel()
+		return err
+	}
+
+	cl := cluster.GetClient()
+
+	obj := &kubebindv1alpha2.Cluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: kubebindv1alpha2.DefaultClusterName,
+		},
+		Spec: kubebindv1alpha2.ClusterSpec{},
+	}
+
+	const maxRetries = 3
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		err = cl.Create(ctx, obj)
+		if err == nil || apierrors.IsAlreadyExists(err) {
+			break
+		}
+
+		if !apierrors.IsForbidden(err) {
+			cancel()
+			return err
+		}
+
+		if attempt < maxRetries-1 {
+			backoff := time.Duration(math.Pow(2, float64(attempt))) * time.Second
+			select {
+			case <-time.After(backoff):
+			case <-ctx.Done():
+				cancel()
+				return ctx.Err()
+			}
+		}
+	}
+
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		cancel()
+		return err
+	}
+	return nil //nolint:govet // cancel is called in the error case only.
 }

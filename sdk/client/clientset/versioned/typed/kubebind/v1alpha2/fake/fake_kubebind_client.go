@@ -48,6 +48,10 @@ func (c *FakeKubeBindV1alpha2) BoundSchemas(namespace string) v1alpha2.BoundSche
 	return newFakeBoundSchemas(c, namespace)
 }
 
+func (c *FakeKubeBindV1alpha2) Clusters(namespace string) v1alpha2.ClusterInterface {
+	return newFakeClusters(c, namespace)
+}
+
 func (c *FakeKubeBindV1alpha2) ClusterBindings(namespace string) v1alpha2.ClusterBindingInterface {
 	return newFakeClusterBindings(c, namespace)
 }

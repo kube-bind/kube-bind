@@ -10,10 +10,17 @@ backend:
   listenAddress: "0.0.0.0:8443"
   # OIDC configuration
   oidc:
+    type: "external"
     issuerUrl: "https://auth.genericcontrolplane.io"
     clientId: "kube-bind"
     clientSecret: "### REPLACE_ME ###"
     callbackUrl: "https://kube-bind.genericcontrolplane.io/callback"
+    # Example allowed groups and users for external OIDC
+    allowedGroups:
+      - "kube-bind-users"
+      - "admins"
+    allowedUsers:
+      - "user@example.com"
   
   # Cookie encryption keys (generate your own for production!)
   # example: openssl rand -base64 32

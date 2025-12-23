@@ -94,6 +94,16 @@ spec:
             {{- else if eq .Values.backend.oidc.type "external" }}
             - --oidc-type=external
             {{- end }}
+            {{- if .Values.backend.oidc.allowedGroups }}
+            {{- range .Values.backend.oidc.allowedGroups }}
+            - --oidc-allowed-groups={{ . }}
+            {{- end }}
+            {{- end }}
+            {{- if .Values.backend.oidc.allowedUsers }}
+            {{- range .Values.backend.oidc.allowedUsers }}
+            - --oidc-allowed-users={{ . }}
+            {{- end }}
+            {{- end }}
             {{- if .Values.backend.loggingLevel }}
             - -v={{ .Values.backend.loggingLevel }}
             {{- end }}

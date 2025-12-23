@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/gorilla/securecookie"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
@@ -88,8 +89,7 @@ func NewAuthMiddleware(
 func (am *AuthMiddleware) AuthenticateRequest(next http.Handler) http.Handler {
 	return am.authenticate(
 		am.verifyState(
-			next,
-		),
+			am.authorizeK8S(next)),
 	)
 }
 
@@ -116,9 +116,13 @@ func (am *AuthMiddleware) authenticate(next http.Handler) http.Handler {
 						ClusterID:   claims.ClusterID,
 						RedirectURL: claims.RedirectURL,
 					}
+					if claims.ExpiresAt != nil {
+						authCtx.SessionState.ExpiresAt = claims.ExpiresAt.Time
+					}
+
 					authCtx.ClientType = ClientTypeCLI
 				} else {
-					logger.V(2).Info("Invalid JWT token", "error", err)
+					logger.V(2).Error(err, "Invalid JWT token")
 				}
 			}
 		}
@@ -140,6 +144,8 @@ func (am *AuthMiddleware) authenticate(next http.Handler) http.Handler {
 					authCtx.SessionState = state
 					authCtx.ClientType = ClientTypeUI
 				}
+			} else {
+				logger.V(2).Error(err, "Failed to decode session cookie")
 			}
 		}
 
@@ -168,7 +174,13 @@ func (am *AuthMiddleware) verifyState(next http.Handler) http.Handler {
 			return
 		}
 
-		if state.IsExpired() || !am.isValidSession(state.SessionID) {
+		if state.IsExpired() {
+			logger.V(2).Info("Session has expired", "sessionID", state.SessionID)
+			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Session has expired")
+			return
+		}
+
+		if !am.isValidSession(state.SessionID) {
 			logger.V(2).Info("Session expired or invalid", "sessionID", state.SessionID)
 			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Session has expired or is invalid")
 			return
@@ -191,6 +203,30 @@ func (am *AuthMiddleware) isValidSession(sessionID string) bool {
 	return time.Now().Before(sessionInfo.ExpiresAt)
 }
 
+func (am *AuthMiddleware) authorizeK8S(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger := klog.FromContext(r.Context())
+
+		authCtx := GetAuthContext(r.Context())
+		if !authCtx.IsValid { // should not happen if AuthenticateRequest is used before
+			logger.V(2).Info("Authentication context is not valid")
+			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Authentication context is not valid")
+			return
+		}
+
+		// Authorize against Kubernetes RBAC
+		err := am.kubernetesManager.AuthorizeRequest(r.Context(), authCtx.SessionState.Token.Subject, authCtx.SessionState.Token.Groups, authCtx.SessionState.ClusterID, r.Method, r.URL.Path)
+		if err != nil {
+			logger.V(2).Info("Kubernetes RBAC authorization failed", "error", err)
+			statusCode, code, details := mapErrorToCode(err)
+			writeErrorResponse(w, statusCode, code, "Cluster authorization failed. Missing required permissions in the cluster to access bindings.", details)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func GetAuthContext(ctx context.Context) *AuthContext {
 	if authCtx, ok := ctx.Value(AuthContextKey).(*AuthContext); ok {
 		return authCtx
@@ -211,4 +247,22 @@ func RequireAuth(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// mapErrorToCode maps common errors to structured error codes
+func mapErrorToCode(err error) (statusCode int, code string, details string) {
+	if apierrors.IsNotFound(err) {
+		return http.StatusNotFound, kubebindv1alpha2.ErrorCodeResourceNotFound, err.Error()
+	}
+	if apierrors.IsUnauthorized(err) {
+		return http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, err.Error()
+	}
+	if apierrors.IsForbidden(err) {
+		return http.StatusForbidden, kubebindv1alpha2.ErrorCodeAuthorizationFailed, err.Error()
+	}
+	if apierrors.IsBadRequest(err) {
+		return http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, err.Error()
+	}
+	// Default to internal server error
+	return http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, err.Error()
 }

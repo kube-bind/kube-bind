@@ -2242,6 +2242,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#access-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      Access Control
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Access Control">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#access-control-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      Access Control Flags
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-access-control-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      How Access Control Works
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example Configuration
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       Troubleshooting
@@ -2311,7 +2353,10 @@
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>--oidc-callback-url<span class="o">=</span>https://your-backend.com/callback
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>--oidc-authorize-url<span class="o">=</span>https://your-oidc-provider.com/auth
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>--oidc-ca-file<span class="o">=</span>/path/to/ca-bundle.pem<span class="w">  </span><span class="c1"># Optional: for custom CA certificates</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>--oidc-allowed-groups<span class="o">=</span>group1,group2,group3<span class="w">  </span><span class="c1"># Optional: restrict access to specific groups</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>--oidc-allowed-users<span class="o">=</span>user1,user2,user3<span class="w">      </span><span class="c1"># Optional: restrict access to specific users</span>
 </code></pre></div>
+<p><strong>Note</strong>: When using external OIDC providers, at least one of <code>--oidc-allowed-groups</code> or <code>--oidc-allowed-users</code> must be specified for security reasons.</p>
 <h3 id="external-oidc-flow">External OIDC Flow</h3>
 <ol>
 <li>User initiates authentication by accessing a protected endpoint</li>
@@ -2329,6 +2374,8 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>--oidc-type<span class="o">=</span>embedded
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>--oidc-callback-url<span class="o">=</span>https://your-backend.com/callback
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>--oidc-issuer-url<span class="o">=</span>https://your-backend.com<span class="w">  </span><span class="c1"># The backend serves as the OIDC provider</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>--oidc-allowed-groups<span class="o">=</span>group1,group2,group3<span class="w">  </span><span class="c1"># Optional: restrict access to specific groups</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>--oidc-allowed-users<span class="o">=</span>user1,user2,user3<span class="w">      </span><span class="c1"># Optional: restrict access to specific users</span>
 </code></pre></div>
 <h3 id="embedded-oidc-flow">Embedded OIDC Flow</h3>
 <ol>
@@ -2362,6 +2409,40 @@
 <li>Intended only for local development and testing</li>
 <li>Does not persist user data between restarts</li>
 </ul>
+<h2 id="access-control">Access Control</h2>
+<p>The kube-bind backend provides fine-grained access control through OIDC group and user-based authorization. When a user successfully authenticates via OIDC, the backend automatically creates RBAC resources to control access to cluster binding operations.</p>
+<h3 id="access-control-flags">Access Control Flags</h3>
+<ul>
+<li><code>--oidc-allowed-groups</code>: List of OIDC groups allowed to access bindings inside the cluster. Users must be members of at least one of these groups to gain access.</li>
+<li><code>--oidc-allowed-users</code>: List of specific OIDC users allowed to access bindings inside the cluster.</li>
+</ul>
+<p><strong>Important</strong>: For external OIDC providers, at least one of these flags must be specified. This validation ensures that access control is properly configured in production environments.</p>
+<h3 id="how-access-control-works">How Access Control Works</h3>
+<ol>
+<li><strong>RBAC Resource Creation</strong>: For each cluster, the controller automatically creates:</li>
+<li>A <code>ClusterRole</code> named <code>kube-bind-oidc-user</code> with permissions to perform binding operations</li>
+<li>
+<p>A <code>ClusterRoleBinding</code> that binds the role to the specified groups and users</p>
+</li>
+<li>
+<p><strong>Group-based Access</strong>: Users who are members of groups listed in <code>--oidc-allowed-groups</code> are granted access via RBAC subject entries of kind <code>Group</code>.</p>
+</li>
+<li>
+<p><strong>User-based Access</strong>: Individual users listed in <code>--oidc-allowed-users</code> are granted access via RBAC subject entries of kind <code>User</code>.</p>
+</li>
+<li>
+<p><strong>Embedded OIDC Special Behavior</strong>: When using embedded OIDC (<code>--oidc-type=embedded</code>), the <code>system:authenticated</code> group is automatically added to the allowed groups list, providing access to all authenticated users during development.</p>
+</li>
+</ol>
+<h3 id="example-configuration">Example Configuration</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Restrict access to specific groups and users</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>--oidc-allowed-groups<span class="o">=</span>kube-bind-admins,platform-team
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>--oidc-allowed-users<span class="o">=</span>admin@example.com,operator@example.com
+</code></pre></div>
+<p>This configuration would create RBAC bindings allowing:
+- All members of the <code>kube-bind-admins</code> group
+- All members of the <code>platform-team</code> group<br />
+- The specific users <code>admin@example.com</code> and <code>operator@example.com</code></p>
 <h2 id="troubleshooting">Troubleshooting</h2>
 <h3 id="common-issues">Common Issues</h3>
 <ol>
@@ -2369,10 +2450,11 @@
 <li><strong>Callback URL mismatches</strong>: Ensure the callback URL matches what's configured in your OIDC provider</li>
 <li><strong>Token validation errors</strong>: Check that the issuer URL matches between provider and backend configuration</li>
 <li><strong>Network connectivity</strong>: Verify the backend can reach the external OIDC provider</li>
+<li><strong>Access control validation errors</strong>: When using external OIDC, ensure at least one of <code>--oidc-allowed-groups</code> or <code>--oidc-allowed-users</code> is specified</li>
 </ol>
 <h3 id="debug-logging">Debug Logging</h3>
 <p>Enable debug logging to troubleshoot OIDC issues:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>--v<span class="o">=</span><span class="m">2</span><span class="w">  </span><span class="c1"># Increase verbosity for more detailed logs</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>--v<span class="o">=</span><span class="m">2</span><span class="w">  </span><span class="c1"># Increase verbosity for more detailed logs</span>
 </code></pre></div>
 
 

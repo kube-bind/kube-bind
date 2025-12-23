@@ -25,7 +25,9 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -38,6 +40,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/component-base/logs"
 	logsv1 "k8s.io/component-base/logs/api/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kube-bind/kube-bind/cli/pkg/kubectl/base"
 	bindapiservice "github.com/kube-bind/kube-bind/cli/pkg/kubectl/bind-apiservice/plugin"
@@ -104,7 +107,7 @@ func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 	b.Print.AddFlags(cmd)
 
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
-	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
+	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without creating any resources on the consumer cluster.")
 	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
 	cmd.Flags().StringSliceVarP(&b.KonnectorHostAlias, "konnector-host-alias", "", []string{}, "Add a host alias to the konnector pods in the format IP:hostname1,hostname2")
 	cmd.Flags().MarkHidden("konnector-host-alias") //nolint:errcheck
@@ -230,6 +233,11 @@ func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) erro
 		if b.DryRun {
 			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Dry-run mode: outputting APIServiceExport requests\n\n")
 
+			if result.Response.Authentication.OAuth2CodeGrant == nil {
+				return fmt.Errorf("authentication data missing in response")
+			}
+			sessionID := result.Response.Authentication.OAuth2CodeGrant.SessionID
+
 			// Print each request from the response using the configured printer
 			for i, request := range result.Response.Requests {
 				if i > 0 && b.Print.OutputFormat != nil && *b.Print.OutputFormat == "yaml" {
@@ -253,6 +261,13 @@ func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) erro
 					fmt.Fprintf(b.Options.IOStreams.Out, "%s", request.Raw)
 				}
 			}
+
+			if err := b.saveBindingAssets(&result.Response, sessionID); err != nil {
+				return fmt.Errorf("failed to save binding assets: %w", err)
+			}
+
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Dry-run complete. No changes made to consumer cluster.\n")
+			return nil
 		}
 
 		// Create bindings using the shared binder
@@ -264,11 +279,6 @@ func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) erro
 		bindings, err := b.bindResponseToAPIServiceBindings(ctx, config, &result.Response)
 		if err != nil {
 			return fmt.Errorf("failed to create APIServiceBindings: %w", err)
-		}
-
-		if b.DryRun {
-			fmt.Fprintf(b.Options.IOStreams.ErrOut, "\nDry-run mode: no APIServiceBindings were created.\n")
-			return nil
 		}
 
 		// Print the results
@@ -402,6 +412,77 @@ func (b *BindOptions) startCallbackServer(resultCh chan<- *BindResult, errCh cha
 	}()
 
 	return server, port, nil
+}
+
+// saveBindingAssets saves the binding response to local storage for later use
+func (b *BindOptions) saveBindingAssets(response *kubebindv1alpha2.BindingResourceResponse, sessionID string) error {
+	if response.Authentication.OAuth2CodeGrant == nil {
+		return fmt.Errorf("authentication data missing")
+	}
+
+	userID := response.Authentication.OAuth2CodeGrant.ID
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	dryRunDir := filepath.Join(homeDir, ".kube-bind", "dry-run", sessionID)
+	if err := os.MkdirAll(dryRunDir, 0700); err != nil {
+		return fmt.Errorf("failed to create dry-run directory: %w", err)
+	}
+
+	kubeconfigPath := filepath.Join(dryRunDir, "kubeconfig.yaml")
+	if err := os.WriteFile(kubeconfigPath, response.Kubeconfig, 0600); err != nil {
+		return fmt.Errorf("failed to save kubeconfig: %w", err)
+	}
+
+	requestFiles := make([]string, 0, len(response.Requests))
+	for i, request := range response.Requests {
+		requestPath := filepath.Join(dryRunDir, fmt.Sprintf("request-%d.yaml", i))
+
+		var obj map[string]interface{}
+		if err := json.Unmarshal(request.Raw, &obj); err != nil {
+			return fmt.Errorf("failed to unmarshal request %d: %w", i, err)
+		}
+
+		yamlData, err := yaml.Marshal(obj)
+		if err != nil {
+			return fmt.Errorf("failed to marshal request %d to YAML: %w", i, err)
+		}
+
+		if err := os.WriteFile(requestPath, yamlData, 0600); err != nil {
+			return fmt.Errorf("failed to save request %d: %w", i, err)
+		}
+
+		requestFiles = append(requestFiles, requestPath)
+	}
+
+	assets := &base.DryRunAssets{
+		SessionID:    sessionID,
+		UserID:       userID,
+		ServerURL:    b.ServerName,
+		ClusterID:    b.ClusterName,
+		CreatedAt:    time.Now(),
+		Kubeconfig:   kubeconfigPath,
+		RequestFiles: requestFiles,
+	}
+
+	metadataPath := filepath.Join(dryRunDir, "metadata.json")
+	metadataData, err := json.MarshalIndent(assets, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+
+	if err := os.WriteFile(metadataPath, metadataData, 0600); err != nil {
+		return fmt.Errorf("failed to save metadata: %w", err)
+	}
+
+	fmt.Fprintf(b.Options.IOStreams.ErrOut, "Dry-run assets saved to: %s\n", dryRunDir)
+	fmt.Fprintf(b.Options.IOStreams.ErrOut, "Session ID: %s\n", sessionID)
+	fmt.Fprintf(b.Options.IOStreams.ErrOut, "To apply later: kubectl bind apiservice --from-dry-run %s\n", sessionID)
+
+	return nil
 }
 
 // bindResponseToAPIServiceBindings uses the shared binder to create API service bindings

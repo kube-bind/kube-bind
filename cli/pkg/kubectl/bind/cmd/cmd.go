@@ -44,8 +44,11 @@ var (
 	# Bind specific template (CLI mode)
 	%[1]s bind apiservice --name my-api --template-name database-service
 
-	# View template details without binding
+	# View template details without binding. This also saves assets locally for later use.
 	%[1]s bind apiservice --name my-api --template-name database-service --dry-run
+	
+	# Apply bindings from a previous dry-run session
+	%[1]s bind apiservice --from-dry-run <session-id>
 	`
 )
 

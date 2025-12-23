@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,8 +78,8 @@ func (b *Binder) BindFromFile(ctx context.Context) ([]*kubebindv1alpha2.APIServi
 		remoteFlags = fmt.Sprintf("--remote-kubeconfig-namespace %s --remote-kubeconfig-name %s", b.opts.RemoteKubeconfigNamespace, b.opts.RemoteKubeconfigName)
 	}
 	fmt.Fprintf(b.opts.IOStreams.ErrOut, "🚀 Executing: kubectl bind apiservice %s -f -\n", remoteFlags)
-	fmt.Fprintf(b.opts.IOStreams.ErrOut, "✨ Use \"-o yaml\" and \"--dry-run\" to get the APIServiceExportRequest.\n")
-	fmt.Fprintf(b.opts.IOStreams.ErrOut, "    and pass it to \"kubectl bind apiservice\" directly. Great for automation.\n")
+	fmt.Fprintf(b.opts.IOStreams.ErrOut, "✨ Use \"-o yaml\" and \"--dry-run\" to get the APIServiceExportRequest and save assets locally.\n")
+	fmt.Fprintf(b.opts.IOStreams.ErrOut, "    Use \"--from-dry-run <session-id>\" to apply saved assets later. Great for automation.\n")
 
 	// Ensure client side namespace exists
 	err := b.ensureClientSideNamespaceExists(ctx)
@@ -115,10 +117,6 @@ func (b *Binder) BindFromFile(ctx context.Context) ([]*kubebindv1alpha2.APIServi
 		fmt.Fprintf(b.opts.IOStreams.ErrOut, "🔒 Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
 	} else {
 		fmt.Fprintf(b.opts.IOStreams.ErrOut, "🔒 Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
-	}
-
-	if b.opts.DryRun {
-		return nil, nil
 	}
 
 	// Get remote kubeconfig
@@ -169,6 +167,12 @@ func (b *Binder) BindFromResponse(ctx context.Context, response *kubebindv1alpha
 		return nil, fmt.Errorf("unexpected response: authentication.oauth2CodeGrant is nil")
 	}
 
+	// Note: This should typically be handled before calling BindFromResponse,
+	// but we check here as a safety measure
+	if b.opts.DryRun {
+		return nil, nil
+	}
+
 	// Ensure client side namespace exists
 	err := b.ensureClientSideNamespaceExists(ctx)
 	if err != nil {
@@ -200,10 +204,6 @@ func (b *Binder) BindFromResponse(ctx context.Context, response *kubebindv1alpha
 		fmt.Fprintf(b.opts.IOStreams.ErrOut, "🔒 Created secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
 	} else {
 		fmt.Fprintf(b.opts.IOStreams.ErrOut, "🔒 Updated secret %s/%s for host %s, namespace %s\n", "kube-bind", secret.Name, remoteHost, remoteNamespace)
-	}
-
-	if b.opts.DryRun {
-		return nil, nil
 	}
 
 	// Get remote kubeconfig
@@ -339,4 +339,129 @@ func (b *Binder) unmarshalManifest(bs []byte) (*kubebindv1alpha2.APIServiceExpor
 		return nil, fmt.Errorf("invalid kind %q", request.Kind)
 	}
 	return &request, nil
+}
+
+// loadDryRunAssets loads the metadata and verifies files exist
+func (b *Binder) loadDryRunAssets(sessionID string) (*base.DryRunAssets, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	dryRunDir := filepath.Join(homeDir, ".kube-bind", "dry-run", sessionID)
+	metadataPath := filepath.Join(dryRunDir, "metadata.json")
+
+	data, err := os.ReadFile(metadataPath)
+	if err != nil {
+		return nil, fmt.Errorf("dry-run session %q not found: %w", sessionID, err)
+	}
+
+	var assets base.DryRunAssets
+	if err := json.Unmarshal(data, &assets); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
+	}
+
+	if _, err := os.Stat(assets.Kubeconfig); err != nil {
+		return nil, fmt.Errorf("kubeconfig file not found: %w", err)
+	}
+
+	for _, reqFile := range assets.RequestFiles {
+		if _, err := os.Stat(reqFile); err != nil {
+			return nil, fmt.Errorf("request file not found: %s: %w", reqFile, err)
+		}
+	}
+
+	return &assets, nil
+}
+
+// BindFromDryRun loads saved dry-run assets and creates bindings
+func (b *Binder) BindFromDryRun(ctx context.Context, sessionID string) ([]*kubebindv1alpha2.APIServiceBinding, error) {
+	assets, err := b.loadDryRunAssets(sessionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load dry-run assets: %w", err)
+	}
+
+	fmt.Fprintf(b.opts.IOStreams.ErrOut, "Loading dry-run assets from session: %s\n", sessionID)
+	fmt.Fprintf(b.opts.IOStreams.ErrOut, "Server: %s\n", assets.ServerURL)
+	fmt.Fprintf(b.opts.IOStreams.ErrOut, "Created: %s\n", assets.CreatedAt.Format(time.RFC3339))
+
+	err = b.ensureClientSideNamespaceExists(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to ensure kube-bind namespace exists: %w", err)
+	}
+
+	kubeconfigData, err := os.ReadFile(assets.Kubeconfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read kubeconfig: %w", err)
+	}
+
+	remoteHost, remoteNamespace, err := base.ParseRemoteKubeconfig(kubeconfigData)
+	if err != nil {
+		return nil, err
+	}
+
+	kubeClient, err := kubeclient.NewForConfig(b.config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create kube client: %w", err)
+	}
+
+	secretName, err := base.FindRemoteKubeconfig(ctx, kubeClient, remoteNamespace, remoteHost)
+	if err != nil {
+		return nil, err
+	}
+
+	secret, created, err := base.EnsureKubeconfigSecret(ctx, string(kubeconfigData), secretName, kubeClient)
+	if err != nil {
+		return nil, err
+	}
+
+	if created {
+		fmt.Fprintf(b.opts.IOStreams.ErrOut, "Created secret %s/%s for host %s, namespace %s\n",
+			"kube-bind", secret.Name, remoteHost, remoteNamespace)
+	} else {
+		fmt.Fprintf(b.opts.IOStreams.ErrOut, "Updated secret %s/%s for host %s, namespace %s\n",
+			"kube-bind", secret.Name, remoteHost, remoteNamespace)
+	}
+
+	remoteKubeconfig, remoteNamespaceActual, remoteConfig, err := b.getRemoteKubeconfig(ctx, secret.Namespace, secret.Name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get remote kubeconfig: %w", err)
+	}
+
+	if err := b.deployKonnector(ctx); err != nil {
+		return nil, fmt.Errorf("failed to deploy konnector: %w", err)
+	}
+
+	var bindings []*kubebindv1alpha2.APIServiceBinding
+	for i, requestFile := range assets.RequestFiles {
+		fmt.Fprintf(b.opts.IOStreams.ErrOut, "Processing request %d: %s\n", i, filepath.Base(requestFile))
+
+		data, err := os.ReadFile(requestFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read request file %s: %w", requestFile, err)
+		}
+
+		request, err := b.unmarshalManifest(data)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal request from %s: %w", requestFile, err)
+		}
+
+		result, err := b.createServiceExportRequest(ctx, remoteConfig, remoteNamespaceActual, request)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create service export request: %w", err)
+		}
+
+		secretName, err := b.createKubeconfigSecret(ctx, remoteConfig.Host, remoteNamespaceActual, remoteKubeconfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create kubeconfig secret: %w", err)
+		}
+
+		results, err := b.createAPIServiceBindings(ctx, result, secretName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create API service bindings: %w", err)
+		}
+		bindings = append(bindings, results...)
+	}
+
+	return bindings, nil
 }

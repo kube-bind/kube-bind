@@ -962,7 +962,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 			want: true, // Should match because when no namespace JSONPath is provided, namespace matching is delegated to caller
 		},
 				{
-			name: "namespace inherited from referencing object when JSONPath not provided",
+			name: "namespace inherited from referencing object when JSONPath not provided in the namespaced isolation mode",
 			potentiallyReferencedResources: &unstructured.UnstructuredList{
 				Items: []unstructured. Unstructured{
 					{
@@ -1005,7 +1005,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 			want:  true,
 		},
 		{
-			name: "namespace inheritance fails when in different namespace",
+			name: "namespace inheritance fails when in different namespace in the namespaced isolation mode",
 			potentiallyReferencedResources: &unstructured.UnstructuredList{
 				Items: []unstructured. Unstructured{
 					{

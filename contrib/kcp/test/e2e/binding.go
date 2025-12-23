@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -46,12 +47,18 @@ func performBinding(
 	// 1. Get APIServiceExportRequest from provider
 	c := framework.GetKubeBindRestClient(t, kubeBindConfig)
 
+	identity, err := uuid.NewUUID()
+	require.NoError(t, err)
+
 	bindResponse, err := c.Bind(t.Context(), &kubebindv1alpha2.BindableResourcesRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-binding",
 		},
 		TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
 			Name: templateRef,
+		},
+		ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
+			Identity: identity.String(),
 		},
 	})
 	require.NoError(t, err)

@@ -82,6 +82,7 @@ func (ah *AuthHandler) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 			SessionID:             params.SessionID,
 			ClusterID:             params.ClusterID,
 			ClientType:            ClientType(params.ClientType),
+			ConsumerID:            params.ConsumerID,
 		}
 	}
 

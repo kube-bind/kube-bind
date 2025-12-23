@@ -36,17 +36,19 @@ import (
 
 // BinderOptions contains the configuration for the shared binder
 type BinderOptions struct {
-	IOStreams                 genericclioptions.IOStreams
-	SkipKonnector             bool
-	KonnectorImageOverride    string
-	KonnectorHostAliasParsed  []corev1.HostAlias
-	DowngradeKonnector        bool
-	RemoteKubeconfigFile      string
-	RemoteKubeconfigNamespace string
-	RemoteKubeconfigName      string
-	RemoteNamespace           string
-	File                      string
-	DryRun                    bool
+	IOStreams                    genericclioptions.IOStreams
+	SkipKonnector                bool
+	KonnectorImageOverride       string
+	KonnectorHostAliasParsed     []corev1.HostAlias
+	DowngradeKonnector           bool
+	RemoteKubeconfigFile         string
+	RemoteKubeconfigNamespace    string
+	RemoteKubeconfigName         string
+	RemoteNamespace              string
+	ClusterIdentity              string
+	ClusterIdentityNamespaceName string
+	File                         string
+	DryRun                       bool
 }
 
 // Binder provides shared binding functionality for both bind and bind-apiservice commands

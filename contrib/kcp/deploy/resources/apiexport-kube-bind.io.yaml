@@ -77,7 +77,7 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: bindableresourcesrequests
-    schema: v251029-ff0a399.bindableresourcesrequests.kube-bind.io
+    schema: v251224-24568872.bindableresourcesrequests.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io

@@ -86,7 +86,15 @@ type BindableResourcesRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
+	// TemplateRef specifies the APIServiceExportTemplate to bind to.
+	// +required
+	// +kubebuilder:validation:Required
 	TemplateRef APIServiceExportTemplateRef `json:"templateRef"`
+	// ClusterIdentity contains information that uniquely identifies the cluster.
+	// When doing dry run, we expect the client to fill this field in (or it will be taken from local cluster where context is available).
+	// +required
+	// +kubebuilder:validation:Required
+	ClusterIdentity ClusterIdentity `json:"clusterIdentity"`
 }
 
 type APIServiceExportTemplateRef struct {

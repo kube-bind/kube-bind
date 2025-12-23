@@ -74,6 +74,11 @@ type BindOptions struct {
 	// KonnectorHostAliasParsed is a list of parsed host alias entries to add to the konnector pods.
 	KonnectorHostAliasParsed []corev1.HostAlias
 
+	// ClusterIdentity is a unique identity for the cluster.
+	ClusterIdentity string
+	// clusterIdentityNamespaceName is the namespace name from which the cluster identity will be generated.
+	clusterIdentityNamespaceName string
+
 	// Runner is runs the command. It can be replaced in tests.
 	Runner func(cmd *exec.Cmd) error
 
@@ -86,6 +91,8 @@ func NewBindOptions(streams genericclioptions.IOStreams) *BindOptions {
 		Options: base.NewOptions(streams),
 		Logs:    logs.NewOptions(),
 		Print:   genericclioptions.NewPrintFlags("kubectl-bind").WithDefaultOutput("yaml"),
+
+		clusterIdentityNamespaceName: "kube-system",
 
 		Runner: func(cmd *exec.Cmd) error {
 			return cmd.Run()
@@ -103,11 +110,15 @@ func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 	logsv1.AddFlags(b.Logs, cmd.Flags())
 	b.Print.AddFlags(cmd)
 
+	// This block of flags are common with bind-apiservice/plugin/bind.go, keep them in sync.
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
 	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
+	cmd.Flags().MarkHidden("konnector-image") //nolint:errcheck
 	cmd.Flags().StringSliceVarP(&b.KonnectorHostAlias, "konnector-host-alias", "", []string{}, "Add a host alias to the konnector pods in the format IP:hostname1,hostname2")
 	cmd.Flags().MarkHidden("konnector-host-alias") //nolint:errcheck
+	cmd.Flags().StringVarP(&b.ClusterIdentity, "cluster-identity", "", b.ClusterIdentity, "A unique identity for the cluster. If not provided, it will be generated based on the local cluster information. ")
+	cmd.Flags().StringVarP(&b.clusterIdentityNamespaceName, "cluster-identity-namespace", "", b.clusterIdentityNamespaceName, "The namespace name from which the cluster identity will be generated. Only used if cluster-identity is not provided.")
 }
 
 // Complete ensures all fields are initialized.
@@ -173,13 +184,18 @@ func (b *BindOptions) Run(ctx context.Context, urlCh chan<- string) error {
 
 // runWithCallback creates a local callback listener and opens the UI
 func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) error {
-	_, err := b.Options.ClientConfig.ClientConfig()
+	restConfig, err := b.Options.ClientConfig.ClientConfig()
 	if err != nil {
 		return fmt.Errorf("failed to get client config: %w", err)
 	}
 
 	// Generate session ID. It is used to verify callback.
 	sessionID := rand.Text()
+
+	clusterIdentity, err := b.getClusterIdentity(ctx, restConfig)
+	if err != nil {
+		return fmt.Errorf("failed to get cluster identity: %w", err)
+	}
 
 	// Setup callback server with random port
 	resultCh := make(chan *BindResult, 1)
@@ -192,7 +208,7 @@ func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) erro
 	defer callbackServer.Close()
 
 	// Build the UI URL with callback parameters
-	uiURL, err := b.buildUIURL(callbackPort, sessionID, b.ClusterName)
+	uiURL, err := b.buildUIURL(callbackPort, sessionID, b.ClusterName, clusterIdentity)
 	if err != nil {
 		return fmt.Errorf("failed to build UI URL: %w", err)
 	}
@@ -290,7 +306,7 @@ func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) erro
 }
 
 // buildUIURL constructs the UI URL with callback parameters
-func (b *BindOptions) buildUIURL(callbackPort int, sessionID, clusterID string) (string, error) {
+func (b *BindOptions) buildUIURL(callbackPort int, sessionID, backendClusterID, consumerClusterID string) (string, error) {
 	// Parse the base URL
 	u, err := url.Parse(b.ServerName)
 	if err != nil {
@@ -303,8 +319,11 @@ func (b *BindOptions) buildUIURL(callbackPort int, sessionID, clusterID string) 
 	values := u.Query()
 	values.Add("session_id", sessionID)
 	values.Add("redirect_url", redirectURL)
-	if clusterID != "" {
-		values.Add("cluster_id", clusterID)
+	if backendClusterID != "" {
+		values.Add("cluster_id", backendClusterID)
+	}
+	if consumerClusterID != "" {
+		values.Add("consumer_id", consumerClusterID)
 	}
 	u.RawQuery = values.Encode()
 
@@ -416,4 +435,20 @@ func (b *BindOptions) bindResponseToAPIServiceBindings(ctx context.Context, conf
 
 	binder := bindapiservice.NewBinder(config, binderOpts)
 	return binder.BindFromResponse(ctx, response)
+}
+
+// getClusterIdentity returns the cluster identity, generating it from the namespace if not provided
+func (b *BindOptions) getClusterIdentity(ctx context.Context, restConfig *rest.Config) (string, error) {
+	if b.ClusterIdentity != "" {
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Manual cluster identity provided: %s. Identity will not be generated from namespace.\n", b.ClusterIdentity)
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "If this is not intended, please omit --cluster-identity flag to generate identity from namespace '%s'.\n\n", b.clusterIdentityNamespaceName)
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Re-using same identity on multiple consumer clusters is not supported & might cause un-intended consequeces. Be aware of the dragons!")
+		return b.ClusterIdentity, nil
+	}
+
+	identity, err := base.GetClusterIdentityFromNamespace(ctx, restConfig, b.clusterIdentityNamespaceName)
+	if err != nil {
+		return "", fmt.Errorf("failed to get cluster identity from namespace '%q': %w. Please provide static identity using --cluster-identity or set current kubectl context to consumer cluster", b.clusterIdentityNamespaceName, err)
+	}
+	return identity, nil
 }

@@ -29,6 +29,7 @@ import (
 
 const (
 	IdentityAnnotationKey       = "backend.kube-bind.io/identity"
+	AuthorAnnotationKey         = "backend.kube-bind.io/author"
 	legacyIdentityAnnotationKey = "example-backend.kube-bind.io/identity"
 )
 
@@ -53,7 +54,7 @@ func handleLegacyAnnotations(ctx context.Context, cl client.Client, namespace *c
 	return nil
 }
 
-func CreateNamespace(ctx context.Context, client client.Client, generateName, id string) (*corev1.Namespace, error) {
+func CreateNamespace(ctx context.Context, client client.Client, generateName, id, author string) (*corev1.Namespace, error) {
 	if !strings.HasSuffix(generateName, "-") {
 		generateName += "-"
 	}
@@ -62,6 +63,7 @@ func CreateNamespace(ctx context.Context, client client.Client, generateName, id
 			GenerateName: generateName,
 			Annotations: map[string]string{
 				IdentityAnnotationKey: id,
+				AuthorAnnotationKey:   author,
 			},
 		},
 	}

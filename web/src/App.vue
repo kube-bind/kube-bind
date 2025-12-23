@@ -86,8 +86,9 @@ const authenticate = async () => {
     const cluster = route.query.cluster_id as string || ''
     const sessionId = route.query.session_id as string || generateSessionId()
     const clientSideRedirectUrl = route.query.redirect_url as string || ''
+    const consumerId = route.query.consumer_id as string || ''
 
-    await authService.initiateAuth(sessionId, cluster, clientSideRedirectUrl)
+    await authService.initiateAuth(sessionId, cluster, clientSideRedirectUrl, consumerId)
   } catch (error) {
     console.error('Authentication failed:', error)
     authStatus.value.error = 'Authentication failed'

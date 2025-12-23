@@ -345,14 +345,6 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	authCtx := auth.GetAuthContext(r.Context())
 	state := authCtx.SessionState
 
-	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject+"#"+state.ClusterID, params.ClusterID)
-	if err != nil {
-		logger.Error(err, "failed to handle resources")
-		statusCode, code, details := mapErrorToCode(err)
-		writeErrorResponse(w, statusCode, code, "Failed to handle cluster resources", details)
-		return
-	}
-
 	// Parse JSON request body
 	const maxBodySize = 1 << 20 // 1 MB
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
@@ -365,6 +357,21 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		} else {
 			writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Invalid JSON request body", err.Error())
 		}
+		return
+	}
+
+	// TODO: Move to validating admission.
+	if bindRequest.ClusterIdentity.Identity == "" {
+		logger.Error(fmt.Errorf("missing cluster identity"), "invalid bind request")
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Missing cluster identity in bind request", "The cluster identity must be provided in the bind request")
+		return
+	}
+
+	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, params.ConsumerID, params.ClusterID)
+	if err != nil {
+		logger.Error(err, "failed to handle resources")
+		statusCode, code, details := mapErrorToCode(err)
+		writeErrorResponse(w, statusCode, code, "Failed to handle cluster resources", details)
 		return
 	}
 

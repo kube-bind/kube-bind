@@ -24,6 +24,7 @@ class AuthService {
       // Since cookies are HTTP-only, we need to check authentication by making an API call
       const urlParams = new URLSearchParams(window.location.search)
       const clusterId = urlParams.get('cluster_id') || ''
+      const consumerId = urlParams.get('consumer_id') || ''
       
       // Make a simple API call to check if we're authenticated
       const authCheckUrl = clusterId ? `/ping?cluster_id=${clusterId}` : '/ping'
@@ -134,10 +135,14 @@ class AuthService {
     const urlParams = new URLSearchParams(window.location.search)
     const redirectUrl = urlParams.get('redirect_url')
     const sessionId = urlParams.get('session_id')
+    const consumerId = urlParams.get('consumer_id')
     if (redirectUrl) {
       const callbackUrl = new URL(redirectUrl)
       if (sessionId) {
         callbackUrl.searchParams.append('session_id', sessionId)
+      }
+      if (consumerId) {
+        callbackUrl.searchParams.append('consumer_id', consumerId)
       }
       
       // Add binding response data as base64 encoded query parameter

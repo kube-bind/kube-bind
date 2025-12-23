@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -47,7 +48,6 @@ import (
 )
 
 func TestClusterScoped(t *testing.T) {
-	t.Parallel()
 	// name & test type defined by letters - cc - cluster-cluster so its easier to identify failures in the logs.
 	testHappyCase(t, "cc-prefixed", apiextensionsv1.ClusterScoped, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope, kubebindv1alpha2.IsolationPrefixed)
 	testHappyCase(t, "cc-none", apiextensionsv1.ClusterScoped, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope, kubebindv1alpha2.IsolationNone)
@@ -55,8 +55,6 @@ func TestClusterScoped(t *testing.T) {
 }
 
 func TestNamespacedScoped(t *testing.T) {
-	t.Parallel()
-
 	testHappyCase(t, "nn", apiextensionsv1.NamespaceScoped, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope, "")
 	testHappyCase(t, "nc", apiextensionsv1.NamespaceScoped, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope, "")
 }
@@ -71,6 +69,9 @@ func testHappyCase(
 ) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel) // Commented out to prevent cleanup of kcp assets
+
+	clusterIdentity, err := uuid.NewUUID()
+	require.NoError(t, err)
 
 	suffix := framework.RandomString(4)
 
@@ -189,12 +190,16 @@ func testHappyCase(
 			step: func(t *testing.T) {
 				c := framework.GetKubeBindRestClient(t, kubeBindConfig)
 				var err error
+
 				bindResponse, err = c.Bind(ctx, &kubebindv1alpha2.BindableResourcesRequest{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "test-binding",
 					},
 					TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
 						Name: templateRef,
+					},
+					ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
+						Identity: clusterIdentity.String(),
 					},
 				})
 				require.NoError(t, err)

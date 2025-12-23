@@ -86,7 +86,7 @@ func matchesReferences(logger klog.Logger,
 	obj *unstructured.Unstructured,
 	potentiallyReferencedResources *unstructured.UnstructuredList,
 	isolation kubebindv1alpha2.Isolation,
-	) bool {
+) bool {
 	if len(references) == 0 {
 		return false
 	}
@@ -138,8 +138,8 @@ func matchesReferences(logger klog.Logger,
 						namespaceMatches = false
 						objNamespace := obj.GetNamespace()
 						if slices.Contains(namespaceValues, objNamespace) {
-								namespaceMatches = true
-							}
+							namespaceMatches = true
+						}
 					}
 
 					if selector.JSONPath.Namespace == "" && isolation == kubebindv1alpha2.IsolationNamespaced {

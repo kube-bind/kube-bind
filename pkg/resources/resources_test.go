@@ -32,7 +32,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 		selector                       kubebindv1alpha2.Selector
 		obj                            *unstructured.Unstructured
 		potentiallyReferencedResources *unstructured.UnstructuredList
-		isolation 					kubebindv1alpha2.Isolation
+		isolation                      kubebindv1alpha2.Isolation
 		want                           bool
 	}{
 		{
@@ -97,7 +97,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false,
+			want:      false,
 		},
 		{
 			name:                           "named resource selector should match exact name and namespace",
@@ -119,7 +119,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true,
+			want:      true,
 		},
 		{
 			name:                           "named resource selector should match name when namespace is empty",
@@ -141,7 +141,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true,
+			want:      true,
 		},
 		{
 			name:                           "named resource selector should not match different name",
@@ -163,7 +163,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false,
+			want:      false,
 		},
 		{
 			name:                           "named resource selector should not match different namespace",
@@ -185,7 +185,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false,
+			want:      false,
 		},
 		{
 			name:                           "named resource selector should match one of multiple resources",
@@ -211,7 +211,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true,
+			want:      true,
 		},
 		{
 			name:                           "label selector with object having no labels should not match",
@@ -232,7 +232,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false,
+			want:      false,
 		},
 		{
 			name:                           "combination of label selector and named resource should match when both match",
@@ -262,7 +262,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true,
+			want:      true,
 		},
 		{
 			name:                           "combination of label selector and named resource should match when named resource matches (OR logic)",
@@ -292,7 +292,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true,
+			want:      true,
 		},
 		{
 			name:                           "combination of label selector and named resource should match when label matches (OR logic)",
@@ -322,7 +322,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true,
+			want:      true,
 		},
 		{
 			name:                           "label-only-secret test case - should sync when has matching label (OR logic)",
@@ -360,7 +360,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true, // Should match because label selector matches (OR logic)
+			want:      true, // Should match because label selector matches (OR logic)
 		},
 		// JSONPath Reference tests
 		{
@@ -404,7 +404,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true,
+			want:      true,
 		},
 		{
 			name: "reference selector should match when JSONPath extracts matching name and namespace",
@@ -449,7 +449,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true,
+			want:      true,
 		},
 		{
 			name: "reference selector should not match when JSONPath extracts different name",
@@ -492,7 +492,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false,
+			want:      false,
 		},
 		{
 			name: "reference selector should not match when JSONPath extracts different namespace",
@@ -537,7 +537,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false,
+			want:      false,
 		},
 		{
 			name: "reference selector should handle array JSONPath results",
@@ -582,7 +582,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true,
+			want:      true,
 		},
 		{
 			name: "reference selector should handle array JSONPath with namespace extraction",
@@ -637,7 +637,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true,
+			want:      true,
 		},
 		{
 			name: "reference selector should not match with bracket wildcard syntax (unsupported)",
@@ -684,10 +684,10 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false, // Should not match because [*] syntax is not supported by gjson
+			want:      false, // Should not match because [*] syntax is not supported by gjson
 		},
 		{
-			name: "reference selector should not match when no referenced resources provided",
+			name:                           "reference selector should not match when no referenced resources provided",
 			potentiallyReferencedResources: nil,
 			selector: kubebindv1alpha2.Selector{
 				References: []kubebindv1alpha2.SelectorReference{
@@ -711,7 +711,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false,
+			want:      false,
 		},
 		{
 			name: "reference selector should not match when JSONPath does not exist",
@@ -752,7 +752,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false,
+			want:      false,
 		},
 		{
 			name: "kubeconfig secret case - should not match when only has kube-bind.io/owner label but selector requires app=sheriff",
@@ -808,7 +808,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false, // Should NOT match because it doesn't have app=sheriff label and is not referenced by Sheriff
+			want:      false, // Should NOT match because it doesn't have app=sheriff label and is not referenced by Sheriff
 		},
 		{
 			name: "cert-manager secret reference - should match when certificate references secret via secretName",
@@ -863,7 +863,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true, // Should match because certificate's .spec.secretName equals secret name and no namespace JSONPath means namespace matching is handled by caller
+			want:      true, // Should match because certificate's .spec.secretName equals secret name and no namespace JSONPath means namespace matching is handled by caller
 		},
 		{
 			name: "cert-manager secret reference - should not match when certificate references different secret",
@@ -911,7 +911,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: false, // Should not match because certificate's .spec.secretName is "other-secret", not "my-tls-cert"
+			want:      false, // Should not match because certificate's .spec.secretName is "other-secret", not "my-tls-cert"
 		},
 		{
 			name: "cert-manager secret reference - cross-namespace scenario with no namespace JSONPath",
@@ -959,12 +959,12 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationPrefixed,
-			want: true, // Should match because when no namespace JSONPath is provided, namespace matching is delegated to caller
+			want:      true, // Should match because when no namespace JSONPath is provided, namespace matching is delegated to caller
 		},
-				{
+		{
 			name: "namespace inherited from referencing object when JSONPath not provided in the namespaced isolation mode",
 			potentiallyReferencedResources: &unstructured.UnstructuredList{
-				Items: []unstructured. Unstructured{
+				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]any{
 							"metadata": map[string]any{
@@ -984,30 +984,30 @@ func TestSelector_IsClaimed(t *testing.T) {
 				References: []kubebindv1alpha2.SelectorReference{
 					{
 						GroupResource: kubebindv1alpha2.GroupResource{
-							Group:     "mangodb.com",
+							Group:    "mangodb.com",
 							Resource: "mangodbs",
 						},
-						JSONPath:  &kubebindv1alpha2.JSONPath{
+						JSONPath: &kubebindv1alpha2.JSONPath{
 							Name: "spec.secret.name",
 						},
 					},
 				},
 			},
-			obj:  &unstructured.Unstructured{
+			obj: &unstructured.Unstructured{
 				Object: map[string]any{
 					"metadata": map[string]any{
 						"name":      "my-secret",
-						"namespace":  "default",
+						"namespace": "default",
 					},
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationNamespaced,
-			want:  true,
+			want:      true,
 		},
 		{
 			name: "namespace inheritance fails when in different namespace in the namespaced isolation mode",
 			potentiallyReferencedResources: &unstructured.UnstructuredList{
-				Items: []unstructured. Unstructured{
+				Items: []unstructured.Unstructured{
 					{
 						Object: map[string]any{
 							"metadata": map[string]any{
@@ -1026,7 +1026,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 			selector: kubebindv1alpha2.Selector{
 				References: []kubebindv1alpha2.SelectorReference{
 					{
-						GroupResource:  kubebindv1alpha2.GroupResource{
+						GroupResource: kubebindv1alpha2.GroupResource{
 							Group:    "mangodb.com",
 							Resource: "mangodbs",
 						},
@@ -1045,7 +1045,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 				},
 			},
 			isolation: kubebindv1alpha2.IsolationNamespaced,
-			want:  false,
+			want:      false,
 		},
 	}
 
@@ -1060,8 +1060,7 @@ func TestSelector_IsClaimed(t *testing.T) {
 	}
 }
 
-
-func TestReferenceSelector_IsolationMode(t *testing. T) {
+func TestReferenceSelector_IsolationMode(t *testing.T) {
 	tests := []struct {
 		name              string
 		isolation         kubebindv1alpha2.Isolation
@@ -1082,7 +1081,7 @@ func TestReferenceSelector_IsolationMode(t *testing. T) {
 		},
 		{
 			name:      "IsolationNamespaced blocks non-exported references",
-			isolation:  kubebindv1alpha2.IsolationNamespaced,
+			isolation: kubebindv1alpha2.IsolationNamespaced,
 			exportedResources: []kubebindv1alpha2.APIServiceExportResource{
 				{GroupResource: kubebindv1alpha2.GroupResource{Group: "mangodb.com", Resource: "mangodbs"}},
 			},
@@ -1115,7 +1114,7 @@ func TestReferenceSelector_IsolationMode(t *testing. T) {
 		},
 		{
 			name:      "IsolationNamespaced allows exported references",
-			isolation:  kubebindv1alpha2.IsolationNamespaced,
+			isolation: kubebindv1alpha2.IsolationNamespaced,
 			exportedResources: []kubebindv1alpha2.APIServiceExportResource{
 				{GroupResource: kubebindv1alpha2.GroupResource{Group: "mangodb.com", Resource: "mangodbs"}},
 			},
@@ -1124,14 +1123,13 @@ func TestReferenceSelector_IsolationMode(t *testing. T) {
 			},
 			shouldAllow: true,
 		},
-
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			export := &kubebindv1alpha2.APIServiceExport{
 				Spec: kubebindv1alpha2.APIServiceExportSpec{
-					ClusterScopedIsolation:  tt.isolation,
+					ClusterScopedIsolation: tt.isolation,
 					Resources:              tt.exportedResources,
 				},
 			}

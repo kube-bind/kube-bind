@@ -97,6 +97,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		c.Options.ExternalCA,
 		c.Options.TLSExternalServerName,
 		s.Config.Manager,
+		c.Options.OIDC.Type == string(kubebindv1alpha2.OIDCProviderTypeEmbedded),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up Kubernetes Manager: %w", err)

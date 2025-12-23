@@ -79,8 +79,11 @@ type awareWrapper struct {
 }
 
 func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.Cluster) error {
+	ctx, cancel := context.WithCancel(ctx) //nolint:govet // cancel is called in the error case only.
+
 	err := a.Aware.Engage(ctx, name, cluster)
 	if err != nil {
+		cancel()
 		return err
 	}
 
@@ -101,6 +104,7 @@ func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.
 		}
 
 		if !apierrors.IsForbidden(err) {
+			cancel()
 			return err
 		}
 
@@ -109,13 +113,15 @@ func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.
 			select {
 			case <-time.After(backoff):
 			case <-ctx.Done():
+				cancel()
 				return ctx.Err()
 			}
 		}
 	}
 
 	if err != nil && !apierrors.IsAlreadyExists(err) {
+		cancel()
 		return err
 	}
-	return nil
+	return nil //nolint:govet // cancel is called in the error case only.
 }

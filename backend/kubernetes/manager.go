@@ -48,7 +48,8 @@ type Manager struct {
 	externalCA               []byte
 	externalTLSServerName    string
 
-	manager mcmanager.Manager
+	manager      mcmanager.Manager
+	embeddedOIDC bool
 }
 
 func NewKubernetesManager(
@@ -59,6 +60,7 @@ func NewKubernetesManager(
 	externalCA []byte,
 	externalTLSServerName string,
 	manager mcmanager.Manager,
+	embeddedOIDC bool,
 ) (*Manager, error) {
 	m := &Manager{
 		namespacePrefix:    namespacePrefix,
@@ -69,7 +71,8 @@ func NewKubernetesManager(
 		externalCA:               externalCA,
 		externalTLSServerName:    externalTLSServerName,
 
-		manager: manager,
+		manager:      manager,
+		embeddedOIDC: embeddedOIDC,
 	}
 
 	if err := m.manager.GetFieldIndexer().IndexField(ctx, &corev1.Namespace{}, NamespacesByIdentity,
@@ -259,9 +262,11 @@ func (m *Manager) AuthorizeRequest(ctx context.Context, subject string, groups [
 		return err
 	}
 
-	groups = append(groups, "system:authenticated")
+	if m.embeddedOIDC {
+		groups = append(groups, "system:authenticated")
+	}
 
-	// Check if user has access to create pods (basic permission test)
+	// Check if user can bind (basic permission test)
 	sar := &authzv1.SubjectAccessReview{
 		Spec: authzv1.SubjectAccessReviewSpec{
 			User:   subject,
@@ -279,10 +284,7 @@ func (m *Manager) AuthorizeRequest(ctx context.Context, subject string, groups [
 		return err
 	}
 
-	if sarResponse.Status.Allowed {
-		logger.Info("User is allowed to bind", "user", subject)
-		// Proceed with your controller logic
-	} else {
+	if !sarResponse.Status.Allowed {
 		logger.Info("User is not allowed to bind", "user", subject, "reason", sarResponse.Status)
 		// Return a structured authorization error
 		return errors.NewForbidden(
@@ -291,6 +293,7 @@ func (m *Manager) AuthorizeRequest(ctx context.Context, subject string, groups [
 			fmt.Errorf("user %q is not authorized to bind resources: %s", subject, sarResponse.Status.Reason),
 		)
 	}
+	logger.Info("User is allowed to bind", "user", subject)
 	return nil
 }
 

@@ -98,7 +98,7 @@ var __yieldStar = (value) => {
 };
 var __forAwait = (obj, it, method) => (it = obj[__knownSymbol("asyncIterator")]) ? it.call(obj) : (obj = obj[__knownSymbol("iterator")](), it = {}, method = (key, fn) => (fn = obj[key]) && (it[key] = (arg) => new Promise((yes, no, done) => (arg = fn.call(obj, arg), done = arg.done, Promise.resolve(arg.value).then((value) => yes({ value, done }), no)))), method("next"), method("return"), it);
 var require_index_001 = __commonJS({
-  "assets/index.41dda553.js"(exports) {
+  "assets/index.64982fe8.js"(exports) {
     (function polyfill() {
       const relList = document.createElement("link").relList;
       if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -8415,265 +8415,6 @@ var require_index_001 = __commonJS({
     function useRoute(_name) {
       return inject(routeLocationKey);
     }
-    var __async$5 = (__this, __arguments, generator) => {
-      return new Promise((resolve2, reject) => {
-        var fulfilled = (value) => {
-          try {
-            step(generator.next(value));
-          } catch (e) {
-            reject(e);
-          }
-        };
-        var rejected = (value) => {
-          try {
-            step(generator.throw(value));
-          } catch (e) {
-            reject(e);
-          }
-        };
-        var step = (x) => x.done ? resolve2(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
-        step((generator = generator.apply(__this, __arguments)).next());
-      });
-    };
-    class AuthService {
-      isAuthenticated() {
-        return __async$5(this, null, function* () {
-          try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const clusterId = urlParams.get("cluster_id") || "";
-            const authCheckUrl = clusterId ? `/ping?cluster_id=${clusterId}` : "/ping";
-            const response = yield fetch(`/api${authCheckUrl}`, {
-              method: "GET",
-              credentials: "include"
-              // Include cookies
-            });
-            const isAuth = response.status === 200;
-            console.log("Auth check:", { clusterId, status: response.status, isAuth });
-            return isAuth;
-          } catch (error) {
-            console.error("Auth check error:", error);
-            return false;
-          }
-        });
-      }
-      initiateAuth(sessionId, clusterId, clientSideRedirectUrl) {
-        return __async$5(this, null, function* () {
-          const authUrl = `/api/authorize`;
-          const redirect_url = window.location.origin + window.location.pathname;
-          const params = new URLSearchParams({
-            session_id: sessionId,
-            redirect_url,
-            cluster_id: clusterId,
-            client_type: "ui"
-            // Use UI type to get cookies
-          });
-          if (clientSideRedirectUrl) {
-            params.set("client_side_redirect_url", clientSideRedirectUrl);
-          }
-          window.location.href = `${authUrl}?${params}`;
-        });
-      }
-      logout() {
-        return __async$5(this, null, function* () {
-          try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const clusterId = urlParams.get("cluster_id") || "";
-            const logoutUrl = clusterId ? `/api/logout?cluster_id=${encodeURIComponent(clusterId)}` : "/api/logout";
-            const response = yield fetch(logoutUrl, {
-              method: "POST",
-              credentials: "include"
-              // Include cookies in the request
-            });
-            console.log("Logout response:", { status: response.status, clusterId });
-            window.location.href = window.location.origin + window.location.pathname;
-          } catch (error) {
-            console.error("Logout error:", error);
-            window.location.reload();
-          }
-        });
-      }
-      getSessionCookieName() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const clusterId = urlParams.get("cluster_id") || "";
-        return clusterId ? `kube-bind-${clusterId}` : "kube-bind";
-      }
-      isCliFlow() {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.has("redirect_url");
-      }
-      redirectToCliCallback(bindingResponseData) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirectUrl = urlParams.get("redirect_url");
-        const sessionId = urlParams.get("session_id");
-        if (redirectUrl) {
-          const callbackUrl = new URL(redirectUrl);
-          if (sessionId) {
-            callbackUrl.searchParams.append("session_id", sessionId);
-          }
-          const base64Response = btoa(JSON.stringify(bindingResponseData));
-          callbackUrl.searchParams.append("binding_response", base64Response);
-          window.location.href = callbackUrl.toString();
-        }
-      }
-    }
-    const authService = new AuthService();
-    var __async$4 = (__this, __arguments, generator) => {
-      return new Promise((resolve2, reject) => {
-        var fulfilled = (value) => {
-          try {
-            step(generator.next(value));
-          } catch (e) {
-            reject(e);
-          }
-        };
-        var rejected = (value) => {
-          try {
-            step(generator.throw(value));
-          } catch (e) {
-            reject(e);
-          }
-        };
-        var step = (x) => x.done ? resolve2(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
-        step((generator = generator.apply(__this, __arguments)).next());
-      });
-    };
-    const _hoisted_1$3 = { id: "app" };
-    const _hoisted_2$3 = { class: "header" };
-    const _hoisted_3$3 = { class: "header-content" };
-    const _hoisted_4$3 = {
-      key: 0,
-      class: "user-section"
-    };
-    const _hoisted_5$3 = { class: "main" };
-    const _hoisted_6$3 = {
-      key: 0,
-      class: "auth-placeholder"
-    };
-    const _sfc_main$3 = /* @__PURE__ */ defineComponent({
-      __name: "App",
-      setup(__props) {
-        const route = useRoute();
-        const authStatus = ref({
-          isAuthenticated: false,
-          loading: true,
-          error: null
-        });
-        const checkAuthStatus = () => __async$4(this, null, function* () {
-          try {
-            const authenticated = yield authService.isAuthenticated();
-            authStatus.value.isAuthenticated = authenticated;
-          } catch (error) {
-            console.error("Auth check failed:", error);
-            authStatus.value.error = "Authentication check failed";
-          } finally {
-            authStatus.value.loading = false;
-          }
-        });
-        const authenticate = () => __async$4(this, null, function* () {
-          try {
-            const cluster = route.query.cluster_id || "";
-            const sessionId = route.query.session_id || generateSessionId();
-            const clientSideRedirectUrl = route.query.redirect_url || "";
-            yield authService.initiateAuth(sessionId, cluster, clientSideRedirectUrl);
-          } catch (error) {
-            console.error("Authentication failed:", error);
-            authStatus.value.error = "Authentication failed";
-          }
-        });
-        const logout = () => __async$4(this, null, function* () {
-          try {
-            yield authService.logout();
-            authStatus.value.isAuthenticated = false;
-          } catch (error) {
-            console.error("Logout failed:", error);
-          }
-        });
-        const generateSessionId = () => {
-          return Math.random().toString(36).substring(2) + Date.now().toString(36);
-        };
-        onMounted(() => {
-          checkAuthStatus();
-          window.addEventListener("auth-expired", () => {
-            console.log("Received auth-expired event, updating authentication status");
-            authStatus.value.isAuthenticated = false;
-            authStatus.value.error = "Session expired. Please re-authenticate.";
-          });
-        });
-        return (_ctx, _cache) => {
-          const _component_router_view = resolveComponent("router-view");
-          return openBlock(), createElementBlock("div", _hoisted_1$3, [
-            createBaseVNode("header", _hoisted_2$3, [
-              createBaseVNode("div", _hoisted_3$3, [
-                _cache[2] || (_cache[2] = createStaticVNode('<div class="brand" data-v-393414b1><div class="logo" data-v-393414b1><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" data-v-393414b1><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-393414b1></path><path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-393414b1></path><path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-393414b1></path></svg></div><h1 data-v-393414b1>Kube Bind</h1></div>', 1)),
-                authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_4$3, [
-                  _cache[1] || (_cache[1] = createBaseVNode("div", { class: "user-info" }, [
-                    createBaseVNode("div", { class: "status-indicator" }),
-                    createBaseVNode("span", { class: "welcome-text" }, "Connected")
-                  ], -1)),
-                  createBaseVNode("button", {
-                    onClick: logout,
-                    class: "logout-btn"
-                  }, [..._cache[0] || (_cache[0] = [
-                    createBaseVNode("svg", {
-                      width: "16",
-                      height: "16",
-                      viewBox: "0 0 24 24",
-                      fill: "none",
-                      xmlns: "http://www.w3.org/2000/svg"
-                    }, [
-                      createBaseVNode("path", {
-                        d: "M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9",
-                        stroke: "currentColor",
-                        "stroke-width": "2",
-                        "stroke-linecap": "round",
-                        "stroke-linejoin": "round"
-                      }),
-                      createBaseVNode("path", {
-                        d: "M16 17L21 12L16 7",
-                        stroke: "currentColor",
-                        "stroke-width": "2",
-                        "stroke-linecap": "round",
-                        "stroke-linejoin": "round"
-                      }),
-                      createBaseVNode("path", {
-                        d: "M21 12H9",
-                        stroke: "currentColor",
-                        "stroke-width": "2",
-                        "stroke-linecap": "round",
-                        "stroke-linejoin": "round"
-                      })
-                    ], -1),
-                    createTextVNode(" Sign out ", -1)
-                  ])])
-                ])) : createCommentVNode("", true)
-              ])
-            ]),
-            createBaseVNode("main", _hoisted_5$3, [
-              !authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_6$3, [
-                _cache[3] || (_cache[3] = createBaseVNode("h2", null, "Authentication Required", -1)),
-                _cache[4] || (_cache[4] = createBaseVNode("p", null, "Please authenticate to access resources.", -1)),
-                createBaseVNode("button", {
-                  onClick: authenticate,
-                  class: "auth-btn"
-                }, "Authenticate")
-              ])) : (openBlock(), createBlock(_component_router_view, {
-                key: 1,
-                "auth-status": authStatus.value
-              }, null, 8, ["auth-status"]))
-            ])
-          ]);
-        };
-      }
-    });
-    const App_vue_vue_type_style_index_0_scoped_393414b1_lang = "";
-    const _export_sfc = (sfc, props) => {
-      const target = sfc.__vccOpts || sfc;
-      for (const [key, val] of props) {
-        target[key] = val;
-      }
-      return target;
-    };
-    const App = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-393414b1"]]);
     function bind(fn, thisArg) {
       return function wrap() {
         return fn.apply(thisArg, arguments);
@@ -11157,13 +10898,24 @@ var require_index_001 = __commonJS({
     axios.HttpStatusCode = HttpStatusCode$1;
     axios.default = axios;
     const axios$1 = axios;
+    const ErrorCodes = {
+      AUTHENTICATION_FAILED: "AUTHENTICATION_FAILED",
+      AUTHORIZATION_FAILED: "AUTHORIZATION_FAILED",
+      RESOURCE_NOT_FOUND: "RESOURCE_NOT_FOUND",
+      INTERNAL_ERROR: "INTERNAL_ERROR",
+      BAD_REQUEST: "BAD_REQUEST",
+      CLUSTER_CONNECTION_FAILED: "CLUSTER_CONNECTION_FAILED"
+    };
+    function isKubeBindError(error) {
+      return error && typeof error === "object" && error.kind === "Error" && error.apiVersion && error.message && error.code;
+    }
     var __defProp2 = Object.defineProperty;
     var __defNormalProp2 = (obj, key, value) => key in obj ? __defProp2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
     var __publicField = (obj, key, value) => {
       __defNormalProp2(obj, typeof key !== "symbol" ? key + "" : key, value);
       return value;
     };
-    var __async$3 = (__this, __arguments, generator) => {
+    var __async$5 = (__this, __arguments, generator) => {
       return new Promise((resolve2, reject) => {
         var fulfilled = (value) => {
           try {
@@ -11183,6 +10935,16 @@ var require_index_001 = __commonJS({
         step((generator = generator.apply(__this, __arguments)).next());
       });
     };
+    class StructuredError extends Error {
+      constructor(kubeBindError, httpStatus) {
+        super(kubeBindError.message);
+        __publicField(this, "kubeBindError");
+        __publicField(this, "httpStatus");
+        this.kubeBindError = kubeBindError;
+        this.httpStatus = httpStatus;
+        this.name = "StructuredError";
+      }
+    }
     class HttpClient {
       constructor() {
         __publicField(this, "client");
@@ -11209,10 +10971,15 @@ var require_index_001 = __commonJS({
         this.client.interceptors.response.use(
           (response) => response,
           (error) => {
-            var _a;
-            if (((_a = error.response) == null ? void 0 : _a.status) === 401) {
-              console.warn("Authentication expired, need to re-authenticate");
-              window.dispatchEvent(new CustomEvent("auth-expired"));
+            var _a, _b;
+            const status = (_a = error.response) == null ? void 0 : _a.status;
+            const responseData = (_b = error.response) == null ? void 0 : _b.data;
+            if (responseData && isKubeBindError(responseData)) {
+              if (responseData.code === ErrorCodes.AUTHENTICATION_FAILED) {
+                console.warn("Authentication expired, need to re-authenticate");
+                window.dispatchEvent(new CustomEvent("auth-expired"));
+              }
+              return Promise.reject(new StructuredError(responseData, status));
             }
             return Promise.reject(error);
           }
@@ -11220,33 +10987,392 @@ var require_index_001 = __commonJS({
       }
       // Generic HTTP methods
       get(url, config) {
-        return __async$3(this, null, function* () {
+        return __async$5(this, null, function* () {
           return this.client.get(url, config);
         });
       }
       post(url, data, config) {
-        return __async$3(this, null, function* () {
+        return __async$5(this, null, function* () {
           return this.client.post(url, data, config);
         });
       }
       put(url, data, config) {
-        return __async$3(this, null, function* () {
+        return __async$5(this, null, function* () {
           return this.client.put(url, data, config);
         });
       }
       delete(url, config) {
-        return __async$3(this, null, function* () {
+        return __async$5(this, null, function* () {
           return this.client.delete(url, config);
         });
       }
       // Method to make requests without auth headers (for public endpoints)
       getPublic(url, config) {
-        return __async$3(this, null, function* () {
+        return __async$5(this, null, function* () {
           return axios$1.get(`/api${url}`, config);
         });
       }
     }
     const httpClient = new HttpClient();
+    var __async$4 = (__this, __arguments, generator) => {
+      return new Promise((resolve2, reject) => {
+        var fulfilled = (value) => {
+          try {
+            step(generator.next(value));
+          } catch (e) {
+            reject(e);
+          }
+        };
+        var rejected = (value) => {
+          try {
+            step(generator.throw(value));
+          } catch (e) {
+            reject(e);
+          }
+        };
+        var step = (x) => x.done ? resolve2(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
+        step((generator = generator.apply(__this, __arguments)).next());
+      });
+    };
+    class AuthService {
+      isAuthenticated() {
+        return __async$4(this, null, function* () {
+          const result = yield this.checkAuthentication();
+          return result.isAuthenticated;
+        });
+      }
+      checkAuthentication() {
+        return __async$4(this, null, function* () {
+          var _a, _b;
+          try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const clusterId = urlParams.get("cluster_id") || "";
+            const consumerId = urlParams.get("consumer_id") || "";
+            const authCheckUrl = clusterId ? `/ping?cluster_id=${clusterId}` : "/ping";
+            const response = yield httpClient.get(authCheckUrl);
+            const isAuth = response.status === 200;
+            console.log("Auth check:", { clusterId, status: response.status, isAuth });
+            return { isAuthenticated: isAuth };
+          } catch (error) {
+            if (error instanceof StructuredError) {
+              const kubeError = error.kubeBindError;
+              if (kubeError.code === ErrorCodes.AUTHENTICATION_FAILED || kubeError.code === ErrorCodes.AUTHORIZATION_FAILED) {
+                return {
+                  isAuthenticated: false,
+                  error: kubeError.message
+                };
+              }
+            }
+            if (((_a = error == null ? void 0 : error.response) == null ? void 0 : _a.status) === 401 || ((_b = error == null ? void 0 : error.response) == null ? void 0 : _b.status) === 403) {
+              console.log("Auth check failed with authentication error but no structured response");
+              return {
+                isAuthenticated: false,
+                error: "Authentication required"
+              };
+            }
+            console.error("Auth check error:", error);
+            return {
+              isAuthenticated: false,
+              error: "Authentication check failed"
+            };
+          }
+        });
+      }
+      initiateAuth(sessionId, clusterId, clientSideRedirectUrl, consumerId) {
+        return __async$4(this, null, function* () {
+          const authUrl = `/api/authorize`;
+          const redirect_url = window.location.origin + window.location.pathname;
+          const currentParams = new URLSearchParams(window.location.search);
+          const paramsToPreserve = {};
+          if (currentParams.has("consumer_id")) {
+            paramsToPreserve.consumer_id = currentParams.get("consumer_id");
+          }
+          if (currentParams.has("session_id")) {
+            paramsToPreserve.session_id = currentParams.get("session_id");
+          }
+          if (currentParams.has("redirect_url")) {
+            paramsToPreserve.redirect_url = currentParams.get("redirect_url");
+          }
+          if (currentParams.has("cluster_id")) {
+            paramsToPreserve.cluster_id = currentParams.get("cluster_id");
+          }
+          sessionStorage.setItem("kube-bind-preserved-params", JSON.stringify(paramsToPreserve));
+          const params = new URLSearchParams({
+            session_id: sessionId,
+            redirect_url,
+            cluster_id: clusterId,
+            client_type: "ui"
+            // Use UI type to get cookies
+          });
+          if (clientSideRedirectUrl) {
+            params.set("client_side_redirect_url", clientSideRedirectUrl);
+          }
+          if (consumerId) {
+            params.set("consumer_id", consumerId);
+          }
+          window.location.href = `${authUrl}?${params}`;
+        });
+      }
+      logout() {
+        return __async$4(this, null, function* () {
+          try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const clusterId = urlParams.get("cluster_id") || "";
+            const logoutUrl = clusterId ? `/api/logout?cluster_id=${encodeURIComponent(clusterId)}` : "/api/logout";
+            const response = yield httpClient.post(logoutUrl);
+            console.log("Logout response:", { status: response.status, clusterId });
+            window.location.href = window.location.origin + window.location.pathname;
+          } catch (error) {
+            console.error("Logout error:", error);
+            window.location.reload();
+          }
+        });
+      }
+      getSessionCookieName() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const clusterId = urlParams.get("cluster_id") || "";
+        return clusterId ? `kube-bind-${clusterId}` : "kube-bind";
+      }
+      isCliFlow() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.has("redirect_url");
+      }
+      redirectToCliCallback(bindingResponseData) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get("redirect_url");
+        const sessionId = urlParams.get("session_id");
+        const consumerId = urlParams.get("consumer_id");
+        if (redirectUrl) {
+          const callbackUrl = new URL(redirectUrl);
+          if (sessionId) {
+            callbackUrl.searchParams.append("session_id", sessionId);
+          }
+          if (consumerId) {
+            callbackUrl.searchParams.append("consumer_id", consumerId);
+          }
+          const base64Response = btoa(JSON.stringify(bindingResponseData));
+          callbackUrl.searchParams.append("binding_response", base64Response);
+          window.location.href = callbackUrl.toString();
+        }
+      }
+      restorePreservedParams() {
+        const preservedParamsJson = sessionStorage.getItem("kube-bind-preserved-params");
+        if (!preservedParamsJson) {
+          return;
+        }
+        try {
+          const preservedParams = JSON.parse(preservedParamsJson);
+          const currentParams = new URLSearchParams(window.location.search);
+          let needsUpdate = false;
+          for (const [key, value] of Object.entries(preservedParams)) {
+            if (!currentParams.has(key)) {
+              currentParams.set(key, value);
+              needsUpdate = true;
+            }
+          }
+          if (needsUpdate) {
+            sessionStorage.removeItem("kube-bind-preserved-params");
+            const newUrl = `${window.location.pathname}?${currentParams.toString()}`;
+            window.location.replace(newUrl);
+          } else {
+            sessionStorage.removeItem("kube-bind-preserved-params");
+          }
+        } catch (error) {
+          console.error("Failed to restore preserved params:", error);
+          sessionStorage.removeItem("kube-bind-preserved-params");
+        }
+      }
+    }
+    const authService = new AuthService();
+    var __async$3 = (__this, __arguments, generator) => {
+      return new Promise((resolve2, reject) => {
+        var fulfilled = (value) => {
+          try {
+            step(generator.next(value));
+          } catch (e) {
+            reject(e);
+          }
+        };
+        var rejected = (value) => {
+          try {
+            step(generator.throw(value));
+          } catch (e) {
+            reject(e);
+          }
+        };
+        var step = (x) => x.done ? resolve2(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
+        step((generator = generator.apply(__this, __arguments)).next());
+      });
+    };
+    const _hoisted_1$4 = { id: "app" };
+    const _hoisted_2$4 = { class: "header" };
+    const _hoisted_3$4 = { class: "header-content" };
+    const _hoisted_4$4 = {
+      key: 0,
+      class: "user-section"
+    };
+    const _hoisted_5$4 = { class: "main" };
+    const _hoisted_6$4 = {
+      key: 0,
+      class: "auth-placeholder"
+    };
+    const _hoisted_7$4 = {
+      key: 0,
+      class: "auth-error"
+    };
+    const _hoisted_8$3 = { class: "error-content" };
+    const _hoisted_9$3 = { key: 1 };
+    const _hoisted_10$3 = ["disabled"];
+    const _hoisted_11$3 = { key: 0 };
+    const _hoisted_12$3 = { key: 1 };
+    const _sfc_main$4 = /* @__PURE__ */ defineComponent({
+      __name: "App",
+      setup(__props) {
+        const route = useRoute();
+        const authStatus = ref({
+          isAuthenticated: false,
+          loading: true,
+          error: null
+        });
+        const hasAttemptedAuth = ref(false);
+        const checkAuthStatus = () => __async$3(this, null, function* () {
+          try {
+            const result = yield authService.checkAuthentication();
+            authStatus.value.isAuthenticated = result.isAuthenticated;
+            authStatus.value.error = result.error || null;
+          } catch (error) {
+            console.error("Auth check failed:", error);
+            authStatus.value.error = "Authentication check failed";
+          } finally {
+            authStatus.value.loading = false;
+          }
+        });
+        const authenticate = () => __async$3(this, null, function* () {
+          try {
+            hasAttemptedAuth.value = true;
+            const cluster = route.query.cluster_id || "";
+            const sessionId = route.query.session_id || generateSessionId();
+            const clientSideRedirectUrl = route.query.redirect_url || "";
+            const consumerId = route.query.consumer_id || "";
+            yield authService.initiateAuth(sessionId, cluster, clientSideRedirectUrl, consumerId);
+          } catch (error) {
+            console.error("Authentication failed:", error);
+            authStatus.value.error = "Authentication failed";
+          }
+        });
+        const logout = () => __async$3(this, null, function* () {
+          try {
+            yield authService.logout();
+            authStatus.value.isAuthenticated = false;
+          } catch (error) {
+            console.error("Logout failed:", error);
+          }
+        });
+        const generateSessionId = () => {
+          return Math.random().toString(36).substring(2) + Date.now().toString(36);
+        };
+        onMounted(() => {
+          authService.restorePreservedParams();
+          checkAuthStatus();
+          window.addEventListener("auth-expired", () => {
+            console.log("Received auth-expired event, updating authentication status");
+            authStatus.value.isAuthenticated = false;
+            authStatus.value.error = "Session expired. Please re-authenticate.";
+            const hasRequiredParams = route.query.cluster_id || route.query.session_id;
+            if (hasRequiredParams && !hasAttemptedAuth.value) {
+              console.log("Auto-redirecting to authentication due to auth-expired event");
+              authenticate();
+            } else if (!hasRequiredParams) {
+              console.log("No cluster_id or session_id parameters found, requiring manual authentication");
+            } else {
+              console.log("Authentication already attempted, preventing hot loop");
+            }
+          });
+        });
+        return (_ctx, _cache) => {
+          const _component_router_view = resolveComponent("router-view");
+          return openBlock(), createElementBlock("div", _hoisted_1$4, [
+            createBaseVNode("header", _hoisted_2$4, [
+              createBaseVNode("div", _hoisted_3$4, [
+                _cache[2] || (_cache[2] = createStaticVNode('<div class="brand" data-v-504b04cf><div class="logo" data-v-504b04cf><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" data-v-504b04cf><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-504b04cf></path><path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-504b04cf></path><path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-504b04cf></path></svg></div><h1 data-v-504b04cf>Kube Bind</h1></div>', 1)),
+                authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_4$4, [
+                  _cache[1] || (_cache[1] = createBaseVNode("div", { class: "user-info" }, [
+                    createBaseVNode("div", { class: "status-indicator" }),
+                    createBaseVNode("span", { class: "welcome-text" }, "Connected")
+                  ], -1)),
+                  createBaseVNode("button", {
+                    onClick: logout,
+                    class: "logout-btn"
+                  }, [..._cache[0] || (_cache[0] = [
+                    createBaseVNode("svg", {
+                      width: "16",
+                      height: "16",
+                      viewBox: "0 0 24 24",
+                      fill: "none",
+                      xmlns: "http://www.w3.org/2000/svg"
+                    }, [
+                      createBaseVNode("path", {
+                        d: "M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9",
+                        stroke: "currentColor",
+                        "stroke-width": "2",
+                        "stroke-linecap": "round",
+                        "stroke-linejoin": "round"
+                      }),
+                      createBaseVNode("path", {
+                        d: "M16 17L21 12L16 7",
+                        stroke: "currentColor",
+                        "stroke-width": "2",
+                        "stroke-linecap": "round",
+                        "stroke-linejoin": "round"
+                      }),
+                      createBaseVNode("path", {
+                        d: "M21 12H9",
+                        stroke: "currentColor",
+                        "stroke-width": "2",
+                        "stroke-linecap": "round",
+                        "stroke-linejoin": "round"
+                      })
+                    ], -1),
+                    createTextVNode(" Sign out ", -1)
+                  ])])
+                ])) : createCommentVNode("", true)
+              ])
+            ]),
+            createBaseVNode("main", _hoisted_5$4, [
+              !authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_6$4, [
+                _cache[5] || (_cache[5] = createBaseVNode("h2", null, "Authentication Required", -1)),
+                authStatus.value.error ? (openBlock(), createElementBlock("div", _hoisted_7$4, [
+                  _cache[4] || (_cache[4] = createBaseVNode("div", { class: "error-icon" }, "⚠️", -1)),
+                  createBaseVNode("div", _hoisted_8$3, [
+                    _cache[3] || (_cache[3] = createBaseVNode("h3", null, "Authentication Error", -1)),
+                    createBaseVNode("p", null, toDisplayString(authStatus.value.error), 1)
+                  ])
+                ])) : (openBlock(), createElementBlock("p", _hoisted_9$3, "Please authenticate to access resources.")),
+                createBaseVNode("button", {
+                  onClick: authenticate,
+                  class: "auth-btn",
+                  disabled: authStatus.value.loading
+                }, [
+                  authStatus.value.loading ? (openBlock(), createElementBlock("span", _hoisted_11$3, "Authenticating...")) : (openBlock(), createElementBlock("span", _hoisted_12$3, toDisplayString(authStatus.value.error ? "Try Again" : "Authenticate"), 1))
+                ], 8, _hoisted_10$3)
+              ])) : (openBlock(), createBlock(_component_router_view, {
+                key: 1,
+                "auth-status": authStatus.value
+              }, null, 8, ["auth-status"]))
+            ])
+          ]);
+        };
+      }
+    });
+    const App_vue_vue_type_style_index_0_scoped_504b04cf_lang = "";
+    const _export_sfc = (sfc, props) => {
+      const target = sfc.__vccOpts || sfc;
+      for (const [key, val] of props) {
+        target[key] = val;
+      }
+      return target;
+    };
+    const App = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-504b04cf"]]);
     var __async$2 = (__this, __arguments, generator) => {
       return new Promise((resolve2, reject) => {
         var fulfilled = (value) => {
@@ -11267,20 +11393,20 @@ var require_index_001 = __commonJS({
         step((generator = generator.apply(__this, __arguments)).next());
       });
     };
-    const _hoisted_1$2 = { class: "binding-content" };
-    const _hoisted_2$2 = { class: "binding-info" };
-    const _hoisted_3$2 = { class: "instructions-section" };
-    const _hoisted_4$2 = { class: "command-group" };
-    const _hoisted_5$2 = { class: "command-block" };
-    const _hoisted_6$2 = { class: "command-group" };
-    const _hoisted_7$2 = { class: "command-block" };
+    const _hoisted_1$3 = { class: "binding-content" };
+    const _hoisted_2$3 = { class: "binding-info" };
+    const _hoisted_3$3 = { class: "instructions-section" };
+    const _hoisted_4$3 = { class: "command-group" };
+    const _hoisted_5$3 = { class: "command-block" };
+    const _hoisted_6$3 = { class: "command-group" };
+    const _hoisted_7$3 = { class: "command-block" };
     const _hoisted_8$2 = { class: "command-group" };
     const _hoisted_9$2 = { class: "command-block" };
     const _hoisted_10$2 = { class: "alternative-section" };
     const _hoisted_11$2 = { class: "manual-setup" };
     const _hoisted_12$2 = { class: "command-group" };
     const _hoisted_13$2 = { class: "command-block" };
-    const _sfc_main$2 = /* @__PURE__ */ defineComponent({
+    const _sfc_main$3 = /* @__PURE__ */ defineComponent({
       __name: "BindingResult",
       props: {
         show: { type: Boolean },
@@ -11453,8 +11579,8 @@ ${formattedObject}`;
                   class: "close-btn"
                 }, "×")
               ]),
-              createBaseVNode("div", _hoisted_1$2, [
-                createBaseVNode("div", _hoisted_2$2, [
+              createBaseVNode("div", _hoisted_1$3, [
+                createBaseVNode("div", _hoisted_2$3, [
                   _cache[9] || (_cache[9] = createBaseVNode("h4", null, "Binding Information", -1)),
                   createBaseVNode("p", null, [
                     _cache[6] || (_cache[6] = createBaseVNode("strong", null, "Template:", -1)),
@@ -11469,7 +11595,7 @@ ${formattedObject}`;
                     createTextVNode(" " + toDisplayString(kubeconfigSecretName.value), 1)
                   ])
                 ]),
-                createBaseVNode("div", _hoisted_3$2, [
+                createBaseVNode("div", _hoisted_3$3, [
                   _cache[16] || (_cache[16] = createBaseVNode("h4", null, "Setup Instructions", -1)),
                   _cache[17] || (_cache[17] = createBaseVNode("p", { class: "instructions-text" }, " To complete the binding setup, first download the required files below, then execute the following commands in your local kubectl environment: ", -1)),
                   createBaseVNode("div", { class: "download-files-section" }, [
@@ -11488,9 +11614,9 @@ ${formattedObject}`;
                       ])
                     ])
                   ]),
-                  createBaseVNode("div", _hoisted_4$2, [
+                  createBaseVNode("div", _hoisted_4$3, [
                     _cache[13] || (_cache[13] = createBaseVNode("h5", null, "2. Create kube-bind namespace (if it doesn't exist)", -1)),
-                    createBaseVNode("div", _hoisted_5$2, [
+                    createBaseVNode("div", _hoisted_5$3, [
                       _cache[12] || (_cache[12] = createBaseVNode("code", null, "kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -", -1)),
                       createBaseVNode("button", {
                         onClick: _cache[0] || (_cache[0] = ($event) => copyCommand("kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -")),
@@ -11498,9 +11624,9 @@ ${formattedObject}`;
                       }, "Copy")
                     ])
                   ]),
-                  createBaseVNode("div", _hoisted_6$2, [
+                  createBaseVNode("div", _hoisted_6$3, [
                     _cache[14] || (_cache[14] = createBaseVNode("h5", null, "3. Create kubeconfig secret", -1)),
-                    createBaseVNode("div", _hoisted_7$2, [
+                    createBaseVNode("div", _hoisted_7$3, [
                       createBaseVNode("code", null, toDisplayString(createSecretCommand.value), 1),
                       createBaseVNode("button", {
                         onClick: _cache[1] || (_cache[1] = ($event) => copyCommand(createSecretCommand.value)),
@@ -11549,7 +11675,7 @@ ${formattedObject}`;
       }
     });
     const BindingResult_vue_vue_type_style_index_0_scoped_e150bd4a_lang = "";
-    const BindingResult = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-e150bd4a"]]);
+    const BindingResult = /* @__PURE__ */ _export_sfc(_sfc_main$3, [["__scopeId", "data-v-e150bd4a"]]);
     var __async$1 = (__this, __arguments, generator) => {
       return new Promise((resolve2, reject) => {
         var fulfilled = (value) => {
@@ -11570,19 +11696,19 @@ ${formattedObject}`;
         step((generator = generator.apply(__this, __arguments)).next());
       });
     };
-    const _hoisted_1$1 = { class: "modal-header" };
-    const _hoisted_2$1 = { class: "modal-content" };
-    const _hoisted_3$1 = { class: "binding-name-section" };
-    const _hoisted_4$1 = {
+    const _hoisted_1$2 = { class: "modal-header" };
+    const _hoisted_2$2 = { class: "modal-content" };
+    const _hoisted_3$2 = { class: "binding-name-section" };
+    const _hoisted_4$2 = {
       key: 0,
       class: "form-help"
     };
-    const _hoisted_5$1 = {
+    const _hoisted_5$2 = {
       key: 1,
       class: "form-error"
     };
-    const _hoisted_6$1 = { class: "template-details" };
-    const _hoisted_7$1 = {
+    const _hoisted_6$2 = { class: "template-details" };
+    const _hoisted_7$2 = {
       key: 0,
       class: "detail-section"
     };
@@ -11662,7 +11788,7 @@ ${formattedObject}`;
     const _hoisted_42 = ["disabled"];
     const _hoisted_43 = { key: 0 };
     const _hoisted_44 = { key: 1 };
-    const _sfc_main$1 = /* @__PURE__ */ defineComponent({
+    const _sfc_main$2 = /* @__PURE__ */ defineComponent({
       __name: "TemplateBindingModal",
       props: {
         show: { type: Boolean },
@@ -11749,15 +11875,15 @@ ${formattedObject}`;
               onClick: _cache[1] || (_cache[1] = withModifiers(() => {
               }, ["stop"]))
             }, [
-              createBaseVNode("div", _hoisted_1$1, [
+              createBaseVNode("div", _hoisted_1$2, [
                 createBaseVNode("h3", null, "Bind Template: " + toDisplayString(_ctx.template.metadata.name), 1),
                 createBaseVNode("button", {
                   onClick: closeModal,
                   class: "close-btn"
                 }, "×")
               ]),
-              createBaseVNode("div", _hoisted_2$1, [
-                createBaseVNode("div", _hoisted_3$1, [
+              createBaseVNode("div", _hoisted_2$2, [
+                createBaseVNode("div", _hoisted_3$2, [
                   _cache[2] || (_cache[2] = createBaseVNode("label", {
                     for: "bindingName",
                     class: "form-label"
@@ -11772,11 +11898,11 @@ ${formattedObject}`;
                   }, null, 34), [
                     [vModelText, bindingName.value]
                   ]),
-                  isValidBindingName.value ? (openBlock(), createElementBlock("p", _hoisted_4$1, "This name will be used to identify your binding in the CLI.")) : (openBlock(), createElementBlock("p", _hoisted_5$1, "Name must be lowercase letters, numbers, and hyphens only. Must start and end with alphanumeric characters."))
+                  isValidBindingName.value ? (openBlock(), createElementBlock("p", _hoisted_4$2, "This name will be used to identify your binding in the CLI.")) : (openBlock(), createElementBlock("p", _hoisted_5$2, "Name must be lowercase letters, numbers, and hyphens only. Must start and end with alphanumeric characters."))
                 ]),
-                createBaseVNode("div", _hoisted_6$1, [
+                createBaseVNode("div", _hoisted_6$2, [
                   _cache[10] || (_cache[10] = createBaseVNode("h4", null, "Template Details", -1)),
-                  _ctx.template.spec.description ? (openBlock(), createElementBlock("div", _hoisted_7$1, [
+                  _ctx.template.spec.description ? (openBlock(), createElementBlock("div", _hoisted_7$2, [
                     _cache[3] || (_cache[3] = createBaseVNode("h5", null, "Description", -1)),
                     createBaseVNode("p", _hoisted_8$1, toDisplayString(_ctx.template.spec.description), 1)
                   ])) : createCommentVNode("", true),
@@ -11901,7 +12027,132 @@ ${formattedObject}`;
       }
     });
     const TemplateBindingModal_vue_vue_type_style_index_0_scoped_4218c1a0_lang = "";
-    const TemplateBindingModal = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-4218c1a0"]]);
+    const TemplateBindingModal = /* @__PURE__ */ _export_sfc(_sfc_main$2, [["__scopeId", "data-v-4218c1a0"]]);
+    const _hoisted_1$1 = { class: "modal-content" };
+    const _hoisted_2$1 = { class: "message-content" };
+    const _hoisted_3$1 = { class: "icon" };
+    const _hoisted_4$1 = { class: "message-text" };
+    const _hoisted_5$1 = { key: 0 };
+    const _hoisted_6$1 = { key: 1 };
+    const _hoisted_7$1 = { class: "modal-footer" };
+    const _sfc_main$1 = /* @__PURE__ */ defineComponent({
+      __name: "AlertModal",
+      props: {
+        show: { type: Boolean },
+        title: { default: "Alert" },
+        message: {},
+        type: { default: "error" },
+        preserveWhitespace: { type: Boolean, default: false }
+      },
+      emits: ["close"],
+      setup(__props, { emit: __emit }) {
+        const props = __props;
+        const emit2 = __emit;
+        const headerClass = computed(() => {
+          switch (props.type) {
+            case "error":
+              return "header-error";
+            case "warning":
+              return "header-warning";
+            case "info":
+              return "header-info";
+            case "success":
+              return "header-success";
+            default:
+              return "header-error";
+          }
+        });
+        const iconClass = computed(() => {
+          switch (props.type) {
+            case "error":
+              return "icon-error";
+            case "warning":
+              return "icon-warning";
+            case "info":
+              return "icon-info";
+            case "success":
+              return "icon-success";
+            default:
+              return "icon-error";
+          }
+        });
+        const buttonClass = computed(() => {
+          switch (props.type) {
+            case "error":
+              return "btn-error";
+            case "warning":
+              return "btn-warning";
+            case "info":
+              return "btn-info";
+            case "success":
+              return "btn-success";
+            default:
+              return "btn-error";
+          }
+        });
+        const icon = computed(() => {
+          switch (props.type) {
+            case "error":
+              return "⚠️";
+            case "warning":
+              return "⚠️";
+            case "info":
+              return "ℹ️";
+            case "success":
+              return "✅";
+            default:
+              return "⚠️";
+          }
+        });
+        const closeModal = () => {
+          emit2("close");
+        };
+        return (_ctx, _cache) => {
+          return _ctx.show ? (openBlock(), createElementBlock("div", {
+            key: 0,
+            class: "modal-overlay",
+            onClick: closeModal
+          }, [
+            createBaseVNode("div", {
+              class: "modal",
+              onClick: _cache[0] || (_cache[0] = withModifiers(() => {
+              }, ["stop"]))
+            }, [
+              createBaseVNode("div", {
+                class: normalizeClass(["modal-header", headerClass.value])
+              }, [
+                createBaseVNode("h3", null, toDisplayString(_ctx.title), 1),
+                createBaseVNode("button", {
+                  onClick: closeModal,
+                  class: "close-btn"
+                }, "×")
+              ], 2),
+              createBaseVNode("div", _hoisted_1$1, [
+                createBaseVNode("div", _hoisted_2$1, [
+                  icon.value ? (openBlock(), createElementBlock("div", {
+                    key: 0,
+                    class: normalizeClass(["icon-container", iconClass.value])
+                  }, [
+                    createBaseVNode("span", _hoisted_3$1, toDisplayString(icon.value), 1)
+                  ], 2)) : createCommentVNode("", true),
+                  createBaseVNode("div", _hoisted_4$1, [
+                    _ctx.preserveWhitespace ? (openBlock(), createElementBlock("pre", _hoisted_5$1, toDisplayString(_ctx.message), 1)) : (openBlock(), createElementBlock("p", _hoisted_6$1, toDisplayString(_ctx.message), 1))
+                  ])
+                ])
+              ]),
+              createBaseVNode("div", _hoisted_7$1, [
+                createBaseVNode("button", {
+                  onClick: closeModal,
+                  class: normalizeClass(["ok-btn", buttonClass.value])
+                }, " OK ", 2)
+              ])
+            ])
+          ])) : createCommentVNode("", true);
+        };
+      }
+    });
+    const AlertModal_vue_vue_type_style_index_0_scoped_5efb8bd4_lang = "";
+    const AlertModal = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-5efb8bd4"]]);
     var __async2 = (__this, __arguments, generator) => {
       return new Promise((resolve2, reject) => {
         var fulfilled = (value) => {
@@ -12017,17 +12268,31 @@ ${formattedObject}`;
         const showBindingResult = ref(false);
         const selectedTemplateName = ref("");
         const bindingResponse = ref(null);
+        const showAlert = ref(false);
+        const alertTitle = ref("Alert");
+        const alertMessage = ref("");
+        const alertType = ref("error");
+        const alertPreserveWhitespace = ref(false);
         const isCliFlow = computed(() => authService.isCliFlow());
         const showBindingModal = ref(false);
         const selectedTemplate = ref(null);
         const cluster = computed(() => route.query.cluster_id || "");
+        const consumerId = computed(() => route.query.consumer_id || "");
+        const buildApiUrl = (endpoint) => {
+          const params = new URLSearchParams();
+          if (cluster.value)
+            params.set("cluster_id", cluster.value);
+          if (consumerId.value)
+            params.set("consumer_id", consumerId.value);
+          return params.toString() ? `${endpoint}?${params.toString()}` : endpoint;
+        };
         const loadResources = () => __async2(this, null, function* () {
           var _a;
           loading.value = true;
           error.value = null;
           try {
-            const templatesUrl = cluster.value ? `/templates?cluster_id=${cluster.value}` : "/templates";
-            const collectionsUrl = cluster.value ? `/collections?cluster_id=${cluster.value}` : "/collections";
+            const templatesUrl = buildApiUrl("/templates");
+            const collectionsUrl = buildApiUrl("/collections");
             const [templatesResponse, collectionsResponse] = yield Promise.all([
               httpClient.get(templatesUrl),
               httpClient.get(collectionsUrl)
@@ -12036,10 +12301,30 @@ ${formattedObject}`;
             collections.value = collectionsResponse.data.items || [];
           } catch (err) {
             console.error("Failed to load resources:", err);
-            if (((_a = err.response) == null ? void 0 : _a.status) === 401) {
-              return;
+            if (err instanceof StructuredError) {
+              const kubeError = err.kubeBindError;
+              if (kubeError.code === "AUTHENTICATION_FAILED") {
+                return;
+              }
+              switch (kubeError.code) {
+                case "AUTHORIZATION_FAILED":
+                  error.value = `Authorization failed: ${kubeError.details || kubeError.message}`;
+                  break;
+                case "CLUSTER_CONNECTION_FAILED":
+                  error.value = `Could not connect to cluster: ${kubeError.details || kubeError.message}`;
+                  break;
+                case "RESOURCE_NOT_FOUND":
+                  error.value = `Resources not found: ${kubeError.details || kubeError.message}`;
+                  break;
+                default:
+                  error.value = `Error: ${kubeError.message}`;
+              }
+            } else {
+              if (((_a = err.response) == null ? void 0 : _a.status) === 401) {
+                return;
+              }
+              error.value = "Failed to load resources. Please try again.";
             }
-            error.value = "Failed to load resources. Please try again.";
           } finally {
             loading.value = false;
           }
@@ -12058,13 +12343,16 @@ ${formattedObject}`;
         const handleBind = (templateName, bindingName) => __async2(this, null, function* () {
           var _a;
           try {
-            const bindUrl = cluster.value ? `/bind?cluster_id=${cluster.value}` : `/bind`;
+            const bindUrl = buildApiUrl("/bind");
             const bindingRequest = {
               metadata: {
                 name: bindingName
               },
               templateRef: {
                 name: templateName
+              },
+              clusterIdentity: {
+                identity: consumerId.value || ""
               }
             };
             const response = yield httpClient.post(bindUrl, bindingRequest);
@@ -12079,20 +12367,60 @@ ${formattedObject}`;
                 showBindingResult.value = true;
               }
             } else {
-              alert(`Failed to bind template: ${templateName}`);
+              showAlertModal(`Failed to bind template: ${templateName}`, "Binding Failed", "error");
             }
           } catch (err) {
             console.error("Failed to bind template:", err);
-            if (((_a = err.response) == null ? void 0 : _a.status) === 401) {
-              return;
+            if (err instanceof StructuredError) {
+              const kubeError = err.kubeBindError;
+              if (kubeError.code === "AUTHENTICATION_FAILED") {
+                return;
+              }
+              let errorMessage;
+              switch (kubeError.code) {
+                case "AUTHORIZATION_FAILED":
+                  errorMessage = `Authorization failed: You don't have permission to bind resources in this cluster.
+
+Details: ${kubeError.details || kubeError.message}`;
+                  break;
+                case "CLUSTER_CONNECTION_FAILED":
+                  errorMessage = `Cluster connection failed: Unable to connect to the target cluster.
+
+Details: ${kubeError.details || kubeError.message}`;
+                  break;
+                case "RESOURCE_NOT_FOUND":
+                  errorMessage = `Template not found: The requested template could not be found.
+
+Details: ${kubeError.details || kubeError.message}`;
+                  break;
+                default:
+                  errorMessage = `Failed to bind template: ${kubeError.message}
+
+Details: ${kubeError.details || "No additional details available"}`;
+              }
+              showAlertModal(errorMessage, "Binding Failed", "error", true);
+            } else {
+              if (((_a = err.response) == null ? void 0 : _a.status) === 401) {
+                return;
+              }
+              showAlertModal(`Failed to bind template: ${templateName}. Check console for details.`, "Binding Failed", "error");
             }
-            alert(`Failed to bind template: ${templateName}. Check console for details.`);
           }
         });
         const closeBindingResult = () => {
           showBindingResult.value = false;
           bindingResponse.value = null;
           selectedTemplateName.value = "";
+        };
+        const showAlertModal = (message, title = "Error", type = "error", preserveWhitespace = false) => {
+          alertMessage.value = message;
+          alertTitle.value = title;
+          alertType.value = type;
+          alertPreserveWhitespace.value = preserveWhitespace;
+          showAlert.value = true;
+        };
+        const closeAlert = () => {
+          showAlert.value = false;
         };
         onMounted(() => {
           loadResources();
@@ -12228,13 +12556,21 @@ ${formattedObject}`;
               "template-name": selectedTemplateName.value,
               "binding-response": bindingResponse.value,
               onClose: closeBindingResult
-            }, null, 8, ["show", "template-name", "binding-response"])) : createCommentVNode("", true)
+            }, null, 8, ["show", "template-name", "binding-response"])) : createCommentVNode("", true),
+            createVNode(AlertModal, {
+              show: showAlert.value,
+              title: alertTitle.value,
+              message: alertMessage.value,
+              type: alertType.value,
+              "preserve-whitespace": alertPreserveWhitespace.value,
+              onClose: closeAlert
+            }, null, 8, ["show", "title", "message", "type", "preserve-whitespace"])
           ]);
         };
       }
     });
-    const Resources_vue_vue_type_style_index_0_scoped_c5a84217_lang = "";
-    const Resources = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-c5a84217"]]);
+    const Resources_vue_vue_type_style_index_0_scoped_1c21cc87_lang = "";
+    const Resources = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-1c21cc87"]]);
     const routes = [
       { path: "/", component: Resources },
       { path: "/resources", component: Resources }

@@ -102,7 +102,7 @@ func NewOptions() *Options {
 
 		ExtraOptions: ExtraOptions{
 			Provider:               "kubernetes",
-			NamespacePrefix:        "cluster",
+			NamespacePrefix:        "cluster-",
 			PrettyName:             "Backend",
 			ConsumerScope:          string(kubebindv1alpha2.NamespacedScope),
 			ClusterScopedIsolation: string(kubebindv1alpha2.IsolationPrefixed),

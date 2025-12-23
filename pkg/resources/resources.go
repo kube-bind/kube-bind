@@ -19,6 +19,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -80,7 +81,12 @@ func matchesNamedResources(logger klog.Logger, namedResources []kubebindv1alpha2
 	return false
 }
 
-func matchesReferences(logger klog.Logger, references []kubebindv1alpha2.SelectorReference, obj *unstructured.Unstructured, potentiallyReferencedResources *unstructured.UnstructuredList) bool {
+func matchesReferences(logger klog.Logger,
+	references []kubebindv1alpha2.SelectorReference,
+	obj *unstructured.Unstructured,
+	potentiallyReferencedResources *unstructured.UnstructuredList,
+	isolation kubebindv1alpha2.Isolation,
+	) bool {
 	if len(references) == 0 {
 		return false
 	}
@@ -131,12 +137,18 @@ func matchesReferences(logger klog.Logger, references []kubebindv1alpha2.Selecto
 
 						namespaceMatches = false
 						objNamespace := obj.GetNamespace()
-						for _, extractedNamespace := range namespaceValues {
-							if extractedNamespace == objNamespace {
+						if slices.Contains(namespaceValues, objNamespace) {
 								namespaceMatches = true
-								break
 							}
-						}
+					}
+
+					if selector.JSONPath.Namespace == "" && isolation == kubebindv1alpha2.IsolationNamespaced {
+						namespaceMatches = (refObj.GetNamespace() == obj.GetNamespace())
+						logger.V(4).Info("namespace extracted from referenced object",
+							"referencedObjectNamespace", refObj.GetNamespace(),
+							"objectNamespace", obj.GetNamespace(),
+							"namespaceMatches", namespaceMatches,
+						)
 					}
 
 					if nameMatches && namespaceMatches {
@@ -152,7 +164,7 @@ func matchesReferences(logger klog.Logger, references []kubebindv1alpha2.Selecto
 
 // IsClaimed returns true if the given object matches the given selector and named resources.
 // Logger here is already at V(4) level.
-func IsClaimed(logger klog.Logger, selector kubebindv1alpha2.Selector, obj *unstructured.Unstructured, potentiallyReferencedResources *unstructured.UnstructuredList) bool {
+func IsClaimed(logger klog.Logger, selector kubebindv1alpha2.Selector, obj *unstructured.Unstructured, potentiallyReferencedResources *unstructured.UnstructuredList, isolation kubebindv1alpha2.Isolation) bool {
 	if obj == nil {
 		return false
 	}
@@ -164,7 +176,7 @@ func IsClaimed(logger klog.Logger, selector kubebindv1alpha2.Selector, obj *unst
 
 	labelSelectorMatches := matchesLabelSelector(logger, selector.LabelSelector, obj)
 	namedResourceMatches := matchesNamedResources(logger, selector.NamedResources, obj)
-	referenceMatches := matchesReferences(logger, selector.References, obj, potentiallyReferencedResources)
+	referenceMatches := matchesReferences(logger, selector.References, obj, potentiallyReferencedResources, isolation)
 
 	return labelSelectorMatches || namedResourceMatches || referenceMatches
 }
@@ -193,6 +205,16 @@ func IsClaimedWithReference(
 		for _, ref := range claim.Selector.References {
 			logger := logger.WithValues("referenceGroup", ref.Group, "referenceResource", ref.Resource, "referenceJSONPathName", ref.JSONPath.Name, "referenceJSONPathNamespace", ref.JSONPath.Namespace)
 			logger.Info("processing reference selector")
+
+			if !isReferenceAllowed(ref, apiServiceExport) {
+				logger.Info("reference not allowed, resource is not part of the contract",
+					"isolation", apiServiceExport.Spec.ClusterScopedIsolation,
+					"referenceGroup", ref.Group,
+					"referenceResource", ref.Resource,
+				)
+				continue
+			}
+
 			if len(ref.Versions) > 0 {
 				versions = ref.Versions
 			} else {
@@ -232,7 +254,7 @@ func IsClaimedWithReference(
 
 	if consumerSide {
 		logger.Info("checking claim on consumer side")
-		result := IsClaimed(logger, claim.Selector, copy, potentiallyReferencedResources)
+		result := IsClaimed(logger, claim.Selector, copy, potentiallyReferencedResources, apiServiceExport.Spec.ClusterScopedIsolation)
 		logger.Info("IsClaimed result", "result", result)
 		return result
 	}
@@ -258,7 +280,21 @@ func IsClaimedWithReference(
 		copy.SetNamespace(sn.Name)
 	}
 
-	result := IsClaimed(logger, claim.Selector, copy, potentiallyReferencedResources)
+	result := IsClaimed(logger, claim.Selector, copy, potentiallyReferencedResources, apiServiceExport.Spec.ClusterScopedIsolation)
 	logger.V(4).Info("IsClaimed result (provider side)", "result", result)
 	return result
+}
+
+func isReferenceAllowed(ref kubebindv1alpha2.SelectorReference, apiServiceExport *kubebindv1alpha2.APIServiceExport) bool {
+	// If isolation is None, everything should be allowed, as both ends are owned.
+	if apiServiceExport.Spec.ClusterScopedIsolation == kubebindv1alpha2.IsolationNone {
+		return true
+	}
+	for _, resource := range apiServiceExport.Spec.Resources {
+		if ref.Group == resource.Group && ref.Resource == resource.Resource {
+			return true
+		}
+	}
+
+	return false
 }

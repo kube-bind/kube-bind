@@ -18,47 +18,52 @@ package resources
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"strings"
 	"testing"
 
+	"github.com/martinlindhe/base36"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+func expectedIdentityHash(identity string) string {
+	hash := sha256.Sum224([]byte(identity))
+	return strings.ToLower(base36.EncodeBytes(hash[:8]))
+}
+
 func TestCreateNamespace(t *testing.T) {
 	scheme := runtime.NewScheme()
 	_ = corev1.AddToScheme(scheme)
 
 	tests := []struct {
-		name              string
-		generateName      string
-		identity          string
-		author            string
-		wantErr           bool
-		wantNameGenerated bool
-		wantAnnotations   map[string]string
+		name            string
+		generateName    string
+		identity        string
+		author          string
+		wantErr         bool
+		wantAnnotations map[string]string
 	}{
 		{
-			name:              "create new namespace with generateName",
-			generateName:      "test-ns",
-			identity:          "test-id-123",
-			author:            "bob",
-			wantErr:           false,
-			wantNameGenerated: true,
+			name:         "create new namespace with generateName",
+			generateName: "test-ns",
+			identity:     "test-id-123",
+			author:       "bob",
+			wantErr:      false,
 			wantAnnotations: map[string]string{
 				IdentityAnnotationKey: "test-id-123",
 				AuthorAnnotationKey:   "bob",
 			},
 		},
 		{
-			name:              "create new namespace with generateName already ending with dash",
-			generateName:      "test-ns-",
-			identity:          "test-id-456",
-			author:            "alice",
-			wantErr:           false,
-			wantNameGenerated: true,
+			name:         "create new namespace with generateName already ending with dash",
+			generateName: "test-ns-",
+			identity:     "test-id-456",
+			author:       "alice",
+			wantErr:      false,
 			wantAnnotations: map[string]string{
 				IdentityAnnotationKey: "test-id-456",
 				AuthorAnnotationKey:   "alice",
@@ -91,18 +96,16 @@ func TestCreateNamespace(t *testing.T) {
 				return
 			}
 
-			expectedGenerateNamePrefix := tt.generateName
-			if !strings.HasSuffix(expectedGenerateNamePrefix, "-") {
-				expectedGenerateNamePrefix += "-"
+			expectedPrefix := tt.generateName
+			expectedHash := expectedIdentityHash(tt.identity)
+			expectedName := fmt.Sprintf("%s-%s", expectedPrefix, expectedHash)
+
+			if result.Name != expectedName {
+				t.Errorf("CreateNamespace() name = %v, expected %v", result.Name, expectedName)
 			}
 
-			if tt.wantNameGenerated {
-				if !strings.HasPrefix(result.Name, expectedGenerateNamePrefix) {
-					t.Errorf("CreateNamespace() name = %v, expected to start with %v", result.Name, expectedGenerateNamePrefix)
-				}
-				if result.GenerateName != expectedGenerateNamePrefix {
-					t.Errorf("CreateNamespace() generateName = %v, expected %v", result.GenerateName, expectedGenerateNamePrefix)
-				}
+			if result.GenerateName != "" {
+				t.Errorf("CreateNamespace() generateName = %v, expected empty string", result.GenerateName)
 			}
 
 			for key, expectedValue := range tt.wantAnnotations {

@@ -18,8 +18,11 @@ package resources
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"strings"
 
+	"github.com/martinlindhe/base36"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,15 +57,13 @@ func handleLegacyAnnotations(ctx context.Context, cl client.Client, namespace *c
 	return nil
 }
 
-func CreateNamespace(ctx context.Context, client client.Client, generateName, id, author string) (*corev1.Namespace, error) {
-	if !strings.HasSuffix(generateName, "-") {
-		generateName += "-"
-	}
+func CreateNamespace(ctx context.Context, client client.Client, generateNamePrefix, identity, author string) (*corev1.Namespace, error) {
+	name := identityHash(identity)
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: generateName,
+			Name: fmt.Sprintf("%s-%s", generateNamePrefix, name),
 			Annotations: map[string]string{
-				IdentityAnnotationKey: id,
+				IdentityAnnotationKey: identity,
 				AuthorAnnotationKey:   author,
 			},
 		},
@@ -77,14 +78,19 @@ func CreateNamespace(ctx context.Context, client client.Client, generateName, id
 			return nil, err
 		}
 
-		if namespace.Annotations[IdentityAnnotationKey] != id && namespace.Annotations[legacyIdentityAnnotationKey] != id {
+		if namespace.Annotations[IdentityAnnotationKey] != identity && namespace.Annotations[legacyIdentityAnnotationKey] != identity {
 			return nil, errors.NewAlreadyExists(corev1.Resource("namespace"), namespace.Name)
 		}
 
-		if err := handleLegacyAnnotations(ctx, client, namespace, id); err != nil {
+		if err := handleLegacyAnnotations(ctx, client, namespace, identity); err != nil {
 			return nil, err
 		}
 	}
 
 	return namespace, nil
+}
+
+func identityHash(userName string) string {
+	hash := sha256.Sum224([]byte(userName))
+	return strings.ToLower(base36.EncodeBytes(hash[:8]))
 }

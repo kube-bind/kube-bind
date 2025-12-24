@@ -54,6 +54,7 @@ type AuthorizeRequest struct {
 	SessionID             string     `json:"session_id" form:"session_id"`
 	ClusterID             string     `json:"cluster_id" form:"cluster_id"`
 	ClientType            ClientType `json:"client_type" form:"client_type"`
+	ConsumerID            string     `json:"consumer_id" form:"consumer_id"`
 }
 
 type CallbackRequest struct {

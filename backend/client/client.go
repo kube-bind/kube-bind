@@ -28,6 +28,7 @@ type ClientParameters struct {
 	ClientSideRedirectURL string
 	SessionID             string
 	ClientType            string
+	ConsumerID            string
 
 	IsClusterScoped bool
 }
@@ -40,6 +41,7 @@ func GetQueryParams(r *http.Request) *ClientParameters {
 		ClientSideRedirectURL: r.URL.Query().Get("client_side_redirect_url"),
 		SessionID:             r.URL.Query().Get("session_id"),
 		ClientType:            r.URL.Query().Get("client_type"),
+		ConsumerID:            r.URL.Query().Get("consumer_id"),
 	}
 	p.IsClusterScoped = p.ClusterID != ""
 	return p
@@ -67,6 +69,9 @@ func (r *ClientParameters) WithParams(urlStr string) string {
 	}
 	if r.ClientType != "" {
 		query.Set("client_type", r.ClientType)
+	}
+	if r.ConsumerID != "" {
+		query.Set("consumer_id", r.ConsumerID)
 	}
 
 	parsedURL.RawQuery = query.Encode()

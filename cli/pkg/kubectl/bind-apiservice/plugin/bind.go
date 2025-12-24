@@ -69,14 +69,20 @@ type BindAPIServiceOptions struct {
 	DryRun   bool
 	Template string
 	Name     string
+
+	// ClusterIdentity is a unique identity for the cluster.
+	ClusterIdentity string
+	// clusterIdentityNamespaceName is the namespace name, from which the cluster identity will be generated.
+	clusterIdentityNamespaceName string
 }
 
 // NewBindAPIServiceOptions returns new BindAPIServiceOptions.
 func NewBindAPIServiceOptions(streams genericclioptions.IOStreams) *BindAPIServiceOptions {
 	return &BindAPIServiceOptions{
-		Options: base.NewOptions(streams),
-		Logs:    logs.NewOptions(),
-		Print:   genericclioptions.NewPrintFlags("kubectl-bind-apiservice"),
+		Options:                      base.NewOptions(streams),
+		Logs:                         logs.NewOptions(),
+		Print:                        genericclioptions.NewPrintFlags("kubectl-bind-apiservice"),
+		clusterIdentityNamespaceName: "kube-system",
 	}
 }
 
@@ -86,6 +92,17 @@ func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 	logsv1.AddFlags(b.Logs, cmd.Flags())
 	b.Print.AddFlags(cmd)
 
+	// First block of flags are common with bind/plugin/bind.go, keep them in sync.
+	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
+	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
+	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
+	cmd.Flags().MarkHidden("konnector-image") //nolint:errcheck
+	cmd.Flags().StringSliceVarP(&b.KonnectorHostAlias, "konnector-host-alias", "", []string{}, "Add a host alias to the konnector pods in the format IP:hostname1,hostname2")
+	cmd.Flags().MarkHidden("konnector-host-alias") //nolint:errcheck
+	cmd.Flags().StringVarP(&b.ClusterIdentity, "cluster-identity", "", b.ClusterIdentity, "A unique identity for the cluster. If not provided, it will be generated based on the local cluster information. ")
+	cmd.Flags().StringVarP(&b.clusterIdentityNamespaceName, "cluster-identity-namespace", "", b.clusterIdentityNamespaceName, "The namespace name from which the cluster identity will be generated. Only used if cluster-identity is not provided.")
+
+	// Second block of flags specific to bind-apiservice.
 	cmd.Flags().StringVar(&b.Template, "template-name", b.Template, "A template name to use for binding")
 	cmd.Flags().StringVar(&b.Name, "name", b.Name, "The name of the BindableResourcesRequest to create")
 	cmd.Flags().StringVar(&b.remoteKubeconfigFile, "remote-kubeconfig", b.remoteKubeconfigFile, "A file path for a kubeconfig file to connect to the service provider cluster")
@@ -93,15 +110,9 @@ func (b *BindAPIServiceOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&b.remoteKubeconfigName, "remote-kubeconfig-name", b.remoteKubeconfigNamespace, "The name of the remote kubeconfig secret to read from")
 	cmd.Flags().StringVarP(&b.file, "file", "f", b.file, "A file with an APIServiceExportRequest manifest. Use - to read from stdin")
 	cmd.Flags().StringVar(&b.remoteNamespace, "remote-namespace", b.remoteNamespace, "The namespace in the remote cluster where the konnector is deployed")
-	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
 	cmd.Flags().BoolVar(&b.DowngradeKonnector, "downgrade-konnector", b.DowngradeKonnector, "Downgrade the konnector to the version of the kubectl-bind-apiservice binary")
-	cmd.Flags().StringVar(&b.KonnectorImageOverride, "konnector-image", b.KonnectorImageOverride, "The konnector image to use")
-	cmd.Flags().BoolVarP(&b.DryRun, "dry-run", "d", b.DryRun, "If true, only print the requests that would be sent to the service provider after authentication, without actually binding.")
-	cmd.Flags().MarkHidden("konnector-image") //nolint:errcheck
 	cmd.Flags().BoolVar(&b.NoBanner, "no-banner", b.NoBanner, "Do not show the red banner")
 	cmd.Flags().MarkHidden("no-banner") //nolint:errcheck
-	cmd.Flags().StringSliceVarP(&b.KonnectorHostAlias, "konnector-host-alias", "", []string{}, "Add a host alias to the konnector pods in the format IP:hostname1,hostname2")
-	cmd.Flags().MarkHidden("konnector-host-alias") //nolint:errcheck
 }
 
 // Complete ensures all fields are initialized.
@@ -185,16 +196,19 @@ func (b *BindAPIServiceOptions) Run(ctx context.Context) error {
 
 	// Use the shared binder to create bindings
 	binderOpts := &BinderOptions{
-		IOStreams:                 b.Options.IOStreams,
-		SkipKonnector:             b.SkipKonnector,
-		KonnectorImageOverride:    b.KonnectorImageOverride,
-		KonnectorHostAliasParsed:  b.KonnectorHostAliasParsed,
-		DowngradeKonnector:        b.DowngradeKonnector,
-		RemoteKubeconfigFile:      b.remoteKubeconfigFile,
-		RemoteKubeconfigNamespace: b.remoteKubeconfigNamespace,
-		RemoteKubeconfigName:      b.remoteKubeconfigName,
-		RemoteNamespace:           b.remoteNamespace,
-		File:                      b.file,
+		IOStreams:                    b.Options.IOStreams,
+		SkipKonnector:                b.SkipKonnector,
+		KonnectorImageOverride:       b.KonnectorImageOverride,
+		KonnectorHostAliasParsed:     b.KonnectorHostAliasParsed,
+		DowngradeKonnector:           b.DowngradeKonnector,
+		RemoteKubeconfigFile:         b.remoteKubeconfigFile,
+		RemoteKubeconfigNamespace:    b.remoteKubeconfigNamespace,
+		RemoteKubeconfigName:         b.remoteKubeconfigName,
+		RemoteNamespace:              b.remoteNamespace,
+		ClusterIdentity:              b.ClusterIdentity,
+		ClusterIdentityNamespaceName: b.clusterIdentityNamespaceName,
+		DryRun:                       b.DryRun,
+		File:                         b.file,
 	}
 	binder := NewBinder(config, binderOpts)
 
@@ -320,12 +334,28 @@ func (b *BindAPIServiceOptions) bindTemplate(ctx context.Context) (*bindTemplate
 		return nil, fmt.Errorf("failed to create authenticated client: %w", err)
 	}
 
+	if b.ClusterIdentity == "" {
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "⚠️  Warning: Cluster identity not provided, it will be generated based on the local cluster information which may lead to unexpected results if same identity is re-used. Be warrned of the dragons! \n")
+		ns, err := kubeClient.CoreV1().Namespaces().Get(ctx, b.clusterIdentityNamespaceName, metav1.GetOptions{}) // just to trigger possible errors early
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return nil, fmt.Errorf("namespace %q not found for cluster identity generation: %w. You can override default identity namespace with --cluster-identity-namespace flag", b.clusterIdentityNamespaceName, err)
+			}
+			return nil, fmt.Errorf("failed to get namespace %q for cluster identity generation: %w", b.clusterIdentityNamespaceName, err)
+		}
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "   Using namespace %q with UID %q for cluster identity generation.\n", ns.Name, ns.UID)
+		b.ClusterIdentity = string(ns.UID)
+	}
+
 	bindRequest := &kubebindv1alpha2.BindableResourcesRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: b.Name,
 		},
 		TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
 			Name: b.Template,
+		},
+		ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
+			Identity: b.ClusterIdentity,
 		},
 	}
 

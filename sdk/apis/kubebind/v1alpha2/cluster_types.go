@@ -74,6 +74,12 @@ type ClusterStatus struct {
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
 }
 
+// ClusterIdentity contains information that uniquely identifies the cluster.
+type ClusterIdentity struct {
+	// Identity is the unique identifier of the cluster.
+	Identity string `json:"identity,omitempty"`
+}
+
 // ClusterList is the objects list that represents the Cluster.
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

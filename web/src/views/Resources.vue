@@ -141,6 +141,16 @@
       :binding-response="bindingResponse"
       @close="closeBindingResult"
     />
+
+    <!-- Alert Modal -->
+    <AlertModal
+      :show="showAlert"
+      :title="alertTitle"
+      :message="alertMessage"
+      :type="alertType"
+      :preserve-whitespace="alertPreserveWhitespace"
+      @close="closeAlert"
+    />
   </div>
 </template>
 
@@ -148,10 +158,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { httpClient } from '../services/http'
-import type { BindableResourcesRequest, BindingResponse } from '../types/binding'
+import type { BindableResourcesRequest, BindingResponse, ClusterIdentity } from '../types/binding'
 import { StructuredError } from '../services/http'
 import BindingResult from '../components/BindingResult.vue'
 import TemplateBindingModal from '../components/TemplateBindingModal.vue'
+import AlertModal from '../components/AlertModal.vue'
 import { authService } from '../services/auth'
 
 interface Template {
@@ -212,20 +223,37 @@ const collections = ref<Collection[]>([])
 const showBindingResult = ref(false)
 const selectedTemplateName = ref('')
 const bindingResponse = ref<BindingResponse | null>(null)
+
+// Alert modal state
+const showAlert = ref(false)
+const alertTitle = ref('Alert')
+const alertMessage = ref('')
+const alertType = ref<'error' | 'warning' | 'info' | 'success'>('error')
+const alertPreserveWhitespace = ref(false)
 const isCliFlow = computed(() => authService.isCliFlow())
 
 const showBindingModal = ref(false)
 const selectedTemplate = ref<Template | null>(null)
 
 const cluster = computed(() => route.query.cluster_id as string || '')
+const consumerId = computed(() => route.query.consumer_id as string || '')
+
+// Helper function to build API URLs with query parameters
+const buildApiUrl = (endpoint: string) => {
+  const params = new URLSearchParams()
+  if (cluster.value) params.set('cluster_id', cluster.value)
+  if (consumerId.value) params.set('consumer_id', consumerId.value)
+  
+  return params.toString() ? `${endpoint}?${params.toString()}` : endpoint
+}
 
 const loadResources = async () => {
   loading.value = true
   error.value = null
   
   try {
-    const templatesUrl =  cluster.value  ? `/templates?cluster_id=${cluster.value}` : '/templates'
-    const collectionsUrl = cluster.value ? `/collections?cluster_id=${cluster.value}` : '/collections'
+    const templatesUrl = buildApiUrl('/templates')
+    const collectionsUrl = buildApiUrl('/collections')
     
     const [templatesResponse, collectionsResponse] = await Promise.all([
       httpClient.get(templatesUrl),
@@ -290,7 +318,7 @@ const showTemplateDetails = (template: Template) => {
 
 const handleBind = async (templateName: string, bindingName: string) => {
   try {
-    const bindUrl = cluster.value ? `/bind?cluster_id=${cluster.value}` : `/bind`
+    const bindUrl = buildApiUrl('/bind')
     
     // Create the binding request
     const bindingRequest: BindableResourcesRequest = {
@@ -299,6 +327,9 @@ const handleBind = async (templateName: string, bindingName: string) => {
       },
       templateRef: {
         name: templateName
+      },
+      clusterIdentity: {
+        identity: consumerId.value || ''
       }
     }
     
@@ -319,7 +350,7 @@ const handleBind = async (templateName: string, bindingName: string) => {
         showBindingResult.value = true
       }
     } else {
-      alert(`Failed to bind template: ${templateName}`)
+      showAlertModal(`Failed to bind template: ${templateName}`, 'Binding Failed', 'error')
     }
   } catch (err: any) {
     console.error('Failed to bind template:', err)
@@ -349,13 +380,13 @@ const handleBind = async (templateName: string, bindingName: string) => {
           errorMessage = `Failed to bind template: ${kubeError.message}\n\nDetails: ${kubeError.details || 'No additional details available'}`
       }
       
-      alert(errorMessage)
+      showAlertModal(errorMessage, 'Binding Failed', 'error', true)
     } else {
       // Fallback for non-structured errors
       if (err.response?.status === 401) {
         return
       }
-      alert(`Failed to bind template: ${templateName}. Check console for details.`)
+      showAlertModal(`Failed to bind template: ${templateName}. Check console for details.`, 'Binding Failed', 'error')
     }
   }
 }
@@ -364,6 +395,19 @@ const closeBindingResult = () => {
   showBindingResult.value = false
   bindingResponse.value = null
   selectedTemplateName.value = ''
+}
+
+// Alert modal functions
+const showAlertModal = (message: string, title = 'Error', type: 'error' | 'warning' | 'info' | 'success' = 'error', preserveWhitespace = false) => {
+  alertMessage.value = message
+  alertTitle.value = title
+  alertType.value = type
+  alertPreserveWhitespace.value = preserveWhitespace
+  showAlert.value = true
+}
+
+const closeAlert = () => {
+  showAlert.value = false
 }
 
 onMounted(() => {

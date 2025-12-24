@@ -17,10 +17,7 @@ limitations under the License.
 package backend
 
 import (
-	"context"
 	"fmt"
-	"net/url"
-	"strings"
 
 	"github.com/kcp-dev/multicluster-provider/apiexport"
 	apisv1alpha1 "github.com/kcp-dev/sdk/apis/apis/v1alpha1"
@@ -49,8 +46,9 @@ type Config struct {
 
 	Provider                 multicluster.Provider
 	ExternalAddressGenerator kuberesources.ExternalAddressGeneratorFunc
-	Manager                  mcmanager.Manager
-	Scheme                   *runtime.Scheme
+
+	Manager mcmanager.Manager
+	Scheme  *runtime.Scheme
 
 	ClientConfig *rest.Config
 }
@@ -106,7 +104,7 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 			return nil, fmt.Errorf("error setting up kcp provider: %w", err)
 		}
 
-		gen, err := newKCPExternalAddressGenerator(options.ExternalAddress)
+		gen, err := kcpprovider.NewKCPExternalAddressGenerator(options.ExternalAddress)
 		if err != nil {
 			return nil, err
 		}
@@ -136,45 +134,4 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	config.Manager = manager
 
 	return config, nil
-}
-
-func newKCPExternalAddressGenerator(externalAddress string) (kuberesources.ExternalAddressGeneratorFunc, error) {
-	var extURL *url.URL
-	if externalAddress != "" {
-		var err error
-
-		extURL, err = url.Parse(externalAddress)
-		if err != nil {
-			return nil, fmt.Errorf("invalid --external-address: %w", err)
-		}
-	}
-
-	return func(_ context.Context, clusterConfig *rest.Config) (string, error) {
-		// In kcp case, we are talking via apiexport so clientconfig will be pointing to
-		// https://192.168.2.166:6443/services/apiexport/root:org:ws/<apiexport-name>/clusters/2p0rtkf7b697s6mj
-		// We need to extract host and /clusters/... part
-		u, err := url.Parse(clusterConfig.Host)
-		if err != nil {
-			return "", err
-		}
-
-		// Extract cluster ID from the path
-		// Path format: /services/apiexport/root:org:ws/<apiexport-name>/clusters/{cluster-id}
-		pathParts := strings.Split(strings.Trim(u.Path, "/"), "/")
-		if len(pathParts) < 6 || pathParts[4] != "clusters" {
-			return "", fmt.Errorf("invalid apiexport URL format")
-		}
-
-		clusterID := pathParts[5]
-
-		// Construct new URL with cluster path
-		var finalURL = u
-		if extURL != nil {
-			finalURL = extURL
-		}
-
-		finalURL.Path = "/clusters/" + clusterID
-
-		return finalURL.String(), nil
-	}, nil
 }

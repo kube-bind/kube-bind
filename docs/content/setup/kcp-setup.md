@@ -68,7 +68,7 @@ kubectl ws create consumer --enter
 ```bash
 ./bin/kubectl-bind login http://127.0.0.1:8080
 
-./bin/kubectl-bind --dry-run -o yaml > apiserviceexport.yaml
+./bin/kubectl-bind --cluster-identity-namespace default --dry-run -o yaml > apiserviceexport.yaml
 
 # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
 # name by running `kubectl get secret -n kube-bind`

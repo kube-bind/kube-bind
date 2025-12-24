@@ -1,7 +1,7 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
-  name: v251029-ff0a399.bindableresourcesrequests.kube-bind.io
+  name: v251224-24568872.bindableresourcesrequests.kube-bind.io
 spec:
   group: kube-bind.io
   names:
@@ -25,6 +25,15 @@ spec:
             may reject unrecognized values.
             More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
           type: string
+        clusterIdentity:
+          description: |-
+            ClusterIdentity contains information that uniquely identifies the cluster.
+            When doing dry run, we expect the client to fill this field in (or it will be taken from local cluster where context is available).
+          properties:
+            identity:
+              description: Identity is the unique identifier of the cluster.
+              type: string
+          type: object
         kind:
           description: |-
             Kind is a string value representing the REST resource this object represents.
@@ -36,6 +45,8 @@ spec:
         metadata:
           type: object
         templateRef:
+          description: TemplateRef specifies the APIServiceExportTemplate to bind
+            to.
           properties:
             name:
               description: name is the name of the APIServiceExportTemplate to bind
@@ -44,6 +55,9 @@ spec:
           required:
           - name
           type: object
+      required:
+      - clusterIdentity
+      - templateRef
       type: object
     served: true
     storage: true

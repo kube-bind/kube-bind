@@ -82,7 +82,11 @@ func New(streams genericclioptions.IOStreams) (*cobra.Command, error) {
 				fmt.Fprintf(streams.ErrOut, "%s\n\n", yellow("DISCLAIMER: This is a prototype. It will change in incompatible ways at any time."))
 			}
 
-			return opts.Run(cmd.Context())
+			if err := opts.Run(cmd.Context()); err != nil {
+				fmt.Fprintf(streams.ErrOut, "Error: %v\n", err)
+				return nil
+			}
+			return nil
 		},
 	}
 	opts.AddCmdFlags(cmd)

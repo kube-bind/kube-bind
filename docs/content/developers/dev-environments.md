@@ -126,8 +126,8 @@ All the instructions assume you have already cloned the kube-bind repository and
     10. Bind the thing:
 
     ```bash
-    ./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 1xiy1uyh4qckje8z
-    ./bin/kubectl-bind --dry-run -o yaml > apiserviceexport.yaml
+    ./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 1nso4d2rvleempdp
+    ./bin/kubectl-bind --dry-run --cluster-identity-namespace default -o yaml > apiserviceexport.yaml
 
     # Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
     # name by running `kubectl get secret -n kube-bind`
@@ -145,7 +145,7 @@ All the instructions assume you have already cloned the kube-bind repository and
     Start konnector:
 
     ```bash
-    ./bin/konnector --lease-namespace default --kubeconfig .kcp/consumer.kubeconfig
+    ./bin/konnector --lease-namespace default --kubeconfig .kcp/consumer.kubeconfig --server-address ":9090"
     ```
 
     Create example resources in consumer:

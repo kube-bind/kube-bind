@@ -83,7 +83,10 @@ func NewKubernetesManager(
 	return m, nil
 }
 
-func (m *Manager) HandleResources(ctx context.Context, identity, cluster string) ([]byte, error) {
+func (m *Manager) HandleResources(
+	ctx context.Context,
+	author, identity, cluster string,
+) ([]byte, error) {
 	logger := klog.FromContext(ctx).WithValues("identity", identity)
 	ctx = klog.NewContext(ctx, logger)
 
@@ -107,7 +110,7 @@ func (m *Manager) HandleResources(ctx context.Context, identity, cluster string)
 	if len(nss.Items) == 1 {
 		ns = nss.Items[0].Name
 	} else {
-		nsObj, err := kuberesources.CreateNamespace(ctx, c, m.namespacePrefix, identity)
+		nsObj, err := kuberesources.CreateNamespace(ctx, c, m.namespacePrefix, identity, author)
 		if err != nil {
 			return nil, err
 		}

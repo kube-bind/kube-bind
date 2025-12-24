@@ -16,10 +16,8 @@ replace (
 	github.com/kcp-dev/sdk => github.com/kcp-dev/sdk v0.0.0-20251210172228-11364df3071c
 )
 
-// https://github.com/xrstf/mockoidc/pull/3
-replace github.com/xrstf/mockoidc => github.com/mjudeikis/mockoidc v0.0.0-20251215121937-c75f164e38b5
-
 require (
+	github.com/google/uuid v1.6.0
 	github.com/kcp-dev/client-go v0.28.1-0.20251112153209-b37f4c1ff9a2
 	github.com/kcp-dev/kcp v0.0.0-00010101000000-000000000000
 	github.com/kcp-dev/logicalcluster/v3 v3.0.5
@@ -75,7 +73,6 @@ require (
 	github.com/google/cel-go v0.26.0 // indirect
 	github.com/google/gnostic-models v0.7.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect

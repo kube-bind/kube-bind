@@ -2266,8 +2266,8 @@ optionally add <code>--fronend=http://localhost:3000</code> to point to local fr
 <p>Bind the thing:</p>
 </li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>./bin/kubectl-bind<span class="w"> </span>login<span class="w"> </span>http://127.0.0.1:8080<span class="w"> </span>--cluster<span class="w"> </span>1xiy1uyh4qckje8z
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>./bin/kubectl-bind<span class="w"> </span>--dry-run<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>apiserviceexport.yaml
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>./bin/kubectl-bind<span class="w"> </span>login<span class="w"> </span>http://127.0.0.1:8080<span class="w"> </span>--cluster<span class="w"> </span>1nso4d2rvleempdp
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>./bin/kubectl-bind<span class="w"> </span>--dry-run<span class="w"> </span>--cluster-identity-namespace<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>apiserviceexport.yaml
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
 <a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret</span>
 <a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># name by running `kubectl get secret -n kube-bind`</span>
@@ -2280,7 +2280,7 @@ optionally add <code>--fronend=http://localhost:3000</code> to point to local fr
 <p>This will keep running, so switch to a new terminal.</p>
 <h3 id="consumer-konnector">Consumer Konnector</h3>
 <p>Start konnector:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>./bin/konnector<span class="w"> </span>--lease-namespace<span class="w"> </span>default<span class="w"> </span>--kubeconfig<span class="w"> </span>.kcp/consumer.kubeconfig
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>./bin/konnector<span class="w"> </span>--lease-namespace<span class="w"> </span>default<span class="w"> </span>--kubeconfig<span class="w"> </span>.kcp/consumer.kubeconfig<span class="w"> </span>--server-address<span class="w"> </span><span class="s2">&quot;:9090&quot;</span>
 </code></pre></div>
 <p>Create example resources in consumer:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/cr-cowboy.yaml

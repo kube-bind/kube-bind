@@ -2262,6 +2262,43 @@ More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architec
 
 <div class="property depth-0">
 <div class="property-header">
+<h3 class="property-path" id="v1alpha2-.clusterIdentity">.clusterIdentity</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>ClusterIdentity contains information that uniquely identifies the cluster.
+When doing dry run, we expect the client to fill this field in (or it will be taken from local cluster where context is available).</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.clusterIdentity.identity">.clusterIdentity.identity</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Identity is the unique identifier of the cluster.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-0">
+<div class="property-header">
 <h3 class="property-path" id="v1alpha2-.kind">.kind</h3>
 </div>
 <div class="property-body">
@@ -2302,6 +2339,11 @@ More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architec
 <div class="property-body">
 <div class="property-meta">
 <span class="property-type">object</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>TemplateRef specifies the APIServiceExportTemplate to bind to.</p>
 
 </div>
 

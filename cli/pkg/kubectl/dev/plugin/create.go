@@ -19,7 +19,10 @@ package plugin
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
@@ -67,9 +70,24 @@ type DevOptions struct {
 	KindNetwork         string
 }
 
+// assetVersion is the version of the kube-bind backend assets used in dev mode
+var assetVersion = ""
+
+// fallbackAssetVersion is used when unable to fetch the latest version
+var fallbackAssetVersion = "0.6.0"
+
+// GitHubRelease represents a GitHub release response
+type GitHubRelease struct {
+	TagName string `json:"tag_name"`
+}
+
 // NewDevOptions creates a new DevOptions
 func NewDevOptions(streams genericclioptions.IOStreams) *DevOptions {
 	opts := base.NewOptions(streams)
+	// Initialize assetVersion with fallback if not set
+	if assetVersion == "" {
+		assetVersion = fallbackAssetVersion
+	}
 	return &DevOptions{
 		Options:             opts,
 		Logs:                logs.NewOptions(),
@@ -77,7 +95,7 @@ func NewDevOptions(streams genericclioptions.IOStreams) *DevOptions {
 		ProviderClusterName: "kind-provider",
 		ConsumerClusterName: "kind-consumer",
 		ChartPath:           "oci://ghcr.io/kube-bind/charts/backend",
-		ChartVersion:        "v0.6.0",
+		ChartVersion:        assetVersion,
 	}
 }
 
@@ -92,13 +110,72 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.ChartPath, "chart-path", o.ChartPath, "Helm chart path or OCI registry URL")
 	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", o.ChartVersion, "Helm chart version")
 	cmd.Flags().StringVar(&o.Image, "image", "ghcr.io/kube-bind/backend", "kube-bind backend image to use in dev mode")
-	cmd.Flags().StringVar(&o.Tag, "tag", "main", "kube-bind backend image tag to use in dev mode")
+	cmd.Flags().StringVar(&o.Tag, "tag", "v"+assetVersion, "kube-bind backend image tag to use in dev mode")
 	cmd.Flags().StringVar(&o.KindNetwork, "kind-network", "kube-bind-dev", "kind network to use in dev mode")
 }
 
 // Complete completes the options
 func (o *DevOptions) Complete(args []string) error {
+	// Only fetch the latest version if assetVersion is not set
+	if assetVersion == "" {
+		version, err := fetchLatestRelease()
+		if err != nil {
+			// Log the error but continue with fallback version
+			fmt.Fprintf(o.Streams.ErrOut, "Warning: Failed to fetch latest release version: %v. Using fallback version %s\n", err, fallbackAssetVersion)
+			assetVersion = fallbackAssetVersion
+		} else {
+			assetVersion = version
+		}
+
+		// Update options with the resolved version
+		if o.ChartVersion == "" || o.ChartVersion == fallbackAssetVersion {
+			o.ChartVersion = assetVersion
+		}
+		if o.Tag == "" || o.Tag == "v"+fallbackAssetVersion {
+			o.Tag = "v" + assetVersion
+		}
+	}
+
 	return nil
+}
+
+// fetchLatestRelease fetches the latest release version from GitHub
+func fetchLatestRelease() (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.github.com/repos/kube-bind/kube-bind/releases/latest", nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch latest release: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	var release GitHubRelease
+	if err := json.Unmarshal(body, &release); err != nil {
+		return "", fmt.Errorf("failed to parse release data: %w", err)
+	}
+
+	if release.TagName == "" {
+		return "", fmt.Errorf("no tag name in release data")
+	}
+
+	// Remove 'v' prefix if present
+	version := strings.TrimPrefix(release.TagName, "v")
+	return version, nil
 }
 
 // Validate validates the options

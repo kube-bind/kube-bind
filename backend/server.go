@@ -179,7 +179,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		s.Config.Manager,
 		opts,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
-		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
+		kubebindv1alpha2.Isolation(c.Options.Isolation),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up APIServiceNamespace Controller: %w", err)
@@ -195,7 +195,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		s.Config.Manager,
 		opts,
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
-		kubebindv1alpha2.Isolation(c.Options.ClusterScopedIsolation),
+		kubebindv1alpha2.Isolation(c.Options.Isolation),
 		c.Options.SchemaSource,
 	)
 	if err != nil {

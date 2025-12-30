@@ -298,7 +298,7 @@ func testHappyCase(
 		"--kubeconfig="+providerKubeconfig,
 		"--listen-address=:0",
 		"--consumer-scope="+string(informerScope),
-		"--cluster-scoped-isolation="+string(isolationStrategy),
+		"--isolation="+string(isolationStrategy),
 	)
 
 	t.Logf("Creating CRD on provider side")

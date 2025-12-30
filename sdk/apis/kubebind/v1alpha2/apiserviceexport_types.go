@@ -111,7 +111,17 @@ type APIServiceExportSpec struct {
 
 	// ClusterScopedIsolation specifies how cluster scoped service objects are isolated between multiple consumers on the provider side.
 	// It can be "Prefixed", "Namespaced", or "None".
+	// +deprecated
+	// Deprecated: use Isolation instead.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="clusterScopedIsolation is immutable"
 	ClusterScopedIsolation Isolation `json:"clusterScopedIsolation,omitempty"`
+
+	// Isolation specifies how service objects are isolated between multiple consumers on the provider side.
+	// It can be "Prefixed", "Namespaced", or "None".
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="isolation is immutable"
+	Isolation Isolation `json:"isolation,omitempty"`
 }
 
 // Isolation is an enum defining the different ways to isolate cluster scoped objects

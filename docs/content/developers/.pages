@@ -1,5 +1,6 @@
 nav:
   - index.md
+  - Architecture: architecture.md
   - Development Environment: dev-environments.md
   - Backend: backend
   - Konnector: konnector

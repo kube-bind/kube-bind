@@ -75,7 +75,8 @@ func NewAPIServiceNamespaceReconciler(
 		informerScope: scope,
 		isolation:     isolation,
 		reconciler: reconciler{
-			scope: scope,
+			scope:     scope,
+			isolation: isolation,
 
 			getNamespace: func(ctx context.Context, cache cache.Cache, name string) (*corev1.Namespace, error) {
 				var ns corev1.Namespace

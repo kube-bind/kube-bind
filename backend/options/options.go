@@ -210,6 +210,8 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 		options.Isolation = string(kubebindv1alpha2.IsolationNamespaced)
 	case "none":
 		options.Isolation = string(kubebindv1alpha2.IsolationNone)
+	default:
+		options.Isolation = string(kubebindv1alpha2.IsolationNone)
 	}
 
 	if options.ExternalCAFile != "" && options.ExternalCA != nil {

@@ -79,6 +79,9 @@ type BindOptions struct {
 	// clusterIdentityNamespaceName is the namespace name from which the cluster identity will be generated.
 	clusterIdentityNamespaceName string
 
+	// SkipBrowser skips opening the browser automatically.
+	SkipBrowser bool
+
 	// Runner is runs the command. It can be replaced in tests.
 	Runner func(cmd *exec.Cmd) error
 
@@ -119,6 +122,7 @@ func (b *BindOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().MarkHidden("konnector-host-alias") //nolint:errcheck
 	cmd.Flags().StringVarP(&b.ClusterIdentity, "cluster-identity", "", b.ClusterIdentity, "A unique identity for the cluster. If not provided, it will be generated based on the local cluster information. ")
 	cmd.Flags().StringVarP(&b.clusterIdentityNamespaceName, "cluster-identity-namespace", "", b.clusterIdentityNamespaceName, "The namespace name from which the cluster identity will be generated. Only used if cluster-identity is not provided.")
+	cmd.Flags().BoolVarP(&b.SkipBrowser, "skip-browser", "", false, "Skip opening the browser automatically")
 }
 
 // Complete ensures all fields are initialized.
@@ -213,15 +217,19 @@ func (b *BindOptions) runWithCallback(ctx context.Context, _ chan<- string) erro
 		return fmt.Errorf("failed to build UI URL: %w", err)
 	}
 
-	fmt.Fprintf(b.Options.IOStreams.ErrOut, "🌐 Opening kube-bind UI in your browser...\n")
-	fmt.Fprintf(b.Options.IOStreams.ErrOut, "    %s\n\n", uiURL)
+	if !b.SkipBrowser {
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "🌐 Opening kube-bind UI in your browser...\n")
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "    %s\n\n", uiURL)
 
-	// Open browser
-	if err := base.OpenBrowser(uiURL); err != nil {
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Failed to open browser automatically: %v\n", err)
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Please manually open: %s\n\n", uiURL)
+		// Open browser
+		if err := base.OpenBrowser(uiURL); err != nil {
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Failed to open browser automatically: %v\n", err)
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Please manually open: %s\n\n", uiURL)
+		} else {
+			fmt.Fprintf(b.Options.IOStreams.ErrOut, "Browser opened successfully\n")
+		}
 	} else {
-		fmt.Fprintf(b.Options.IOStreams.ErrOut, "Browser opened successfully\n")
+		fmt.Fprintf(b.Options.IOStreams.ErrOut, "\n\n🌐 Please manually open: %s\n\n", uiURL)
 	}
 
 	fmt.Fprintf(b.Options.IOStreams.ErrOut, "Waiting for binding completion from UI...\n")

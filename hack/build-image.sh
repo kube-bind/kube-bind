@@ -46,7 +46,7 @@ echo "Building backend image..."
 docker buildx build \
    --platform $PLATFORMS \
    --build-arg LDFLAGS="$LDFLAGS" \
-   -t "$IMAGE_REPO)/backend:$REV" \
+   -t "$IMAGE_REPO/backend:$REV" \
    -f Dockerfile \
    $LOAD_FLAG .
 

@@ -92,7 +92,7 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.ChartPath, "chart-path", o.ChartPath, "Helm chart path or OCI registry URL")
 	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", o.ChartVersion, "Helm chart version")
 	cmd.Flags().StringVar(&o.Image, "image", "ghcr.io/kube-bind/backend", "kube-bind backend image to use in dev mode")
-	cmd.Flags().StringVar(&o.Tag, "tag", "main", "kube-bind backend image tag to use in dev mode")
+	cmd.Flags().StringVar(&o.Tag, "tag", "v0.6.0", "kube-bind backend image tag to use in dev mode")
 	cmd.Flags().StringVar(&o.KindNetwork, "kind-network", "kube-bind-dev", "kind network to use in dev mode")
 }
 

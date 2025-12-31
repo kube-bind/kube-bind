@@ -47,6 +47,62 @@ import (
 	"github.com/kube-bind/kube-bind/test/e2e/framework"
 )
 
+// TestClusterScoped tests scenarios where consumer-side resources are cluster-scoped (Sheriffs).
+// Uses: template-sheriffs.yaml (scope=Cluster) & cr-sheriff.yaml
+//
+// ARCHITECTURE FLOW:
+//
+//	CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
+//	================                            ==========================
+//
+//	┌─────────────────────────────┐           ┌────────────────────────────────────────────┐
+//	│ Namespace: wild-west        │           │ Contract Namespace (per consumer):         │
+//	│  - Secret: sheriff-badge-   │──────────▶│   kube-bind-<consumer-id-hash>             │
+//	│    credentials (ref)        │   Sync    │                                            │
+//	│  - Secret: sheriff-juris-   │           │   APIServiceNamespace CR:                  │
+//	│    diction-config (label)   │           │     metadata.name: wild-west               │
+//	└─────────────────────────────┘           │     status.namespace: ─────────────────┐   │
+//	                                          │       kube-bind-<consumer-id>-wild-west│   │
+//	┌─────────────────────────────┐           └────────────────────────────────────────┼───┘
+//	│ Sheriff: wyatt-earp         │                                                    │
+//	│  (cluster-scoped)           │──────────▶ ACTUAL PROVIDER NAMESPACE: ◀───────────┘
+//	│  spec.intent                │   Sync    ┌────────────────────────────────────────────┐
+//	│  spec.secretRefs: [...]     │           │ Namespace: kube-bind-<consumer-id>-wild-   │
+//	└─────────────────────────────┘           │            west                            │
+//	         ▲                                │  - Secret: sheriff-badge-credentials       │
+//	         │ Status updates                 │  - Secret: sheriff-jurisdiction-config     │
+//	         └────────────────────────────────│                                            │
+//	                                          │ RBAC (for secret access):                  │
+//	                                          │  - ClusterRole: kube-binder-export-wild-   │
+//	                                          │    west-sheriffs (scope=ClusterScope)      │
+//	                                          │  - Role: ... (scope=NamespacedScope)       │
+//	                                          └────────────────────────────────────────────┘
+//
+//	                                          Sheriff resource location (3 strategies):
+//	                                          ┌────────────────────────────────────────────┐
+//	                                          │ [cc-prefixed] IsolationPrefixed:           │
+//	                                          │   Sheriff: <consumer-id>-wyatt-earp        │
+//	                                          │   (cluster-scoped, prefixed name)          │
+//	                                          └────────────────────────────────────────────┘
+//
+//	                                          ┌────────────────────────────────────────────┐
+//	                                          │ [cc-none] IsolationNone:                   │
+//	                                          │   Sheriff: wyatt-earp                      │
+//	                                          │   (cluster-scoped, shared name!)           │
+//	                                          │   ⚠ Last write wins between consumers      │
+//	                                          └────────────────────────────────────────────┘
+//
+//	                                          ┌────────────────────────────────────────────┐
+//	                                          │ [cc-namespaced] IsolationNamespaced:       │
+//	                                          │   Sheriff: wyatt-earp                      │
+//	                                          │   in namespace: kube-bind-<consumer-id>-   │
+//	                                          │                 wild-west                  │
+//	                                          │   (CRD toggled to NamespaceScoped)         │
+//	                                          └────────────────────────────────────────────┘
+//
+// KEY INSIGHT: Secrets are ALWAYS isolated per consumer via the contract namespace
+// (kube-bind-<consumer-id>-wild-west), even with IsolationNone. The isolation
+// strategy only affects cluster-scoped Sheriff resource naming/placement.
 func TestClusterScoped(t *testing.T) {
 	// name & test type defined by letters - cc - cluster-cluster so its easier to identify failures in the logs.
 	testHappyCase(t, "cc-prefixed", apiextensionsv1.ClusterScoped, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope, kubebindv1alpha2.IsolationPrefixed)
@@ -54,11 +110,170 @@ func TestClusterScoped(t *testing.T) {
 	testHappyCase(t, "cc-namespaced", apiextensionsv1.ClusterScoped, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope, kubebindv1alpha2.IsolationNamespaced)
 }
 
+// TestNamespacedScoped tests scenarios where consumer-side resources are namespaced (Cowboys).
+// Uses: template-cowboys.yaml (scope=Namespaced) & cr-cowboy.yaml
+//
+// ARCHITECTURE FLOW:
+//
+//	CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
+//	================                            ==========================
+//
+//	┌─────────────────────────────┐           ┌────────────────────────────────────────────┐
+//	│ Namespace: wild-west        │           │ Contract Namespace (per consumer):         │
+//	│                             │──────────▶│   kube-bind-<consumer-id-hash>             │
+//	│  Cowboy: billy-the-kid      │   Sync    │                                            │
+//	│   (namespaced)              │           │   APIServiceNamespace CR:                  │
+//	│   spec.intent               │           │     metadata.name: wild-west               │
+//	│   spec.secretRefs: [...]    │           │     status.namespace: ─────────────────┐   │
+//	│                             │           │       kube-bind-<consumer-id>-wild-west│   │
+//	│  - Secret: colt-45-permit   │           └────────────────────────────────────────┼───┘
+//	│    (ref)                    │                                                    │
+//	│  - Secret: cowboy-gang-     │           ACTUAL PROVIDER NAMESPACE: ◀─────────────┘
+//	│    affiliation (label)      │           ┌────────────────────────────────────────────┐
+//	└─────────────────────────────┘           │ Namespace: kube-bind-<consumer-id>-wild-   │
+//	         ▲                                │            west                            │
+//	         │ Status updates                 │                                            │
+//	         └────────────────────────────────│  Cowboy: billy-the-kid (namespaced)        │
+//	                                          │  - Secret: colt-45-permit                  │
+//	                                          │  - Secret: cowboy-gang-affiliation         │
+//	                                          │                                            │
+//	                                          │ RBAC (for secret access):                  │
+//	                                          │  - Role: kube-binder-export-wild-west-     │
+//	                                          │    cowboys (in this namespace)             │
+//	                                          │  - RoleBinding: ... (in this namespace)    │
+//	                                          └────────────────────────────────────────────┘
+//
+//	Two test scenarios:
+//	┌────────────────────────────────────────────────────────────────────┐
+//	│ [nn] Namespaced → Namespaced (informerScope=NamespacedScope):     │
+//	│   - Consumer: Cowboy in namespace wild-west                       │
+//	│   - Provider: Cowboy in namespace kube-bind-<id>-wild-west        │
+//	│   - Konnector watches only its own namespace on provider side     │
+//	│   - Natural isolation via namespaces                              │
+//	└────────────────────────────────────────────────────────────────────┘
+//
+//	┌────────────────────────────────────────────────────────────────────┐
+//	│ [nc] Namespaced → Cluster (informerScope=ClusterScope):           │
+//	│   - Consumer: Cowboy in namespace wild-west                       │
+//	│   - Provider: Cowboy in namespace kube-bind-<id>-wild-west        │
+//	│   - Konnector watches cluster-wide on provider side               │
+//	│   - Still isolated via namespaces, but different RBAC model       │
+//	└────────────────────────────────────────────────────────────────────┘
+//
+// KEY INSIGHT: Namespaced resources are ALWAYS isolated per consumer because
+// each consumer gets its own provider namespace (kube-bind-<consumer-id>-wild-west).
+// The informerScope parameter only affects whether the konnector watches at namespace
+// or cluster level, not the isolation model.
 func TestNamespacedScoped(t *testing.T) {
 	testHappyCase(t, "nn", apiextensionsv1.NamespaceScoped, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope, "")
 	testHappyCase(t, "nc", apiextensionsv1.NamespaceScoped, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope, "")
 }
 
+// testHappyCase is the main test function that validates end-to-end kube-bind functionality.
+// It tests the complete lifecycle of binding, syncing, and managing resources between
+// consumer and provider clusters.
+//
+// TEST EXECUTION FLOW (with 2 consumers for isolation verification):
+//
+//	SETUP PHASE
+//	===========
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 1. Create provider workspace (KCP)                                       │
+//	│    - Install kube-bind CRDs                                              │
+//	│    - Start backend server (HTTP API for binding)                         │
+//	│    - Bootstrap example CRDs (Cowboys/Sheriffs) via examples.Bootstrap()  │
+//	│    - Apply templates (template-cowboys.yaml / template-sheriffs.yaml)    │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//	                                ▼
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 2. Create consumer workspaces (consumer1, consumer2)                     │
+//	│    - Start konnector on each consumer (watches APIServiceBinding)        │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//
+//	BINDING PHASE (executed for each consumer)
+//	=============
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 3. Login to provider                                                     │
+//	│    - Simulate browser auth flow                                          │
+//	│    - Save credentials to kube-bind-config.yaml                           │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//	                                ▼
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 4. List templates & collections                                          │
+//	│    - Verify backend returns 2 templates (cowboys, sheriffs)              │
+//	│    - Verify 1 collection exists                                          │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//	                                ▼
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 5. Bind API (consumer.Bind())                                            │
+//	│    - Send BindableResourcesRequest with:                                 │
+//	│      • templateRef: "cowboys" or "sheriffs"                              │
+//	│      • clusterIdentity: <unique-uuid>                                    │
+//	│    - Backend creates on provider:                                        │
+//	│      • Contract namespace: kube-bind-<consumer-id-hash>                  │
+//	│      • APIServiceExportRequest                                           │
+//	│      • APIServiceNamespace: wild-west → kube-bind-<id>-wild-west        │
+//	│      • RBAC resources for secret access                                  │
+//	│    - Backend returns BindingResourceResponse with CRDs, RBAC manifests   │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//	                                ▼
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 6. Apply binding on consumer (BindFromResponse())                        │
+//	│    - Create APIServiceBinding (watched by konnector)                     │
+//	│    - Apply CRDs (Cowboys.wildwest.dev or Sheriffs.wildwest.dev)          │
+//	│    - Wait for CRD to be established                                      │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//
+//	SYNCHRONIZATION & VERIFICATION PHASE (per consumer)
+//	===================================
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 7. Create instance on consumer (from cr-cowboy.yaml / cr-sheriff.yaml)   │
+//	│    - Namespace: wild-west                                                │
+//	│    - Resource: billy-the-kid (Cowboy) or wyatt-earp (Sheriff)           │
+//	│    - Secrets: colt-45-permit, cowboy-gang-affiliation, etc.              │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//	                                ▼
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 8. Verify sync to provider                                               │
+//	│    ✓ Instance created on provider (with ClusterNamespaceAnnotation)      │
+//	│    ✓ providerContractNamespace extracted from annotation                 │
+//	│    ✓ providerObjectNamespace captured (may be empty for cluster-scoped)  │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//	                                ▼
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 9. Verify namespace pre-seeding & RBAC                                   │
+//	│    ✓ APIServiceNamespace created with .status.namespace populated        │
+//	│    ✓ Actual provider namespace exists (kube-bind-<id>-wild-west)         │
+//	│    ✓ RBAC created (ClusterRole/Role + Bindings) for secret access        │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//	                                ▼
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 10. Test bi-directional sync                                             │
+//	│     ✓ Update spec on consumer → synced to provider                       │
+//	│     ✓ Update status on provider → synced to consumer                     │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//	                                ▼
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 11. Verify secret sync (from permissionClaims in template)               │
+//	│     ✓ Referenced secret (spec.secretRefs) synced to provider namespace   │
+//	│     ✓ Label-selected secret (app=cowboy/sheriff) synced                  │
+//	│     Location: kube-bind-<consumer-id>-wild-west/                         │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//	                                ▼
+//	┌──────────────────────────────────────────────────────────────────────────┐
+//	│ 12. Test deletion                                                         │
+//	│     ✓ Delete on consumer → deleted on provider                           │
+//	└──────────────────────────────────────────────────────────────────────────┘
+//
+// MULTI-CONSUMER ISOLATION VERIFICATION:
+// ======================================
+// Running with 2 consumers validates that:
+//   - Each consumer gets isolated contract namespace (kube-bind-<consumer1-hash>, kube-bind-<consumer2-hash>)
+//   - Each consumer gets isolated provider namespace (kube-bind-<consumer1-hash>-wild-west, etc.)
+//   - Secrets are fully isolated between consumers
+//   - For cluster-scoped resources with IsolationNone, last-write-wins (both write to same Sheriff name)
+//   - For cluster-scoped resources with IsolationPrefixed, resources are name-prefixed
+//   - For cluster-scoped resources with IsolationNamespaced, provider CRD is toggled to NamespaceScoped
 func testHappyCase(
 	t *testing.T,
 	name string,
@@ -69,9 +284,6 @@ func testHappyCase(
 ) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel) // Commented out to prevent cleanup of kcp assets
-
-	clusterIdentity, err := uuid.NewUUID()
-	require.NoError(t, err)
 
 	suffix := framework.RandomString(4)
 
@@ -101,8 +313,11 @@ func testHappyCase(
 	}
 
 	t.Logf("Creating consumer workspace and starting konnector")
-	consumerConfig, consumerKubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithName("%s-consumer-%s", name, suffix))
-	framework.StartKonnector(t, consumerConfig, "--kubeconfig="+consumerKubeconfig)
+	consumer1Config, consumer1Kubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithName("%s-consumer-%s", name, suffix))
+	framework.StartKonnector(t, consumer1Config, "--kubeconfig="+consumer1Kubeconfig, "--server-address=:0")
+
+	consumer2Config, consumer2Kubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithName("%s-consumer-%s", name, suffix))
+	framework.StartKonnector(t, consumer2Config, "--kubeconfig="+consumer2Kubeconfig, "--server-address=:0")
 
 	serviceGVR := schema.GroupVersionResource{Group: "wildwest.dev", Version: "v1alpha1", Resource: "cowboys"}
 	templateRef := "cowboys"
@@ -112,24 +327,12 @@ func testHappyCase(
 		templateRef = "sheriffs"
 	}
 
-	consumerClient := framework.DynamicClient(t, consumerConfig).Resource(serviceGVR)
+	consumer1Client := framework.DynamicClient(t, consumer1Config).Resource(serviceGVR)
+	consumer2Client := framework.DynamicClient(t, consumer2Config).Resource(serviceGVR)
 	providerClient := framework.DynamicClient(t, providerConfig).Resource(serviceGVR)
 
 	providerCoreClient := framework.KubeClient(t, providerConfig).CoreV1()
 	providerBindClient := framework.BindClient(t, providerConfig)
-
-	// Instance variables removed - now seeded directly in test
-	// These two namespaces are where the "main" object resides on each cluster.
-	consumerNs, providerNs := "wild-west", "unknown"
-
-	// When namespaced isolation is used (i.e. cluster-scoped objects on the consumer
-	// turn into namespaced objects on the provider cluster), permission claimed objects
-	// are still synced into their respective APIServiceNamespace-managed namespaces.
-	permClaimNs := "unknown"
-
-	// cluster namespace is the main "contract" namespace, i.e. where the BoundSchema and other
-	// bind-related objects reside.
-	clusterNs, clusterScopedUpInsName := "unknown", "unknown"
 
 	kubeBindConfig := path.Join(framework.WorkDir, "kube-bind-config.yaml")
 
@@ -148,10 +351,7 @@ func testHappyCase(
 		filename = "cr-sheriff.yaml"
 	}
 
-	// Note: sheriff secrets are in sheriff-operations namespace, but they will be synced to the provider namespace
-
-	// binding step outputs this.
-	var bindResponse *kubebindv1alpha2.BindingResourceResponse
+	// Initial setup steps
 	for _, tc := range []struct {
 		name string
 		step func(t *testing.T)
@@ -185,447 +385,452 @@ func testHappyCase(
 				require.Len(t, result.Items, 1)
 			},
 		},
-		{
-			name: "Get bind APIServiceExportRequest from server",
-			step: func(t *testing.T) {
-				c := framework.GetKubeBindRestClient(t, kubeBindConfig)
-				var err error
-
-				bindResponse, err = c.Bind(ctx, &kubebindv1alpha2.BindableResourcesRequest{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-binding",
-					},
-					TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
-						Name: templateRef,
-					},
-					ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
-						Identity: clusterIdentity.String(),
-					},
-				})
-				require.NoError(t, err)
-				require.NotNil(t, bindResponse)
-			},
-		},
-		{
-			name: "Bind the payload",
-			step: func(t *testing.T) {
-				iostreams, _, _, _ := genericclioptions.NewTestIOStreams()
-				binderOpts := &bindapiservice.BinderOptions{
-					IOStreams:     iostreams,
-					SkipKonnector: true,
-				}
-
-				binder := bindapiservice.NewBinder(consumerConfig, binderOpts)
-				result, err := binder.BindFromResponse(ctx, bindResponse)
-				require.NoError(t, err)
-				require.Len(t, result, 1)
-
-				t.Logf("Waiting for %s CRD to be created on consumer side", serviceGVR.Resource)
-				crdClient := framework.ApiextensionsClient(t, consumerConfig).ApiextensionsV1().CustomResourceDefinitions()
-				require.Eventually(t, func() bool {
-					if serviceGVR.Group == "" {
-						serviceGVR.Group = "core"
-					}
-					_, err := crdClient.Get(ctx, serviceGVR.Resource+"."+serviceGVR.Group, metav1.GetOptions{})
-					return err == nil
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for %s CRD to be created on consumer side", serviceGVR.Resource)
-			},
-		},
-		{
-			name: "instances are synced",
-			step: func(t *testing.T) {
-				t.Logf("Seeding example objects on consumer side for %s", serviceGVR.Resource)
-
-				err := seedSpecificCRExample(t, framework.DynamicClient(t, consumerConfig), filename, "test")
-				require.NoError(t, err)
-
-				t.Logf("Trying to create %s on consumer side", serviceGVR.Resource)
-
-				t.Logf("Waiting for the %s instance to be created on provider side", serviceGVR.Resource)
-				var instances *unstructured.UnstructuredList
-				require.Eventually(t, func() bool {
-					var err error
-					instances, err = providerClient.List(ctx, metav1.ListOptions{})
-					return err == nil && len(instances.Items) == 1
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be created on provider side", serviceGVR.Resource)
-
-				// these are used everywhere further down
-				firstObj := instances.Items[0]
-
-				// providerNs is the namespaced where the synced object lives; this might be empty
-				// for cluster-scoped objects on the provider side.
-				providerNs = firstObj.GetNamespace()
-
-				// Cluster namespace represent binding contract namespace, and is stored on every object.
-				clusterNs = firstObj.GetAnnotations()[types.ClusterNamespaceAnnotationKey]
-				require.NotEmpty(t, clusterNs, "cluster namespace annotation must always exist")
-
-				// the object name on the provider side; this is only used for cluster-scoped objects
-				clusterScopedUpInsName = firstObj.GetName()
-			},
-		},
-		// Request included namespace, so we check it first
-		{
-			name: "verify provider side namespace pre-seeding and RBAC management",
-			step: func(t *testing.T) {
-				t.Logf("Verifying APIServiceNamespace was created from pre-seeded namespace spec")
-				var foundPreSeededNamespace bool
-				var actualProviderNamespace string
-				require.Eventually(t, func() bool {
-					// If we are operating namespaced resources - namespace will be set, if cluster - we need to use
-					// extracted one from the cluster-scoped object.
-					namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(clusterNs).List(ctx, metav1.ListOptions{})
-					if err != nil {
-						return false
-					}
-
-					for _, ns := range namespaces.Items {
-						if ns.Name == "wild-west" && ns.Status.Namespace != "" {
-							actualProviderNamespace = ns.Status.Namespace
-							foundPreSeededNamespace = true
-							return true
-						}
-					}
-					return false
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for pre-seeded APIServiceNamespace to be created on provider side")
-				require.True(t, foundPreSeededNamespace, "Pre-seeded namespace 'wild-west' should be created via APIServiceExportRequest.Spec.Namespaces")
-
-				providerCoreClient := framework.KubeClient(t, providerConfig).CoreV1()
-				_, err := providerCoreClient.Namespaces().Get(ctx, actualProviderNamespace, metav1.GetOptions{})
-				require.NoError(t, err, "Physical provider side namespace should exist")
-
-				switch informerScope {
-				case kubebindv1alpha2.ClusterScope:
-					t.Logf("Verifying RBAC resources were created for secret management in cluster scope")
-					rbacClient := framework.KubeClient(t, providerConfig).RbacV1()
-
-					clusterRoles, err := rbacClient.ClusterRoles().List(ctx, metav1.ListOptions{})
-					require.NoError(t, err)
-
-					var foundSecretClusterRole bool
-					for _, cr := range clusterRoles.Items {
-						if strings.Contains(cr.Name, "kube-binder-export") {
-							for _, rule := range cr.Rules {
-								for _, resource := range rule.Resources {
-									if resource == "secrets" {
-										foundSecretClusterRole = true
-										require.Contains(t, rule.Verbs, "*", "ClusterRole should have * permissions for secrets")
-										require.Contains(t, rule.APIGroups, "", "ClusterRole should target core API group")
-										break
-									}
-								}
-							}
-						}
-					}
-					require.True(t, foundSecretClusterRole, "ClusterRole for secrets should be created")
-
-					t.Logf("Verifying ClusterRoleBinding was created for pre-seeded namespace secret access")
-					clusterRoleBindings, err := rbacClient.ClusterRoleBindings().List(ctx, metav1.ListOptions{})
-					require.NoError(t, err)
-
-					var foundSecretClusterRoleBinding bool
-					for _, crb := range clusterRoleBindings.Items {
-						if strings.Contains(crb.Name, "kube-binder-export") {
-							for _, subject := range crb.Subjects {
-								if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
-									foundSecretClusterRoleBinding = true
-									require.Equal(t, "ClusterRole", crb.RoleRef.Kind, "Should reference ClusterRole")
-									break
-								}
-							}
-						}
-					}
-					require.True(t, foundSecretClusterRoleBinding, "ClusterRoleBinding for ServiceAccount should be created")
-				case kubebindv1alpha2.NamespacedScope:
-					t.Logf("Verifying RBAC resources were created for secret management in namespace scope")
-					rbacClient := framework.KubeClient(t, providerConfig).RbacV1()
-
-					roles, err := rbacClient.Roles(providerNs).List(ctx, metav1.ListOptions{})
-					require.NoError(t, err)
-
-					var foundSecretRole bool
-					for _, cr := range roles.Items {
-						if strings.Contains(cr.Name, "kube-binder-export") {
-							for _, rule := range cr.Rules {
-								for _, resource := range rule.Resources {
-									if resource == "secrets" {
-										foundSecretRole = true
-										require.Contains(t, rule.Verbs, "*", "Role should have * permissions for secrets")
-										require.Contains(t, rule.APIGroups, "", "Role should target core API group")
-										break
-									}
-								}
-							}
-						}
-					}
-					require.True(t, foundSecretRole, "Role for secrets should be created")
-
-					t.Logf("Verifying RoleBinding was created for pre-seeded namespace secret access")
-					roleBindings, err := rbacClient.RoleBindings(providerNs).List(ctx, metav1.ListOptions{})
-					require.NoError(t, err)
-
-					var foundSecretRoleBinding bool
-					for _, crb := range roleBindings.Items {
-						if strings.Contains(crb.Name, "kube-binder-") && strings.Contains(crb.Name, "-export-") {
-							for _, subject := range crb.Subjects {
-								if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
-									foundSecretRoleBinding = true
-									require.Equal(t, "Role", crb.RoleRef.Kind, "Should reference Role")
-									break
-								}
-							}
-						}
-					}
-					require.True(t, foundSecretRoleBinding, "RoleBinding for ServiceAccount should be created")
-				}
-
-				t.Logf("Provider side namespace pre-seeding and secret management RBAC verified successfully")
-			},
-		},
-		{
-			name: "verify secrets from examples are synced",
-			step: func(t *testing.T) {
-				t.Logf("Verifying that secrets from the embedded examples are already synced to provider")
-
-				err := seedSpecificCRExample(t, framework.DynamicClient(t, consumerConfig), filename, "test")
-				require.NoError(t, err)
-			},
-		},
-		{
-			name: "establish permission claims namespace",
-			step: func(t *testing.T) {
-				// We need to establish namespace only in cluster scope for cluster scoped resources.
-				// Else we can trust sync object namespace as it will be the same.
-				if informerScope == kubebindv1alpha2.ClusterScope &&
-					consumerResourceScope == apiextensionsv1.ClusterScoped {
-					if providerNs == "unknown" {
-						t.Fatal("providerNS is not set. Programming error in the test.")
-					}
-
-					t.Logf("Waiting for APIServiceNamespace to be created on provider side: %s", clusterNs)
-					require.Eventually(t, func() bool {
-						var err error
-						namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(clusterNs).List(ctx, metav1.ListOptions{})
-						if err != nil {
-							return false
-						}
-
-						for _, namespace := range namespaces.Items {
-							if strings.Contains(namespace.Name, consumerNs) && namespace.Status.Namespace != "" {
-								permClaimNs = namespace.Status.Namespace
-								return true
-							}
-						}
-
-						return false
-					}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for APIServiceNamespace to be created on provider side")
-					require.NotEmpty(t, permClaimNs, "No permission claim namespaces found")
-
-					t.Logf("permclaim namespace detected as: %q", permClaimNs)
-				} else {
-					permClaimNs = providerNs
-				}
-			},
-		},
-		{
-			name: "verify secrets from examples are synced to provider",
-			step: func(t *testing.T) {
-				t.Logf("Waiting for referenced secret to be synced to provider side")
-				require.Eventually(t, func() bool {
-					_, err := providerCoreClient.Secrets(permClaimNs).Get(ctx, referencedSecretName, metav1.GetOptions{})
-					return err == nil
-				}, time.Minute*2, time.Millisecond*100, "waiting for referenced secret to be synced to provider side")
-
-				t.Logf("Waiting for label-selected secret to be synced to provider side")
-				require.Eventually(t, func() bool {
-					_, err := providerCoreClient.Secrets(permClaimNs).Get(ctx, labelSelectedSecretName, metav1.GetOptions{})
-					return err == nil
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for label-selected secret to be synced to provider side")
-
-				t.Logf("Secrets from examples are properly synced to provider")
-			},
-		},
-		{
-			name: "verify secrets are deleted when resource is removed",
-			step: func(t *testing.T) {
-				t.Logf("Note: Secrets are created from the embedded examples and will be cleaned up when the instance is deleted")
-				// For now, we skip manual secret deletion testing since the secrets come from the examples
-				// and are tied to the resource lifecycle
-			},
-		},
-		{
-			name: "instance deleted upstream is recreated",
-			step: func(t *testing.T) {
-				var err error
-				if providerResourceScope == apiextensionsv1.NamespaceScoped {
-					err = providerClient.Namespace(providerNs).Delete(ctx, "test", metav1.DeleteOptions{})
-				} else {
-					err = providerClient.Delete(ctx, clusterScopedUpInsName, metav1.DeleteOptions{})
-				}
-				require.NoError(t, err)
-
-				require.Eventually(t, func() bool {
-					var err error
-					if providerResourceScope == apiextensionsv1.NamespaceScoped {
-						_, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
-					} else {
-						_, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
-					}
-					return err == nil
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be recreated upstream", serviceGVR.Resource)
-			},
-		},
-		{
-			name: "instance spec updated downstream is updated upstream",
-			step: func(t *testing.T) {
-				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-					var obj *unstructured.Unstructured
-					var err error
-					if consumerResourceScope == apiextensionsv1.NamespaceScoped {
-						obj, err = consumerClient.Namespace(consumerNs).Get(ctx, "test", metav1.GetOptions{})
-					} else {
-						obj, err = consumerClient.Get(ctx, "test", metav1.GetOptions{})
-					}
-					require.NoError(t, err)
-					if consumerResourceScope == apiextensionsv1.NamespaceScoped {
-						unstructured.SetNestedField(obj.Object, "Updated cowboy intent", "spec", "intent") //nolint:errcheck
-						_, err = consumerClient.Namespace(consumerNs).Update(ctx, obj, metav1.UpdateOptions{})
-					} else {
-						unstructured.SetNestedField(obj.Object, "Updated sheriff intent", "spec", "intent") //nolint:errcheck
-						_, err = consumerClient.Update(ctx, obj, metav1.UpdateOptions{})
-					}
-					return err
-				})
-				require.NoError(t, err)
-
-				require.Eventually(t, func() bool {
-					var obj *unstructured.Unstructured
-					var err error
-					if providerResourceScope == apiextensionsv1.NamespaceScoped {
-						obj, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
-					} else {
-						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
-					}
-					require.NoError(t, err)
-					var value string
-					value, _, err = unstructured.NestedString(obj.Object, "spec", "intent")
-
-					require.NoError(t, err)
-					if consumerResourceScope == apiextensionsv1.NamespaceScoped {
-						return value == "Updated cowboy intent"
-					} else {
-						return value == "Updated sheriff intent"
-					}
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be updated upstream", serviceGVR.Resource)
-			},
-		},
-		{
-			name: "instance status updated upstream is updated downstream",
-			step: func(t *testing.T) {
-				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-					var obj *unstructured.Unstructured
-					var err error
-					if providerResourceScope == apiextensionsv1.NamespaceScoped {
-						obj, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
-					} else {
-						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
-					}
-					require.NoError(t, err)
-					unstructured.SetNestedField(obj.Object, "Ready to ride", "status", "result") //nolint:errcheck
-					if providerResourceScope == apiextensionsv1.NamespaceScoped {
-						_, err = providerClient.Namespace(providerNs).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
-					} else {
-						_, err = providerClient.UpdateStatus(ctx, obj, metav1.UpdateOptions{})
-					}
-					return err
-				})
-				require.NoError(t, err)
-
-				require.Eventually(t, func() bool {
-					var obj *unstructured.Unstructured
-					var err error
-					if consumerResourceScope == apiextensionsv1.NamespaceScoped {
-						obj, err = consumerClient.Namespace(consumerNs).Get(ctx, "test", metav1.GetOptions{})
-					} else {
-						obj, err = consumerClient.Get(ctx, "test", metav1.GetOptions{})
-					}
-					require.NoError(t, err)
-					value, _, err := unstructured.NestedString(obj.Object, "status", "result")
-					require.NoError(t, err)
-					return value == "Ready to ride"
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be updated downstream", serviceGVR.Resource)
-			},
-		},
-		{
-			name: "instance spec updated upstream is reconciled upstream",
-			step: func(t *testing.T) {
-				err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-					var obj *unstructured.Unstructured
-					var err error
-					if providerResourceScope == apiextensionsv1.NamespaceScoped {
-						obj, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
-					} else {
-						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
-					}
-					require.NoError(t, err)
-					if providerResourceScope == apiextensionsv1.NamespaceScoped {
-						unstructured.SetNestedField(obj.Object, "Drifted cowboy intent", "spec", "intent") //nolint:errcheck
-						_, err = providerClient.Namespace(providerNs).Update(ctx, obj, metav1.UpdateOptions{})
-					} else {
-						unstructured.SetNestedField(obj.Object, "Drifted sheriff intent", "spec", "intent") //nolint:errcheck
-						_, err = providerClient.Update(ctx, obj, metav1.UpdateOptions{})
-					}
-					return err
-				})
-				require.NoError(t, err)
-
-				require.Eventually(t, func() bool {
-					var obj *unstructured.Unstructured
-					var err error
-					if providerResourceScope == apiextensionsv1.NamespaceScoped {
-						obj, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
-					} else {
-						obj, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
-					}
-					require.NoError(t, err)
-					var value string
-					if consumerResourceScope == apiextensionsv1.NamespaceScoped {
-						value, _, err = unstructured.NestedString(obj.Object, "spec", "intent")
-						require.NoError(t, err)
-						return value == "Updated cowboy intent"
-					} else {
-						value, _, err = unstructured.NestedString(obj.Object, "spec", "intent")
-						require.NoError(t, err)
-						return value == "Updated sheriff intent"
-					}
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be reconciled upstream", serviceGVR.Resource)
-			},
-		},
-		{
-			name: "instances deleted downstream are deleted upstream",
-			step: func(t *testing.T) {
-				var err error
-				if consumerResourceScope == apiextensionsv1.NamespaceScoped {
-					err = consumerClient.Namespace(consumerNs).Delete(ctx, "test", metav1.DeleteOptions{})
-				} else {
-					err = consumerClient.Delete(ctx, "test", metav1.DeleteOptions{})
-				}
-				require.NoError(t, err)
-
-				require.Eventually(t, func() bool {
-					var err error
-					if providerResourceScope == apiextensionsv1.NamespaceScoped {
-						_, err = providerClient.Namespace(providerNs).Get(ctx, "test", metav1.GetOptions{})
-					} else {
-						_, err = providerClient.Get(ctx, clusterScopedUpInsName, metav1.GetOptions{})
-					}
-					return errors.IsNotFound(err)
-				}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be deleted on provider side", serviceGVR.Resource)
-			},
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.step(t)
+		})
+	}
+
+	// Consumer-specific test loops
+	for _, consumer := range []struct {
+		// name is unique name usined in naming instances
+		name string
+		// clusterIdentity is unique UUID representing the consumer cluster identity.
+		clusterIdentity uuid.UUID
+		// consumerConfig is the REST config for the consumer cluster.
+		consumerConfig *rest.Config
+		// consumerKubeconfig is the kubeconfig path for the consumer cluster.
+		consumerKubeconfig string
+		// consumerClient is the dynamic client for the main resource on the consumer side.
+		consumerClient dynamic.NamespaceableResourceInterface
+
+		// Bellow are runtime values populated during the test run and stored in the same struct
+		// for easier access.
+
+		// providerContractNamespace is the namespace representing the binding contract on the backend side.
+		// YOu can get it from every synced object annotation.
+		providerContractNamespace string
+		// providerObjectNamespace is the namespace on the provider side where the synced object resides. Might be empty for cluster-scoped.
+		providerObjectNamespace string
+		// consumerObjectNamespace is the namespace on the consumer side where the main object resides.
+		consumerObjectNamespace string
+		// bindResponse is the response from the bind API call for this consumer. This contains dedicated provider
+		// resources for this consumer.
+		bindResponse *kubebindv1alpha2.BindingResourceResponse
+	}{
+		{
+			name:               "consumer1",
+			clusterIdentity:    uuid.Must(uuid.NewUUID()),
+			consumerConfig:     consumer1Config,
+			consumerKubeconfig: consumer1Kubeconfig,
+			consumerClient:     consumer1Client,
+
+			providerContractNamespace: "unknown",
+			providerObjectNamespace:   "unknown",
+			consumerObjectNamespace:   "wild-west", // This is part of binding contract and should be honored
+			bindResponse:              nil,
+		},
+		{
+			name:               "consumer2",
+			clusterIdentity:    uuid.Must(uuid.NewUUID()),
+			consumerConfig:     consumer2Config,
+			consumerKubeconfig: consumer2Kubeconfig,
+			consumerClient:     consumer2Client,
+
+			providerContractNamespace: "unknown",
+			providerObjectNamespace:   "unknown",
+			consumerObjectNamespace:   "wild-west",
+			bindResponse:              nil,
+		},
+	} {
+		t.Run(consumer.name, func(t *testing.T) {
+			for _, tc := range []struct {
+				name string
+				step func(t *testing.T)
+			}{
+				{
+					name: "Get bind APIServiceExportRequest from server",
+					step: func(t *testing.T) {
+						c := framework.GetKubeBindRestClient(t, kubeBindConfig)
+						var err error
+
+						consumer.bindResponse, err = c.Bind(ctx, &kubebindv1alpha2.BindableResourcesRequest{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "test-binding",
+							},
+							TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
+								Name: templateRef,
+							},
+							ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
+								Identity: consumer.clusterIdentity.String(),
+							},
+						})
+						require.NoError(t, err)
+						require.NotNil(t, *consumer.bindResponse)
+					},
+				},
+				{
+					name: "Bind the payload on consumer side",
+					step: func(t *testing.T) {
+						iostreams, _, _, _ := genericclioptions.NewTestIOStreams()
+						binderOpts := &bindapiservice.BinderOptions{
+							IOStreams:     iostreams,
+							SkipKonnector: true,
+						}
+
+						binder := bindapiservice.NewBinder(consumer.consumerConfig, binderOpts)
+						result, err := binder.BindFromResponse(ctx, consumer.bindResponse)
+						require.NoError(t, err)
+						require.Len(t, result, 1)
+
+						t.Logf("Waiting for %s CRD to be created on consumer side", serviceGVR.Resource)
+						crdClient := framework.ApiextensionsClient(t, consumer.consumerConfig).ApiextensionsV1().CustomResourceDefinitions()
+						require.Eventually(t, func() bool {
+							if serviceGVR.Group == "" {
+								serviceGVR.Group = "core"
+							}
+							_, err := crdClient.Get(ctx, serviceGVR.Resource+"."+serviceGVR.Group, metav1.GetOptions{})
+							return err == nil
+						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for %s CRD to be created on consumer side", serviceGVR.Resource)
+					},
+				},
+				{
+					name: "instances are synced",
+					step: func(t *testing.T) {
+						instanceName := fmt.Sprintf("test-%s", consumer.name)
+						t.Logf("Seeding example objects on consumer side for %s with instance name %s", serviceGVR.Resource, instanceName)
+
+						err := seedSpecificCRExample(t, framework.DynamicClient(t, consumer.consumerConfig), filename, instanceName)
+						require.NoError(t, err)
+
+						t.Logf("Trying to create %s on consumer side", serviceGVR.Resource)
+
+						t.Logf("Waiting for the %s instance to be created on provider side", serviceGVR.Resource)
+						var instances *unstructured.UnstructuredList
+						require.Eventually(t, func() bool {
+							var err error
+							instances, err = providerClient.List(ctx, metav1.ListOptions{})
+							return err == nil && len(instances.Items) >= 1
+						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be created on provider side", serviceGVR.Resource)
+
+						// Find our specific instance
+						var ourInstance *unstructured.Unstructured
+						for _, item := range instances.Items {
+							if strings.Contains(item.GetName(), instanceName) {
+								ourInstance = &item
+								break
+							}
+						}
+						require.NotNil(t, ourInstance, "should find instance for consumer %s", consumer.name)
+
+						// providerNs is the namespaced where the synced object lives; this might be empty
+						// for cluster-scoped objects on the provider side.
+						consumer.providerObjectNamespace = ourInstance.GetNamespace()
+						// Cluster namespace represent binding contract namespace, and is stored on every object.
+						consumer.providerContractNamespace = ourInstance.GetAnnotations()[types.ClusterNamespaceAnnotationKey]
+						require.NotEmpty(t, consumer.providerContractNamespace, "cluster namespace annotation must always exist")
+						require.NotEqual(t, consumer.providerContractNamespace, "unknown")
+					},
+				},
+				// Request included namespace, so we check it first
+				{
+					name: "verify provider side namespace pre-seeding and RBAC management",
+					step: func(t *testing.T) {
+						t.Logf("Verifying APIServiceNamespace was created from pre-seeded namespace spec")
+						var foundPreSeededNamespace bool
+						var actualProviderNamespace string
+						require.Eventually(t, func() bool {
+							// If we are operating namespaced resources - namespace will be set, if cluster - we need to use
+							// extracted one from the cluster-scoped object.
+							namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(consumer.providerContractNamespace).List(ctx, metav1.ListOptions{})
+							if err != nil {
+								return false
+							}
+
+							for _, ns := range namespaces.Items {
+								if ns.Name == "wild-west" && ns.Status.Namespace != "" {
+									actualProviderNamespace = ns.Status.Namespace
+									foundPreSeededNamespace = true
+									return true
+								}
+							}
+							return false
+						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for pre-seeded APIServiceNamespace to be created on provider side")
+						require.True(t, foundPreSeededNamespace, "Pre-seeded namespace 'wild-west' should be created via APIServiceExportRequest.Spec.Namespaces")
+
+						providerCoreClient := framework.KubeClient(t, providerConfig).CoreV1()
+						_, err := providerCoreClient.Namespaces().Get(ctx, actualProviderNamespace, metav1.GetOptions{})
+						require.NoError(t, err, "Actual provider side namespace object should exist")
+
+						switch informerScope {
+						case kubebindv1alpha2.ClusterScope:
+							t.Logf("Verifying RBAC resources were created for secret management in cluster scope")
+							rbacClient := framework.KubeClient(t, providerConfig).RbacV1()
+
+							clusterRoles, err := rbacClient.ClusterRoles().List(ctx, metav1.ListOptions{})
+							require.NoError(t, err)
+
+							var foundSecretClusterRole bool
+							for _, cr := range clusterRoles.Items {
+								if strings.Contains(cr.Name, "kube-binder-export") {
+									for _, rule := range cr.Rules {
+										for _, resource := range rule.Resources {
+											if resource == "secrets" {
+												foundSecretClusterRole = true
+												require.Contains(t, rule.Verbs, "*", "ClusterRole should have * permissions for secrets")
+												require.Contains(t, rule.APIGroups, "", "ClusterRole should target core API group")
+												break
+											}
+										}
+									}
+								}
+							}
+							require.True(t, foundSecretClusterRole, "ClusterRole for secrets should be created")
+
+							t.Logf("Verifying ClusterRoleBinding was created for pre-seeded namespace secret access")
+							clusterRoleBindings, err := rbacClient.ClusterRoleBindings().List(ctx, metav1.ListOptions{})
+							require.NoError(t, err)
+
+							var foundSecretClusterRoleBinding bool
+							for _, crb := range clusterRoleBindings.Items {
+								if strings.Contains(crb.Name, "kube-binder-export") {
+									for _, subject := range crb.Subjects {
+										if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
+											foundSecretClusterRoleBinding = true
+											require.Equal(t, "ClusterRole", crb.RoleRef.Kind, "Should reference ClusterRole")
+											break
+										}
+									}
+								}
+							}
+							require.True(t, foundSecretClusterRoleBinding, "ClusterRoleBinding for ServiceAccount should be created")
+						case kubebindv1alpha2.NamespacedScope:
+							t.Logf("Verifying RBAC resources were created for secret management in namespace scope")
+							rbacClient := framework.KubeClient(t, providerConfig).RbacV1()
+
+							roles, err := rbacClient.Roles(consumer.providerObjectNamespace).List(ctx, metav1.ListOptions{})
+							require.NoError(t, err)
+
+							var foundSecretRole bool
+							for _, cr := range roles.Items {
+								if strings.Contains(cr.Name, "kube-binder-export") {
+									for _, rule := range cr.Rules {
+										for _, resource := range rule.Resources {
+											if resource == "secrets" {
+												foundSecretRole = true
+												require.Contains(t, rule.Verbs, "*", "Role should have * permissions for secrets")
+												require.Contains(t, rule.APIGroups, "", "Role should target core API group")
+												break
+											}
+										}
+									}
+								}
+							}
+							require.True(t, foundSecretRole, "Role for secrets should be created")
+
+							t.Logf("Verifying RoleBinding was created for pre-seeded namespace secret access")
+							roleBindings, err := rbacClient.RoleBindings(consumer.providerObjectNamespace).List(ctx, metav1.ListOptions{})
+							require.NoError(t, err)
+
+							var foundSecretRoleBinding bool
+							for _, crb := range roleBindings.Items {
+								if strings.Contains(crb.Name, "kube-binder-") && strings.Contains(crb.Name, "-export-") {
+									for _, subject := range crb.Subjects {
+										if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
+											foundSecretRoleBinding = true
+											require.Equal(t, "Role", crb.RoleRef.Kind, "Should reference Role")
+											break
+										}
+									}
+								}
+							}
+							require.True(t, foundSecretRoleBinding, "RoleBinding for ServiceAccount should be created")
+						}
+
+						t.Logf("Provider side namespace pre-seeding and secret management RBAC verified successfully")
+					},
+				},
+				{
+					name: "instance spec updated downstream is updated upstream",
+					step: func(t *testing.T) {
+						instanceName := fmt.Sprintf("test-%s", consumer.name)
+						err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+							var obj *unstructured.Unstructured
+							var err error
+							if consumerResourceScope == apiextensionsv1.NamespaceScoped {
+								obj, err = consumer.consumerClient.Namespace(consumer.consumerObjectNamespace).Get(ctx, instanceName, metav1.GetOptions{})
+							} else {
+								obj, err = consumer.consumerClient.Get(ctx, instanceName, metav1.GetOptions{})
+							}
+							require.NoError(t, err)
+							if consumerResourceScope == apiextensionsv1.NamespaceScoped {
+								unstructured.SetNestedField(obj.Object, fmt.Sprintf("Updated cowboy intent from %s", consumer.name), "spec", "intent") //nolint:errcheck
+								_, err = consumer.consumerClient.Namespace(consumer.consumerObjectNamespace).Update(ctx, obj, metav1.UpdateOptions{})
+							} else {
+								unstructured.SetNestedField(obj.Object, fmt.Sprintf("Updated sheriff intent from %s", consumer.name), "spec", "intent") //nolint:errcheck
+								_, err = consumer.consumerClient.Update(ctx, obj, metav1.UpdateOptions{})
+							}
+							return err
+						})
+						require.NoError(t, err)
+
+						// Find our instance on provider side
+						require.Eventually(t, func() bool {
+							instances, err := providerClient.List(ctx, metav1.ListOptions{})
+							if err != nil {
+								return false
+							}
+							for _, item := range instances.Items {
+								if !strings.Contains(item.GetName(), instanceName) {
+									continue
+								}
+								var obj *unstructured.Unstructured
+								if providerResourceScope == apiextensionsv1.NamespaceScoped {
+									obj, err = providerClient.Namespace(item.GetNamespace()).Get(ctx, instanceName, metav1.GetOptions{})
+								} else {
+									obj, err = providerClient.Get(ctx, item.GetName(), metav1.GetOptions{})
+								}
+								if err != nil {
+									return false
+								}
+								value, _, err := unstructured.NestedString(obj.Object, "spec", "intent")
+								require.NoError(t, err)
+								if consumerResourceScope == apiextensionsv1.NamespaceScoped {
+									return value == fmt.Sprintf("Updated cowboy intent from %s", consumer.name)
+								} else {
+									return value == fmt.Sprintf("Updated sheriff intent from %s", consumer.name)
+								}
+							}
+							return false
+						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be updated upstream for %s", serviceGVR.Resource, consumer.name)
+					},
+				},
+				{
+					name: "instance status updated upstream is updated downstream",
+					step: func(t *testing.T) {
+						instanceName := fmt.Sprintf("test-%s", consumer.name)
+						// Find our instance on provider side first
+						var providerInstanceName string
+						var providerInstanceNs string
+						instances, err := providerClient.List(ctx, metav1.ListOptions{})
+						require.NoError(t, err)
+						for _, item := range instances.Items {
+							if strings.Contains(item.GetName(), instanceName) {
+								providerInstanceName = item.GetName()
+								providerInstanceNs = item.GetNamespace()
+								break
+							}
+						}
+						require.NotEmpty(t, providerInstanceName, "should find provider instance for %s", consumer.name)
+
+						err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+							var obj *unstructured.Unstructured
+							var err error
+							if providerResourceScope == apiextensionsv1.NamespaceScoped {
+								obj, err = providerClient.Namespace(providerInstanceNs).Get(ctx, instanceName, metav1.GetOptions{})
+							} else {
+								obj, err = providerClient.Get(ctx, providerInstanceName, metav1.GetOptions{})
+							}
+							require.NoError(t, err)
+							unstructured.SetNestedField(obj.Object, fmt.Sprintf("Ready to ride from %s", consumer.name), "status", "result") //nolint:errcheck
+							if providerResourceScope == apiextensionsv1.NamespaceScoped {
+								_, err = providerClient.Namespace(providerInstanceNs).UpdateStatus(ctx, obj, metav1.UpdateOptions{})
+							} else {
+								_, err = providerClient.UpdateStatus(ctx, obj, metav1.UpdateOptions{})
+							}
+							return err
+						})
+						require.NoError(t, err)
+
+						require.Eventually(t, func() bool {
+							var obj *unstructured.Unstructured
+							var err error
+							if consumerResourceScope == apiextensionsv1.NamespaceScoped {
+								obj, err = consumer.consumerClient.Namespace(consumer.consumerObjectNamespace).Get(ctx, instanceName, metav1.GetOptions{})
+							} else {
+								obj, err = consumer.consumerClient.Get(ctx, instanceName, metav1.GetOptions{})
+							}
+							require.NoError(t, err)
+							value, _, err := unstructured.NestedString(obj.Object, "status", "result")
+							require.NoError(t, err)
+							return value == fmt.Sprintf("Ready to ride from %s", consumer.name)
+						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be updated downstream for %s", serviceGVR.Resource, consumer.name)
+					},
+				},
+
+				{
+					name: "verify secrets from examples are synced to provider",
+					step: func(t *testing.T) {
+						// Determine which permission namespace to use for this consumer
+						var consumerPermClaimNs string
+						if informerScope == kubebindv1alpha2.ClusterScope &&
+							consumerResourceScope == apiextensionsv1.ClusterScoped {
+							// Find the specific permission claim namespace for this consumer
+							namespaces, err := providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(consumer.providerContractNamespace).List(ctx, metav1.ListOptions{})
+							require.NoError(t, err)
+							for _, namespace := range namespaces.Items {
+								if strings.Contains(namespace.Name, consumer.consumerObjectNamespace) && namespace.Status.Namespace != "" {
+									consumerPermClaimNs = namespace.Status.Namespace
+									break
+								}
+							}
+							require.NotEmpty(t, consumerPermClaimNs, "Should find permission claim namespace for %s", consumer.name)
+						} else {
+							consumerPermClaimNs = consumer.providerObjectNamespace
+						}
+
+						t.Logf("Waiting for referenced secret to be synced to provider side for %s in namespace %s", consumer.name, consumerPermClaimNs)
+						require.Eventually(t, func() bool {
+							_, err := providerCoreClient.Secrets(consumerPermClaimNs).Get(ctx, referencedSecretName, metav1.GetOptions{})
+							return err == nil
+						}, time.Minute*2, time.Millisecond*100, "waiting for referenced secret to be synced to provider side for %s", consumer.name)
+
+						t.Logf("Waiting for label-selected secret to be synced to provider side for %s", consumer.name)
+						require.Eventually(t, func() bool {
+							_, err := providerCoreClient.Secrets(consumerPermClaimNs).Get(ctx, labelSelectedSecretName, metav1.GetOptions{})
+							return err == nil
+						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for label-selected secret to be synced to provider side for %s", consumer.name)
+
+						t.Logf("Secrets from examples are properly synced to provider for %s", consumer.name)
+					},
+				},
+				{
+					name: "instances deleted downstream are deleted upstream",
+					step: func(t *testing.T) {
+						instanceName := fmt.Sprintf("test-%s", consumer.name)
+						// Find our instance on provider side first
+						var providerInstanceName string
+						instances, err := providerClient.List(ctx, metav1.ListOptions{})
+						require.NoError(t, err)
+						for _, item := range instances.Items {
+							if strings.Contains(item.GetName(), instanceName) {
+								providerInstanceName = item.GetName()
+								break
+							}
+						}
+						require.NotEmpty(t, providerInstanceName, "should find provider instance for %s", consumer.name)
+
+						if consumerResourceScope == apiextensionsv1.NamespaceScoped {
+							err = consumer.consumerClient.Namespace(consumer.consumerObjectNamespace).Delete(ctx, instanceName, metav1.DeleteOptions{})
+						} else {
+							err = consumer.consumerClient.Delete(ctx, instanceName, metav1.DeleteOptions{})
+						}
+						require.NoError(t, err)
+
+						require.Eventually(t, func() bool {
+							var err error
+							if providerResourceScope == apiextensionsv1.NamespaceScoped {
+								_, err = providerClient.Namespace(consumer.providerObjectNamespace).Get(ctx, instanceName, metav1.GetOptions{})
+							} else {
+								_, err = providerClient.Get(ctx, providerInstanceName, metav1.GetOptions{})
+							}
+							return errors.IsNotFound(err)
+						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be deleted on provider side for %s", serviceGVR.Resource, consumer.name)
+					},
+				},
+			} {
+				t.Run(tc.name, tc.step)
+			}
 		})
 	}
 }

@@ -60,7 +60,7 @@ func TestCreateNamespace(t *testing.T) {
 		},
 		{
 			name:         "create new namespace with generateName already ending with dash",
-			generateName: "test-ns-",
+			generateName: "test-ns",
 			identity:     "test-id-456",
 			author:       "alice",
 			wantErr:      false,
@@ -98,7 +98,7 @@ func TestCreateNamespace(t *testing.T) {
 
 			expectedPrefix := tt.generateName
 			expectedHash := expectedIdentityHash(tt.identity)
-			expectedName := fmt.Sprintf("%s-%s", expectedPrefix, expectedHash)
+			expectedName := fmt.Sprintf("%s%s", expectedPrefix, expectedHash)
 
 			if result.Name != expectedName {
 				t.Errorf("CreateNamespace() name = %v, expected %v", result.Name, expectedName)

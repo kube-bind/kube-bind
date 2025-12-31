@@ -109,14 +109,18 @@ const generateSessionId = (): string => {
 }
 
 onMounted(() => {
+  // Restore preserved params first (before checking auth status)
+  // This ensures that params lost during OAuth redirect are restored
+  authService.restorePreservedParams()
+
   checkAuthStatus()
-  
+
   // Listen for authentication expiration events from HTTP interceptor
   window.addEventListener('auth-expired', () => {
     console.log('Received auth-expired event, updating authentication status')
     authStatus.value.isAuthenticated = false
     authStatus.value.error = 'Session expired. Please re-authenticate.'
-    
+
     // Automatically trigger authentication redirect if we have the necessary parameters
     // and haven't already attempted authentication (to prevent hot loops)
     const hasRequiredParams = route.query.cluster_id || route.query.session_id

@@ -16,6 +16,3 @@ spec:
       labelSelector:
         matchLabels:
           app: cowboy
-  namespaces:
-  - name: wild-west
-

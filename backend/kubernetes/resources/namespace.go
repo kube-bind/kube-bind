@@ -61,7 +61,7 @@ func CreateNamespace(ctx context.Context, client client.Client, generateNamePref
 	name := identityHash(identity)
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-%s", generateNamePrefix, name),
+			Name: fmt.Sprintf("%s%s", generateNamePrefix, name),
 			Annotations: map[string]string{
 				IdentityAnnotationKey: identity,
 				AuthorAnnotationKey:   author,

@@ -24,11 +24,9 @@ import (
 type ClientParameters struct {
 	ClusterID   string
 	RedirectURL string
-	// This is clients side redirect, in example used for CLI via UI.
-	ClientSideRedirectURL string
-	SessionID             string
-	ClientType            string
-	ConsumerID            string
+	SessionID   string
+	ClientType  string
+	ConsumerID  string
 
 	IsClusterScoped bool
 }
@@ -36,12 +34,11 @@ type ClientParameters struct {
 // GetQueryParams extracts the client parameters from the given HTTP request.
 func GetQueryParams(r *http.Request) *ClientParameters {
 	p := &ClientParameters{
-		ClusterID:             r.URL.Query().Get("cluster_id"),
-		RedirectURL:           r.URL.Query().Get("redirect_url"),
-		ClientSideRedirectURL: r.URL.Query().Get("client_side_redirect_url"),
-		SessionID:             r.URL.Query().Get("session_id"),
-		ClientType:            r.URL.Query().Get("client_type"),
-		ConsumerID:            r.URL.Query().Get("consumer_id"),
+		ClusterID:   r.URL.Query().Get("cluster_id"),
+		RedirectURL: r.URL.Query().Get("redirect_url"),
+		SessionID:   r.URL.Query().Get("session_id"),
+		ClientType:  r.URL.Query().Get("client_type"),
+		ConsumerID:  r.URL.Query().Get("consumer_id"),
 	}
 	p.IsClusterScoped = p.ClusterID != ""
 	return p
@@ -61,8 +58,8 @@ func (r *ClientParameters) WithParams(urlStr string) string {
 	if r.ClusterID != "" {
 		query.Set("cluster_id", r.ClusterID)
 	}
-	if r.ClientSideRedirectURL != "" {
-		query.Set("redirect_url", r.ClientSideRedirectURL)
+	if r.RedirectURL != "" {
+		query.Set("redirect_url", r.RedirectURL)
 	}
 	if r.SessionID != "" {
 		query.Set("session_id", r.SessionID)

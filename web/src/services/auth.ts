@@ -103,10 +103,6 @@ class AuthService {
       client_type: 'ui' // Use UI type to get cookies
     })
 
-    if (clientSideRedirectUrl) {
-      params.set('client_side_redirect_url', clientSideRedirectUrl)
-    }
-
     if (consumerId) {
       params.set('consumer_id', consumerId)
     }

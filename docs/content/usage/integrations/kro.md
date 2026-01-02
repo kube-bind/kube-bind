@@ -119,7 +119,7 @@ spec:
       address: string
   resources:
     - id: configmap
-      template:
+      externalRef:
         apiVersion: v1
         kind: ConfigMap
         metadata:

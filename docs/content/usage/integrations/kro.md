@@ -8,9 +8,9 @@ weight: 30
 # kro Integration (providing LoadBalancer as a Service)
 
 This guide demonstrates how to use [kro](https://kro.run/) and [Envoy Gateway](https://gateway.envoyproxy.io/) to offer a "LoadBalancer as a Service" API.
-Consumers create a simple `LoadBalancer` object, and theprovider automatically provisions an Envoy Gateway and HTTPRoute to expose the service between two kind clusters.
+Consumers create a simple `LoadBalancer` object, and the provider automatically provisions an Envoy Gateway and HTTPRoute to expose the service between two kind clusters.
 
-This example includes support for **custom configuration** (via ConfigMaps).
+This example includes support for syncing **custom configuration (via ConfigMaps or Secrets)** from consumer clusters to the provider.
 
 ## Prerequisites
 
@@ -86,17 +86,17 @@ EOF
 2.  **Install kro.**
     kro allows you to define custom APIs (ResourceGroups) and map them to underlying resources.
 
-    ```bash
-    helm install kro oci://registry.k8s.io/kro/charts/kro \
-    --namespace kro-system \
-    --create-namespace
-    ```
+```bash
+helm install kro oci://registry.k8s.io/kro/charts/kro \
+--namespace kro-system \
+--create-namespace
+```
 
 3.  **Define the `LoadBalancer` ResourceGroup.**
     Create a kro `ResourceGraphDefinition` that defines the API `loadbalancers.networking.kro.run`.
 
     This definition includes:
-    *   **Configuration:** References a ConfigMap for custom routing rules (e.g., adding headers).
+    *   **Configuration:** References a ConfigMap for custom routing rules (e.g., adding headers). The same way user could reference a Secret with Certificate to setup TLS.
 
 ```yaml
 kubectl apply -f - <<'EOF'
@@ -111,17 +111,14 @@ spec:
     group: networking.kro.run
     spec:
       domain: string
-      tlsSecretRef: string
       configMapRef: string
       targetService: string
-      targetServiceNamespace: string | default=default
+      targetServiceNamespace: string
       targetPort: integer | default=8080
     status:
       address: string
   resources:
     - id: configmap
-      includeWhen:
-        - ${schema.spec.configMapRef != ""}
       template:
         apiVersion: v1
         kind: ConfigMap
@@ -179,12 +176,7 @@ spec:
                   requestHeaderModifier:
                     add:
                       - name: X-Custom-Message
-                        value: ${configmap.data["custom-header"]}
-                - type: ResponseHeaderModifier
-                  responseHeaderModifier:
-                    add:
-                      - name: X-Response-Message
-                        value: ${configmap.data["custom-header"]}
+                        value: ${configmap.?data["custom-header"]}
 EOF
 ```
 
@@ -340,6 +332,7 @@ spec:
     domain: "www.example.com"
     configMapRef: "my-lb-config"
     targetService: "backend"
+    targetServiceNamespace: "default"
     targetPort: 30080
 EOF
 ```
@@ -374,9 +367,15 @@ kube-root-ca.crt   1      3h14m
 my-lb-config       1      15s
 ```
 
-Test the connection with provisioned load balancer and verify that `hello-kube-bind` header was added from the ConfigMap.
+5.  **Appendix.**
+*   Test the connection with provisioned load balancer and verify that `hello-kube-bind` header was added from the ConfigMap.
+
+!!! note
+    For this to work end-to-end, the consumer's service (`backend`) must be reachable from the provider cluster (e.g., via multi-cluster networking) or synced to the provider cluster.
+
+
 ```bash
-curl --verbose --header "Host: www.example.com" http://172.18.0.200/headers
+curl --verbose --header "Host: www.example.com" http://${PROVIDER_CLUSTER_LB_IP}/headers
 ```
 
 *   Trying 172.18.0.200:80...
@@ -428,7 +427,3 @@ curl --verbose --header "Host: www.example.com" http://172.18.0.200/headers
  "pod": "backend-77d4d5968-glxtp"
 * Connection #0 to host 172.18.0.200 left intact
 }
-
-
-!!! note
-    For this to work end-to-end, the consumer's service (`backend`) must be reachable from the provider cluster (e.g., via multi-cluster networking) or synced to the provider cluster.

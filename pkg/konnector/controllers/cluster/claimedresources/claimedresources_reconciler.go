@@ -154,7 +154,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 		ownerCandidate := consumerObj.DeepCopy()
 		r.makeConsumerOwner(ownerCandidate)
 		if !equality.Semantic.DeepEqual(consumerObj, ownerCandidate) {
-			logger.Info("setting owner annotation for Consumer object")
+			logger.Info("setting owner label for Consumer object")
 			if _, err := r.updateConsumerObject(ctx, ownerCandidate); err != nil {
 				return err
 			}

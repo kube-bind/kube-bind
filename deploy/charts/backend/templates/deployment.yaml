@@ -76,8 +76,8 @@ spec:
             {{- if .Values.backend.consumerScope }}
             - --consumer-scope={{ .Values.backend.consumerScope }}
             {{- end }}
-            {{- if .Values.backend.clusterScopeIsolation }}
-            - --cluster-scoped-isolation={{ .Values.backend.clusterScopeIsolation }}
+            {{- if .Values.backend.isolation }}
+            - --isolation={{ .Values.backend.isolation }}
             {{- end }}
             {{- if .Values.backend.cookieSigningKey }}
             - --cookie-signing-key={{ .Values.backend.cookieSigningKey }}

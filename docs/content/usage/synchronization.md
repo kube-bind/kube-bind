@@ -114,7 +114,7 @@ spec:
 
 ### Cluster-Scoped
 
-Cluster-scoped objects require a different approach to isolation than namespaced objects. kube-bind offers three different so-called isolation strategies to deal with them. The strategy to use is configured globally via the `--cluster-scoped-isolation` CLI flag on the kube-bind backend and will from there affect all services offered by that backend.
+Cluster-scoped objects require a different approach to isolation than namespaced objects. kube-bind offers three different so-called isolation strategies to deal with them. The strategy to use is configured globally via the `--isolation` CLI flag on the kube-bind backend and will from there affect all services offered by that backend.
 
 #### None Strategy
 
@@ -170,4 +170,4 @@ During synchronization, the konnector will then place each cluster-scoped object
 This strategy provides excellent isolation between consumers, but requires that the original CRD from the provider still makes sense to the consumer when it's suddenly cluster-scoped. For example, if references were to be used, especially to Secrets in the same namespace, this concept would get mangled to some degree during the synchronization.
 
 !!! warning
-    At the moment, when the backend is started with `--cluster-scoped-isolation=namespaced`, it will convert **all namespaced CRDs** in all ServiceExports to become cluster-scoped on the consumer side, even if you intended for a namespaced CRD to stay namespaced on both sides of the sync.
+    At the moment, when the backend is started with `--isolation=namespaced`, it will convert **all namespaced CRDs** in all ServiceExports to become cluster-scoped on the consumer side, even if you intended for a namespaced CRD to stay namespaced on both sides of the sync.

@@ -53,6 +53,7 @@ func TestLoadTLSConfig_Success(t *testing.T) {
 	// Verify the TLS config was created
 	if config == nil {
 		t.Fatal("Expected non-nil TLS config")
+		return
 	}
 
 	if config.RootCAs == nil {
@@ -194,6 +195,7 @@ func TestLoadTLSConfig_MultipleCerts(t *testing.T) {
 	// Verify the TLS config was created
 	if config == nil {
 		t.Fatal("Expected non-nil TLS config")
+		return
 	}
 
 	if config.RootCAs == nil {

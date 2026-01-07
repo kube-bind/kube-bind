@@ -39,7 +39,8 @@ import (
 )
 
 type reconciler struct {
-	scope kubebindv1alpha2.InformerScope
+	scope     kubebindv1alpha2.InformerScope
+	isolation kubebindv1alpha2.Isolation
 
 	getNamespace    func(ctx context.Context, cache cache.Cache, name string) (*corev1.Namespace, error)
 	createNamespace func(ctx context.Context, client client.Client, ns *corev1.Namespace) error
@@ -52,11 +53,20 @@ type reconciler struct {
 
 func (c *reconciler) reconcile(ctx context.Context, client client.Client, cache cache.Cache, sns *kubebindv1alpha2.APIServiceNamespace) error {
 	var ns *corev1.Namespace
-	nsName := sns.Namespace + "-" + sns.Name
-	if sns.Status.Namespace != "" {
+	var nsName string
+	switch {
+	case sns.Status.Namespace != "":
+		// use existing namespace from status
 		nsName = sns.Status.Namespace
-		ns, _ = c.getNamespace(ctx, cache, nsName) // golint:errcheck
+	case c.isolation == kubebindv1alpha2.IsolationNone:
+		nsName = sns.Name
+	case c.isolation == kubebindv1alpha2.IsolationNamespaced || c.isolation == kubebindv1alpha2.IsolationPrefixed:
+		nsName = sns.Namespace + "-" + sns.Name
+	default:
+		return fmt.Errorf("unknown isolation strategy: %s", c.isolation)
 	}
+	ns, _ = c.getNamespace(ctx, cache, nsName)
+
 	if ns == nil {
 		ns = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{

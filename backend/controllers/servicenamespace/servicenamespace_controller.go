@@ -50,9 +50,9 @@ type APIServiceNamespaceReconciler struct {
 	manager mcmanager.Manager
 	opts    controller.TypedOptions[mcreconcile.Request]
 
-	informerScope          kubebindv1alpha2.InformerScope
-	clusterScopedIsolation kubebindv1alpha2.Isolation
-	reconciler             reconciler
+	informerScope kubebindv1alpha2.InformerScope
+	isolation     kubebindv1alpha2.Isolation
+	reconciler    reconciler
 }
 
 // NewAPIServiceNamespaceReconciler returns a new APIServiceNamespaceReconciler to reconcile APIServiceNamespaces.
@@ -70,12 +70,13 @@ func NewAPIServiceNamespaceReconciler(
 	}
 
 	r := &APIServiceNamespaceReconciler{
-		manager:                mgr,
-		opts:                   opts,
-		informerScope:          scope,
-		clusterScopedIsolation: isolation,
+		manager:       mgr,
+		opts:          opts,
+		informerScope: scope,
+		isolation:     isolation,
 		reconciler: reconciler{
-			scope: scope,
+			scope:     scope,
+			isolation: isolation,
 
 			getNamespace: func(ctx context.Context, cache cache.Cache, name string) (*corev1.Namespace, error) {
 				var ns corev1.Namespace

@@ -112,6 +112,7 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 		}
 
 		logger.Info("Creating upstream object")
+		logger.V(4).Info("Upstream object", "object", fmt.Sprintf("%s", upstream.Object))
 		if _, err := r.createProviderObject(ctx, upstream); err != nil && !apierrors.IsAlreadyExists(err) {
 			return err
 		} else if apierrors.IsAlreadyExists(err) {

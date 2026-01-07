@@ -393,13 +393,13 @@ kubectl get services -n envoy-gateway-system
 ```bash
 NAME                                                  TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                                           AGE
 envoy-gateway                                         ClusterIP      10.96.199.212   <none>        18000/TCP,18001/TCP,18002/TCP,19001/TCP,9443/TCP  4d23h
-envoy-kube-bind-z6gwv-default-my-lb-gw-9f962ab2       LoadBalancer   10.96.231.200   <pending>     80:32515/TCP                                      4d19h
+envoy-kube-bind-wz2g5-default-my-lb-gw-9f962ab2       LoadBalancer   10.96.231.200   <pending>     80:32515/TCP                                      4d19h
 ```
 
 Port forward the related service.
 
 ```bash
-kubectl -n envoy-gateway-system port-forward service/envoy-kube-bind-z6gwv-default-my-lb-gw-9f962ab2  8888:80
+kubectl -n envoy-gateway-system port-forward service/envoy-kube-bind-wz2g5-default-my-lb-gw-9f962ab2  8888:80
 ```
 
 Send the request through the gateway service to your backend application.

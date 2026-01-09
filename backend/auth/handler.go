@@ -77,12 +77,11 @@ func (ah *AuthHandler) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		authReq = AuthorizeRequest{
-			RedirectURL:           params.RedirectURL,
-			ClientSideRedirectURL: params.ClientSideRedirectURL,
-			SessionID:             params.SessionID,
-			ClusterID:             params.ClusterID,
-			ClientType:            ClientType(params.ClientType),
-			ConsumerID:            params.ConsumerID,
+			RedirectURL: params.RedirectURL,
+			SessionID:   params.SessionID,
+			ClusterID:   params.ClusterID,
+			ClientType:  ClientType(params.ClientType),
+			ConsumerID:  params.ConsumerID,
 		}
 	}
 
@@ -249,10 +248,9 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, session.MakeCookie(r, cookieName, encoded, secure, 1*time.Hour))
 
 	clientParams := &client.ClientParameters{
-		ClusterID:             authCode.ClusterID,
-		ClientSideRedirectURL: authCode.ClientSideRedirectURL,
-		RedirectURL:           authCode.RedirectURL,
-		SessionID:             authCode.SessionID,
+		ClusterID:   authCode.ClusterID,
+		RedirectURL: authCode.RedirectURL,
+		SessionID:   authCode.SessionID,
 	}
 	url := clientParams.WithParams(authCode.RedirectURL)
 

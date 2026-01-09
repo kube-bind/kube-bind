@@ -28,7 +28,7 @@
         </div>
       </div>
     </header>
-    
+
     <main class="main">
       <div v-if="!authStatus.isAuthenticated" class="auth-placeholder">
         <h2>Authentication Required</h2>
@@ -45,7 +45,7 @@
           <span v-else>{{ authStatus.error ? 'Try Again' : 'Authenticate' }}</span>
         </button>
       </div>
-      
+
       <router-view v-else :auth-status="authStatus"></router-view>
     </main>
   </div>
@@ -85,10 +85,9 @@ const authenticate = async () => {
     hasAttemptedAuth.value = true
     const cluster = route.query.cluster_id as string || ''
     const sessionId = route.query.session_id as string || generateSessionId()
-    const clientSideRedirectUrl = route.query.redirect_url as string || ''
     const consumerId = route.query.consumer_id as string || ''
 
-    await authService.initiateAuth(sessionId, cluster, clientSideRedirectUrl, consumerId)
+    await authService.initiateAuth(sessionId, cluster, consumerId)
   } catch (error) {
     console.error('Authentication failed:', error)
     authStatus.value.error = 'Authentication failed'

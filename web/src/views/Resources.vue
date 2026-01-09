@@ -321,6 +321,26 @@ const handleBind = async (templateName: string, bindingName: string) => {
     const bindUrl = buildApiUrl('/bind')
     
     // Create the binding request
+    // Use consumerId if available (CLI flow), otherwise use sessionId as cluster identity
+    // Read from Vue Router's route.query instead of window.location
+    const sessionIdFromRoute = route.query.session_id as string || ''
+    const clusterIdentity = consumerId.value || sessionIdFromRoute
+    
+    console.log('Bind request parameters:', {
+      templateName,
+      bindingName,
+      consumerId: consumerId.value,
+      sessionIdFromRoute,
+      clusterIdentity,
+      bindUrl,
+      allRouteQuery: route.query
+    })
+    
+    if (!clusterIdentity) {
+      showAlertModal('Missing cluster identity. Please ensure you have authenticated properly.', 'Binding Failed', 'error')
+      return
+    }
+    
     const bindingRequest: BindableResourcesRequest = {
       metadata: {
         name: bindingName
@@ -329,9 +349,11 @@ const handleBind = async (templateName: string, bindingName: string) => {
         name: templateName
       },
       clusterIdentity: {
-        identity: consumerId.value || ''
+        identity: clusterIdentity
       }
     }
+    
+    console.log('Sending bind request:', JSON.stringify(bindingRequest, null, 2))
     
     const response = await httpClient.post<BindingResponse>(bindUrl, bindingRequest)
     

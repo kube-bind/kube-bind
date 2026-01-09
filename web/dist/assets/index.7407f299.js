@@ -98,7 +98,7 @@ var __yieldStar = (value) => {
 };
 var __forAwait = (obj, it, method) => (it = obj[__knownSymbol("asyncIterator")]) ? it.call(obj) : (obj = obj[__knownSymbol("iterator")](), it = {}, method = (key, fn) => (fn = obj[key]) && (it[key] = (arg) => new Promise((yes, no, done) => (arg = fn.call(obj, arg), done = arg.done, Promise.resolve(arg.value).then((value) => yes({ value, done }), no)))), method("next"), method("return"), it);
 var require_index_001 = __commonJS({
-  "assets/index.64982fe8.js"(exports) {
+  "assets/index.7407f299.js"(exports) {
     (function polyfill() {
       const relList = document.createElement("link").relList;
       if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -11078,7 +11078,7 @@ var require_index_001 = __commonJS({
           }
         });
       }
-      initiateAuth(sessionId, clusterId, clientSideRedirectUrl, consumerId) {
+      initiateAuth(sessionId, clusterId, consumerId) {
         return __async$4(this, null, function* () {
           const authUrl = `/api/authorize`;
           const redirect_url = window.location.origin + window.location.pathname;
@@ -11104,9 +11104,6 @@ var require_index_001 = __commonJS({
             client_type: "ui"
             // Use UI type to get cookies
           });
-          if (clientSideRedirectUrl) {
-            params.set("client_side_redirect_url", clientSideRedirectUrl);
-          }
           if (consumerId) {
             params.set("consumer_id", consumerId);
           }
@@ -11135,13 +11132,39 @@ var require_index_001 = __commonJS({
       }
       isCliFlow() {
         const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.has("redirect_url");
+        if (urlParams.has("redirect_url")) {
+          return true;
+        }
+        const preservedParams = sessionStorage.getItem("kube-bind-preserved-params");
+        if (preservedParams) {
+          try {
+            const params = JSON.parse(preservedParams);
+            return !!params.redirect_url;
+          } catch (e) {
+            return false;
+          }
+        }
+        return false;
       }
       redirectToCliCallback(bindingResponseData) {
         const urlParams = new URLSearchParams(window.location.search);
-        const redirectUrl = urlParams.get("redirect_url");
-        const sessionId = urlParams.get("session_id");
-        const consumerId = urlParams.get("consumer_id");
+        let redirectUrl = urlParams.get("redirect_url");
+        let sessionId = urlParams.get("session_id");
+        let consumerId = urlParams.get("consumer_id");
+        if (!redirectUrl) {
+          const preservedParams = sessionStorage.getItem("kube-bind-preserved-params");
+          if (preservedParams) {
+            try {
+              const params = JSON.parse(preservedParams);
+              redirectUrl = params.redirect_url || null;
+              sessionId = sessionId || params.session_id || null;
+              consumerId = consumerId || params.consumer_id || null;
+              console.log("Retrieved CLI params from sessionStorage:", { redirectUrl, sessionId, consumerId });
+            } catch (e) {
+              console.error("Failed to parse preserved params:", e);
+            }
+          }
+        }
         if (redirectUrl) {
           const callbackUrl = new URL(redirectUrl);
           if (sessionId) {
@@ -11152,7 +11175,10 @@ var require_index_001 = __commonJS({
           }
           const base64Response = btoa(JSON.stringify(bindingResponseData));
           callbackUrl.searchParams.append("binding_response", base64Response);
+          console.log("Redirecting to CLI callback:", callbackUrl.toString());
           window.location.href = callbackUrl.toString();
+        } else {
+          console.error("No redirect URL found for CLI callback");
         }
       }
       restorePreservedParams() {
@@ -11252,9 +11278,8 @@ var require_index_001 = __commonJS({
             hasAttemptedAuth.value = true;
             const cluster = route.query.cluster_id || "";
             const sessionId = route.query.session_id || generateSessionId();
-            const clientSideRedirectUrl = route.query.redirect_url || "";
             const consumerId = route.query.consumer_id || "";
-            yield authService.initiateAuth(sessionId, cluster, clientSideRedirectUrl, consumerId);
+            yield authService.initiateAuth(sessionId, cluster, consumerId);
           } catch (error) {
             console.error("Authentication failed:", error);
             authStatus.value.error = "Authentication failed";
@@ -11294,7 +11319,7 @@ var require_index_001 = __commonJS({
           return openBlock(), createElementBlock("div", _hoisted_1$4, [
             createBaseVNode("header", _hoisted_2$4, [
               createBaseVNode("div", _hoisted_3$4, [
-                _cache[2] || (_cache[2] = createStaticVNode('<div class="brand" data-v-504b04cf><div class="logo" data-v-504b04cf><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" data-v-504b04cf><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-504b04cf></path><path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-504b04cf></path><path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-504b04cf></path></svg></div><h1 data-v-504b04cf>Kube Bind</h1></div>', 1)),
+                _cache[2] || (_cache[2] = createStaticVNode('<div class="brand" data-v-99283ff2><div class="logo" data-v-99283ff2><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" data-v-99283ff2><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-99283ff2></path><path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-99283ff2></path><path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-99283ff2></path></svg></div><h1 data-v-99283ff2>Kube Bind</h1></div>', 1)),
                 authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_4$4, [
                   _cache[1] || (_cache[1] = createBaseVNode("div", { class: "user-info" }, [
                     createBaseVNode("div", { class: "status-indicator" }),
@@ -11364,7 +11389,7 @@ var require_index_001 = __commonJS({
         };
       }
     });
-    const App_vue_vue_type_style_index_0_scoped_504b04cf_lang = "";
+    const App_vue_vue_type_style_index_0_scoped_99283ff2_lang = "";
     const _export_sfc = (sfc, props) => {
       const target = sfc.__vccOpts || sfc;
       for (const [key, val] of props) {
@@ -11372,7 +11397,7 @@ var require_index_001 = __commonJS({
       }
       return target;
     };
-    const App = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-504b04cf"]]);
+    const App = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-99283ff2"]]);
     var __async$2 = (__this, __arguments, generator) => {
       return new Promise((resolve2, reject) => {
         var fulfilled = (value) => {
@@ -12344,6 +12369,21 @@ ${formattedObject}`;
           var _a;
           try {
             const bindUrl = buildApiUrl("/bind");
+            const sessionIdFromRoute = route.query.session_id || "";
+            const clusterIdentity = consumerId.value || sessionIdFromRoute;
+            console.log("Bind request parameters:", {
+              templateName,
+              bindingName,
+              consumerId: consumerId.value,
+              sessionIdFromRoute,
+              clusterIdentity,
+              bindUrl,
+              allRouteQuery: route.query
+            });
+            if (!clusterIdentity) {
+              showAlertModal("Missing cluster identity. Please ensure you have authenticated properly.", "Binding Failed", "error");
+              return;
+            }
             const bindingRequest = {
               metadata: {
                 name: bindingName
@@ -12352,9 +12392,10 @@ ${formattedObject}`;
                 name: templateName
               },
               clusterIdentity: {
-                identity: consumerId.value || ""
+                identity: clusterIdentity
               }
             };
+            console.log("Sending bind request:", JSON.stringify(bindingRequest, null, 2));
             const response = yield httpClient.post(bindUrl, bindingRequest);
             if (response.status === 200) {
               closeBindingModal();
@@ -12569,8 +12610,8 @@ Details: ${kubeError.details || "No additional details available"}`;
         };
       }
     });
-    const Resources_vue_vue_type_style_index_0_scoped_1c21cc87_lang = "";
-    const Resources = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-1c21cc87"]]);
+    const Resources_vue_vue_type_style_index_0_scoped_5abc4499_lang = "";
+    const Resources = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-5abc4499"]]);
     const routes = [
       { path: "/", component: Resources },
       { path: "/resources", component: Resources }

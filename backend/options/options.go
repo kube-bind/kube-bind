@@ -48,14 +48,14 @@ type ExtraOptions struct {
 
 	Provider string
 
-	NamespacePrefix        string
-	PrettyName             string
-	ConsumerScope          string
-	ClusterScopedIsolation string
-	ExternalAddress        string
-	ExternalCAFile         string
-	ExternalCA             []byte
-	TLSExternalServerName  string
+	NamespacePrefix       string
+	PrettyName            string
+	ConsumerScope         string
+	Isolation             string
+	ExternalAddress       string
+	ExternalCAFile        string
+	ExternalCA            []byte
+	TLSExternalServerName string
 	// Defines the source of the schema for the bind screen.
 	// Options are:
 	// CustomResourceDefinition.v1.apiextensions.k8s.io
@@ -101,14 +101,14 @@ func NewOptions() *Options {
 		ProviderKcp: providerkcp.NewOptions(),
 
 		ExtraOptions: ExtraOptions{
-			Provider:               "kubernetes",
-			NamespacePrefix:        "cluster-",
-			PrettyName:             "Backend",
-			ConsumerScope:          string(kubebindv1alpha2.NamespacedScope),
-			ClusterScopedIsolation: string(kubebindv1alpha2.IsolationPrefixed),
-			SchemaSource:           CustomResourceDefinitionSource.String(),
-			Frontend:               "embedded", // Not used, but indicates to use embedded frontend using SPA.
-			TokenExpiry:            1 * time.Hour,
+			Provider:        "kubernetes",
+			NamespacePrefix: "cluster-",
+			PrettyName:      "Backend",
+			ConsumerScope:   string(kubebindv1alpha2.NamespacedScope),
+			Isolation:       string(kubebindv1alpha2.IsolationPrefixed),
+			SchemaSource:    CustomResourceDefinitionSource.String(),
+			Frontend:        "embedded", // Not used, but indicates to use embedded frontend using SPA.
+			TokenExpiry:     1 * time.Hour,
 		},
 	}
 	return opts
@@ -151,7 +151,10 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.NamespacePrefix, "namespace-prefix", options.NamespacePrefix, "The prefix to use for cluster namespaces")
 	fs.StringVar(&options.PrettyName, "pretty-name", options.PrettyName, "Pretty name for the backend")
 	fs.StringVar(&options.ConsumerScope, "consumer-scope", options.ConsumerScope, "How consumers access the service provider cluster. In Kubernetes, \"namespaced\" allows namespace isolation. In kcp, \"cluster\" allows workspace isolation, and with that allows cluster-scoped resources to bind and it is generally more performant.")
-	fs.StringVar(&options.ClusterScopedIsolation, "cluster-scoped-isolation", options.ClusterScopedIsolation, "How cluster scoped service objects are isolated between multiple consumers on the provider side. Among the choices, \"prefixed\" prepends the name of the cluster namespace to an object's name; \"namespaced\" maps a consumer side object into a namespaced object inside the corresponding cluster namespace; \"none\" is used for the case of a dedicated provider where isolation is not necessary.")
+	// TODO(mjudeikis): remove deprecated flag in future release
+	fs.StringVar(&options.Isolation, "cluster-scoped-isolation", options.Isolation, "How cluster scoped service objects are isolated between multiple consumers on the provider side. Among the choices, \"prefixed\" prepends the name of the cluster namespace to an object's name; \"namespaced\" maps a consumer side object into a namespaced object inside the corresponding cluster namespace; \"none\" is used for the case of a dedicated provider where isolation is not necessary.")
+	_ = fs.MarkDeprecated("cluster-scoped-isolation", "use --isolation instead")
+	fs.StringVar(&options.Isolation, "isolation", options.Isolation, "How cluster scoped service objects are isolated between multiple consumers on the provider side. Among the choices, \"prefixed\" prepends the name of the cluster namespace to an object's name; \"namespaced\" maps a consumer side object into a namespaced object inside the corresponding cluster namespace; \"none\" is used for the case of a dedicated provider where isolation is not necessary.")
 	fs.StringVar(&options.ExternalAddress, "external-address", options.ExternalAddress, "The external address for the service provider cluster, including https:// and port. If not specified, service account's hosts are used.")
 	fs.StringVar(&options.ExternalCAFile, "external-ca-file", options.ExternalCAFile, "The external CA file for the service provider cluster. If not specified, service account's CA is used.")
 	fs.StringVar(&options.TLSExternalServerName, "external-server-name", options.TLSExternalServerName, "The external (TLS) server name used by consumers to talk to the service provider cluster. This can be useful to select the right certificate via SNI.")
@@ -200,13 +203,15 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 	if strings.ToLower(options.ConsumerScope) == "cluster" {
 		options.ConsumerScope = string(kubebindv1alpha2.ClusterScope)
 	}
-	switch strings.ToLower(options.ClusterScopedIsolation) {
+	switch strings.ToLower(options.Isolation) {
 	case "prefixed":
-		options.ClusterScopedIsolation = string(kubebindv1alpha2.IsolationPrefixed)
+		options.Isolation = string(kubebindv1alpha2.IsolationPrefixed)
 	case "namespaced":
-		options.ClusterScopedIsolation = string(kubebindv1alpha2.IsolationNamespaced)
+		options.Isolation = string(kubebindv1alpha2.IsolationNamespaced)
 	case "none":
-		options.ClusterScopedIsolation = string(kubebindv1alpha2.IsolationNone)
+		options.Isolation = string(kubebindv1alpha2.IsolationNone)
+	default:
+		options.Isolation = string(kubebindv1alpha2.IsolationNone)
 	}
 
 	if options.ExternalCAFile != "" && options.ExternalCA != nil {

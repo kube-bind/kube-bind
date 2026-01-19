@@ -1,7 +1,7 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
-  name: v251112-503d98b.apiserviceexports.kube-bind.io
+  name: v260119-2e5a3e93.apiserviceexports.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -466,11 +466,16 @@ spec:
               description: |-
                 ClusterScopedIsolation specifies how cluster scoped service objects are isolated between multiple consumers on the provider side.
                 It can be "Prefixed", "Namespaced", or "None".
+
+                Deprecated: ClusterScopedIsolation is deprecated, use Isolation instead.
               enum:
               - Prefixed
               - Namespaced
               - None
               type: string
+              x-kubernetes-validations:
+              - message: clusterScopedIsolation is immutable
+                rule: self == oldSelf
             informerScope:
               description: |-
                 informerScope is the scope of the APIServiceExport. It can be either Cluster or Namespace.
@@ -485,6 +490,17 @@ spec:
               type: string
               x-kubernetes-validations:
               - message: informerScope is immutable
+                rule: self == oldSelf
+            isolation:
+              description: Isolation specifies how service objects are isolated between
+                multiple consumers on the provider side.
+              enum:
+              - Prefixed
+              - Namespaced
+              - None
+              type: string
+              x-kubernetes-validations:
+              - message: isolation is immutable
                 rule: self == oldSelf
             permissionClaims:
               description: |-
@@ -670,6 +686,7 @@ spec:
                 rule: self == oldSelf
           required:
           - informerScope
+          - isolation
           - resources
           type: object
         status:

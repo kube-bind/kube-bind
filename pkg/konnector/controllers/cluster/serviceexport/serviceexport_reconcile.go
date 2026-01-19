@@ -144,7 +144,7 @@ func (r *reconciler) ensureControllers(ctx context.Context, namespace, name stri
 		}
 
 		processedSchemas[name] = true // This is only schemas names (suffix)
-		isClusterScoped = schema.Spec.Scope == apiextensionsv1.ClusterScoped || schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope
+		isClusterScoped = schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope
 	}
 
 	// Ensure controller for permission claims
@@ -267,16 +267,21 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 				return providerBindClient.KubeBindV1alpha2().APIServiceNamespaces(sn.Namespace).Create(ctx, sn, metav1.CreateOptions{})
 			})
 
-	case export.Spec.ClusterScopedIsolation == kubebindv1alpha2.IsolationNone:
+	case export.Spec.Isolation == kubebindv1alpha2.IsolationNone:
+		logger.V(4).Info("Using None isolation strategy", "export", export.Name)
 		isolationStrategy = isolation.NewNone(r.providerNamespace, providerNamespaceUID)
 
-	case export.Spec.ClusterScopedIsolation == kubebindv1alpha2.IsolationPrefixed:
+	case export.Spec.Isolation == kubebindv1alpha2.IsolationPrefixed:
+		logger.V(4).Info("Using Prefixed isolation strategy", "export", export.Name)
 		isolationStrategy = isolation.NewPrefixed(r.providerNamespace, providerNamespaceUID)
 
-	case export.Spec.ClusterScopedIsolation == kubebindv1alpha2.IsolationNamespaced:
+	case export.Spec.Isolation == kubebindv1alpha2.IsolationNamespaced:
+		logger.V(4).Info("Using Namespaced isolation strategy", "export", export.Name)
 		isolationStrategy = isolation.NewNamespaced(r.providerNamespace)
 	default:
 		// Default to None isolation strategy if no valid isolation strategy is specified
+		// This should never happen due to validation, but we add this as a safety net.
+		logger.V(2).Info("Using default None isolation strategy", "export", export.Name)
 		isolationStrategy = isolation.NewNone(r.providerNamespace, providerNamespaceUID)
 	}
 
@@ -343,7 +348,7 @@ func (r *reconciler) ensureControllersForPermissionClaims(
 	ctx context.Context,
 	export *kubebindv1alpha2.APIServiceExport,
 	binding *kubebindv1alpha2.APIServiceBinding,
-	isClusterScoped bool, // schema.Spec.Scope == apiextensionsv1.ClusterScoped || schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope
+	isClusterScoped bool, // schema.Spec.InformerScope == kubebindv1alpha2.ClusterScope
 ) error {
 	logger := klog.FromContext(ctx)
 

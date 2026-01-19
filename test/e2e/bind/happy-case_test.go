@@ -50,59 +50,13 @@ import (
 // TestClusterScoped tests scenarios where consumer-side resources are cluster-scoped (Sheriffs).
 // Uses: template-sheriffs.yaml (scope=Cluster) & cr-sheriff.yaml
 //
-// ARCHITECTURE FLOW:
+// This test validates three isolation strategies for cluster-scoped resources:
+//   - IsolationPrefixed: Sheriff name is prefixed with consumer ID, secrets isolated
+//   - IsolationNone: Same names and namespaces on both sides (⚠️ no isolation!)
+//   - IsolationNamespaced: CRD toggled to NamespaceScoped on provider, secrets isolated
 //
-//	CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
-//	================                            ==========================
-//
-//	┌─────────────────────────────┐           ┌────────────────────────────────────────────┐
-//	│ Namespace: wild-west        │           │ Contract Namespace (per consumer):         │
-//	│  - Secret: sheriff-badge-   │──────────▶│   kube-bind-<consumer-id-hash>             │
-//	│    credentials (ref)        │   Sync    │                                            │
-//	│  - Secret: sheriff-juris-   │           │   APIServiceNamespace CR:                  │
-//	│    diction-config (label)   │           │     metadata.name: wild-west               │
-//	└─────────────────────────────┘           │     status.namespace: ─────────────────┐   │
-//	                                          │       kube-bind-<consumer-id>-wild-west│   │
-//	┌─────────────────────────────┐           └────────────────────────────────────────┼───┘
-//	│ Sheriff: wyatt-earp         │                                                    │
-//	│  (cluster-scoped)           │──────────▶ ACTUAL PROVIDER NAMESPACE: ◀───────────┘
-//	│  spec.intent                │   Sync    ┌────────────────────────────────────────────┐
-//	│  spec.secretRefs: [...]     │           │ Namespace: kube-bind-<consumer-id>-wild-   │
-//	└─────────────────────────────┘           │            west                            │
-//	         ▲                                │  - Secret: sheriff-badge-credentials       │
-//	         │ Status updates                 │  - Secret: sheriff-jurisdiction-config     │
-//	         └────────────────────────────────│                                            │
-//	                                          │ RBAC (for secret access):                  │
-//	                                          │  - ClusterRole: kube-binder-export-wild-   │
-//	                                          │    west-sheriffs (scope=ClusterScope)      │
-//	                                          │  - Role: ... (scope=NamespacedScope)       │
-//	                                          └────────────────────────────────────────────┘
-//
-//	                                          Sheriff resource location (3 strategies):
-//	                                          ┌────────────────────────────────────────────┐
-//	                                          │ [cc-prefixed] IsolationPrefixed:           │
-//	                                          │   Sheriff: <consumer-id>-wyatt-earp        │
-//	                                          │   (cluster-scoped, prefixed name)          │
-//	                                          └────────────────────────────────────────────┘
-//
-//	                                          ┌────────────────────────────────────────────┐
-//	                                          │ [cc-none] IsolationNone:                   │
-//	                                          │   Sheriff: wyatt-earp                      │
-//	                                          │   (cluster-scoped, shared name!)           │
-//	                                          │   ⚠ Last write wins between consumers      │
-//	                                          └────────────────────────────────────────────┘
-//
-//	                                          ┌────────────────────────────────────────────┐
-//	                                          │ [cc-namespaced] IsolationNamespaced:       │
-//	                                          │   Sheriff: wyatt-earp                      │
-//	                                          │   in namespace: kube-bind-<consumer-id>-   │
-//	                                          │                 wild-west                  │
-//	                                          │   (CRD toggled to NamespaceScoped)         │
-//	                                          └────────────────────────────────────────────┘
-//
-// KEY INSIGHT: Secrets are ALWAYS isolated per consumer via the contract namespace
-// (kube-bind-<consumer-id>-wild-west), even with IsolationNone. The isolation
-// strategy only affects cluster-scoped Sheriff resource naming/placement.
+// For detailed architecture diagrams and explanations, see:
+// docs/content/developers/architecture.md#cluster-scoped-resources
 func TestClusterScoped(t *testing.T) {
 	// name & test type defined by letters - cc - cluster-cluster so its easier to identify failures in the logs.
 	testHappyCase(t, "cc-prefixed", apiextensionsv1.ClusterScoped, apiextensionsv1.ClusterScoped, kubebindv1alpha2.ClusterScope, kubebindv1alpha2.IsolationPrefixed)
@@ -113,57 +67,16 @@ func TestClusterScoped(t *testing.T) {
 // TestNamespacedScoped tests scenarios where consumer-side resources are namespaced (Cowboys).
 // Uses: template-cowboys.yaml (scope=Namespaced) & cr-cowboy.yaml
 //
-// ARCHITECTURE FLOW:
+// This test validates two informerScope configurations for namespaced resources:
+//   - NamespacedScope (nn): Konnector watches only its own namespace on provider
+//   - ClusterScope (nc): Konnector watches cluster-wide on provider
 //
-//	CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
-//	================                            ==========================
+// Note: Namespaced resources ALWAYS use ServiceNamespaced isolation strategy,
+// regardless of the isolation parameter. Namespace mapping is always:
+// wild-west → kube-bind-<consumer-id>-wild-west
 //
-//	┌─────────────────────────────┐           ┌────────────────────────────────────────────┐
-//	│ Namespace: wild-west        │           │ Contract Namespace (per consumer):         │
-//	│                             │──────────▶│   kube-bind-<consumer-id-hash>             │
-//	│  Cowboy: billy-the-kid      │   Sync    │                                            │
-//	│   (namespaced)              │           │   APIServiceNamespace CR:                  │
-//	│   spec.intent               │           │     metadata.name: wild-west               │
-//	│   spec.secretRefs: [...]    │           │     status.namespace: ─────────────────┐   │
-//	│                             │           │       kube-bind-<consumer-id>-wild-west│   │
-//	│  - Secret: colt-45-permit   │           └────────────────────────────────────────┼───┘
-//	│    (ref)                    │                                                    │
-//	│  - Secret: cowboy-gang-     │           ACTUAL PROVIDER NAMESPACE: ◀─────────────┘
-//	│    affiliation (label)      │           ┌────────────────────────────────────────────┐
-//	└─────────────────────────────┘           │ Namespace: kube-bind-<consumer-id>-wild-   │
-//	         ▲                                │            west                            │
-//	         │ Status updates                 │                                            │
-//	         └────────────────────────────────│  Cowboy: billy-the-kid (namespaced)        │
-//	                                          │  - Secret: colt-45-permit                  │
-//	                                          │  - Secret: cowboy-gang-affiliation         │
-//	                                          │                                            │
-//	                                          │ RBAC (for secret access):                  │
-//	                                          │  - Role: kube-binder-export-wild-west-     │
-//	                                          │    cowboys (in this namespace)             │
-//	                                          │  - RoleBinding: ... (in this namespace)    │
-//	                                          └────────────────────────────────────────────┘
-//
-//	Two test scenarios:
-//	┌────────────────────────────────────────────────────────────────────┐
-//	│ [nn] Namespaced → Namespaced (informerScope=NamespacedScope):     │
-//	│   - Consumer: Cowboy in namespace wild-west                       │
-//	│   - Provider: Cowboy in namespace kube-bind-<id>-wild-west        │
-//	│   - Konnector watches only its own namespace on provider side     │
-//	│   - Natural isolation via namespaces                              │
-//	└────────────────────────────────────────────────────────────────────┘
-//
-//	┌────────────────────────────────────────────────────────────────────┐
-//	│ [nc] Namespaced → Cluster (informerScope=ClusterScope):           │
-//	│   - Consumer: Cowboy in namespace wild-west                       │
-//	│   - Provider: Cowboy in namespace kube-bind-<id>-wild-west        │
-//	│   - Konnector watches cluster-wide on provider side               │
-//	│   - Still isolated via namespaces, but different RBAC model       │
-//	└────────────────────────────────────────────────────────────────────┘
-//
-// KEY INSIGHT: Namespaced resources are ALWAYS isolated per consumer because
-// each consumer gets its own provider namespace (kube-bind-<consumer-id>-wild-west).
-// The informerScope parameter only affects whether the konnector watches at namespace
-// or cluster level, not the isolation model.
+// For detailed architecture diagrams and explanations, see:
+// docs/content/developers/architecture.md#namespaced-resources
 func TestNamespacedScoped(t *testing.T) {
 	testHappyCase(t, "nn", apiextensionsv1.NamespaceScoped, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.NamespacedScope, "")
 	testHappyCase(t, "nc", apiextensionsv1.NamespaceScoped, apiextensionsv1.NamespaceScoped, kubebindv1alpha2.ClusterScope, "")
@@ -298,7 +211,7 @@ func testHappyCase(
 		"--kubeconfig="+providerKubeconfig,
 		"--listen-address=:0",
 		"--consumer-scope="+string(informerScope),
-		"--cluster-scoped-isolation="+string(isolationStrategy),
+		"--isolation="+string(isolationStrategy),
 	)
 
 	t.Logf("Creating CRD on provider side")

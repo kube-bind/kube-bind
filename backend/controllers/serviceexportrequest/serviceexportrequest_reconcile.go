@@ -40,9 +40,9 @@ import (
 )
 
 type reconciler struct {
-	informerScope          kubebindv1alpha2.InformerScope
-	clusterScopedIsolation kubebindv1alpha2.Isolation
-	schemaSource           string
+	informerScope kubebindv1alpha2.InformerScope
+	isolation     kubebindv1alpha2.Isolation
+	schemaSource  string
 
 	getBoundSchema    func(ctx context.Context, cl client.Client, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
 	createBoundSchema func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error
@@ -134,7 +134,7 @@ func (r *reconciler) getExportedSchemas(ctx context.Context, cl client.Client) (
 	return boundSchemas, nil
 }
 
-func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, _ cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	exportedSchemas, err := r.getExportedSchemas(ctx, cl)
 	if err != nil {
 		return err
@@ -167,7 +167,7 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, c
 				// we need to rewrite the BoundSchema's scope accordingly. For all
 				// other isolation strategies, as well as for namespaced schemas,
 				// no changes are necessary.
-				if boundSchema.Spec.Scope == apiextensionsv1.NamespaceScoped && r.clusterScopedIsolation == kubebindv1alpha2.IsolationNamespaced {
+				if boundSchema.Spec.Scope == apiextensionsv1.NamespaceScoped && r.isolation == kubebindv1alpha2.IsolationNamespaced {
 					boundSchema.Spec.Scope = apiextensionsv1.ClusterScoped
 				}
 
@@ -185,7 +185,6 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 	logger := klog.FromContext(ctx)
 
 	var schemas []*kubebindv1alpha2.BoundSchema
-	var scope apiextensionsv1.ResourceScope
 	if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhasePending {
 		for _, res := range req.Spec.Resources {
 			name := res.ResourceGroupName()
@@ -207,7 +206,6 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 
 			// Collect all schemas for hashing.
 			// TODO(mjudeikis) Scope is same for all crds so we keep stamping it over. We might want to change this
-			scope = boundSchema.Spec.Scope
 			schemas = append(schemas, boundSchema)
 		}
 
@@ -236,10 +234,8 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 			},
 			Spec: kubebindv1alpha2.APIServiceExportSpec{
 				InformerScope: r.informerScope,
+				Isolation:     r.isolation,
 			},
-		}
-		if scope == apiextensionsv1.ClusterScoped {
-			export.Spec.ClusterScopedIsolation = r.clusterScopedIsolation
 		}
 
 		for _, res := range req.Spec.Resources {

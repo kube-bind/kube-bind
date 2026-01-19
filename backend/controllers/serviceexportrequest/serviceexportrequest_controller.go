@@ -49,9 +49,9 @@ type APIServiceExportRequestReconciler struct {
 	manager mcmanager.Manager
 	opts    controller.TypedOptions[mcreconcile.Request]
 
-	informerScope          kubebindv1alpha2.InformerScope
-	clusterScopedIsolation kubebindv1alpha2.Isolation
-	reconciler             reconciler
+	informerScope kubebindv1alpha2.InformerScope
+	isolation     kubebindv1alpha2.Isolation
+	reconciler    reconciler
 }
 
 // NewAPIServiceExportRequestReconciler returns a new APIServiceExportRequestReconciler to reconcile APIServiceExportRequests.
@@ -75,14 +75,14 @@ func NewAPIServiceExportRequestReconciler(
 	}
 
 	r := &APIServiceExportRequestReconciler{
-		manager:                mgr,
-		opts:                   opts,
-		informerScope:          scope,
-		clusterScopedIsolation: isolation,
+		manager:       mgr,
+		opts:          opts,
+		informerScope: scope,
+		isolation:     isolation,
 		reconciler: reconciler{
-			informerScope:          scope,
-			clusterScopedIsolation: isolation,
-			schemaSource:           schemaSource,
+			informerScope: scope,
+			isolation:     isolation,
+			schemaSource:  schemaSource,
 			getBoundSchema: func(ctx context.Context, cl client.Client, namespace, name string) (*kubebindv1alpha2.BoundSchema, error) {
 				var schema kubebindv1alpha2.BoundSchema
 				key := types.NamespacedName{Namespace: namespace, Name: name}

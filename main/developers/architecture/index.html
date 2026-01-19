@@ -6,18 +6,15 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="How to install and use the kubectl bind plugin.
-">
       
       
-      
-        <link rel="canonical" href="https://docs.kube-bind.io/main/setup/kubectl-plugin/">
+        <link rel="canonical" href="https://docs.kube-bind.io/main/developers/architecture/">
       
       
         <link rel="prev" href="../">
       
       
-        <link rel="next" href="../quickstart/">
+        <link rel="next" href="../dev-environments/">
       
       
       <link rel="icon" href="../../favicons/favicon.ico">
@@ -25,7 +22,7 @@
     
     
       
-        <title>kubectl bind Plugin - docs.kube-bind.io</title>
+        <title>Architecture - docs.kube-bind.io</title>
       
     
     
@@ -77,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kubectl-bind-plugin" class="md-skip">
+        <a href="#architecture-overview" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              kubectl bind Plugin
+              Architecture
             
           </span>
         </div>
@@ -249,13 +246,11 @@
         
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../setup/" class="md-tabs__link">
           
   
     
@@ -311,11 +306,13 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../developers/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
     
@@ -454,8 +451,6 @@
       
   
   
-    
-  
   
   
     
@@ -474,22 +469,21 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../setup/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -500,13 +494,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Setup
@@ -519,30 +513,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    kubectl bind Plugin
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../setup/kubectl-plugin/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -551,53 +525,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Installation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#basic-usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      Basic Usage
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      Quick Start
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -610,7 +537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../../setup/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -631,7 +558,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../helm/" class="md-nav__link">
+      <a href="../../setup/helm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -921,6 +848,8 @@
       
   
   
+    
+  
   
   
     
@@ -945,21 +874,22 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../developers/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -970,13 +900,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Developers
@@ -989,10 +919,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../developers/architecture/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1001,6 +951,260 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cluster-scoped-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cluster-Scoped Resources
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cluster-Scoped Resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#architecture-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Architecture Flow
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#isolation-strategies-for-cluster-scoped-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Isolation Strategies for Cluster-Scoped Resources
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Isolation Strategies for Cluster-Scoped Resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-isolationprefixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. IsolationPrefixed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-isolationnone" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. IsolationNone
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-isolationnamespaced" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. IsolationNamespaced
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-insights-for-cluster-scoped-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Insights for Cluster-Scoped Resources
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#namespaced-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Namespaced Resources
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Namespaced Resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#architecture-flow_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Architecture Flow
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#informerscope-variations" class="md-nav__link">
+    <span class="md-ellipsis">
+      InformerScope Variations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="InformerScope Variations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-namespacedscope-nn" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. NamespacedScope (nn)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-clusterscope-nc" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. ClusterScope (nc)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-insights-for-namespaced-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Insights for Namespaced Resources
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-test-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      Complete Test Lifecycle
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete Test Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup Phase
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#binding-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      Binding Phase
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#synchronization-verification-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      Synchronization &amp; Verification Phase
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-consumer-isolation-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Consumer Isolation Verification
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementation Details
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#code-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code Structure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategy-selection-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Strategy Selection Logic
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      References
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1013,7 +1217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/dev-environments/" class="md-nav__link">
+      <a href="../dev-environments/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1059,7 +1263,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../developers/backend/" class="md-nav__link ">
+            <a href="../backend/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1138,7 +1342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/backend/http/cluster-binding/" class="md-nav__link">
+      <a href="../backend/http/cluster-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1159,7 +1363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/backend/http/api-binding/" class="md-nav__link">
+      <a href="../backend/http/api-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1221,7 +1425,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../developers/konnector/" class="md-nav__link ">
+            <a href="../konnector/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1302,7 +1506,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/konnector/" class="md-nav__link">
+      <a href="../konnector/controllers/konnector/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1323,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/apiservicebinding/" class="md-nav__link">
+      <a href="../konnector/controllers/apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1394,7 +1598,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
+      <a href="../konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1415,7 +1619,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
+      <a href="../konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1436,7 +1640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
+      <a href="../konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1457,7 +1661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
+      <a href="../konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1502,7 +1706,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/publishing-a-release/" class="md-nav__link">
+      <a href="../publishing-a-release/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1523,7 +1727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../developers/testing-changes/" class="md-nav__link">
+      <a href="../testing-changes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2227,27 +2431,234 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
+  <a href="#cluster-scoped-resources" class="md-nav__link">
     <span class="md-ellipsis">
-      Installation
+      Cluster-Scoped Resources
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cluster-Scoped Resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#architecture-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Architecture Flow
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#basic-usage" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#isolation-strategies-for-cluster-scoped-resources" class="md-nav__link">
     <span class="md-ellipsis">
-      Basic Usage
+      Isolation Strategies for Cluster-Scoped Resources
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Isolation Strategies for Cluster-Scoped Resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-isolationprefixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. IsolationPrefixed
     </span>
   </a>
   
 </li>
+        
+          <li class="md-nav__item">
+  <a href="#2-isolationnone" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. IsolationNone
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-isolationnamespaced" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. IsolationNamespaced
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-insights-for-cluster-scoped-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Insights for Cluster-Scoped Resources
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
+  <a href="#namespaced-resources" class="md-nav__link">
     <span class="md-ellipsis">
-      Quick Start
+      Namespaced Resources
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Namespaced Resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#architecture-flow_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Architecture Flow
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#informerscope-variations" class="md-nav__link">
+    <span class="md-ellipsis">
+      InformerScope Variations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="InformerScope Variations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-namespacedscope-nn" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. NamespacedScope (nn)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-clusterscope-nc" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. ClusterScope (nc)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-insights-for-namespaced-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Insights for Namespaced Resources
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-test-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      Complete Test Lifecycle
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete Test Lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setup-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup Phase
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#binding-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      Binding Phase
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#synchronization-verification-phase" class="md-nav__link">
+    <span class="md-ellipsis">
+      Synchronization &amp; Verification Phase
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-consumer-isolation-verification" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multi-Consumer Isolation Verification
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementation Details
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#code-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code Structure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strategy-selection-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Strategy Selection Logic
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      References
     </span>
   </a>
   
@@ -2271,65 +2682,320 @@
   
 
 
-<h1 id="kubectl-bind-plugin">kubectl bind Plugin</h1>
-<p>The <code>kubectl bind</code> plugin is the primary command-line interface for interacting with kube-bind services. It provides both interactive web UI access and command-line binding capabilities for connecting to remote service providers.</p>
-<h2 id="installation">Installation</h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Krew</label><label for="__tabbed_1_2">Manual Build</label><label for="__tabbed_1_3">Binary Download</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p>Install the plugin using <a href="https://krew.sigs.k8s.io/">krew</a>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>index<span class="w"> </span>add<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>https://github.com/kube-bind/krew-index.git
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>bind/bind
+<h1 id="architecture-overview">Architecture Overview</h1>
+<p>This document provides detailed architecture diagrams and explanations for how kube-bind handles resource synchronization between consumer and provider clusters, with a focus on isolation strategies and namespace mapping.</p>
+<p>This is development-focused documentation intended to help contributors understand the internal workings of kube-bind.
+If you are looking for user-focused documentation, please refer to the <a href="../../usage/synchronization/">Synchronization User Guide</a>.</p>
+<h2 id="cluster-scoped-resources">Cluster-Scoped Resources</h2>
+<p>Cluster-scoped resources (like Sheriffs in our examples) can use different isolation strategies to control how they are placed on the provider cluster and how their associated secrets are isolated.</p>
+<h3 id="architecture-flow">Architecture Flow</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>================                            ==========================
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>┌─────────────────────────────┐           ┌────────────────────────────────────────────┐
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ Namespace: wild-west        │           │ Contract Namespace (per consumer):         │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│  - Secret: sheriff-badge-   │──────────▶│   kube-bind-&lt;consumer-id-hash&gt;             │
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│    credentials (ref)        │   Sync    │                                            │
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│  - Secret: sheriff-juris-   │           │   APIServiceNamespace CR:                  │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│    diction-config (label)   │           │     metadata.name: wild-west               │
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>└─────────────────────────────┘           │     status.namespace: (varies by isolation)│
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                                          └────────────────────────────────────────────┘
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>┌─────────────────────────────┐
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│ Sheriff: wyatt-earp         │──────────▶ PROVIDER CLUSTER (varies by isolation)
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│  (cluster-scoped)           │   Sync    See isolation strategies below ↓
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│  spec.intent                │
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│  spec.secretRefs: [...]     │
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>└─────────────────────────────┘
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>         ▲
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>         │ Status updates
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>         └────────────────────────────────
 </code></pre></div>
-</div>
-<div class="tabbed-block">
-<p>Build and install from source:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/kube-bind/kube-bind.git
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">cd</span><span class="w"> </span>kube-bind
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>make<span class="w"> </span>build
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>cp<span class="w"> </span>bin/kubectl-bind<span class="w"> </span>/usr/local/bin/
+<h3 id="isolation-strategies-for-cluster-scoped-resources">Isolation Strategies for Cluster-Scoped Resources</h3>
+<h4 id="1-isolationprefixed">1. IsolationPrefixed</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>┌────────────────────────────────────────────┐
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>│ [cc-prefixed] IsolationPrefixed:           │
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│   Sheriff: &lt;consumer-id&gt;-wyatt-earp        │
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│   (cluster-scoped, prefixed name)          │
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│   Secrets in namespace:                    │
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│     kube-bind-&lt;consumer-id&gt;-wild-west      │
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│   (APIServiceNamespace mapping)            │
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>└────────────────────────────────────────────┘
 </code></pre></div>
-</div>
-<div class="tabbed-block">
-<p>Download pre-built binaries from the <a href="https://github.com/kube-bind/kube-bind/releases">releases page</a>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Download and install for Linux/macOS</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">OS</span><span class="o">=</span><span class="k">$(</span>uname<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span><span class="s1">&#39;[:upper:]&#39;</span><span class="w"> </span><span class="s1">&#39;[:lower:]&#39;</span><span class="k">)</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">ARCH</span><span class="o">=</span><span class="k">$(</span>uname<span class="w"> </span>-m<span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/x86_64/amd64/&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/aarch64/arm64/&#39;</span><span class="k">)</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nv">VERSION</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span>https://api.github.com/repos/kube-bind/kube-bind/releases/latest<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;&quot;tag_name&quot;&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d<span class="s1">&#39;&quot;&#39;</span><span class="w"> </span>-f4<span class="k">)</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>curl<span class="w"> </span>-LO<span class="w"> </span>https://github.com/kube-bind/kube-bind/releases/download/<span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span>/kubectl-bind_<span class="si">${</span><span class="nv">VERSION</span><span class="p">#v</span><span class="si">}</span>_<span class="si">${</span><span class="nv">OS</span><span class="si">}</span>_<span class="si">${</span><span class="nv">ARCH</span><span class="si">}</span>.tar.gz
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>tar<span class="w"> </span>-xzf<span class="w"> </span>kubectl-bind_<span class="si">${</span><span class="nv">VERSION</span><span class="p">#v</span><span class="si">}</span>_<span class="si">${</span><span class="nv">OS</span><span class="si">}</span>_<span class="si">${</span><span class="nv">ARCH</span><span class="si">}</span>.tar.gz
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>sudo<span class="w"> </span>mv<span class="w"> </span>bin/kubectl-bind<span class="w"> </span>/usr/local/bin/kubectl-bind
+<p><strong>How it works:</strong>
+- Sheriff resource name is prefixed with consumer ID: <code>&lt;consumer-id&gt;-wyatt-earp</code>
+- Sheriff remains cluster-scoped on provider
+- Secrets are isolated via namespace mapping: <code>wild-west</code> → <code>kube-bind-&lt;consumer-id&gt;-wild-west</code>
+- Multiple consumers can safely coexist with different prefixed resources</p>
+<p><strong>Use case:</strong> When you want cluster-scoped resources on the provider but need to support multiple consumers safely.</p>
+<h4 id="2-isolationnone">2. IsolationNone</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>┌────────────────────────────────────────────┐
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>│ [cc-none] IsolationNone:                   │
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│   Sheriff: wyatt-earp                      │
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>│   (cluster-scoped, same name on both!)     │
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>│   ⚠ Last write wins between consumers      │
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>│   Secrets in namespace: wild-west          │
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>│   (Same namespace name on both sides!)     │
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>└────────────────────────────────────────────┘
 </code></pre></div>
-</div>
-</div>
-</div>
-<h2 id="basic-usage">Basic Usage</h2>
-<p>The main plugin command is <code>kubectl bind</code> which opens the kube-bind web UI in your browser for interactive service binding.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Login to a kube-bind server first</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>https://my-kube-bind-server.example.com
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># Open kube-bind UI for current server context</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>kubectl<span class="w"> </span><span class="nb">bind</span>
+<p><strong>How it works:</strong>
+- Sheriff resource keeps the same name on both sides: <code>wyatt-earp</code>
+- Sheriff remains cluster-scoped on provider
+- <strong>Namespace mapping is 1:1</strong>: <code>wild-west</code> → <code>wild-west</code> (same name!)
+- <strong>⚠️ WARNING:</strong> No isolation! Multiple consumers share the same namespace. This is possible but discouraged.
+- Last write wins if multiple consumers create the same resource</p>
+<p><strong>Use case:</strong> Single consumer scenarios or when you explicitly want shared resources. <strong>Not recommended for multi-consumer environments.</strong></p>
+<h4 id="3-isolationnamespaced">3. IsolationNamespaced</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>┌────────────────────────────────────────────┐
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>│ [cc-namespaced] IsolationNamespaced:       │
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>│   Sheriff: wyatt-earp                      │
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>│   (CRD toggled to NamespaceScoped)         │
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>│   in namespace:                            │
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>│     kube-bind-&lt;consumer-id&gt;-wild-west      │
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>│   Secrets in same namespace (isolated)     │
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>└────────────────────────────────────────────┘
 </code></pre></div>
-<p>The plugin provides several subcommands including <code>login</code>, <code>templates</code>, <code>collections</code>, and <code>apiservice</code> for different binding workflows.</p>
-<p>For complete command reference and examples, see the <a href="../../reference/">CLI Reference</a>.</p>
-<h2 id="quick-start">Quick Start</h2>
+<p><strong>How it works:</strong>
+- Sheriff CRD is toggled from ClusterScoped to NamespaceScoped on the provider
+- Sheriff is placed in consumer-specific namespace: <code>kube-bind-&lt;consumer-id&gt;-wild-west</code>
+- Secrets are in the same namespace (isolated)
+- Namespace mapping: <code>wild-west</code> → <code>kube-bind-&lt;consumer-id&gt;-wild-west</code></p>
+<p><strong>Use case:</strong> When you want the strongest isolation and are willing to modify the CRD scope on the provider.</p>
+<h3 id="key-insights-for-cluster-scoped-resources">Key Insights for Cluster-Scoped Resources</h3>
+<p>The isolation strategy determines <strong>BOTH</strong> how Sheriff resources are placed <strong>AND</strong> how namespaces are mapped:</p>
+<ul>
+<li><strong>IsolationNone</strong>: Same namespace name on both sides (<code>wild-west</code> → <code>wild-west</code>)</li>
+<li>
+<p>⚠️ <strong>NO isolation for secrets!</strong> Multiple consumers can exist but share the same namespace (discouraged)</p>
+</li>
+<li>
+<p><strong>IsolationPrefixed</strong>: Sheriff name prefixed, secrets isolated via namespace mapping</p>
+</li>
+<li>
+<p>(<code>wild-west</code> → <code>kube-bind-&lt;consumer-id&gt;-wild-west</code>)</p>
+</li>
+<li>
+<p><strong>IsolationNamespaced</strong>: Sheriff becomes namespaced, secrets isolated in same namespace</p>
+</li>
+<li>(<code>wild-west</code> → <code>kube-bind-&lt;consumer-id&gt;-wild-west</code>)</li>
+</ul>
+<h2 id="namespaced-resources">Namespaced Resources</h2>
+<p>Namespaced resources (like Cowboys in our examples) always use the ServiceNamespaced isolation strategy, regardless of the isolation parameter.</p>
+<h3 id="architecture-flow_1">Architecture Flow</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>================                            ==========================
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>┌─────────────────────────────┐           ┌────────────────────────────────────────────┐
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>│ Namespace: wild-west        │           │ Contract Namespace (per consumer):         │
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>│                             │──────────▶│   kube-bind-&lt;consumer-id-hash&gt;             │
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>│  Cowboy: billy-the-kid      │   Sync    │                                            │
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>│   (namespaced)              │           │   APIServiceNamespace CR:                  │
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>│   spec.intent               │           │     metadata.name: wild-west               │
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>│   spec.secretRefs: [...]    │           │     status.namespace: ─────────────────┐   │
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>│                             │           │       kube-bind-&lt;consumer-id&gt;-wild-west│   │
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>│  - Secret: colt-45-permit   │           └────────────────────────────────────────┼───┘
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>│    (ref)                    │                                                    │
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>│  - Secret: cowboy-gang-     │           ACTUAL PROVIDER NAMESPACE: ◀─────────────┘
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>│    affiliation (label)      │           ┌────────────────────────────────────────────┐
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>└─────────────────────────────┘           │ Namespace: kube-bind-&lt;consumer-id&gt;-wild-   │
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>         ▲                                │            west                            │
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>         │ Status updates                 │                                            │
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>         └────────────────────────────────│  Cowboy: billy-the-kid (namespaced)        │
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>                                          │  - Secret: colt-45-permit                  │
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>                                          │  - Secret: cowboy-gang-affiliation         │
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>                                          │                                            │
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>                                          │ RBAC (for secret access):                  │
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>                                          │  - Role: kube-binder-export-wild-west-     │
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>                                          │    cowboys (in this namespace)             │
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>                                          │  - RoleBinding: ... (in this namespace)    │
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>                                          └────────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="informerscope-variations">InformerScope Variations</h3>
+<p>Namespaced resources support two informer scope configurations:</p>
+<h4 id="1-namespacedscope-nn">1. NamespacedScope (nn)</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>┌────────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>│ [nn] Namespaced → Namespaced (informerScope=NamespacedScope):     │
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>│   - Consumer: Cowboy in namespace wild-west                       │
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>│   - Provider: Cowboy in namespace kube-bind-&lt;id&gt;-wild-west        │
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>│   - Konnector watches only its own namespace on provider side     │
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>│   - Natural isolation via namespaces                              │
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>└────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<p><strong>How it works:</strong>
+- Consumer resource is namespaced: <code>wild-west/billy-the-kid</code>
+- Provider resource is namespaced: <code>kube-bind-&lt;consumer-id&gt;-wild-west/billy-the-kid</code>
+- Konnector watches <strong>only its own namespace</strong> on the provider side
+- RBAC uses namespace-scoped Roles and RoleBindings</p>
+<p><strong>Use case:</strong> Most efficient for namespaced resources, minimizes RBAC and watch scope.</p>
+<h4 id="2-clusterscope-nc">2. ClusterScope (nc)</h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>┌────────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>│ [nc] Namespaced → Cluster (informerScope=ClusterScope):           │
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>│   - Consumer: Cowboy in namespace wild-west                       │
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>│   - Provider: Cowboy in namespace kube-bind-&lt;id&gt;-wild-west        │
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>│   - Konnector watches cluster-wide on provider side               │
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>│   - Still isolated via namespaces, but different RBAC model       │
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>└────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<p><strong>How it works:</strong>
+- Consumer resource is namespaced: <code>wild-west/billy-the-kid</code>
+- Provider resource is namespaced: <code>kube-bind-&lt;consumer-id&gt;-wild-west/billy-the-kid</code>
+- Konnector watches <strong>cluster-wide</strong> on the provider side
+- RBAC uses ClusterRoles and ClusterRoleBindings</p>
+<p><strong>Use case:</strong> When you need cluster-wide visibility or have specific RBAC requirements.</p>
+<h3 id="key-insights-for-namespaced-resources">Key Insights for Namespaced Resources</h3>
+<p>Namespaced resources <strong>ALWAYS</strong> use the ServiceNamespaced isolation strategy:</p>
+<ul>
+<li>The <code>isolation</code> parameter <strong>only applies to cluster-scoped resources</strong></li>
+<li>Each consumer gets its own provider namespace via APIServiceNamespace mapping</li>
+<li>Namespace mapping is always: <code>wild-west</code> → <code>kube-bind-&lt;consumer-id&gt;-wild-west</code></li>
+<li>The <code>informerScope</code> parameter only affects whether the konnector watches at namespace or cluster level</li>
+<li>Secrets are always isolated per consumer</li>
+</ul>
+<h2 id="complete-test-lifecycle">Complete Test Lifecycle</h2>
+<p>The end-to-end test validates the complete binding and synchronization flow:</p>
+<h3 id="setup-phase">Setup Phase</h3>
 <ol>
-<li>Install the plugin using Krew or build from source</li>
-<li>Login to your kube-bind server: <code>kubectl bind login &lt;server-url&gt;</code></li>
-<li>Open the web UI: <code>kubectl bind</code></li>
-<li>Browse and bind to available services through the interface</li>
+<li><strong>Create provider workspace (KCP)</strong></li>
+<li>Install kube-bind CRDs</li>
+<li>Start backend server (HTTP API for binding)</li>
+<li>Bootstrap example CRDs (Cowboys/Sheriffs)</li>
+<li>
+<p>Apply templates (template-cowboys.yaml / template-sheriffs.yaml)</p>
+</li>
+<li>
+<p><strong>Create consumer workspaces</strong></p>
+</li>
+<li>Start konnector on each consumer (watches APIServiceBinding)</li>
 </ol>
-<p>For detailed setup instructions, see the <a href="../quickstart/">Quickstart Guide</a>.</p>
+<h3 id="binding-phase">Binding Phase</h3>
+<ol>
+<li><strong>Login to provider</strong></li>
+<li>Simulate browser auth flow</li>
+<li>
+<p>Save credentials to kube-bind-config.yaml</p>
+</li>
+<li>
+<p><strong>List templates &amp; collections</strong></p>
+</li>
+<li>Verify backend returns templates</li>
+<li>
+<p>Verify collections exist</p>
+</li>
+<li>
+<p><strong>Bind API</strong></p>
+</li>
+<li>Send BindableResourcesRequest with templateRef and clusterIdentity</li>
+<li>Backend creates on provider:<ul>
+<li>Contract namespace: <code>kube-bind-&lt;consumer-id-hash&gt;</code></li>
+<li>APIServiceExportRequest</li>
+<li>APIServiceNamespace: <code>wild-west</code> → <code>kube-bind-&lt;id&gt;-wild-west</code></li>
+<li>RBAC resources for secret access</li>
+</ul>
+</li>
+<li>
+<p>Backend returns BindingResourceResponse with CRDs, RBAC manifests</p>
+</li>
+<li>
+<p><strong>Apply binding on consumer</strong></p>
+</li>
+<li>Create APIServiceBinding (watched by konnector)</li>
+<li>Apply CRDs</li>
+<li>Wait for CRD to be established</li>
+</ol>
+<h3 id="synchronization-verification-phase">Synchronization &amp; Verification Phase</h3>
+<ol>
+<li><strong>Create instance on consumer</strong></li>
+<li>Create resource (Cowboy or Sheriff) in namespace <code>wild-west</code></li>
+<li>
+<p>Create associated secrets</p>
+</li>
+<li>
+<p><strong>Verify sync to provider</strong></p>
+</li>
+<li>Instance created on provider with ClusterNamespaceAnnotation</li>
+<li>
+<p>Extract providerContractNamespace and providerObjectNamespace</p>
+</li>
+<li>
+<p><strong>Verify namespace pre-seeding &amp; RBAC</strong></p>
+</li>
+<li>APIServiceNamespace created with status.namespace populated</li>
+<li>Actual provider namespace exists</li>
+<li>
+<p>RBAC resources created (ClusterRole/Role + Bindings)</p>
+</li>
+<li>
+<p><strong>Test bi-directional sync</strong></p>
+<ul>
+<li>Update spec on consumer → synced to provider</li>
+<li>Update status on provider → synced to consumer</li>
+</ul>
+</li>
+<li>
+<p><strong>Verify secret sync</strong></p>
+<ul>
+<li>Referenced secret (spec.secretRefs) synced to provider namespace</li>
+<li>Label-selected secret synced</li>
+</ul>
+</li>
+<li>
+<p><strong>Test deletion</strong></p>
+<ul>
+<li>Delete on consumer → deleted on provider</li>
+</ul>
+</li>
+</ol>
+<h3 id="multi-consumer-isolation-verification">Multi-Consumer Isolation Verification</h3>
+<p>Running with 2 consumers validates:
+- Each consumer gets isolated contract namespace
+- Each consumer gets isolated provider namespace (except with IsolationNone)
+- Secrets are properly isolated (except with IsolationNone)
+- For cluster-scoped resources with IsolationNone, last-write-wins
+- For cluster-scoped resources with IsolationPrefixed, resources are name-prefixed
+- For cluster-scoped resources with IsolationNamespaced, provider CRD is toggled to NamespaceScoped</p>
+<h2 id="implementation-details">Implementation Details</h2>
+<h3 id="code-structure">Code Structure</h3>
+<ul>
+<li><strong>Isolation strategies</strong>: <code>pkg/konnector/controllers/cluster/serviceexport/isolation/</code></li>
+<li><code>none.go</code>: No isolation, same names/namespaces on both sides</li>
+<li><code>prefixed.go</code>: Prefix resource names with consumer ID</li>
+<li><code>namespaced.go</code>: Convert cluster-scoped to namespaced</li>
+<li>
+<p><code>servicenamespaced.go</code>: APIServiceNamespace-based mapping for namespaced resources</p>
+</li>
+<li>
+<p><strong>Controller logic</strong>: <code>pkg/konnector/controllers/cluster/serviceexport/serviceexport_reconcile.go</code></p>
+</li>
+<li>Determines which isolation strategy to use based on resource scope and configuration</li>
+<li>Lines 247-284: Strategy selection logic</li>
+</ul>
+<h3 id="strategy-selection-logic">Strategy Selection Logic</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">switch</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">case</span><span class="w"> </span><span class="nx">schema</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Scope</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">apiextensionsv1</span><span class="p">.</span><span class="nx">NamespaceScoped</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="c1">// ALWAYS use ServiceNamespaced for namespaced resources</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nx">isolationStrategy</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">isolation</span><span class="p">.</span><span class="nx">NewServiceNamespaced</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">case</span><span class="w"> </span><span class="nx">export</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Isolation</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">kubebindv1alpha2</span><span class="p">.</span><span class="nx">IsolationNone</span><span class="p">:</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="nx">isolationStrategy</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">isolation</span><span class="p">.</span><span class="nx">NewNone</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="k">case</span><span class="w"> </span><span class="nx">export</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Isolation</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">kubebindv1alpha2</span><span class="p">.</span><span class="nx">IsolationPrefixed</span><span class="p">:</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="nx">isolationStrategy</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">isolation</span><span class="p">.</span><span class="nx">NewPrefixed</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="k">case</span><span class="w"> </span><span class="nx">export</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Isolation</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">kubebindv1alpha2</span><span class="p">.</span><span class="nx">IsolationNamespaced</span><span class="p">:</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span><span class="nx">isolationStrategy</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">isolation</span><span class="p">.</span><span class="nx">NewNamespaced</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="references">References</h2>
+<ul>
+<li>Test implementation: <code>test/e2e/bind/happy-case_test.go</code></li>
+<li>API types: <code>sdk/apis/kubebind/v1alpha2/apiserviceexport_types.go</code></li>
+<li>Isolation strategies: <code>pkg/konnector/controllers/cluster/serviceexport/isolation/</code></li>
+</ul>
 
 
 
 
 
 
-
-  
-  
 
 
 

@@ -1129,8 +1129,8 @@ func TestReferenceSelector_IsolationMode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			export := &kubebindv1alpha2.APIServiceExport{
 				Spec: kubebindv1alpha2.APIServiceExportSpec{
-					ClusterScopedIsolation: tt.isolation,
-					Resources:              tt.exportedResources,
+					Isolation: tt.isolation,
+					Resources: tt.exportedResources,
 				},
 			}
 			got := isReferenceAllowed(tt.reference, export)

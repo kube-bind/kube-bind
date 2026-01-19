@@ -208,7 +208,7 @@ func IsClaimedWithReference(
 
 			if !isReferenceAllowed(ref, apiServiceExport) {
 				logger.Info("reference not allowed, resource is not part of the contract",
-					"isolation", apiServiceExport.Spec.ClusterScopedIsolation,
+					"isolation", apiServiceExport.Spec.Isolation,
 					"referenceGroup", ref.Group,
 					"referenceResource", ref.Resource,
 				)
@@ -254,7 +254,7 @@ func IsClaimedWithReference(
 
 	if consumerSide {
 		logger.Info("checking claim on consumer side")
-		result := IsClaimed(logger, claim.Selector, copy, potentiallyReferencedResources, apiServiceExport.Spec.ClusterScopedIsolation)
+		result := IsClaimed(logger, claim.Selector, copy, potentiallyReferencedResources, apiServiceExport.Spec.Isolation)
 		logger.Info("IsClaimed result", "result", result)
 		return result
 	}
@@ -280,14 +280,14 @@ func IsClaimedWithReference(
 		copy.SetNamespace(sn.Name)
 	}
 
-	result := IsClaimed(logger, claim.Selector, copy, potentiallyReferencedResources, apiServiceExport.Spec.ClusterScopedIsolation)
+	result := IsClaimed(logger, claim.Selector, copy, potentiallyReferencedResources, apiServiceExport.Spec.Isolation)
 	logger.V(4).Info("IsClaimed result (provider side)", "result", result)
 	return result
 }
 
 func isReferenceAllowed(ref kubebindv1alpha2.SelectorReference, apiServiceExport *kubebindv1alpha2.APIServiceExport) bool {
 	// If isolation is None, everything should be allowed, as both ends are owned.
-	if apiServiceExport.Spec.ClusterScopedIsolation == kubebindv1alpha2.IsolationNone {
+	if apiServiceExport.Spec.Isolation == kubebindv1alpha2.IsolationNone {
 		return true
 	}
 	for _, resource := range apiServiceExport.Spec.Resources {

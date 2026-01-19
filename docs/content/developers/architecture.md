@@ -2,6 +2,9 @@
 
 This document provides detailed architecture diagrams and explanations for how kube-bind handles resource synchronization between consumer and provider clusters, with a focus on isolation strategies and namespace mapping.
 
+This is development-focused documentation intended to help contributors understand the internal workings of kube-bind.
+If you are looking for user-focused documentation, please refer to the [Synchronization User Guide](../usage/synchronization.md).
+
 ## Cluster-Scoped Resources
 
 Cluster-scoped resources (like Sheriffs in our examples) can use different isolation strategies to control how they are placed on the provider cluster and how their associated secrets are isolated.

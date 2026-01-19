@@ -280,7 +280,8 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 		isolationStrategy = isolation.NewNamespaced(r.providerNamespace)
 	default:
 		// Default to None isolation strategy if no valid isolation strategy is specified
-		logger.V(4).Info("Using default None isolation strategy", "export", export.Name)
+		// This should never happen due to validation, but we add this as a safety net.
+		logger.V(2).Info("Using default None isolation strategy", "export", export.Name)
 		isolationStrategy = isolation.NewNone(r.providerNamespace, providerNamespaceUID)
 	}
 

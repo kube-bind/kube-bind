@@ -470,7 +470,8 @@ spec:
                 description: |-
                   ClusterScopedIsolation specifies how cluster scoped service objects are isolated between multiple consumers on the provider side.
                   It can be "Prefixed", "Namespaced", or "None".
-                  Deprecated: use Isolation instead.
+
+                  Deprecated: ClusterScopedIsolation is deprecated, use Isolation instead.
                 enum:
                 - Prefixed
                 - Namespaced
@@ -495,9 +496,8 @@ spec:
                 - message: informerScope is immutable
                   rule: self == oldSelf
               isolation:
-                description: |-
-                  Isolation specifies how service objects are isolated between multiple consumers on the provider side.
-                  It can be "Prefixed", "Namespaced", or "None".
+                description: Isolation specifies how service objects are isolated
+                  between multiple consumers on the provider side.
                 enum:
                 - Prefixed
                 - Namespaced

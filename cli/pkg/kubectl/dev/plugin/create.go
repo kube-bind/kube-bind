@@ -70,24 +70,17 @@ type DevOptions struct {
 	KindNetwork         string
 }
 
-// assetVersion is the version of the kube-bind backend assets used in dev mode
-var assetVersion = ""
-
 // fallbackAssetVersion is used when unable to fetch the latest version
-var fallbackAssetVersion = "0.6.0"
+const fallbackAssetVersion = "0.6.0"
 
-// GitHubRelease represents a GitHub release response
-type GitHubRelease struct {
+// gitHubRelease represents a GitHub release response
+type gitHubRelease struct {
 	TagName string `json:"tag_name"`
 }
 
 // NewDevOptions creates a new DevOptions
 func NewDevOptions(streams genericclioptions.IOStreams) *DevOptions {
 	opts := base.NewOptions(streams)
-	// Initialize assetVersion with fallback if not set
-	if assetVersion == "" {
-		assetVersion = fallbackAssetVersion
-	}
 	return &DevOptions{
 		Options:             opts,
 		Logs:                logs.NewOptions(),
@@ -95,7 +88,7 @@ func NewDevOptions(streams genericclioptions.IOStreams) *DevOptions {
 		ProviderClusterName: "kind-provider",
 		ConsumerClusterName: "kind-consumer",
 		ChartPath:           "oci://ghcr.io/kube-bind/charts/backend",
-		ChartVersion:        assetVersion,
+		ChartVersion:        fallbackAssetVersion,
 	}
 }
 
@@ -110,14 +103,15 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.ChartPath, "chart-path", o.ChartPath, "Helm chart path or OCI registry URL")
 	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", o.ChartVersion, "Helm chart version")
 	cmd.Flags().StringVar(&o.Image, "image", "ghcr.io/kube-bind/backend", "kube-bind backend image to use in dev mode")
-	cmd.Flags().StringVar(&o.Tag, "tag", "v"+assetVersion, "kube-bind backend image tag to use in dev mode")
+	cmd.Flags().StringVar(&o.Tag, "tag", "", "kube-bind backend image tag to use in dev mode")
 	cmd.Flags().StringVar(&o.KindNetwork, "kind-network", "kube-bind-dev", "kind network to use in dev mode")
 }
 
 // Complete completes the options
 func (o *DevOptions) Complete(args []string) error {
-	// Only fetch the latest version if assetVersion is not set
-	if assetVersion == "" {
+	// Only fetch the latest version if tag is not set
+	var assetVersion string
+	if o.Tag == "" {
 		version, err := fetchLatestRelease()
 		if err != nil {
 			// Log the error but continue with fallback version
@@ -164,7 +158,7 @@ func fetchLatestRelease() (string, error) {
 		return "", fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	var release GitHubRelease
+	var release gitHubRelease
 	if err := json.Unmarshal(body, &release); err != nil {
 		return "", fmt.Errorf("failed to parse release data: %w", err)
 	}
@@ -173,7 +167,6 @@ func fetchLatestRelease() (string, error) {
 		return "", fmt.Errorf("no tag name in release data")
 	}
 
-	// Remove 'v' prefix if present
 	version := strings.TrimPrefix(release.TagName, "v")
 	return version, nil
 }

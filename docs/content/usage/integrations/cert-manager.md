@@ -7,15 +7,25 @@ weight: 10
 
 # Cert-Manager Integration
 
-1. **Install cert-manager** in your Kubernetes cluster, where kube-bind backend is running, if you haven't already. You can follow the official installation guide [here](https://cert-manager.io/docs/installation/kubernetes/).
+## Setup
 
-2. **Add kube-bind export label** to certificate CRD.
+The following sections will guide you through the one-time setup that is required for providing
+certificates using cert-manager and kube-bind.
+
+### Install cert-manager
+
+Install cert-manager in your Kubernetes cluster, where kube-bind backend is running, if you haven't
+already. You can follow the [official installation guide](https://cert-manager.io/docs/installation/kubernetes/).
+
+### Export the Certificate CRD
+
+To export the cert-manager `Certificate` CRD, add the kube-bind export label to it:
 
 ```bash
 kubectl label crd certificates.cert-manager.io kube-bind.io/exported=true --overwrite
 ```
 
-3. **Create SelfSigned issuer** in the provider cluster.
+### Create a SelfSigned Issuer
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -28,7 +38,10 @@ spec:
 EOF
 ```
 
-4. **Create a `kube-bind` template for `Certificate` resources** to allow service consumers to request TLS certificates. Below is an example template:
+### Create a APIServiceExportTemplate
+
+It's now time to configure kube-bind to export the certificate resource. To do so, create a
+kube-bind `APIServiceExportTemplate` for `Certificate` resources like this one:
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -57,15 +70,31 @@ spec:
 EOF
 ```
 
-5. **Login into the kube-bind CLI** and request a binding to the `certificate` template created above. This will allow you to create `Certificate` resources in your consumer cluster.
+## Usage
+
+Now that everything is set up, users can begin to bind to your backend and begin consuming the new
+API.
+
+### Login to kube-bind
 
 ```bash
 kubectl bind login https://kube-bind.example.com
+```
+
+### Request a Binding
+
+Request a binding to the `certificate` template created above. This will allow you to create
+`Certificate` objects in your consumer cluster.
+
+```bash
 # you will get redirected to UI to authenticate and pick the template
 kubectl bind
 ```
 
-6. **Wait for the binding to be established.** Once the binding is active, you can create `Certificate` resources in your consumer cluster, and you will get `Certificate` objects synced from the provider cluster.
+### Wait for the Binding to be Established
+
+Once the binding is active, you can create `Certificate` objects in your consumer cluster, and you
+will get `Certificate` objects synced from the provider cluster.
 
 ```bash
 kubectl bind
@@ -87,10 +116,13 @@ Created 1 APIServiceBinding(s):
 Resources bound successfully!
 ```
 
-7. **Create a `Certificate` resource** in your consumer cluster. The cert-manager in the provider cluster will handle the issuance and management of the TLS certificate.
+### Create a Certificate
+
+Now you can finally create a `Certificate` object in your consumer cluster. The cert-manager in the
+provider cluster will handle the issuance and management of the TLS certificate.
 
 !!! note
-        my-selfsigned-issuer must be present in the provider cluster for this example to work.
+    `my-selfsigned-issuer` must be present in the provider cluster for this example to work.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -109,12 +141,16 @@ spec:
 EOF
 ```
 
-8. Observe that the `Certificate` resource is created in the consumer cluster and the corresponding TLS secret is generated.
+### Wait for Provisioning
+
+Observe that the `Certificate` object is created in the consumer cluster and the corresponding TLS
+Secret is generated:
 
 ```bash
 kubectl get certificates
 NAME          READY   SECRET        AGE
 my-tls-cert   True    my-tls-cert   6m55s
+
 kubectl get secrets
 NAME          TYPE                DATA   AGE
 my-tls-cert   kubernetes.io/tls   3      6m33s

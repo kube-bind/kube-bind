@@ -7,16 +7,27 @@ weight: 20
 
 # Crossplane Integration
 
-This document provides an example deployment walkthrough showing how to integrate kube-bind with Crossplane and how to deploy a sample managed MySQL resource using two kind clusters: a provider cluster (where Crossplane runs and kube-bind backend to export APIs) and a consumer cluster (which allows to bind those APIs using kube-bind konnector).
+This document provides an example deployment walkthrough showing how to integrate kube-bind with
+Crossplane and how to deploy a sample managed MySQL resource using two kind clusters: a provider
+cluster (where Crossplane runs and kube-bind backend to export APIs) and a consumer cluster (which
+allows to bind those APIs using kube-bind konnector).
 
 !!! note
-        Currently for permission claims to work properly, it is required to run namespaced Crossplane resources.
-
+    Currently for permission claims to work properly, it is required to run namespaced Crossplane
+    resources.
 
 ![Crossplane example architecture diagram](crossplane.png)
 
-1. **Install Crossplane** in your Kubernetes cluster where the kube-bind backend will run.
-   You can follow the official installation guide [here](https://docs.crossplane.io/v2.1/get-started/install).
+## Setup
+
+The following sections will guide you through the one-time setup that is required for providing
+MySQL databases using Crossplane and kube-bind.
+
+### Install Crossplane
+
+Install Crossplace in your Kubernetes cluster where the kube-bind backend will run. You can follow
+the [official installation guide](https://docs.crossplane.io/v2.1/get-started/install) from the
+Crossplane documentation.
 
 ```bash
 helm repo add crossplane-stable https://charts.crossplane.io/stable
@@ -27,9 +38,9 @@ helm install crossplane crossplane-stable/crossplane \
   --create-namespace
 ```
 
-2. **Install a Crossplane provider-sql**
+### Install Crossplane provider-sql
 
-   In the example, we will set up mysql database:
+In this example, we will set up MySQL database:
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -55,10 +66,10 @@ spec:
 EOF
 ```
 
+### Setup the MySQL Deployment
 
-3. **Set up the mysql deployment in the provider cluster**
-
-    Create and set up Deployment, PersistentVolume, PersistentVolumeClaim and Service for MySQL instance
+Create and set up `Deployment`, `PersistentVolume`, `PersistentVolumeClaim` and `Service` for the
+MySQL instance.
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -135,9 +146,9 @@ spec:
 EOF
 ```
 
-4. **Create a Crossplane XRD and Composition for a managed MySQL database**
+### Configure Crossplane
 
-    Apply both manifests:
+Time to create a Crossplane XRD and Composition for a managed MySQL database. Apply both manifests:
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -181,6 +192,7 @@ spec:
 EOF
 ```
 
+{% raw %}
 ```yaml
 kubectl apply -f - <<'EOF'
 apiVersion: apiextensions.crossplane.io/v1
@@ -317,9 +329,11 @@ spec:
     step: create-mysql-resources
 EOF
 ```
+{% endraw %}
 
-5. **Export the database API using kube-bind.**
-   Create an APIServiceExportTemplate for the mysqldatabase.mangodb.com resource:
+### Export the Database API
+
+Create an `APIServiceExportTemplate` for the `mysqldatabase.mangodb.com` resource:
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -344,16 +358,28 @@ spec:
 EOF
 ```
 
-6. **Login to kube-bind and request a binding to the exported database API.**
+## Usage
 
-    ```bash
-    kubectl bind login https://kube-bind.example.com
-    # Authenticate and select the mysqldatabase export
-    kubectl bind
-    ```
+Now that everything is set up, users can begin to bind to your backend and begin consuming the new
+API.
 
+### Login to kube-bind
 
-7. **Wait for the binding to be established.** Once the binding is active, you can create `MySQLDatabase` resources in your consumer cluster, and you will get `MySQLDatabase` objects synced from the provider cluster.
+```bash
+kubectl bind login https://kube-bind.example.com
+```
+
+### Request a Binding
+
+```bash
+# Authenticate and select the mysqldatabase export
+kubectl bind
+```
+
+### Wait for the Binding to be Established
+
+Once the binding is active, you can create `MySQLDatabase` resources in your consumer cluster,
+and you will get `MySQLDatabase` objects synced from the provider cluster.
 
 ```bash
 kubectl bind
@@ -373,14 +399,17 @@ Created 1 APIServiceBinding(s):
 Resources bound successfully!
 ```
 
-8. **Create a managed database in your consumer cluster.**
-    Verify that mysqldatabases.mangodb.com CRD is synced to the consumer cluster:
+### Create a Managed Database
+
+Verify that a `mysqldatabases.mangodb.com` CRD is synced to the consumer cluster:
+
 ```bash
 k get crd mysqldatabases.mangodb.com
 NAME                         CREATED AT
 mysqldatabases.mangodb.com   2025-11-27T14:22:18Z
 ```
-    Order a new consumer-database instance in the provider cluster
+
+Order a new consumer database instance in the provider cluster:
 
 ```yaml
 kubectl apply -f - <<EOF
@@ -394,7 +423,10 @@ spec:
 EOF
 ```
 
-9. **Observe the provisioned database and connection secret in the provider cluster.**
+### Wait for Provisioning
+
+The kube-bind konnector and the CloudNativePG operator should now be busy provisioning your
+database. You can observe the provisioned database and connection Secret in the provider cluster:
 
 ```bash
 kubectl get mysqldatabases.mangodb.com kube-bind-bp52k-consumer-database
@@ -415,6 +447,7 @@ kube-bind-bp52k-consumer-database-credentials                     Opaque        
 ```bash
 kubectl get mysqldatabases.mangodb.com kube-bind-bp52k-consumer-database -o yaml
 ```
+
 ```yaml
 apiVersion: mangodb.com/v1
 kind: MySQLDatabase
@@ -472,17 +505,17 @@ status:
   ready: true
 ```
 
-You should see your MySQL instance created in the provider cluster and a secret with connection details, once Crossplane finishes provisioning of the database.
+You should see your MySQL instance created in the provider cluster and a secret with connection
+details, once Crossplane finishes provisioning of the database.
 
-Observe that the requested secret with connection details for user is synced to consumer cluster.
+Observe that the requested Secret with connection details for user is synced to consumer cluster.
 
 ```bash
 kubectl get secrets
 
-NAMESPACE     NAME                            TYPE                            DATA   AGE
-default       consumer-database-credentials   Opaque                          4      5m21s
+NAMESPACE     NAME                            TYPE      DATA   AGE
+default       consumer-database-credentials   Opaque    4      5m21s
 ```
-
 
 ---
 

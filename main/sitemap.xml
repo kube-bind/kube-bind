@@ -300,4 +300,10 @@
         <changefreq>daily</changefreq>
         <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/usage/integrations/crossplane/"/>
     </url>
+    <url>
+        <loc>https://docs.kube-bind.io/main/usage/integrations/kro/</loc>
+        <lastmod>2026-01-20</lastmod>
+        <changefreq>daily</changefreq>
+        <xhtml:link rel="alternate" hreflang="en" href="https://docs.kube-bind.io/main/usage/integrations/kro/"/>
+    </url>
 </urlset>

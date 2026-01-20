@@ -18,6 +18,7 @@ package resources
 
 import (
 	"context"
+	"reflect"
 	"slices"
 
 	corev1 "k8s.io/api/core/v1"
@@ -135,6 +136,52 @@ func EnsureBinderClusterRole(ctx context.Context, client client.Client) error {
 	}
 
 	logger.V(2).Info("kube-binder ClusterRole already exists and is up to date")
+	return nil
+}
+
+// EnsureBinderRoleBinding ensures that the binder cluster role is bound in the cluster. This runs multiple times on bind.
+func EnsureBinderRoleBinding(ctx context.Context, client client.Client, namespace, saName string) error {
+	logger := klog.FromContext(ctx)
+
+	expectedRoleBinding := rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kube-binder",
+			Namespace: namespace,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.SchemeGroupVersion.Group,
+			Kind:     "ClusterRole",
+			Name:     "kube-binder",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Namespace: namespace,
+				Name:      saName,
+			},
+		},
+	}
+
+	var roleBinding rbacv1.RoleBinding
+	err := client.Get(ctx, types.NamespacedName{Namespace: expectedRoleBinding.Namespace, Name: expectedRoleBinding.Name}, &roleBinding)
+	if err != nil {
+		if !errors.IsNotFound(err) {
+			return err
+		}
+		logger.Info("Creating kube-binder RoleBinding", "namespace", namespace)
+		err = client.Create(ctx, &expectedRoleBinding)
+		if !errors.IsAlreadyExists(err) {
+			return err
+		}
+		roleBinding = expectedRoleBinding
+	}
+
+	if !reflect.DeepEqual(expectedRoleBinding.Subjects, roleBinding.Subjects) {
+		roleBinding.Subjects = expectedRoleBinding.Subjects
+		return client.Update(ctx, &roleBinding)
+	}
+
+	logger.V(2).Info("kube-binder RoleBinding already exists and is up to date", "namespace", namespace)
 	return nil
 }
 

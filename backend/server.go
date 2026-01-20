@@ -33,6 +33,7 @@ import (
 	"github.com/kube-bind/kube-bind/backend/controllers/cluster"
 	"github.com/kube-bind/kube-bind/backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexport"
+	"github.com/kube-bind/kube-bind/backend/controllers/serviceexportrbac"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexportrequest"
 	"github.com/kube-bind/kube-bind/backend/controllers/servicenamespace"
 	http "github.com/kube-bind/kube-bind/backend/http"
@@ -53,6 +54,7 @@ type Server struct {
 }
 
 type Controllers struct {
+	ServiceExportRBAC        *serviceexportrbac.APIServiceExportRBACReconciler
 	ClusterBinding           *clusterbinding.ClusterBindingReconciler
 	ServiceExport            *serviceexport.APIServiceExportReconciler
 	ServiceExportRequest     *serviceexportrequest.APIServiceExportRequestReconciler
@@ -164,6 +166,20 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	// Register the ClusterBinding controller with the manager
 	if err := s.ClusterBinding.SetupWithManager(s.Config.Manager); err != nil {
 		return nil, fmt.Errorf("error setting up ClusterBinding controller with manager: %w", err)
+	}
+
+	s.ServiceExportRBAC, err = serviceexportrbac.NewAPIServiceExportRBACReconciler(
+		ctx,
+		s.Config.Manager,
+		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
+		opts,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error setting up RBAC Controller: %w", err)
+	}
+	// Register the APIServiceExport RBAC controller with the manager
+	if err := s.ServiceExportRBAC.SetupWithManager(s.Config.Manager); err != nil {
+		return nil, fmt.Errorf("error setting up RBAC controller with manager: %w", err)
 	}
 
 	// construct APIServiceExport controller with multicluster-runtime

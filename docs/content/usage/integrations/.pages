@@ -1,3 +1,4 @@
 nav:
     - cert-manager.md
     - crossplane.md
+    - kro.md

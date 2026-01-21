@@ -58,9 +58,6 @@ func (r *ClientParameters) WithParams(urlStr string) string {
 	if r.ClusterID != "" {
 		query.Set("cluster_id", r.ClusterID)
 	}
-	if r.RedirectURL != "" {
-		query.Set("redirect_url", r.RedirectURL)
-	}
 	if r.SessionID != "" {
 		query.Set("session_id", r.SessionID)
 	}

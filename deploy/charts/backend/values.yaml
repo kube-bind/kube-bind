@@ -21,6 +21,10 @@ backend:
     issuerUrl: ""
     clientId: ""
     clientSecret: ""
+    # Alternative: reference a secret for client secret (more secure than plaintext)
+    # If clientSecretName is set, the secret will be mounted as OIDC_CLIENT_SECRET env var
+    clientSecretName: ""  # Name of the Kubernetes secret containing the client secret
+    clientSecretKey: ""   # Key within the secret (e.g., "client-secret")
     callbackUrl: ""
     type: "embedded"  # Options: "embedded" or "external"
     # List of groups allowed to access bindings inside the cluster

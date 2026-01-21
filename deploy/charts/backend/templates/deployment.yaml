@@ -44,6 +44,14 @@ spec:
           {{- end }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.backend.oidc.clientSecretName }}
+          env:
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.backend.oidc.clientSecretName }}
+                  key: {{ .Values.backend.oidc.clientSecretKey }}
+          {{- end }}
           args:
             - --listen-address={{ .Values.backend.listenAddress }}
             {{- if .Values.backend.logLevel }}

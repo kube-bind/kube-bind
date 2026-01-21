@@ -180,7 +180,6 @@ class AuthService {
           redirectUrl = params.redirect_url || null
           sessionId = sessionId || params.session_id || null
           consumerId = consumerId || params.consumer_id || null
-          console.log('Retrieved CLI params from sessionStorage:', { redirectUrl, sessionId, consumerId })
         } catch (e) {
           console.error('Failed to parse preserved params:', e)
         }
@@ -202,7 +201,6 @@ class AuthService {
       const base64Response = btoa(JSON.stringify(bindingResponseData))
       callbackUrl.searchParams.append('binding_response', base64Response)
 
-      console.log('Redirecting to CLI callback:', callbackUrl.toString())
       window.location.href = callbackUrl.toString()
     } else {
       console.error('No redirect URL found for CLI callback')

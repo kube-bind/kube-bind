@@ -98,7 +98,7 @@ var __yieldStar = (value) => {
 };
 var __forAwait = (obj, it, method) => (it = obj[__knownSymbol("asyncIterator")]) ? it.call(obj) : (obj = obj[__knownSymbol("iterator")](), it = {}, method = (key, fn) => (fn = obj[key]) && (it[key] = (arg) => new Promise((yes, no, done) => (arg = fn.call(obj, arg), done = arg.done, Promise.resolve(arg.value).then((value) => yes({ value, done }), no)))), method("next"), method("return"), it);
 var require_index_001 = __commonJS({
-  "assets/index.6494c4af.js"(exports) {
+  "assets/index.a8fc1aeb.js"(exports) {
     (function polyfill() {
       const relList = document.createElement("link").relList;
       if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -11159,7 +11159,6 @@ var require_index_001 = __commonJS({
               redirectUrl = params.redirect_url || null;
               sessionId = sessionId || params.session_id || null;
               consumerId = consumerId || params.consumer_id || null;
-              console.log("Retrieved CLI params from sessionStorage:", { redirectUrl, sessionId, consumerId });
             } catch (e) {
               console.error("Failed to parse preserved params:", e);
             }
@@ -11175,7 +11174,6 @@ var require_index_001 = __commonJS({
           }
           const base64Response = btoa(JSON.stringify(bindingResponseData));
           callbackUrl.searchParams.append("binding_response", base64Response);
-          console.log("Redirecting to CLI callback:", callbackUrl.toString());
           window.location.href = callbackUrl.toString();
         } else {
           console.error("No redirect URL found for CLI callback");

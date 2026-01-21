@@ -98,7 +98,7 @@ var __yieldStar = (value) => {
 };
 var __forAwait = (obj, it, method) => (it = obj[__knownSymbol("asyncIterator")]) ? it.call(obj) : (obj = obj[__knownSymbol("iterator")](), it = {}, method = (key, fn) => (fn = obj[key]) && (it[key] = (arg) => new Promise((yes, no, done) => (arg = fn.call(obj, arg), done = arg.done, Promise.resolve(arg.value).then((value) => yes({ value, done }), no)))), method("next"), method("return"), it);
 var require_index_001 = __commonJS({
-  "assets/index.7407f299.js"(exports) {
+  "assets/index.6494c4af.js"(exports) {
     (function polyfill() {
       const relList = document.createElement("link").relList;
       if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -11034,6 +11034,7 @@ var require_index_001 = __commonJS({
         step((generator = generator.apply(__this, __arguments)).next());
       });
     };
+    const PRESERVED_PARAMS_STORAGE_KEY = "kube-bind-preserved-params";
     class AuthService {
       isAuthenticated() {
         return __async$4(this, null, function* () {
@@ -11047,7 +11048,6 @@ var require_index_001 = __commonJS({
           try {
             const urlParams = new URLSearchParams(window.location.search);
             const clusterId = urlParams.get("cluster_id") || "";
-            const consumerId = urlParams.get("consumer_id") || "";
             const authCheckUrl = clusterId ? `/ping?cluster_id=${clusterId}` : "/ping";
             const response = yield httpClient.get(authCheckUrl);
             const isAuth = response.status === 200;
@@ -11096,7 +11096,7 @@ var require_index_001 = __commonJS({
           if (currentParams.has("cluster_id")) {
             paramsToPreserve.cluster_id = currentParams.get("cluster_id");
           }
-          sessionStorage.setItem("kube-bind-preserved-params", JSON.stringify(paramsToPreserve));
+          sessionStorage.setItem(PRESERVED_PARAMS_STORAGE_KEY, JSON.stringify(paramsToPreserve));
           const params = new URLSearchParams({
             session_id: sessionId,
             redirect_url,
@@ -11135,7 +11135,7 @@ var require_index_001 = __commonJS({
         if (urlParams.has("redirect_url")) {
           return true;
         }
-        const preservedParams = sessionStorage.getItem("kube-bind-preserved-params");
+        const preservedParams = sessionStorage.getItem(PRESERVED_PARAMS_STORAGE_KEY);
         if (preservedParams) {
           try {
             const params = JSON.parse(preservedParams);
@@ -11152,7 +11152,7 @@ var require_index_001 = __commonJS({
         let sessionId = urlParams.get("session_id");
         let consumerId = urlParams.get("consumer_id");
         if (!redirectUrl) {
-          const preservedParams = sessionStorage.getItem("kube-bind-preserved-params");
+          const preservedParams = sessionStorage.getItem(PRESERVED_PARAMS_STORAGE_KEY);
           if (preservedParams) {
             try {
               const params = JSON.parse(preservedParams);
@@ -11182,7 +11182,7 @@ var require_index_001 = __commonJS({
         }
       }
       restorePreservedParams() {
-        const preservedParamsJson = sessionStorage.getItem("kube-bind-preserved-params");
+        const preservedParamsJson = sessionStorage.getItem(PRESERVED_PARAMS_STORAGE_KEY);
         if (!preservedParamsJson) {
           return;
         }
@@ -11197,15 +11197,15 @@ var require_index_001 = __commonJS({
             }
           }
           if (needsUpdate) {
-            sessionStorage.removeItem("kube-bind-preserved-params");
+            sessionStorage.removeItem(PRESERVED_PARAMS_STORAGE_KEY);
             const newUrl = `${window.location.pathname}?${currentParams.toString()}`;
             window.location.replace(newUrl);
           } else {
-            sessionStorage.removeItem("kube-bind-preserved-params");
+            sessionStorage.removeItem(PRESERVED_PARAMS_STORAGE_KEY);
           }
         } catch (error) {
           console.error("Failed to restore preserved params:", error);
-          sessionStorage.removeItem("kube-bind-preserved-params");
+          sessionStorage.removeItem(PRESERVED_PARAMS_STORAGE_KEY);
         }
       }
     }
@@ -12371,15 +12371,6 @@ ${formattedObject}`;
             const bindUrl = buildApiUrl("/bind");
             const sessionIdFromRoute = route.query.session_id || "";
             const clusterIdentity = consumerId.value || sessionIdFromRoute;
-            console.log("Bind request parameters:", {
-              templateName,
-              bindingName,
-              consumerId: consumerId.value,
-              sessionIdFromRoute,
-              clusterIdentity,
-              bindUrl,
-              allRouteQuery: route.query
-            });
             if (!clusterIdentity) {
               showAlertModal("Missing cluster identity. Please ensure you have authenticated properly.", "Binding Failed", "error");
               return;
@@ -12395,7 +12386,6 @@ ${formattedObject}`;
                 identity: clusterIdentity
               }
             };
-            console.log("Sending bind request:", JSON.stringify(bindingRequest, null, 2));
             const response = yield httpClient.post(bindUrl, bindingRequest);
             if (response.status === 200) {
               closeBindingModal();
@@ -12610,8 +12600,8 @@ Details: ${kubeError.details || "No additional details available"}`;
         };
       }
     });
-    const Resources_vue_vue_type_style_index_0_scoped_5abc4499_lang = "";
-    const Resources = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-5abc4499"]]);
+    const Resources_vue_vue_type_style_index_0_scoped_32c19ba7_lang = "";
+    const Resources = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-32c19ba7"]]);
     const routes = [
       { path: "/", component: Resources },
       { path: "/resources", component: Resources }

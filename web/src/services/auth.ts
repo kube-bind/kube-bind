@@ -13,6 +13,8 @@ export interface AuthCheckResult {
   error?: string
 }
 
+const PRESERVED_PARAMS_STORAGE_KEY = 'kube-bind-preserved-params'
+
 class AuthService {
   async isAuthenticated(): Promise<boolean> {
     const result = await this.checkAuthentication()
@@ -24,7 +26,6 @@ class AuthService {
       // Since cookies are HTTP-only, we need to check authentication by making an API call
       const urlParams = new URLSearchParams(window.location.search)
       const clusterId = urlParams.get('cluster_id') || ''
-      const consumerId = urlParams.get('consumer_id') || ''
       // Make a simple API call to check if we're authenticated
       const authCheckUrl = clusterId ? `/ping?cluster_id=${clusterId}` : '/ping'
       const response = await httpClient.get(authCheckUrl)
@@ -89,7 +90,7 @@ class AuthService {
       paramsToPreserve.cluster_id = currentParams.get('cluster_id')!
     }
 
-    sessionStorage.setItem('kube-bind-preserved-params', JSON.stringify(paramsToPreserve))
+    sessionStorage.setItem(PRESERVED_PARAMS_STORAGE_KEY, JSON.stringify(paramsToPreserve))
 
     const params = new URLSearchParams({
       session_id: sessionId,
@@ -148,9 +149,9 @@ class AuthService {
       if (urlParams.has('redirect_url')) {
         return true
       }
-      
+
       // Check sessionStorage in case params were lost during OAuth flow
-      const preservedParams = sessionStorage.getItem('kube-bind-preserved-params')
+      const preservedParams = sessionStorage.getItem(PRESERVED_PARAMS_STORAGE_KEY)
       if (preservedParams) {
         try {
           const params = JSON.parse(preservedParams)
@@ -159,7 +160,7 @@ class AuthService {
           return false
         }
       }
-      
+
       return false
   }
 
@@ -169,10 +170,10 @@ class AuthService {
     let redirectUrl = urlParams.get('redirect_url')
     let sessionId = urlParams.get('session_id')
     let consumerId = urlParams.get('consumer_id')
-    
+
     // If not in URL, check sessionStorage (in case they were lost during OAuth flow)
     if (!redirectUrl) {
-      const preservedParams = sessionStorage.getItem('kube-bind-preserved-params')
+      const preservedParams = sessionStorage.getItem(PRESERVED_PARAMS_STORAGE_KEY)
       if (preservedParams) {
         try {
           const params = JSON.parse(preservedParams)
@@ -185,11 +186,11 @@ class AuthService {
         }
       }
     }
-    
+
     if (redirectUrl) {
       // Construct the callback URL entirely on the client side
       const callbackUrl = new URL(redirectUrl)
-      
+
       if (sessionId) {
         callbackUrl.searchParams.append('session_id', sessionId)
       }
@@ -210,7 +211,7 @@ class AuthService {
 
   restorePreservedParams(): void {
     // Check if we have preserved params from before OAuth redirect
-    const preservedParamsJson = sessionStorage.getItem('kube-bind-preserved-params')
+    const preservedParamsJson = sessionStorage.getItem(PRESERVED_PARAMS_STORAGE_KEY)
 
     if (!preservedParamsJson) {
       return
@@ -232,18 +233,18 @@ class AuthService {
 
       if (needsUpdate) {
         // Clear the stored params
-        sessionStorage.removeItem('kube-bind-preserved-params')
+        sessionStorage.removeItem(PRESERVED_PARAMS_STORAGE_KEY)
 
         // Update URL with preserved params and reload to ensure Vue Router picks up the changes
         const newUrl = `${window.location.pathname}?${currentParams.toString()}`
         window.location.replace(newUrl)
       } else {
         // Params are already in URL, just clean up storage
-        sessionStorage.removeItem('kube-bind-preserved-params')
+        sessionStorage.removeItem(PRESERVED_PARAMS_STORAGE_KEY)
       }
     } catch (error) {
       console.error('Failed to restore preserved params:', error)
-      sessionStorage.removeItem('kube-bind-preserved-params')
+      sessionStorage.removeItem(PRESERVED_PARAMS_STORAGE_KEY)
     }
   }
 }

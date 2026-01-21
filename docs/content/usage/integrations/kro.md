@@ -40,7 +40,7 @@ consumer clusters to the provider.
 ## Prerequisites
 
 In this integration guide, we will be using `kubectl bind dev` command to provision two kind
-clusters. More details on the command you can find [here](../../developers/dev-environments.md).
+clusters. More details on the command you can find [here](../../developers/dev-environment/index.md).
 
 *   **Provider Cluster:** Runs kro, Envoy Gateway, and the kube-bind backend.
 *   **Consumer Cluster:** Runs the kube-bind konnector.

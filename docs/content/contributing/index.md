@@ -20,7 +20,7 @@ contribution. See the [DCO](https://github.com/kube-bind/kube-bind/tree/main/DCO
 2. [Install Go](https://golang.org/doc/install) (currently 1.22).
 3. Install [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl).
 
-More on the development environment setup can be found in the [developer guide](../developers/dev-environments.md).
+More on the development environment setup can be found in the [developer guide](../developers/dev-environment/index.md).
 
 ## Finding Areas to Contribute
 

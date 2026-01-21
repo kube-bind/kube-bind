@@ -11,28 +11,28 @@
       
       
       
-        <link rel="canonical" href="https://docs.kube-bind.io/main/developers/dev-environments/">
+        <link rel="canonical" href="https://docs.kube-bind.io/main/developers/dev-environment/kcp/">
       
       
-        <link rel="prev" href="../architecture/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../backend/">
+        <link rel="next" href="../kind/">
       
       
-      <link rel="icon" href="../../favicons/favicon.ico">
+      <link rel="icon" href="../../../favicons/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
     
     
       
-        <title>Developer Guide - docs.kube-bind.io</title>
+        <title>kcp - docs.kube-bind.io</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.6f8fc17f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -51,7 +51,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -77,7 +77,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#development-environment" class="md-skip">
+        <a href="#development-environment-using-kcp" class="md-skip">
           Skip to content
         </a>
       
@@ -95,9 +95,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="docs.kube-bind.io" class="md-header__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
+    <a href="../../.." title="docs.kube-bind.io" class="md-header__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
       
-  <img src="../../logo.svg" alt="logo">
+  <img src="../../../logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Developer Guide
+              kcp
             
           </span>
         </div>
@@ -233,7 +233,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../.." class="md-tabs__link">
+        <a href="../../.." class="md-tabs__link">
           
   
     
@@ -253,7 +253,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../setup/" class="md-tabs__link">
+        <a href="../../../setup/" class="md-tabs__link">
           
   
     
@@ -273,7 +273,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../usage/" class="md-tabs__link">
+        <a href="../../../usage/" class="md-tabs__link">
           
   
     
@@ -293,7 +293,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../contributing/" class="md-tabs__link">
+        <a href="../../../contributing/" class="md-tabs__link">
           
   
     
@@ -315,7 +315,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+        <a href="../../" class="md-tabs__link">
           
   
     
@@ -335,7 +335,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../reference/" class="md-tabs__link">
+        <a href="../../../reference/" class="md-tabs__link">
           
   
     
@@ -370,9 +370,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="docs.kube-bind.io" class="md-nav__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
+    <a href="../../.." title="docs.kube-bind.io" class="md-nav__button md-logo" aria-label="docs.kube-bind.io" data-md-component="logo">
       
-  <img src="../../logo.svg" alt="logo">
+  <img src="../../../logo.svg" alt="logo">
 
     </a>
     docs.kube-bind.io
@@ -422,7 +422,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../.." class="md-nav__link ">
+            <a href="../../.." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -486,7 +486,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../setup/" class="md-nav__link ">
+            <a href="../../../setup/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -519,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../setup/kubectl-plugin/" class="md-nav__link">
+      <a href="../../../setup/kubectl-plugin/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -540,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../setup/quickstart/" class="md-nav__link">
+      <a href="../../../setup/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -561,7 +561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../setup/helm/" class="md-nav__link">
+      <a href="../../../setup/helm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -618,7 +618,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../usage/" class="md-nav__link ">
+            <a href="../../../usage/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -651,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/api-concepts/" class="md-nav__link">
+      <a href="../../../usage/api-concepts/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -672,7 +672,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/synchronization/" class="md-nav__link">
+      <a href="../../../usage/synchronization/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -741,7 +741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/integrations/cert-manager/" class="md-nav__link">
+      <a href="../../../usage/integrations/cert-manager/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -762,7 +762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/integrations/crossplane/" class="md-nav__link">
+      <a href="../../../usage/integrations/crossplane/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -783,7 +783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/integrations/kro/" class="md-nav__link">
+      <a href="../../../usage/integrations/kro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -842,7 +842,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../contributing/" class="md-nav__link ">
+            <a href="../../../contributing/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -915,7 +915,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -948,7 +948,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/" class="md-nav__link">
+      <a href="../../architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -970,6 +970,66 @@
   
   
   
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_3" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Development Environments
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_3" id="__nav_5_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            Development Environments
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
     <li class="md-nav__item md-nav__item--active">
       
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
@@ -978,15 +1038,209 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    kcp
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
-    Development Environment
+    kcp
   </span>
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preparation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backend
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Backend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bootstrap-kcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bootstrap kcp
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-the-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run the Backend
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Provider
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Provider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubeconfig-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Kubeconfig Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apiexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      APIExport
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-crd-in-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create CRD in provider
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieve-the-logicalcluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Retrieve the LogicalCluster
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Consumer
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consumer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Initialization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Binding
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#launch-konnector" class="md-nav__link">
+    <span class="md-ellipsis">
+      Launch Konnector
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kind/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    kind
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -1025,7 +1279,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../backend/" class="md-nav__link ">
+            <a href="../../backend/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1104,7 +1358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backend/http/cluster-binding/" class="md-nav__link">
+      <a href="../../backend/http/cluster-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1125,7 +1379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../backend/http/api-binding/" class="md-nav__link">
+      <a href="../../backend/http/api-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1187,7 +1441,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../konnector/" class="md-nav__link ">
+            <a href="../../konnector/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1268,7 +1522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../konnector/controllers/konnector/" class="md-nav__link">
+      <a href="../../konnector/controllers/konnector/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1289,7 +1543,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../konnector/controllers/apiservicebinding/" class="md-nav__link">
+      <a href="../../konnector/controllers/apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1360,7 +1614,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
+      <a href="../../konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1381,7 +1635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
+      <a href="../../konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1402,7 +1656,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
+      <a href="../../konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1423,7 +1677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
+      <a href="../../konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1468,7 +1722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../publishing-a-release/" class="md-nav__link">
+      <a href="../../publishing-a-release/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1489,7 +1743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../testing-changes/" class="md-nav__link">
+      <a href="../../testing-changes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1544,7 +1798,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../reference/" class="md-nav__link ">
+            <a href="../../../reference/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1637,7 +1891,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind/" class="md-nav__link">
+      <a href="../../../reference/cli/bind/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1658,7 +1912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind_apiservice/" class="md-nav__link">
+      <a href="../../../reference/cli/bind_apiservice/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1679,7 +1933,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind_collections/" class="md-nav__link">
+      <a href="../../../reference/cli/bind_collections/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1700,7 +1954,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind_dev/" class="md-nav__link">
+      <a href="../../../reference/cli/bind_dev/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1721,7 +1975,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind_dev_create/" class="md-nav__link">
+      <a href="../../../reference/cli/bind_dev_create/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1742,7 +1996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind_dev_delete/" class="md-nav__link">
+      <a href="../../../reference/cli/bind_dev_delete/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1763,7 +2017,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind_dev_example/" class="md-nav__link">
+      <a href="../../../reference/cli/bind_dev_example/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1784,7 +2038,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind_login/" class="md-nav__link">
+      <a href="../../../reference/cli/bind_login/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1805,7 +2059,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/cli/bind_templates/" class="md-nav__link">
+      <a href="../../../reference/cli/bind_templates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1940,7 +2194,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/apiconversions/" class="md-nav__link">
+      <a href="../../../reference/crd/kube-bind.io/apiconversions/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1961,7 +2215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
+      <a href="../../../reference/crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1982,7 +2236,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
+      <a href="../../../reference/crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2003,7 +2257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
+      <a href="../../../reference/crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2024,7 +2278,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/apiserviceexporttemplates/" class="md-nav__link">
+      <a href="../../../reference/crd/kube-bind.io/apiserviceexporttemplates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2045,7 +2299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
+      <a href="../../../reference/crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2066,7 +2320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/bindableresourcesrequests/" class="md-nav__link">
+      <a href="../../../reference/crd/kube-bind.io/bindableresourcesrequests/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2087,7 +2341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/boundschemas/" class="md-nav__link">
+      <a href="../../../reference/crd/kube-bind.io/boundschemas/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2108,7 +2362,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/clusterbindings/" class="md-nav__link">
+      <a href="../../../reference/crd/kube-bind.io/clusterbindings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2129,7 +2383,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/crd/kube-bind.io/collections/" class="md-nav__link">
+      <a href="../../../reference/crd/kube-bind.io/collections/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2186,6 +2440,149 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#preparation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Preparation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      Backend
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Backend">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#bootstrap-kcp" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bootstrap kcp
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-the-backend" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run the Backend
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Provider
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Provider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubeconfig-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Kubeconfig Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#apiexport" class="md-nav__link">
+    <span class="md-ellipsis">
+      APIExport
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-crd-in-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create CRD in provider
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieve-the-logicalcluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      Retrieve the LogicalCluster
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Consumer
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consumer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Initialization
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Binding
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#launch-konnector" class="md-nav__link">
+    <span class="md-ellipsis">
+      Launch Konnector
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2202,19 +2599,10 @@
   
 
 
-<h1 id="development-environment">Development Environment</h1>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>There are multiple ways to set up a development environment for kube-bind. This guide outlines one of the common approaches using <code>kind</code> and <code>kcp</code>. You can adapt these instructions based on your preferences and existing setups.</p>
-</div>
-<p>Due to the fact that kube-bind is by nature a multi-cluster system, for development purposes it's recommended to have multiple clusters running or use kcp to simulate multiple clusters. Below are instructions for both approaches.</p>
+<h1 id="development-environment-using-kcp">Development Environment using kcp</h1>
 <p>All the instructions assume you have already cloned the kube-bind repository and have Go installed.</p>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">kcp</label><label for="__tabbed_1_2">Kind</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
-<p>kcp requires initial setup to be run before it can be used.
-This includes setting up workspace/provider and setting up all the APIResourceSchemas and APIExports.</p>
-<p>It has its own Go module to avoid kcp dependencies in the main kube-bind module.</p>
+<p>kcp requires initial setup to be run before it can be used. This includes setting up workspace/provider
+and setting up all the <code>APIResourceSchemas</code> and <code>APIExports</code>.</p>
 <p>This is not required if you are doing deeper integration, and controlling the setup with your own scripts.</p>
 <p>It's good to have the kcp CLI installed to help with workspace management:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>index<span class="w"> </span>add<span class="w"> </span>kcp-dev<span class="w"> </span>https://github.com/kcp-dev/krew-index.git
@@ -2222,64 +2610,58 @@ This includes setting up workspace/provider and setting up all the APIResourceSc
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>kcp-dev/ws
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>kcp-dev/create-workspace
 </code></pre></div>
-<h1 id="how-to-run">How to run</h1>
 <h2 id="preparation">Preparation</h2>
-<ol>
-<li>Start kcp</li>
-</ol>
+<p>Start kcp:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>run-kcp
 </code></pre></div>
 <h2 id="backend">Backend</h2>
-<ol>
-<li>Bootstrap kcp. This is a dedicated step to set up kcp with required workspaces and APIExports for kube-bind:
+<h3 id="bootstrap-kcp">Bootstrap kcp</h3>
+<p>This is a dedicated step to set up kcp with required workspaces and <code>APIExports</code> for kube-bind:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cp<span class="w"> </span>.kcp/admin.kubeconfig<span class="w"> </span>.kcp/backend.kubeconfig
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/backend.kubeconfig
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>./bin/kcp-init<span class="w"> </span>--kcp-kubeconfig<span class="w"> </span><span class="nv">$KUBECONFIG</span>
-</code></pre></div></li>
-<li>Run the backend:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>k ws use :root:kube-bind
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>go run ./cmd/backend \
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>--multicluster-runtime-provider kcp \
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>--oidc-issuer-url=http://127.0.0.1:8080/oidc \
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>--oidc-callback-url=http://127.0.0.1:8080/api/callback \
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>--oidc-type=embedded \
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>--pretty-name=&quot;BigCorp.com&quot; \
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>--namespace-prefix=&quot;kube-bind-&quot; \
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>--schema-source apiresourceschemas \
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>--consumer-scope=cluster
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>./bin/kcp-init<span class="w"> </span>--kcp-kubeconfig<span class="w"> </span><span class="nv">$KUBECONFIG</span>
 </code></pre></div>
-optionally add <code>--fronend=http://localhost:3000</code> to point to local frontend (must be running separately).</li>
-</ol>
+<h3 id="run-the-backend">Run the Backend</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root:kube-bind
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>go<span class="w"> </span>run<span class="w"> </span>./cmd/backend<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--multicluster-runtime-provider<span class="w"> </span>kcp<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>--oidc-issuer-url<span class="o">=</span>http://127.0.0.1:8080/oidc<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>--oidc-callback-url<span class="o">=</span>http://127.0.0.1:8080/api/callback<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>--oidc-type<span class="o">=</span>embedded<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>--pretty-name<span class="o">=</span><span class="s2">&quot;BigCorp.com&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>--namespace-prefix<span class="o">=</span><span class="s2">&quot;kube-bind-&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span>--schema-source<span class="w"> </span>apiresourceschemas<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span>--consumer-scope<span class="o">=</span>cluster
+</code></pre></div>
+<p>Optionally add <code>--fronend=http://localhost:3000</code> to point to local frontend (must be running
+separately).</p>
 <p>This process will keep running, so open a new terminal.</p>
 <h2 id="provider">Provider</h2>
-<ol>
-<li>
-<p>Copy the kubeconfig to the provider and create provider workspace:
+<h3 id="kubeconfig-setup">Kubeconfig Setup</h3>
+<p>Copy the kubeconfig to the provider and create provider workspace:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cp<span class="w"> </span>.kcp/admin.kubeconfig<span class="w"> </span>.kcp/provider.kubeconfig
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/provider.kubeconfig
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>k<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>kubectl<span class="w"> </span>create-workspace<span class="w"> </span>provider<span class="w"> </span>--enter
-</code></pre></div></p>
-</li>
-<li>
-<p>Bind the APIExport to the provider workspace
+</code></pre></div>
+<h3 id="apiexport">APIExport</h3>
+<p>Bind the APIExport to the provider workspace:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>kcp<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>apiexport<span class="w"> </span>root:kube-bind:kube-bind.io<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>--accept-permission-claim<span class="w"> </span>clusterrolebindings.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>--accept-permission-claim<span class="w"> </span>clusterroles.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>--accept-permission-claim<span class="w"> </span>customresourcedefinitions.apiextensions.k8s.io<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>--accept-permission-claim<span class="w"> </span>serviceaccounts.core<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>--accept-permission-claim<span class="w"> </span>configmaps.core<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>--accept-permission-claim<span class="w"> </span>secrets.core<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>--accept-permission-claim<span class="w"> </span>subjectaccessreviews.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>--accept-permission-claim<span class="w"> </span>namespaces.core<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>--accept-permission-claim<span class="w"> </span>roles.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>--accept-permission-claim<span class="w"> </span>rolebindings.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>--accept-permission-claim<span class="w"> </span>apiresourceschemas.apis.kcp.io
-</code></pre></div></p>
-</li>
-<li>
-<p>Create CRD in provider:
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>clusterrolebindings.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>clusterroles.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>customresourcedefinitions.apiextensions.k8s.io<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>serviceaccounts.core<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>configmaps.core<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>secrets.core<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>subjectaccessreviews.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>namespaces.core<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>roles.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>rolebindings.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>apiresourceschemas.apis.kcp.io
+</code></pre></div>
+<h3 id="create-crd-in-provider">Create CRD in provider</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/apiexport.yaml
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
@@ -2288,30 +2670,23 @@ optionally add <code>--fronend=http://localhost:3000</code> to point to local fr
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/template-cowboys.yaml
 <a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/template-sheriffs.yaml
 <a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/collection.yaml
-</code></pre></div></p>
-</li>
-<li>
-<p>Get LogicalCluster:</p>
-</li>
-</ol>
+</code></pre></div>
+<h3 id="retrieve-the-logicalcluster">Retrieve the LogicalCluster</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>logicalcluster
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># NAME      PHASE   URL                                                    AGE</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># NAME      PHASE   URL</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># cluster   Ready   https://192.168.2.166:6443/clusters/2myqz7lt9i0u5kzb</span>
 </code></pre></div>
 <h2 id="consumer">Consumer</h2>
-<ol>
-<li>
-<p>Now we gonna initiate consumer:
+<h3 id="initialization">Initialization</h3>
+<p>Now we gonna initiate consumer:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>cp<span class="w"> </span>.kcp/admin.kubeconfig<span class="w"> </span>.kcp/consumer.kubeconfig
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/consumer.kubeconfig
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>create<span class="w"> </span>consumer<span class="w"> </span>--enter
-</code></pre></div></p>
-</li>
-<li>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>create<span class="w"> </span>consumer<span class="w"> </span>--enter
+</code></pre></div>
+<h3 id="binding">Binding</h3>
 <p>Bind the thing:</p>
-</li>
-</ol>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>./bin/kubectl-bind<span class="w"> </span>login<span class="w"> </span>http://127.0.0.1:8080<span class="w"> </span>--cluster<span class="w"> </span>1nso4d2rvleempdp
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>./bin/kubectl-bind<span class="w"> </span>--dry-run<span class="w"> </span>--cluster-identity-namespace<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>apiserviceexport.yaml
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
@@ -2321,115 +2696,22 @@ optionally add <code>--fronend=http://localhost:3000</code> to point to local fr
 <a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
 <a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="nv">namespace</span><span class="o">=</span><span class="k">$(</span>yq<span class="w"> </span><span class="s1">&#39;.contexts[0].context.namespace&#39;</span><span class="w"> </span>remote.kubeconfig<span class="k">)</span>
 <a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>./bin/kubectl-bind<span class="w"> </span>apiservice<span class="w"> </span>-v<span class="w"> </span><span class="m">6</span><span class="w"> </span>--remote-kubeconfig<span class="w"> </span>remote.kubeconfig<span class="w"> </span>-f<span class="w"> </span>apiserviceexport.yaml<span class="w"> </span>--skip-konnector<span class="w"> </span>--remote-namespace<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$namespace</span><span class="s2">&quot;</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>./bin/kubectl-bind<span class="w"> </span>apiservice<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">  </span>--remote-kubeconfig<span class="w"> </span>remote.kubeconfig<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">  </span>--remote-namespace<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$namespace</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">  </span>--skip-konnector<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">  </span>-f<span class="w"> </span>apiserviceexport.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">  </span>-v<span class="w"> </span><span class="m">6</span>
 </code></pre></div>
 <p>This will keep running, so switch to a new terminal.</p>
-<h3 id="consumer-konnector">Consumer Konnector</h3>
+<h3 id="launch-konnector">Launch Konnector</h3>
 <p>Start konnector:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>./bin/konnector<span class="w"> </span>--lease-namespace<span class="w"> </span>default<span class="w"> </span>--kubeconfig<span class="w"> </span>.kcp/consumer.kubeconfig<span class="w"> </span>--server-address<span class="w"> </span><span class="s2">&quot;:9090&quot;</span>
 </code></pre></div>
-<p>Create example resources in consumer:
+<p>Create example resources in consumer:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/cr-cowboy.yaml
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/cr-sheriff.yaml
-</code></pre></div></p>
-</div>
-<div class="tabbed-block">
-<p>This guide will walk you through setting up kube-bind between two Kubernetes clusters, where</p>
-<ul>
-<li>
-<p><strong>Provider cluster</strong>:</p>
-</li>
-<li>
-<p>Deploys kube-bind/backend</p>
-</li>
-<li>
-<p>Provides kube-bind compatible backend for Sheriffs resources</p>
-</li>
-<li>
-<p><strong>Consumer cluster</strong>:</p>
-</li>
-<li>
-<p>Provides an application consuming Sheriffs and Cowboys resources from the Provider cluster</p>
-</li>
-</ul>
-<p>This guide works best on Linux. macOS and Windows users may need to adjust some commands accordingly.</p>
-<h2 id="pre-requisites">Pre-requisites</h2>
-<p>To start, you'll need the following tools available in your system or a VM:</p>
-<ul>
-<li><a href="https://kind.sigs.k8s.io/docs/user/quick-start/#installation"><code>kind</code></a></li>
-<li><a href="https://kubernetes.io/docs/tasks/tools/"><code>kubectl</code></a></li>
-<li><a href="https://github.com/kube-bind/kube-bind/releases/latest"><code>kubectl-bind</code></a> (a kubectl plugin)</li>
-<li><a href="https://jqlang.github.io/jq/download/"><code>jq</code></a></li>
-<li>port 8080 and 6443 open on your localhost</li>
-</ul>
-<p>To install <code>kubectl-bind</code> plugin, please download the archive for your platform from the link above, extract it, and place the <code>kubectl-bind</code> executable in your system's <code>$PATH</code>.</p>
-<blockquote>
-<p>Tip: In case of encountering <code>Too many open files</code> error when deploying the Kind clusters, run following commands:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>fs.inotify.max_user_watches<span class="o">=</span><span class="m">524288</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>fs.inotify.max_user_instances<span class="o">=</span><span class="m">512</span>
 </code></pre></div>
-<p>See the <a href="https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files">kind documentation</a> for more details.</p>
-</blockquote>
-<h2 id="setup">Setup</h2>
-<p>run <code>kubectl bind dev create</code>, which will automatically create two Kind clusters (provider and consumer), deploy kube-bind backend in the provider cluster, and print required commands to bind the consumer cluster to the provider.</p>
-<p>This command will create two Kind clusters named <code>kind-provider</code> and <code>kind-consumer</code>, set up a Docker network for them to communicate, and install kube-bind backend in the provider cluster and establish right <code>hostAlias</code> entries for communication between clusters.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>create
-</code></pre></div>
-<p>You should see output similar to this:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>create<span class="w">                                                                              </span><span class="m">09</span>:59:12
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>🧪<span class="w"> </span>EXPERIMENTAL:<span class="w"> </span>kube-bind<span class="w"> </span>dev<span class="w"> </span><span class="nb">command</span><span class="w"> </span>is<span class="w"> </span><span class="k">in</span><span class="w"> </span>preview
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>📦<span class="w"> </span>Requirements:<span class="w"> </span>Docker<span class="w"> </span>must<span class="w"> </span>be<span class="w"> </span>installed<span class="w"> </span>and<span class="w"> </span>running
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>Warning:<span class="w"> </span>Could<span class="w"> </span>not<span class="w"> </span>automatically<span class="w"> </span>add<span class="w"> </span>host<span class="w"> </span>entry.<span class="w"> </span>Please<span class="w"> </span>run:
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;127.0.0.1 kube-bind.dev.local&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>-a<span class="w"> </span>/etc/hosts
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>Kind<span class="w"> </span>cluster<span class="w"> </span>kind-provider<span class="w"> </span>already<span class="w"> </span>exists,<span class="w"> </span>skipping<span class="w"> </span>creation
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>Wrote<span class="w"> </span>kubeconfig<span class="w"> </span>kind-provider.kubeconfig
-<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>Helm<span class="w"> </span>chart<span class="w"> </span>installed<span class="w"> </span>successfully
-<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>Provider<span class="w"> </span>cluster<span class="w"> </span>IP<span class="w"> </span>address:<span class="w"> </span><span class="m">192</span>.168.155.2
-<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>Creating<span class="w"> </span>kind<span class="w"> </span>cluster<span class="w"> </span>kind-consumer<span class="w"> </span>with<span class="w"> </span>network<span class="w"> </span>kube-bind-dev
-<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>Kind<span class="w"> </span>cluster<span class="w"> </span>kind-consumer<span class="w"> </span>created
-<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>Wrote<span class="w"> </span>kubeconfig<span class="w"> </span>kind-consumer.kubeconfig
-<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>🚀<span class="w"> </span>kube-bind<span class="w"> </span>dev<span class="w"> </span>environment<span class="w"> </span>is<span class="w"> </span>ready!
-<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>
-<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>-<span class="w"> </span>Provider<span class="w"> </span>cluster<span class="w"> </span>kubeconfig:<span class="w"> </span>kind-provider.kubeconfig
-<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>-<span class="w"> </span>Consumer<span class="w"> </span>cluster<span class="w"> </span>kubeconfig:<span class="w"> </span>kind-consumer.kubeconfig
-<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>-<span class="w"> </span>kube-bind<span class="w"> </span>server<span class="w"> </span>URL:<span class="w"> </span>http://kube-bind.dev.local:8080
-<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>-<span class="w"> </span>Next<span class="w"> </span>steps:
-<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a><span class="m">1</span>.<span class="w"> </span>Run<span class="w"> </span>login<span class="w"> </span>to<span class="w"> </span>authenticate<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>provider<span class="w"> </span>cluster:
-<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>
-<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>http://kube-bind.dev.local:8080
-<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>
-<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a><span class="m">2</span>.<span class="w"> </span>Run<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>to<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>an<span class="w"> </span>API<span class="w"> </span>service<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>provider<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>consumer<span class="w"> </span>cluster:
-<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>
-<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>--konnector-host-alias<span class="w"> </span><span class="m">192</span>.168.155.2:kube-bind.dev.local
-</code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Note /etc/hosts modification and 2 commands to run to bind the consumer cluster.</p>
-</div>
-<h2 id="login-to-provider-cluster">Login to Provider cluster</h2>
-<p>This should give you UI authorization screen.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>http://kube-bind.dev.local:8080
-</code></pre></div>
-<h1 id="bind-first-provider-api-service">Bind first provider API service</h1>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>--konnector-host-alias<span class="w"> </span><span class="m">192</span>.168.155.2:kube-bind.dev.local
-</code></pre></div>
-<p>Now in the consumer cluster you should see these CRDs:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd<span class="w">                                                                                        </span><span class="m">10</span>:10:56
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>NAME<span class="w">                              </span>CREATED<span class="w"> </span>AT
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>apiservicebindings.kube-bind.io<span class="w">   </span><span class="m">2025</span>-11-12T08:10:48Z
-<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>mangodbs.mangodb.com<span class="w">              </span><span class="m">2025</span>-11-12T08:10:56Z
-</code></pre></div>
-<p>Try creating an example MangoDB resource and observe it being synced to provider clusters:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>example<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>-
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>mangodbs.mangodb.com
-<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-provider.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>mangodbs.mangodb.com
-</code></pre></div>
-<h2 id="cleanup">Cleanup</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>kind<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>delete
-</code></pre></div>
-</div>
-</div>
-</div>
 
 
 
@@ -2511,10 +2793,10 @@ optionally add <code>--fronend=http://localhost:3000</code> to point to local fr
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
       
     
   </body>

@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"os"
 
 	"github.com/spf13/pflag"
 
@@ -79,6 +80,7 @@ func (options *OIDC) Complete(listener net.Listener) error {
 		if err != nil {
 			return err
 		}
+
 		options.TLSConfig = oidcServer.TLSConfig()
 		options.IssuerURL = cfg.Issuer
 		options.IssuerClientID = cfg.ClientID
@@ -87,6 +89,10 @@ func (options *OIDC) Complete(listener net.Listener) error {
 		options.CallbackURL = cfg.CallbackURL
 
 		options.AllowedGroups = append(options.AllowedGroups, "system:authenticated")
+	}
+
+	if os.Getenv("OIDC_CLIENT_SECRET") != "" {
+		options.IssuerClientSecret = os.Getenv("OIDC_CLIENT_SECRET")
 	}
 
 	if options.CAFile != "" {
@@ -104,7 +110,7 @@ func (options *OIDC) Validate() error {
 	if options.IssuerClientID == "" {
 		return fmt.Errorf("OIDC issuer client ID cannot be empty")
 	}
-	if options.IssuerClientSecret == "" {
+	if options.IssuerClientSecret == "" && os.Getenv("OIDC_CLIENT_SECRET") == "" {
 		return fmt.Errorf("OIDC issuer client secret cannot be empty")
 	}
 	if options.IssuerURL == "" {

@@ -29,9 +29,11 @@ import (
 type KubeBindV1alpha2Interface interface {
 	RESTClient() rest.Interface
 	APIServiceBindingsGetter
+	APIServiceBindingBundlesGetter
 	APIServiceExportsGetter
 	APIServiceExportRequestsGetter
 	APIServiceNamespacesGetter
+	BindableResourcesRequestsGetter
 	BoundSchemasGetter
 	ClustersGetter
 	ClusterBindingsGetter
@@ -47,6 +49,10 @@ func (c *KubeBindV1alpha2Client) APIServiceBindings() APIServiceBindingInterface
 	return newAPIServiceBindings(c)
 }
 
+func (c *KubeBindV1alpha2Client) APIServiceBindingBundles() APIServiceBindingBundleInterface {
+	return newAPIServiceBindingBundles(c)
+}
+
 func (c *KubeBindV1alpha2Client) APIServiceExports(namespace string) APIServiceExportInterface {
 	return newAPIServiceExports(c, namespace)
 }
@@ -57,6 +63,10 @@ func (c *KubeBindV1alpha2Client) APIServiceExportRequests(namespace string) APIS
 
 func (c *KubeBindV1alpha2Client) APIServiceNamespaces(namespace string) APIServiceNamespaceInterface {
 	return newAPIServiceNamespaces(c, namespace)
+}
+
+func (c *KubeBindV1alpha2Client) BindableResourcesRequests(namespace string) BindableResourcesRequestInterface {
+	return newBindableResourcesRequests(c, namespace)
 }
 
 func (c *KubeBindV1alpha2Client) BoundSchemas(namespace string) BoundSchemaInterface {

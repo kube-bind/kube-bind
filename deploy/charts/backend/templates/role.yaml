@@ -49,6 +49,7 @@ rules:
   - apiserviceexportrequests
   - apiserviceexports
   - apiservicenamespaces
+  - bindableresourcesrequests
   - boundschemas
   - clusterbindings
   verbs:
@@ -65,6 +66,7 @@ rules:
   - apiserviceexportrequests/finalizers
   - apiserviceexports/finalizers
   - apiservicenamespaces/finalizers
+  - bindableresourcesrequests/finalizers
   - clusterbindings/finalizers
   verbs:
   - update
@@ -74,6 +76,7 @@ rules:
   - apiserviceexportrequests/status
   - apiserviceexports/status
   - apiservicenamespaces/status
+  - bindableresourcesrequests/status
   - clusterbindings/status
   verbs:
   - get

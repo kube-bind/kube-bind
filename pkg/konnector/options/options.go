@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"time"
 
 	"github.com/spf13/pflag"
 	"k8s.io/component-base/logs"
@@ -39,7 +40,8 @@ type ExtraOptions struct {
 	LeaseLockNamespace string
 	LeaseLockIdentity  string
 
-	ServerAddr string
+	ServerAddr              string
+	ProviderPollingInterval time.Duration
 }
 
 type completedOptions struct {
@@ -81,6 +83,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.LeaseLockName, "lease-name", options.LeaseLockName, "Name of lease lock")
 	fs.StringVar(&options.LeaseLockNamespace, "lease-namespace", options.LeaseLockNamespace, "Name of lease lock namespace")
 	fs.StringVar(&options.ServerAddr, "server-address", options.ServerAddr, "Address for server")
+	fs.DurationVar(&options.ProviderPollingInterval, "provider-polling-interval", 15*time.Second, "Interval for polling provider for updates")
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {

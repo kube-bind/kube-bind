@@ -32,6 +32,10 @@ func (c *FakeKubeBindV1alpha2) APIServiceBindings() v1alpha2.APIServiceBindingIn
 	return newFakeAPIServiceBindings(c)
 }
 
+func (c *FakeKubeBindV1alpha2) APIServiceBindingBundles() v1alpha2.APIServiceBindingBundleInterface {
+	return newFakeAPIServiceBindingBundles(c)
+}
+
 func (c *FakeKubeBindV1alpha2) APIServiceExports(namespace string) v1alpha2.APIServiceExportInterface {
 	return newFakeAPIServiceExports(c, namespace)
 }
@@ -42,6 +46,10 @@ func (c *FakeKubeBindV1alpha2) APIServiceExportRequests(namespace string) v1alph
 
 func (c *FakeKubeBindV1alpha2) APIServiceNamespaces(namespace string) v1alpha2.APIServiceNamespaceInterface {
 	return newFakeAPIServiceNamespaces(c, namespace)
+}
+
+func (c *FakeKubeBindV1alpha2) BindableResourcesRequests(namespace string) v1alpha2.BindableResourcesRequestInterface {
+	return newFakeBindableResourcesRequests(c, namespace)
 }
 
 func (c *FakeKubeBindV1alpha2) BoundSchemas(namespace string) v1alpha2.BoundSchemaInterface {

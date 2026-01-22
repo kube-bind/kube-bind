@@ -1,7 +1,7 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
-  name: v250925-56669b8.clusterbindings.kube-bind.io
+  name: v260122-c9f0f376.clusterbindings.kube-bind.io
 spec:
   conversion:
     strategy: None
@@ -214,9 +214,7 @@ spec:
                 kubeconfig of the service cluster.
               properties:
                 key:
-                  description: The key of the secret to select from.  Must be "kubeconfig".
-                  enum:
-                  - kubeconfig
+                  description: The key of the secret to select from.
                   type: string
                 name:
                   description: Name of the referent.

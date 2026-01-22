@@ -68,6 +68,9 @@ type ExtraOptions struct {
 	// If ControllerFrontend starts with http:// it is treated as a URL to a SPA server
 	// Else - it is treated as a path to static files to be served.
 	Frontend string
+	// FrontendDisabled indicates that no frontend should be served at all, including oidc and api.
+	// This is useful for backend-only deployments.
+	FrontendDisabled bool
 
 	TokenExpiry time.Duration
 }
@@ -101,14 +104,15 @@ func NewOptions() *Options {
 		ProviderKcp: providerkcp.NewOptions(),
 
 		ExtraOptions: ExtraOptions{
-			Provider:        "kubernetes",
-			NamespacePrefix: "cluster-",
-			PrettyName:      "Backend",
-			ConsumerScope:   string(kubebindv1alpha2.NamespacedScope),
-			Isolation:       string(kubebindv1alpha2.IsolationPrefixed),
-			SchemaSource:    CustomResourceDefinitionSource.String(),
-			Frontend:        "embedded", // Not used, but indicates to use embedded frontend using SPA.
-			TokenExpiry:     1 * time.Hour,
+			Provider:         "kubernetes",
+			NamespacePrefix:  "cluster-",
+			PrettyName:       "Backend",
+			ConsumerScope:    string(kubebindv1alpha2.NamespacedScope),
+			Isolation:        string(kubebindv1alpha2.IsolationPrefixed),
+			SchemaSource:     CustomResourceDefinitionSource.String(),
+			Frontend:         "embedded", // Not used, but indicates to use embedded frontend using SPA.
+			TokenExpiry:      1 * time.Hour,
+			FrontendDisabled: false,
 		},
 	}
 	return opts
@@ -159,6 +163,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.ExternalCAFile, "external-ca-file", options.ExternalCAFile, "The external CA file for the service provider cluster. If not specified, service account's CA is used.")
 	fs.StringVar(&options.TLSExternalServerName, "external-server-name", options.TLSExternalServerName, "The external (TLS) server name used by consumers to talk to the service provider cluster. This can be useful to select the right certificate via SNI.")
 	fs.StringVar(&options.Frontend, "frontend", options.Frontend, "If starts with http:// it is treated as a URL to a SPA server Else - it is treated as a path to static files to be served.")
+	fs.BoolVarP(&options.FrontendDisabled, "frontend-disabled", "", false, "If set, will run in backend only mode without API and oidc.")
 	fs.DurationVar(&options.TokenExpiry, "token-expiry", options.TokenExpiry, "The duration for which tokens are valid. Default is 1h.")
 
 	fs.StringVar(&options.Provider, "multicluster-runtime-provider", options.Provider,
@@ -180,20 +185,19 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {
-	// Serve must complete first as OIDC may depend on it
-	// to reuse the listener.
-	if err := options.Serve.Complete(); err != nil {
-		return nil, err
-	}
+	if !options.FrontendDisabled {
+		// Serve must complete first as OIDC may depend on it
+		// to reuse the listener.
+		if err := options.Serve.Complete(); err != nil {
+			return nil, err
+		}
 
-	if err := options.OIDC.Complete(options.Serve.Listener); err != nil {
-		return nil, err
-	}
-	if err := options.Cookie.Complete(); err != nil {
-		return nil, err
-	}
-	if err := options.Serve.Complete(); err != nil {
-		return nil, err
+		if err := options.OIDC.Complete(options.Serve.Listener); err != nil {
+			return nil, err
+		}
+		if err := options.Cookie.Complete(); err != nil {
+			return nil, err
+		}
 	}
 
 	// normalize the scope and the isolation
@@ -252,16 +256,19 @@ func (options *CompletedOptions) Validate() error {
 		return fmt.Errorf("pretty name cannot be empty")
 	}
 
-	if err := options.Serve.Validate(); err != nil {
-		return err
+	if !options.FrontendDisabled {
+		if err := options.Serve.Validate(); err != nil {
+			return err
+		}
+
+		if err := options.OIDC.Validate(); err != nil {
+			return err
+		}
+		if err := options.Cookie.Validate(); err != nil {
+			return err
+		}
 	}
 
-	if err := options.OIDC.Validate(); err != nil {
-		return err
-	}
-	if err := options.Cookie.Validate(); err != nil {
-		return err
-	}
 	if options.ConsumerScope != string(kubebindv1alpha2.NamespacedScope) && options.ConsumerScope != string(kubebindv1alpha2.ClusterScope) {
 		return fmt.Errorf("consumer scope must be either %q or %q", kubebindv1alpha2.NamespacedScope, kubebindv1alpha2.ClusterScope)
 	}

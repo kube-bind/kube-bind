@@ -22,6 +22,10 @@ package v1alpha2
 // APIServiceBindingLister.
 type APIServiceBindingListerExpansion interface{}
 
+// APIServiceBindingBundleListerExpansion allows custom methods to be added to
+// APIServiceBindingBundleLister.
+type APIServiceBindingBundleListerExpansion interface{}
+
 // APIServiceExportListerExpansion allows custom methods to be added to
 // APIServiceExportLister.
 type APIServiceExportListerExpansion interface{}
@@ -45,6 +49,14 @@ type APIServiceNamespaceListerExpansion interface{}
 // APIServiceNamespaceNamespaceListerExpansion allows custom methods to be added to
 // APIServiceNamespaceNamespaceLister.
 type APIServiceNamespaceNamespaceListerExpansion interface{}
+
+// BindableResourcesRequestListerExpansion allows custom methods to be added to
+// BindableResourcesRequestLister.
+type BindableResourcesRequestListerExpansion interface{}
+
+// BindableResourcesRequestNamespaceListerExpansion allows custom methods to be added to
+// BindableResourcesRequestNamespaceLister.
+type BindableResourcesRequestNamespaceListerExpansion interface{}
 
 // BoundSchemaListerExpansion allows custom methods to be added to
 // BoundSchemaLister.

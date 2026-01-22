@@ -242,6 +242,20 @@ kubectl ws create consumer --enter
 This is where it starts to differ from normal setup. CLI login and binding will not work without OIDC and API.
 So we need manually create binding request.
 
+**Backend-Only Binding Process:**
+
+In traditional mode, `BindableResourcesRequest` is sent as a REST API payload to the backend HTTP server, which then:
+1. Creates a dedicated namespace for the consumer
+2. Generates a kubeconfig for that namespace
+3. Returns it as an HTTP response
+
+In backend-only mode, `BindableResourcesRequest` is a **CRD** that triggers the same binding process:
+1. A controller watches for `BindableResourcesRequest` resources
+2. Creates the namespace and kubeconfig automatically
+3. Stores the response in a Secret (specified by `kubeconfigSecretRef`)
+
+This enables GitOps and automation without requiring HTTP API access.
+
 We need first to get identity for the cluster we gonna use. 
 ```
 kubectl bind cluster-identity

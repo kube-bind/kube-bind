@@ -80,21 +80,72 @@ type BindingResponseAuthenticationOAuth2CodeGrant struct {
 }
 
 // BindableResourcesRequest is sent by the consumer to the service provider
-// to indicate which resources the user wants to bind to. It is sent after
-// authentication and resource selection on the service provider website.
+// to indicate which resources the user wants to bind to. It can be sent via
+// the HTTP API after authentication, or created directly as a CRD when the
+// backend is running without the HTTP API/OIDC flow (frontend disabled mode).
+//
+// When created as a CRD, a controller will process the request and create the
+// necessary APIServiceExport and related resources.
+//
+// +crd
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:resource:scope=Namespaced,categories=kube-bindings
+// +kubebuilder:subresource:status
+// +kubebuilder:storageversion
+// +kubebuilder:printcolumn:name="Template",type="string",JSONPath=`.spec.templateRef.name`,priority=0
+// +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=`.status.phase`,priority=0
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=`.metadata.creationTimestamp`,priority=0
 type BindableResourcesRequest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
+	// spec specifies the binding request details.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Spec BindableResourcesRequestSpec `json:"spec"`
+
+	// status contains reconciliation information for the binding request.
+	// +kubebuilder:default={}
+	Status BindableResourcesRequestStatus `json:"status,omitempty"`
+}
+
+// BindableResourcesRequestSpec defines the desired state of BindableResourcesRequest.
+type BindableResourcesRequestSpec struct {
 	// TemplateRef specifies the APIServiceExportTemplate to bind to.
-	// +required
-	// +kubebuilder:validation:Required
+	// +optional
+	// +kubebuilder:validation:Optional
 	TemplateRef APIServiceExportTemplateRef `json:"templateRef"`
+
 	// ClusterIdentity contains information that uniquely identifies the cluster.
-	// When doing dry run, we expect the client to fill this field in (or it will be taken from local cluster where context is available).
+	// This is used when the request is made via the HTTP API after authentication.
+	//
 	// +required
 	// +kubebuilder:validation:Required
-	ClusterIdentity ClusterIdentity `json:"clusterIdentity"`
+	ClusterIdentity ClusterIdentity `json:"clusterIdentity,omitempty"`
+
+	// Author is the identifier of the entity that created this binding request.
+	// This is used for audit purposes and to track who initiated the binding.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	Author string `json:"author"`
+
+	// kubeconfigSecretRef is a reference to an existing secret where the binding response
+	// will be stored. If specified, the controller will update this secret with the
+	// binding response data. If not specified, a new secret will be created with
+	// the name "<request-name>-binding-response".
+	// +optional
+	// +kubebuilder:validation:Optional
+	KubeconfigSecretRef *LocalSecretKeyRef `json:"kubeconfigSecretRef,omitempty"`
+
+	// ttlAfterFinished is the TTL after the request has succeeded or failed
+	// before it is automatically deleted. If not set, the request will not be
+	// automatically deleted. Example values: "1h", "30m", "300s".
+	// +optional
+	// +kubebuilder:validation:Optional
+	TTLAfterFinished *metav1.Duration `json:"ttlAfterFinished,omitempty"`
 }
 
 type APIServiceExportTemplateRef struct {
@@ -105,9 +156,66 @@ type APIServiceExportTemplateRef struct {
 	Name string `json:"name"`
 }
 
+// BindableResourcesRequestPhase describes the phase of a binding request.
+type BindableResourcesRequestPhase string
+
+const (
+	// BindableResourcesRequestPhasePending indicates that the binding request is being processed.
+	BindableResourcesRequestPhasePending BindableResourcesRequestPhase = "Pending"
+	// BindableResourcesRequestPhaseFailed indicates that the binding request has failed.
+	BindableResourcesRequestPhaseFailed BindableResourcesRequestPhase = "Failed"
+	// BindableResourcesRequestPhaseSucceeded indicates that the binding request has succeeded.
+	BindableResourcesRequestPhaseSucceeded BindableResourcesRequestPhase = "Succeeded"
+)
+
+// BindableResourcesRequestStatus defines the observed state of BindableResourcesRequest.
+type BindableResourcesRequestStatus struct {
+	// phase is the current phase of the binding request.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:default=Pending
+	// +kubebuilder:validation:Enum=Pending;Failed;Succeeded
+	Phase BindableResourcesRequestPhase `json:"phase,omitempty"`
+
+	// kubeconfigSecretRef is a reference to a secret containing the kubeconfig, used
+	// to be used by the konnector agent.
+	KubeconfigSecretRef *LocalSecretKeyRef `json:"kubeconfigSecretRef,omitempty"`
+
+	// completionTime is the time when the request finished processing (succeeded or failed).
+	// Used for TTL-based cleanup.
+	// +optional
+	// +kubebuilder:validation:Optional
+	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
+
+	// conditions contains the current conditions of the binding request.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// BindableResourcesRequestConditionType defines the condition types for BindableResourcesRequest.
+type BindableResourcesRequestConditionType string
+
+const (
+	// BindableResourcesRequestConditionReady indicates that the binding response secret is ready.
+	BindableResourcesRequestConditionReady BindableResourcesRequestConditionType = "Ready"
+)
+
+// BindableResourcesRequestList is the list of BindableResourcesRequest.
+//
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+type BindableResourcesRequestList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []BindableResourcesRequest `json:"items"`
+}
+
 func (r *BindableResourcesRequest) Validate() error {
-	if r.TemplateRef.Name == "" {
-		return errors.New("templateRef.name is required")
+	if r.Spec.TemplateRef.Name == "" {
+		return errors.New("spec.templateRef.name is required")
 	}
 
 	if r.Name == "" {

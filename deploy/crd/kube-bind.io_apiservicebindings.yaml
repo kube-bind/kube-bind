@@ -207,9 +207,7 @@ spec:
                   the kubeconfig of the service cluster.
                 properties:
                   key:
-                    description: The key of the secret to select from.  Must be "kubeconfig".
-                    enum:
-                    - kubeconfig
+                    description: The key of the secret to select from.
                     type: string
                   name:
                     description: Name of the referent.

@@ -6,24 +6,24 @@
         CLI Mode: Select a template to bind for CLI
       </div>
     </div>
-    
+
     <div v-if="loading" class="loading">
       Loading resources...
     </div>
-    
+
     <div v-else-if="error" class="error">
       <h3>Error Loading Resources</h3>
       <p>{{ error }}</p>
       <button @click="loadResources" class="retry-btn">Retry</button>
     </div>
-    
+
     <div v-else class="resources-container">
       <div class="templates-section">
         <div class="section-header">
           <h3>Templates</h3>
           <span class="item-count">{{ templates.length }} available</span>
         </div>
-        
+
         <div v-if="templates.length === 0" class="no-resources">
           <div class="no-resources-icon">
             <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,7 +33,7 @@
           <h4>No templates available</h4>
           <p>There are no API service export templates available in this cluster.</p>
         </div>
-        
+
         <div v-else class="resource-grid">
           <div v-for="template in templates" :key="template.metadata.name" class="template-card">
             <div class="card-header">
@@ -50,18 +50,18 @@
                 </span>
               </div>
             </div>
-            
+
             <div class="card-content">
               <p v-if="template.spec.description" class="card-description">
                 {{ template.spec.description }}
               </p>
-              
+
               <div v-if="template.spec.resources?.length" class="card-preview">
                 <strong>Key Resources:</strong>
                 <div class="resource-preview">
-                  <span 
-                    v-for="resource in template.spec.resources.slice(0, 3)" 
-                    :key="resource.resource" 
+                  <span
+                    v-for="resource in template.spec.resources.slice(0, 3)"
+                    :key="resource.resource"
                     class="resource-tag"
                   >
                     {{ resource.resource }}
@@ -72,7 +72,7 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="card-actions">
               <button @click="showTemplateDetails(template)" class="details-btn">
                 View Details
@@ -84,30 +84,30 @@
           </div>
         </div>
       </div>
-      
+
       <div v-if="collections.length > 0" class="collections-section">
         <div class="section-header">
           <h3>Collections</h3>
           <span class="item-count">{{ collections.length }} available</span>
         </div>
-        
+
         <div class="resource-grid">
           <div v-for="collection in collections" :key="collection.metadata.name" class="collection-card">
             <div class="card-header">
               <h4 class="card-title">{{ collection.metadata.name }}</h4>
             </div>
-            
+
             <div class="card-content">
               <p v-if="collection.spec.description" class="card-description">
                 {{ collection.spec.description }}
               </p>
-              
+
               <div v-if="collection.spec.templates?.length" class="collection-templates">
                 <strong>Templates in this collection:</strong>
                 <div class="template-list">
-                  <span 
-                    v-for="templateName in collection.spec.templates.slice(0, 4)" 
-                    :key="templateName" 
+                  <span
+                    v-for="templateName in collection.spec.templates.slice(0, 4)"
+                    :key="templateName"
                     class="template-tag"
                   >
                     {{ templateName }}
@@ -122,7 +122,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Template Binding Modal -->
     <TemplateBindingModal
       v-if="selectedTemplate"
@@ -158,7 +158,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { httpClient } from '../services/http'
-import type { BindableResourcesRequest, BindingResponse, ClusterIdentity } from '../types/binding'
+import type { BindableResourcesRequest, BindingResponse } from '../types/binding'
 import { StructuredError } from '../services/http'
 import BindingResult from '../components/BindingResult.vue'
 import TemplateBindingModal from '../components/TemplateBindingModal.vue'
@@ -243,37 +243,37 @@ const buildApiUrl = (endpoint: string) => {
   const params = new URLSearchParams()
   if (cluster.value) params.set('cluster_id', cluster.value)
   if (consumerId.value) params.set('consumer_id', consumerId.value)
-  
+
   return params.toString() ? `${endpoint}?${params.toString()}` : endpoint
 }
 
 const loadResources = async () => {
   loading.value = true
   error.value = null
-  
+
   try {
     const templatesUrl = buildApiUrl('/templates')
     const collectionsUrl = buildApiUrl('/collections')
-    
+
     const [templatesResponse, collectionsResponse] = await Promise.all([
       httpClient.get(templatesUrl),
       httpClient.get(collectionsUrl)
     ])
-    
+
     templates.value = templatesResponse.data.items || []
     collections.value = collectionsResponse.data.items || []
   } catch (err: any) {
     console.error('Failed to load resources:', err)
-    
+
     // Handle structured errors
     if (err instanceof StructuredError) {
       const kubeError = err.kubeBindError
-      
+
       // Don't show error for auth failures - let the HTTP interceptor handle them
       if (kubeError.code === 'AUTHENTICATION_FAILED') {
         return
       }
-      
+
       // Show specific error messages based on error code
       switch (kubeError.code) {
         case 'AUTHORIZATION_FAILED':
@@ -319,8 +319,18 @@ const showTemplateDetails = (template: Template) => {
 const handleBind = async (templateName: string, bindingName: string) => {
   try {
     const bindUrl = buildApiUrl('/bind')
-    
+
     // Create the binding request
+    // Use consumerId if available (CLI flow), otherwise use sessionId as cluster identity
+    // Read from Vue Router's route.query instead of window.location
+    const sessionIdFromRoute = route.query.session_id as string || ''
+    const clusterIdentity = consumerId.value || sessionIdFromRoute
+
+    if (!clusterIdentity) {
+      showAlertModal('Missing cluster identity. Please ensure you have authenticated properly.', 'Binding Failed', 'error')
+      return
+    }
+
     const bindingRequest: BindableResourcesRequest = {
       metadata: {
         name: bindingName
@@ -329,16 +339,16 @@ const handleBind = async (templateName: string, bindingName: string) => {
         name: templateName
       },
       clusterIdentity: {
-        identity: consumerId.value || ''
+        identity: clusterIdentity
       }
     }
-    
+
     const response = await httpClient.post<BindingResponse>(bindUrl, bindingRequest)
-    
+
     if (response.status === 200) {
       // Close the binding modal first
       closeBindingModal()
-      
+
       // Check if this is a CLI flow
       if (authService.isCliFlow()) {
         console.log(response.data)
@@ -354,16 +364,16 @@ const handleBind = async (templateName: string, bindingName: string) => {
     }
   } catch (err: any) {
     console.error('Failed to bind template:', err)
-    
+
     // Handle structured errors
     if (err instanceof StructuredError) {
       const kubeError = err.kubeBindError
-      
+
       // Don't show alert for auth failures - let the HTTP interceptor handle them
       if (kubeError.code === 'AUTHENTICATION_FAILED') {
         return
       }
-      
+
       // Show specific error messages based on error code
       let errorMessage: string
       switch (kubeError.code) {
@@ -379,7 +389,7 @@ const handleBind = async (templateName: string, bindingName: string) => {
         default:
           errorMessage = `Failed to bind template: ${kubeError.message}\n\nDetails: ${kubeError.details || 'No additional details available'}`
       }
-      
+
       showAlertModal(errorMessage, 'Binding Failed', 'error', true)
     } else {
       // Fallback for non-structured errors

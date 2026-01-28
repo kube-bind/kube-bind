@@ -33,6 +33,22 @@ const (
 
 	// GroupVersion is the group version used in this package.
 	GroupVersion = "v1alpha2"
+
+	// Kind constants for the types in this package.
+	KindBoundSchema              = "BoundSchema"
+	KindAPIServiceBinding        = "APIServiceBinding"
+	KindAPIServiceBindingBundle  = "APIServiceBindingBundle"
+	KindAPIServiceExport         = "APIServiceExport"
+	KindAPIServiceExportRequest  = "APIServiceExportRequest"
+	KindAPIServiceNamespace      = "APIServiceNamespace"
+	KindClusterBinding           = "ClusterBinding"
+	KindBindingProvider          = "BindingProvider"
+	KindBindingResourceResponse  = "BindingResourceResponse"
+	KindAPIServiceExportTemplate = "APIServiceExportTemplate"
+	KindCollection               = "Collection"
+	KindCluster                  = "Cluster"
+	KindBindableResourcesRequest = "BindableResourcesRequest"
+	KindAPIConversion            = "APIConversion"
 )
 
 // SchemeGroupVersion is group version used to register these objects.
@@ -50,6 +66,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&BoundSchemaList{},
 		&APIServiceBinding{},
 		&APIServiceBindingList{},
+		&APIServiceBindingBundle{},
+		&APIServiceBindingBundleList{},
 		&APIServiceExport{},
 		&APIServiceExportList{},
 		&APIServiceExportRequest{},
@@ -66,6 +84,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&CollectionList{},
 		&Cluster{},
 		&ClusterList{},
+		&BindableResourcesRequest{},
+		&BindableResourcesRequestList{},
 	)
 
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)

@@ -26,12 +26,16 @@ import (
 type Interface interface {
 	// APIServiceBindings returns a APIServiceBindingInformer.
 	APIServiceBindings() APIServiceBindingInformer
+	// APIServiceBindingBundles returns a APIServiceBindingBundleInformer.
+	APIServiceBindingBundles() APIServiceBindingBundleInformer
 	// APIServiceExports returns a APIServiceExportInformer.
 	APIServiceExports() APIServiceExportInformer
 	// APIServiceExportRequests returns a APIServiceExportRequestInformer.
 	APIServiceExportRequests() APIServiceExportRequestInformer
 	// APIServiceNamespaces returns a APIServiceNamespaceInformer.
 	APIServiceNamespaces() APIServiceNamespaceInformer
+	// BindableResourcesRequests returns a BindableResourcesRequestInformer.
+	BindableResourcesRequests() BindableResourcesRequestInformer
 	// BoundSchemas returns a BoundSchemaInformer.
 	BoundSchemas() BoundSchemaInformer
 	// Clusters returns a ClusterInformer.
@@ -58,6 +62,11 @@ func (v *version) APIServiceBindings() APIServiceBindingInformer {
 	return &aPIServiceBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
+// APIServiceBindingBundles returns a APIServiceBindingBundleInformer.
+func (v *version) APIServiceBindingBundles() APIServiceBindingBundleInformer {
+	return &aPIServiceBindingBundleInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
 // APIServiceExports returns a APIServiceExportInformer.
 func (v *version) APIServiceExports() APIServiceExportInformer {
 	return &aPIServiceExportInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
@@ -71,6 +80,11 @@ func (v *version) APIServiceExportRequests() APIServiceExportRequestInformer {
 // APIServiceNamespaces returns a APIServiceNamespaceInformer.
 func (v *version) APIServiceNamespaces() APIServiceNamespaceInformer {
 	return &aPIServiceNamespaceInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// BindableResourcesRequests returns a BindableResourcesRequestInformer.
+func (v *version) BindableResourcesRequests() BindableResourcesRequestInformer {
+	return &bindableResourcesRequestInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // BoundSchemas returns a BoundSchemaInformer.

@@ -39,6 +39,7 @@ import (
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/dynamic"
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/servicebinding"
+	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/servicebindingbundle"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	bindclient "github.com/kube-bind/kube-bind/sdk/client/clientset/versioned"
 	bindinformers "github.com/kube-bind/kube-bind/sdk/client/informers/externalversions/kubebind/v1alpha2"
@@ -53,9 +54,11 @@ const (
 func New(
 	consumerConfig *rest.Config,
 	serviceBindingInformer bindinformers.APIServiceBindingInformer,
+	serviceBindingBundleInformer bindinformers.APIServiceBindingBundleInformer,
 	secretInformer coreinformers.SecretInformer,
 	namespaceInformer coreinformers.NamespaceInformer,
 	crdInformer crdinformers.CustomResourceDefinitionInformer,
+	bundlePollingInterval time.Duration,
 ) (*Controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueueWithConfig(workqueue.DefaultTypedControllerRateLimiter[string](), workqueue.TypedRateLimitingQueueConfig[string]{Name: controllerName})
 
@@ -70,6 +73,11 @@ func New(
 	}
 
 	servicebindingCtrl, err := servicebinding.NewController(consumerConfig, serviceBindingInformer, secretInformer)
+	if err != nil {
+		return nil, err
+	}
+
+	servicebindingbundleCtrl, err := servicebindingbundle.NewController(consumerConfig, serviceBindingBundleInformer, serviceBindingInformer, secretInformer, bundlePollingInterval)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +107,8 @@ func New(
 		secretLister:  secretInformer.Lister(),
 		secretIndexer: secretInformer.Informer().GetIndexer(),
 
-		ServiceBindingCtrl: servicebindingCtrl,
+		ServiceBindingCtrl:       servicebindingCtrl,
+		ServiceBindingBundleCtrl: servicebindingbundleCtrl,
 
 		reconciler: reconciler{
 			controllers: map[string]*controllerContext{},
@@ -191,7 +200,8 @@ type Controller struct {
 	secretLister  corelisters.SecretLister
 	secretIndexer cache.Indexer
 
-	ServiceBindingCtrl GenericController
+	ServiceBindingCtrl       GenericController
+	ServiceBindingBundleCtrl GenericController
 
 	reconciler
 
@@ -256,6 +266,7 @@ func (c *Controller) Start(ctx context.Context, numThreads int) {
 	}
 
 	go c.ServiceBindingCtrl.Start(ctx, numThreads)
+	go c.ServiceBindingBundleCtrl.Start(ctx, numThreads)
 
 	<-ctx.Done()
 }

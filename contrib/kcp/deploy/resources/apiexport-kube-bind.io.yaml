@@ -51,8 +51,13 @@ spec:
     storage:
       crd: {}
   - group: kube-bind.io
+    name: apiservicebindingbundles
+    schema: v260122-c9f0f376.apiservicebindingbundles.kube-bind.io
+    storage:
+      crd: {}
+  - group: kube-bind.io
     name: apiservicebindings
-    schema: v251112-503d98b.apiservicebindings.kube-bind.io
+    schema: v260122-c9f0f376.apiservicebindings.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io
@@ -77,7 +82,7 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: bindableresourcesrequests
-    schema: v251224-24568872.bindableresourcesrequests.kube-bind.io
+    schema: v260122-c9f0f376.bindableresourcesrequests.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io
@@ -87,7 +92,7 @@ spec:
       crd: {}
   - group: kube-bind.io
     name: clusterbindings
-    schema: v250925-56669b8.clusterbindings.kube-bind.io
+    schema: v260122-c9f0f376.clusterbindings.kube-bind.io
     storage:
       crd: {}
   - group: kube-bind.io

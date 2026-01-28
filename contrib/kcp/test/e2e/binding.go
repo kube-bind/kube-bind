@@ -54,11 +54,13 @@ func performBinding(
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-binding",
 		},
-		TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
-			Name: templateRef,
-		},
-		ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
-			Identity: identity.String(),
+		Spec: kubebindv1alpha2.BindableResourcesRequestSpec{
+			TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
+				Name: templateRef,
+			},
+			ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
+				Identity: identity.String(),
+			},
 		},
 	})
 	require.NoError(t, err)

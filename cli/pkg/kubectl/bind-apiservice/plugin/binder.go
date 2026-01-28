@@ -287,7 +287,7 @@ func (b *Binder) deployKonnector(ctx context.Context) error {
 		DryRun:                   b.opts.DryRun,
 		KonnectorHostAliasParsed: b.opts.KonnectorHostAliasParsed,
 	}
-	return tempOpts.deployKonnector(ctx, b.config)
+	return tempOpts.DeployKonnector(ctx, b.config)
 }
 
 func (b *Binder) createServiceExportRequest(ctx context.Context, remoteConfig *rest.Config, remoteNamespace string, request *kubebindv1alpha2.APIServiceExportRequest) (*kubebindv1alpha2.APIServiceExportRequest, error) {

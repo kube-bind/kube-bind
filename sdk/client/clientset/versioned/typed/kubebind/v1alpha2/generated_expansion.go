@@ -20,11 +20,15 @@ package v1alpha2
 
 type APIServiceBindingExpansion interface{}
 
+type APIServiceBindingBundleExpansion interface{}
+
 type APIServiceExportExpansion interface{}
 
 type APIServiceExportRequestExpansion interface{}
 
 type APIServiceNamespaceExpansion interface{}
+
+type BindableResourcesRequestExpansion interface{}
 
 type BoundSchemaExpansion interface{}
 

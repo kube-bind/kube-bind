@@ -351,11 +351,13 @@ func (b *BindAPIServiceOptions) bindTemplate(ctx context.Context) (*bindTemplate
 		ObjectMeta: metav1.ObjectMeta{
 			Name: b.Name,
 		},
-		TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
-			Name: b.Template,
-		},
-		ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
-			Identity: b.ClusterIdentity,
+		Spec: kubebindv1alpha2.BindableResourcesRequestSpec{
+			TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
+				Name: b.Template,
+			},
+			ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
+				Identity: b.ClusterIdentity,
+			},
 		},
 	}
 

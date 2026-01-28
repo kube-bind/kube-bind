@@ -68,12 +68,16 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		// Group=kube-bind.io, Version=v1alpha2
 	case v1alpha2.SchemeGroupVersion.WithResource("apiservicebindings"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIServiceBindings().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("apiservicebindingbundles"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIServiceBindingBundles().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("apiserviceexports"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIServiceExports().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("apiserviceexportrequests"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIServiceExportRequests().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("apiservicenamespaces"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().APIServiceNamespaces().Informer()}, nil
+	case v1alpha2.SchemeGroupVersion.WithResource("bindableresourcesrequests"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().BindableResourcesRequests().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("boundschemas"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.KubeBind().V1alpha2().BoundSchemas().Informer()}, nil
 	case v1alpha2.SchemeGroupVersion.WithResource("clusters"):

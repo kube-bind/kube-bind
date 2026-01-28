@@ -371,11 +371,13 @@ func testHappyCase(
 							ObjectMeta: metav1.ObjectMeta{
 								Name: "test-binding",
 							},
-							TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
-								Name: templateRef,
-							},
-							ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
-								Identity: consumer.clusterIdentity.String(),
+							Spec: kubebindv1alpha2.BindableResourcesRequestSpec{
+								TemplateRef: kubebindv1alpha2.APIServiceExportTemplateRef{
+									Name: templateRef,
+								},
+								ClusterIdentity: kubebindv1alpha2.ClusterIdentity{
+									Identity: consumer.clusterIdentity.String(),
+								},
 							},
 						})
 						require.NoError(t, err)

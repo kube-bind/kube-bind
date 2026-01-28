@@ -361,7 +361,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Move to validating admission.
-	if bindRequest.ClusterIdentity.Identity == "" {
+	if bindRequest.Spec.ClusterIdentity.Identity == "" {
 		logger.Error(fmt.Errorf("missing cluster identity"), "invalid bind request")
 		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Missing cluster identity in bind request", "The cluster identity must be provided in the bind request")
 		return
@@ -376,9 +376,9 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Module consist of many resources and permissionClaims. Read it and translate to
-	template, err := h.kubeManager.GetTemplates(r.Context(), params.ClusterID, bindRequest.TemplateRef.Name)
+	template, err := h.kubeManager.GetTemplates(r.Context(), params.ClusterID, bindRequest.Spec.TemplateRef.Name)
 	if err != nil {
-		logger.Error(err, "failed to get template", "template", bindRequest.TemplateRef.Name, "cluster", params.ClusterID)
+		logger.Error(err, "failed to get template", "template", bindRequest.Spec.TemplateRef.Name, "cluster", params.ClusterID)
 		statusCode, code, details := mapErrorToCode(err)
 		writeErrorResponse(w, statusCode, code, "Failed to retrieve template", details)
 		return

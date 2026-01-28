@@ -167,7 +167,11 @@ func (inf *DynamicMultiNamespaceInformer) enqueueServiceNamespace(obj any) {
 		inf.lock.Lock()
 		defer inf.lock.Unlock()
 		if cancel, found := inf.namespaceCancel[name]; found {
-			logger.V(2).Info("stopping informer", "namespace", sns.Status.Namespace)
+			if sns == nil {
+				logger.V(2).Info("stopping informer")
+			} else {
+				logger.V(2).Info("stopping informer", "namespace", sns.Status.Namespace)
+			}
 			delete(inf.namespaceCancel, name)
 			delete(inf.namespaceInformers, name)
 			cancel()

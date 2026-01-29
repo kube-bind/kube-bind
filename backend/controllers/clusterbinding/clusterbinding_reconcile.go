@@ -18,61 +18,23 @@ package clusterbinding
 
 import (
 	"context"
-	"fmt"
-	"maps"
-	"reflect"
-	"slices"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 	conditionsapi "github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
 	"github.com/kube-bind/kube-bind/sdk/apis/third_party/conditions/util/conditions"
 )
 
-type reconciler struct {
-	scope kubebindv1alpha2.InformerScope
-
-	listServiceExports func(ctx context.Context, cache cache.Cache, ns string) ([]*kubebindv1alpha2.APIServiceExport, error)
-	getBoundSchema     func(ctx context.Context, cache cache.Cache, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
-	getClusterRole     func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error)
-	createClusterRole  func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) error
-	updateClusterRole  func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRole) error
-
-	getClusterRoleBinding    func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error)
-	createClusterRoleBinding func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRoleBinding) error
-	updateClusterRoleBinding func(ctx context.Context, client client.Client, binding *rbacv1.ClusterRoleBinding) error
-	deleteClusterRoleBinding func(ctx context.Context, client client.Client, name string) error
-
-	getRoleBinding    func(ctx context.Context, cache cache.Cache, ns, name string) (*rbacv1.RoleBinding, error)
-	createRoleBinding func(ctx context.Context, client client.Client, binding *rbacv1.RoleBinding) error
-	updateRoleBinding func(ctx context.Context, client client.Client, binding *rbacv1.RoleBinding) error
-
-	getNamespace func(ctx context.Context, cache cache.Cache, name string) (*corev1.Namespace, error)
-}
+type reconciler struct{}
 
 func (r *reconciler) reconcile(ctx context.Context, client client.Client, cache cache.Cache, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
 	var errs []error
 
 	if err := r.ensureClusterBindingConditions(ctx, clusterBinding); err != nil {
-		errs = append(errs, err)
-	}
-	if err := r.ensureRBACRoleBinding(ctx, client, cache, clusterBinding); err != nil {
-		errs = append(errs, err)
-	}
-	if err := r.ensureRBACClusterRole(ctx, client, cache, clusterBinding); err != nil {
-		errs = append(errs, err)
-	}
-	if err := r.ensureRBACClusterRoleBinding(ctx, client, cache, clusterBinding); err != nil {
 		errs = append(errs, err)
 	}
 
@@ -116,190 +78,6 @@ func (r *reconciler) ensureClusterBindingConditions(_ context.Context, clusterBi
 		conditions.MarkTrue(clusterBinding,
 			kubebindv1alpha2.ClusterBindingConditionHealthy,
 		)
-	}
-
-	return nil
-}
-
-func (r *reconciler) ensureRBACClusterRole(ctx context.Context, client client.Client, cache cache.Cache, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
-	name := "kube-binder-" + clusterBinding.Namespace
-	role, err := r.getClusterRole(ctx, cache, name)
-	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("failed to get ClusterRole %s: %w", name, err)
-	}
-
-	ns, err := r.getNamespace(ctx, cache, clusterBinding.Namespace)
-	if err != nil {
-		return fmt.Errorf("failed to get Namespace %s: %w", clusterBinding.Namespace, err)
-	}
-
-	exports, err := r.listServiceExports(ctx, cache, clusterBinding.Namespace)
-	if err != nil {
-		return fmt.Errorf("failed to list APIServiceExports: %w", err)
-	}
-	expected := &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: "v1",
-					Kind:       "Namespace",
-					Name:       clusterBinding.Namespace,
-					Controller: ptr.To(true),
-					UID:        ns.UID,
-				},
-			},
-		},
-		Rules: []rbacv1.PolicyRule{
-			// Always need to be able to get/list/watch the BoundSchemas
-			// to be able to figure out what to bind.
-			{
-				APIGroups: []string{kubebindv1alpha2.GroupName},
-				Resources: []string{"boundschemas"},
-				Verbs:     []string{"get", "list", "watch"},
-			},
-			{
-				APIGroups: []string{kubebindv1alpha2.GroupName},
-				Resources: []string{"boundschemas/status"},
-				Verbs:     []string{"get", "update", "patch"},
-			},
-		}}
-	for _, export := range exports {
-		// Collect unique GroupResources and sort for stable rule ordering.
-		grSet := map[string]kubebindv1alpha2.GroupResource{}
-		for _, res := range export.Spec.Resources {
-			key := res.ResourceGroupName()
-			grSet[key] = kubebindv1alpha2.GroupResource{Group: res.Group, Resource: res.Resource}
-		}
-		keys := slices.Collect(maps.Keys(grSet))
-		slices.Sort(keys)
-		for _, k := range keys {
-			// k is already normalized (e.g., "pods.core" for empty group).
-			schema, err := r.getBoundSchema(ctx, cache, clusterBinding.Namespace, k)
-			if err != nil {
-				return fmt.Errorf("failed to get BoundSchema %q: %w", k, err)
-			}
-			expected.Rules = append(expected.Rules,
-				rbacv1.PolicyRule{
-					APIGroups: []string{schema.Spec.Group},
-					Resources: []string{schema.Spec.Names.Plural},
-					Verbs:     []string{"get", "list", "watch", "create", "update", "patch", "delete"},
-				},
-			)
-		}
-	}
-
-	if role == nil {
-		if err := r.createClusterRole(ctx, client, expected); err != nil {
-			return fmt.Errorf("failed to create ClusterRole %s: %w", expected.Name, err)
-		}
-	} else if !reflect.DeepEqual(role.Rules, expected.Rules) {
-		role = role.DeepCopy()
-		role.Rules = expected.Rules
-		if err := r.updateClusterRole(ctx, client, role); err != nil {
-			return fmt.Errorf("failed to create ClusterRole %s: %w", role.Name, err)
-		}
-	}
-
-	return nil
-}
-
-func (r *reconciler) ensureRBACClusterRoleBinding(ctx context.Context, client client.Client, cache cache.Cache, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
-	name := "kube-binder-" + clusterBinding.Namespace
-	binding, err := r.getClusterRoleBinding(ctx, cache, name)
-	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("failed to get ClusterRoleBinding %s: %w", name, err)
-	}
-	if r.scope != kubebindv1alpha2.ClusterScope {
-		if err := r.deleteClusterRoleBinding(ctx, client, name); err != nil && !errors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete ClusterRoleBinding %s: %w", name, err)
-		}
-	}
-
-	ns, err := r.getNamespace(ctx, cache, clusterBinding.Namespace)
-	if err != nil {
-		return fmt.Errorf("failed to get Namespace %s: %w", clusterBinding.Namespace, err)
-	}
-
-	expected := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: "v1",
-					Kind:       "Namespace",
-					Name:       clusterBinding.Namespace,
-					Controller: ptr.To(true),
-					UID:        ns.UID,
-				},
-			},
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Namespace: clusterBinding.Namespace,
-				Name:      kuberesources.ServiceAccountName,
-			},
-		},
-		RoleRef: rbacv1.RoleRef{
-			Kind:     "ClusterRole",
-			Name:     name,
-			APIGroup: "rbac.authorization.k8s.io",
-		},
-	}
-
-	if binding == nil {
-		if err := r.createClusterRoleBinding(ctx, client, expected); err != nil {
-			return fmt.Errorf("failed to create ClusterRoleBinding %s: %w", expected.Name, err)
-		}
-	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) {
-		binding = binding.DeepCopy()
-		binding.Subjects = expected.Subjects
-		// roleRef is immutable
-		if err := r.updateClusterRoleBinding(ctx, client, binding); err != nil {
-			return fmt.Errorf("failed to create ClusterRoleBinding %s: %w", expected.Namespace, err)
-		}
-	}
-
-	return nil
-}
-
-func (r *reconciler) ensureRBACRoleBinding(ctx context.Context, client client.Client, cache cache.Cache, clusterBinding *kubebindv1alpha2.ClusterBinding) error {
-	binding, err := r.getRoleBinding(ctx, cache, clusterBinding.Namespace, "kube-binder")
-	if err != nil && !errors.IsNotFound(err) {
-		return fmt.Errorf("failed to get RoleBinding \"kube-binder\": %w", err)
-	}
-
-	expected := &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: kuberesources.ServiceAccountName,
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      kuberesources.ServiceAccountName,
-				Namespace: clusterBinding.Namespace,
-			},
-		},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     "kube-binder",
-		},
-	}
-
-	if binding == nil {
-		expected.Namespace = clusterBinding.Namespace
-		if err := r.createRoleBinding(ctx, client, expected); err != nil {
-			return fmt.Errorf("failed to create RoleBinding %s: %w", expected.Name, err)
-		}
-	} else if !reflect.DeepEqual(binding.Subjects, expected.Subjects) {
-		binding = binding.DeepCopy()
-		binding.Subjects = expected.Subjects
-		// roleRef is immutable
-		if err := r.updateRoleBinding(ctx, client, binding); err != nil {
-			return fmt.Errorf("failed to create RoleBinding %s: %w", expected.Namespace, err)
-		}
 	}
 
 	return nil

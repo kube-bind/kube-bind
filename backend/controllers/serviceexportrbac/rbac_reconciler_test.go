@@ -28,7 +28,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -271,7 +270,6 @@ func Test_reconciler_reconcile(t *testing.T) {
 									APIVersion: "v1",
 									Kind:       "Namespace",
 									Name:       "kube-binder-abcd1234",
-									Controller: ptr.To(true),
 									UID:        "uid-123",
 								},
 							},
@@ -300,7 +298,6 @@ func Test_reconciler_reconcile(t *testing.T) {
 									APIVersion: "v1",
 									Kind:       "Namespace",
 									Name:       "kube-binder-abcd1234",
-									Controller: ptr.To(true),
 									UID:        "uid-123",
 								},
 							},
@@ -419,7 +416,6 @@ func Test_reconciler_reconcile(t *testing.T) {
 									APIVersion: "v1",
 									Kind:       "Namespace",
 									Name:       "kube-binder-abcd1234",
-									Controller: ptr.To(true),
 									UID:        "uid-123",
 								},
 							},
@@ -448,7 +444,6 @@ func Test_reconciler_reconcile(t *testing.T) {
 									APIVersion: "v1",
 									Kind:       "Namespace",
 									Name:       "kube-binder-abcd1234",
-									Controller: ptr.To(true),
 									UID:        "uid-123",
 								},
 							},
@@ -537,7 +532,6 @@ func Test_reconciler_reconcile(t *testing.T) {
 									APIVersion: "v1",
 									Kind:       "Namespace",
 									Name:       "kube-binder-abcd1234",
-									Controller: ptr.To(true),
 									UID:        "uid-123",
 								},
 							},
@@ -566,7 +560,6 @@ func Test_reconciler_reconcile(t *testing.T) {
 									APIVersion: "v1",
 									Kind:       "Namespace",
 									Name:       "kube-binder-abcd1234",
-									Controller: ptr.To(true),
 									UID:        "uid-123",
 								},
 							},
@@ -736,7 +729,6 @@ func Test_reconciler_reconcile(t *testing.T) {
 									APIVersion: "v1",
 									Kind:       "Namespace",
 									Name:       "kube-binder-abcd1234",
-									Controller: ptr.To(true),
 									UID:        "uid-123",
 								},
 							},
@@ -765,7 +757,6 @@ func Test_reconciler_reconcile(t *testing.T) {
 									APIVersion: "v1",
 									Kind:       "Namespace",
 									Name:       "kube-binder-abcd1234",
-									Controller: ptr.To(true),
 									UID:        "uid-123",
 								},
 							},

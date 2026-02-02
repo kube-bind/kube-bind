@@ -29,7 +29,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -159,7 +158,6 @@ func (r *reconciler) reconcile(ctx context.Context, client client.Client, cache 
 			APIVersion: "v1",
 			Kind:       "Namespace",
 			Name:       ns.Name,
-			Controller: ptr.To(true),
 			UID:        ns.UID,
 		},
 	}

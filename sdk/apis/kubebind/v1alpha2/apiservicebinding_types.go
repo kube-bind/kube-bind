@@ -132,11 +132,10 @@ type LocalSecretKeyRef struct {
 	// +kubebuilder:validation:MinLength=1
 	Name string `json:"name"`
 
-	// The key of the secret to select from.  Must be "kubeconfig".
+	// The key of the secret to select from.
 	//
 	// +required
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=kubeconfig
 	Key string `json:"key"`
 }
 

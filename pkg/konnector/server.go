@@ -40,9 +40,11 @@ func NewServer(config *Config) (*Server, error) {
 	k, err := New(
 		config.ClientConfig,
 		config.BindInformers.KubeBind().V1alpha2().APIServiceBindings(),
+		config.BindInformers.KubeBind().V1alpha2().APIServiceBindingBundles(),
 		config.KubeInformers.Core().V1().Secrets(), // TODO(sttts): watch individual secrets for security and memory consumption
 		config.KubeInformers.Core().V1().Namespaces(),
 		config.ApiextensionsInformers.Apiextensions().V1().CustomResourceDefinitions(),
+		config.ProviderPollingInterval,
 	)
 	if err != nil {
 		return nil, err
@@ -81,6 +83,12 @@ func (s *Server) PrepareRun(ctx context.Context) (Prepared, error) {
 	if err := crd.Create(ctx,
 		s.Config.ApiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
 		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiservicebindings"},
+	); err != nil {
+		return Prepared{}, err
+	}
+	if err := crd.Create(ctx,
+		s.Config.ApiextensionsClient.ApiextensionsV1().CustomResourceDefinitions(),
+		metav1.GroupResource{Group: kubebindv1alpha2.GroupName, Resource: "apiservicebindingbundles"},
 	); err != nil {
 		return Prepared{}, err
 	}

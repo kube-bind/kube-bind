@@ -41,12 +41,14 @@ type Config struct {
 	BindInformers          bindinformers.SharedInformerFactory
 	ApiextensionsInformers apiextensionsinformers.SharedInformerFactory
 
-	ServerAddr string
+	ServerAddr              string
+	ProviderPollingInterval time.Duration
 }
 
 func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	config := &Config{
-		ServerAddr: options.ServerAddr,
+		ServerAddr:              options.ServerAddr,
+		ProviderPollingInterval: options.ProviderPollingInterval,
 	}
 
 	// create clients

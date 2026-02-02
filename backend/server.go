@@ -29,6 +29,7 @@ import (
 	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kube-bind/kube-bind/backend/auth"
+	"github.com/kube-bind/kube-bind/backend/controllers/bindableresourcesrequest"
 	"github.com/kube-bind/kube-bind/backend/controllers/cluster"
 	"github.com/kube-bind/kube-bind/backend/controllers/clusterbinding"
 	"github.com/kube-bind/kube-bind/backend/controllers/serviceexport"
@@ -52,11 +53,12 @@ type Server struct {
 }
 
 type Controllers struct {
-	ClusterBinding       *clusterbinding.ClusterBindingReconciler
-	ServiceExport        *serviceexport.APIServiceExportReconciler
-	ServiceExportRequest *serviceexportrequest.APIServiceExportRequestReconciler
-	ServiceNamespace     *servicenamespace.APIServiceNamespaceReconciler
-	Cluster              *cluster.ClusterReconciler
+	ClusterBinding           *clusterbinding.ClusterBindingReconciler
+	ServiceExport            *serviceexport.APIServiceExportReconciler
+	ServiceExportRequest     *serviceexportrequest.APIServiceExportRequestReconciler
+	ServiceNamespace         *servicenamespace.APIServiceNamespaceReconciler
+	Cluster                  *cluster.ClusterReconciler
+	BindableResourcesRequest *bindableresourcesrequest.BindableResourcesRequestReconciler
 }
 
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
@@ -67,27 +69,6 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 	}
 
 	var err error
-	s.WebServer, err = http.NewServer(c.Options.Serve)
-	if err != nil {
-		return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
-	}
-
-	// setup oidc backend
-	callback := c.Options.OIDC.CallbackURL
-	if callback == "" {
-		callback = fmt.Sprintf("http://%s/api/callback", s.WebServer.Addr().String())
-	}
-
-	// Use lazy initialization for embedded OIDC to avoid circular dependency
-	if c.Options.OIDC.OIDCServer != nil {
-		logger.Info("Using embedded OIDC server; will initialize lazily")
-	} else {
-		// External OIDC provider - initialize immediately
-		s.OIDC, err = s.initializeOIDCProvider(ctx, callback)
-		if err != nil {
-			return nil, fmt.Errorf("error setting up OIDC: %w", err)
-		}
-	}
 	s.Kubernetes, err = kube.NewKubernetesManager(
 		ctx,
 		c.Options.NamespacePrefix,
@@ -103,40 +84,67 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		return nil, fmt.Errorf("error setting up Kubernetes Manager: %w", err)
 	}
 
-	signingKey, err := base64.StdEncoding.DecodeString(c.Options.Cookie.SigningKey)
-	if err != nil {
-		return nil, fmt.Errorf("error creating signing key: %w", err)
-	}
-
-	var encryptionKey []byte
-	if c.Options.Cookie.EncryptionKey != "" {
+	if c.Options.FrontendDisabled {
+		logger.Info("Frontend is disabled; running in backend only mode")
+	} else {
 		var err error
-		encryptionKey, err = base64.StdEncoding.DecodeString(c.Options.Cookie.EncryptionKey)
+		s.WebServer, err = http.NewServer(c.Options.Serve)
 		if err != nil {
-			return nil, fmt.Errorf("error creating encryption key: %w", err)
+			return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
 		}
-	}
 
-	handler, err := http.NewHandler(
-		s,
-		s.Config.Options.OIDC.OIDCServer,
-		c.Options.OIDC.AuthorizeURL,
-		callback,
-		c.Options.PrettyName,
-		c.Options.TestingAutoSelect,
-		signingKey,
-		encryptionKey,
-		c.Options.SchemaSource,
-		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
-		s.Kubernetes,
-		c.Options.Frontend,
-		c.Options.TokenExpiry,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)
-	}
-	if err := handler.AddRoutes(s.WebServer.Router); err != nil {
-		return nil, fmt.Errorf("error adding routes to HTTP Server: %w", err)
+		// setup oidc backend
+		callback := c.Options.OIDC.CallbackURL
+		if callback == "" {
+			callback = fmt.Sprintf("http://%s/api/callback", s.WebServer.Addr().String())
+		}
+
+		// Use lazy initialization for embedded OIDC to avoid circular dependency
+		if c.Options.OIDC.OIDCServer != nil {
+			logger.Info("Using embedded OIDC server; will initialize lazily")
+		} else {
+			// External OIDC provider - initialize immediately
+			s.OIDC, err = s.initializeOIDCProvider(ctx, callback)
+			if err != nil {
+				return nil, fmt.Errorf("error setting up OIDC: %w", err)
+			}
+		}
+
+		signingKey, err := base64.StdEncoding.DecodeString(c.Options.Cookie.SigningKey)
+		if err != nil {
+			return nil, fmt.Errorf("error creating signing key: %w", err)
+		}
+
+		var encryptionKey []byte
+		if c.Options.Cookie.EncryptionKey != "" {
+			var err error
+			encryptionKey, err = base64.StdEncoding.DecodeString(c.Options.Cookie.EncryptionKey)
+			if err != nil {
+				return nil, fmt.Errorf("error creating encryption key: %w", err)
+			}
+		}
+
+		handler, err := http.NewHandler(
+			s,
+			s.Config.Options.OIDC.OIDCServer,
+			c.Options.OIDC.AuthorizeURL,
+			callback,
+			c.Options.PrettyName,
+			c.Options.TestingAutoSelect,
+			signingKey,
+			encryptionKey,
+			c.Options.SchemaSource,
+			kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
+			s.Kubernetes,
+			c.Options.Frontend,
+			c.Options.TokenExpiry,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)
+		}
+		if err := handler.AddRoutes(s.WebServer.Router); err != nil {
+			return nil, fmt.Errorf("error adding routes to HTTP Server: %w", err)
+		}
 	}
 
 	opts := controller.TypedOptions[mcreconcile.Request]{
@@ -219,6 +227,26 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		return nil, fmt.Errorf("error setting up LogicalCluster controller with manager: %w", err)
 	}
 
+	// Setup BindableResourcesRequest controller - this handles direct CRD-based binding
+	// when the frontend is disabled (no HTTP API/OIDC flow)
+	if c.Options.FrontendDisabled {
+		s.BindableResourcesRequest, err = bindableresourcesrequest.NewBindableResourcesRequestReconciler(
+			ctx,
+			s.Config.Manager,
+			opts,
+			kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
+			kubebindv1alpha2.Isolation(c.Options.Isolation),
+			s.Kubernetes,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("error setting up BindableResourcesRequest Controller: %w", err)
+		}
+		if err := s.BindableResourcesRequest.SetupWithManager(s.Config.Manager); err != nil {
+			return nil, fmt.Errorf("error setting up BindableResourcesRequest controller with manager: %w", err)
+		}
+		logger.Info("BindableResourcesRequest controller enabled for CRD-based binding")
+	}
+
 	return s, nil
 }
 
@@ -298,11 +326,12 @@ func (s *Server) Run(ctx context.Context) error {
 		}
 	}()
 
-	go func() {
-		<-ctx.Done()
-		logger.Info("Context done")
-	}()
-	return s.WebServer.Start(ctx)
+	if !s.Config.Options.FrontendDisabled {
+		return s.WebServer.Start(ctx)
+	}
+	logger.Info("Frontend is disabled; skipping web server start")
+	<-ctx.Done()
+	return nil
 }
 
 func (s *Server) seedCluster(ctx context.Context) error {

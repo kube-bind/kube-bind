@@ -41,7 +41,8 @@ const (
 	konnectorImage = "ghcr.io/kube-bind/konnector"
 )
 
-func (b *BindAPIServiceOptions) deployKonnector(ctx context.Context, config *rest.Config) error {
+// DeployKonnector deploys the konnector to the cluster.
+func (b *BindAPIServiceOptions) DeployKonnector(ctx context.Context, config *rest.Config) error {
 	logger := klog.FromContext(ctx)
 
 	dynamicClient, err := dynamic.NewForConfig(config)

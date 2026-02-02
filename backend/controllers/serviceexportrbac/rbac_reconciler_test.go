@@ -851,6 +851,7 @@ func Test_reconciler_reconcile(t *testing.T) {
 }
 
 func compareMap[V any](t *testing.T, kind string, a, b map[string]V) {
+	t.Helper()
 	require.Equal(t, slices.Sorted(maps.Keys(a)), slices.Sorted(maps.Keys(b)), "got unexpected entries after %s reconciliation", kind)
 	for k := range a {
 		require.Equal(t, a[k], b[k], "got unexpected content in %s %s", k, kind)

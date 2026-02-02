@@ -7,8 +7,12 @@
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
         <meta name="description" content="BindableResourcesRequest is sent by the consumer to the service provider
-to indicate which resources the user wants to bind to. It is sent after
-authentication and resource selection on the service provider website.
+to indicate which resources the user wants to bind to. It can be sent via
+the HTTP API after authentication, or created directly as a CRD when the
+backend is running without the HTTP API/OIDC flow (frontend disabled mode).
+
+When created as a CRD, a controller will process the request and create the
+necessary APIServiceExport and related resources.
 ">
       
       
@@ -1701,6 +1705,10 @@ authentication and resource selection on the service provider website.
       
         
       
+        
+      
+        
+      
     
     
       
@@ -1783,11 +1791,53 @@ authentication and resource selection on the service provider website.
   
   
     <li class="md-nav__item">
+      <a href="../../../cli/bind_cluster-identity/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind cluster-identity
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../cli/bind_collections/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     bind collections
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../cli/bind_deploy/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    bind deploy
   </span>
   
 
@@ -2370,8 +2420,12 @@ authentication and resource selection on the service provider website.
 
 <h2 id="bindableresourcesrequest-crd-schema-reference-group-kube-bindio">BindableResourcesRequest CRD schema reference (group kube-bind.io)</h2>
 <div class="lead">BindableResourcesRequest is sent by the consumer to the service provider
-to indicate which resources the user wants to bind to. It is sent after
-authentication and resource selection on the service provider website.
+to indicate which resources the user wants to bind to. It can be sent via
+the HTTP API after authentication, or created directly as a CRD when the
+backend is running without the HTTP API/OIDC flow (frontend disabled mode).
+
+When created as a CRD, a controller will process the request and create the
+necessary APIServiceExport and related resources.
 </div>
 
 <dl class="crd-meta">
@@ -2420,43 +2474,6 @@ More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architec
 
 <div class="property depth-0">
 <div class="property-header">
-<h3 class="property-path" id="v1alpha2-.clusterIdentity">.clusterIdentity</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">object</span>
-<span class="property-required">Required</span>
-</div>
-
-<div class="property-description">
-<p>ClusterIdentity contains information that uniquely identifies the cluster.
-When doing dry run, we expect the client to fill this field in (or it will be taken from local cluster where context is available).</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-1">
-<div class="property-header">
-<h3 class="property-path" id="v1alpha2-.clusterIdentity.identity">.clusterIdentity.identity</h3>
-</div>
-<div class="property-body">
-<div class="property-meta">
-<span class="property-type">string</span>
-
-</div>
-
-<div class="property-description">
-<p>Identity is the unique identifier of the cluster.</p>
-
-</div>
-
-</div>
-</div>
-
-<div class="property depth-0">
-<div class="property-header">
 <h3 class="property-path" id="v1alpha2-.kind">.kind</h3>
 </div>
 <div class="property-body">
@@ -2492,12 +2509,143 @@ More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architec
 
 <div class="property depth-0">
 <div class="property-header">
-<h3 class="property-path" id="v1alpha2-.templateRef">.templateRef</h3>
+<h3 class="property-path" id="v1alpha2-.spec">.spec</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
 <span class="property-type">object</span>
 <span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>spec specifies the binding request details.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.author">.spec.author</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Author is the identifier of the entity that created this binding request.
+This is used for audit purposes and to track who initiated the binding.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.clusterIdentity">.spec.clusterIdentity</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>ClusterIdentity contains information that uniquely identifies the cluster.
+This is used when the request is made via the HTTP API after authentication.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.clusterIdentity.identity">.spec.clusterIdentity.identity</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>Identity is the unique identifier of the cluster.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.kubeconfigSecretRef">.spec.kubeconfigSecretRef</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>kubeconfigSecretRef is a reference to an existing secret where the binding response
+will be stored. If specified, the controller will update this secret with the
+binding response data. If not specified, a new secret will be created with
+the name &ldquo;<request-name>-binding-response&rdquo;.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.kubeconfigSecretRef.key">.spec.kubeconfigSecretRef.key</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>The key of the secret to select from.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.kubeconfigSecretRef.name">.spec.kubeconfigSecretRef.name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Name of the referent.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.templateRef">.spec.templateRef</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
 </div>
 
 <div class="property-description">
@@ -2508,9 +2656,9 @@ More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architec
 </div>
 </div>
 
-<div class="property depth-1">
+<div class="property depth-2">
 <div class="property-header">
-<h3 class="property-path" id="v1alpha2-.templateRef.name">.templateRef.name</h3>
+<h3 class="property-path" id="v1alpha2-.spec.templateRef.name">.spec.templateRef.name</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
@@ -2520,6 +2668,288 @@ More info: <a href="https://git.k8s.io/community/contributors/devel/sig-architec
 
 <div class="property-description">
 <p>name is the name of the APIServiceExportTemplate to bind to.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.ttlAfterFinished">.spec.ttlAfterFinished</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>ttlAfterFinished is the TTL after the request has succeeded or failed
+before it is automatically deleted. If not set, the request will not be
+automatically deleted. Example values: &ldquo;1h&rdquo;, &ldquo;30m&rdquo;, &ldquo;300s&rdquo;.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-0">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status">.status</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>status contains reconciliation information for the binding request.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.completionTime">.status.completionTime</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>completionTime is the time when the request finished processing (succeeded or failed).
+Used for TTL-based cleanup.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions">.status.conditions</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">array</span>
+
+</div>
+
+<div class="property-description">
+<p>conditions contains the current conditions of the binding request.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*]">.status.conditions[*]</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>Condition contains details for one aspect of the current state of this API Resource.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].lastTransitionTime">.status.conditions[*].lastTransitionTime</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].message">.status.conditions[*].message</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>message is a human readable message indicating details about the transition.
+This may be an empty string.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].observedGeneration">.status.conditions[*].observedGeneration</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">integer</span>
+
+</div>
+
+<div class="property-description">
+<p>observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].reason">.status.conditions[*].reason</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>reason contains a programmatic identifier indicating the reason for the condition&rsquo;s last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].status">.status.conditions[*].status</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>status of the condition, one of True, False, Unknown.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-3">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.conditions[*].type">.status.conditions[*].type</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>type of condition in CamelCase or in foo.example.com/CamelCase.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.kubeconfigSecretRef">.status.kubeconfigSecretRef</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">object</span>
+
+</div>
+
+<div class="property-description">
+<p>kubeconfigSecretRef is a reference to a secret containing the kubeconfig, used
+to be used by the konnector agent.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.kubeconfigSecretRef.key">.status.kubeconfigSecretRef.key</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>The key of the secret to select from.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-2">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.kubeconfigSecretRef.name">.status.kubeconfigSecretRef.name</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+<span class="property-required">Required</span>
+</div>
+
+<div class="property-description">
+<p>Name of the referent.</p>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.status.phase">.status.phase</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>phase is the current phase of the binding request.</p>
 
 </div>
 

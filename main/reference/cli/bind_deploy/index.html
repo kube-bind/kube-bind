@@ -6,30 +6,33 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
+        <meta name="description" content="Deploy konnector from a BindingResourceResponse
+">
       
       
-        <link rel="canonical" href="https://docs.kube-bind.io/main/developers/konnector/controllers/cluster/boundschema/">
+      
+        <link rel="canonical" href="https://docs.kube-bind.io/main/reference/cli/bind_deploy/">
       
       
-        <link rel="prev" href="../apiservicenamespace/">
+        <link rel="prev" href="../bind_collections/">
       
       
-        <link rel="next" href="../clusterbinding/">
+        <link rel="next" href="../bind_dev/">
       
       
-      <link rel="icon" href="../../../../../favicons/favicon.ico">
+      <link rel="icon" href="../../../favicons/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
     
     
       
-        <title>BoundSchema - kube-bind</title>
+        <title>bind deploy - kube-bind</title>
       
     
     
-      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.6f8fc17f.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.6f8fc17f.min.css">
       
         
-        <link rel="stylesheet" href="../../../../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,7 +51,7 @@
       
     
     
-    <script>__md_scope=new URL("../../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -74,7 +77,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#boundschema" class="md-skip">
+        <a href="#synopsis" class="md-skip">
           Skip to content
         </a>
       
@@ -92,9 +95,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../../.." title="kube-bind" class="md-header__button md-logo" aria-label="kube-bind" data-md-component="logo">
+    <a href="../../.." title="kube-bind" class="md-header__button md-logo" aria-label="kube-bind" data-md-component="logo">
       
-  <img src="../../../../../logo.svg" alt="logo">
+  <img src="../../../logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -111,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              BoundSchema
+              bind deploy
             
           </span>
         </div>
@@ -230,7 +233,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../.." class="md-tabs__link">
+        <a href="../../.." class="md-tabs__link">
           
   
     
@@ -250,7 +253,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../../setup/" class="md-tabs__link">
+        <a href="../../../setup/" class="md-tabs__link">
           
   
     
@@ -270,7 +273,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../../usage/" class="md-tabs__link">
+        <a href="../../../usage/" class="md-tabs__link">
           
   
     
@@ -290,12 +293,32 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../../contributing/" class="md-tabs__link">
+        <a href="../../../contributing/" class="md-tabs__link">
           
   
     
   
   Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../../developers/" class="md-tabs__link">
+          
+  
+    
+  
+  Developers
 
         </a>
       </li>
@@ -312,27 +335,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../../../" class="md-tabs__link">
-          
-  
-    
-  
-  Developers
-
-        </a>
-      </li>
-    
-  
-
-      
-        
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../../../../reference/" class="md-tabs__link">
+        <a href="../../" class="md-tabs__link">
           
   
     
@@ -367,9 +370,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../../.." title="kube-bind" class="md-nav__button md-logo" aria-label="kube-bind" data-md-component="logo">
+    <a href="../../.." title="kube-bind" class="md-nav__button md-logo" aria-label="kube-bind" data-md-component="logo">
       
-  <img src="../../../../../logo.svg" alt="logo">
+  <img src="../../../logo.svg" alt="logo">
 
     </a>
     kube-bind
@@ -419,7 +422,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../.." class="md-nav__link ">
+            <a href="../../.." class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -483,7 +486,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../setup/" class="md-nav__link ">
+            <a href="../../../setup/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -516,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../setup/kubectl-plugin/" class="md-nav__link">
+      <a href="../../../setup/kubectl-plugin/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -537,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../setup/quickstart/" class="md-nav__link">
+      <a href="../../../setup/quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -558,7 +561,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../setup/helm/" class="md-nav__link">
+      <a href="../../../setup/helm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -615,7 +618,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../usage/" class="md-nav__link ">
+            <a href="../../../usage/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -648,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../usage/api-concepts/" class="md-nav__link">
+      <a href="../../../usage/api-concepts/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -669,7 +672,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../usage/synchronization/" class="md-nav__link">
+      <a href="../../../usage/synchronization/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -740,7 +743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../usage/integrations/cert-manager/" class="md-nav__link">
+      <a href="../../../usage/integrations/cert-manager/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -761,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../usage/integrations/crossplane/" class="md-nav__link">
+      <a href="../../../usage/integrations/crossplane/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -782,7 +785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../usage/integrations/cloudnativepg/" class="md-nav__link">
+      <a href="../../../usage/integrations/cloudnativepg/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -803,7 +806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../usage/integrations/kro/" class="md-nav__link">
+      <a href="../../../usage/integrations/kro/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -862,7 +865,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../contributing/" class="md-nav__link ">
+            <a href="../../../contributing/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -894,8 +897,6 @@
       
   
   
-    
-  
   
   
     
@@ -920,22 +921,21 @@
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../" class="md-nav__link ">
+            <a href="../../../developers/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -946,13 +946,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Developers
@@ -968,7 +968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../architecture/" class="md-nav__link">
+      <a href="../../../developers/architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1016,7 +1016,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../dev-environment/" class="md-nav__link ">
+            <a href="../../../developers/dev-environment/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1049,7 +1049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../dev-environment/kcp/" class="md-nav__link">
+      <a href="../../../developers/dev-environment/kcp/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1070,7 +1070,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../dev-environment/kind/" class="md-nav__link">
+      <a href="../../../developers/dev-environment/kind/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1124,7 +1124,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../backend/" class="md-nav__link ">
+            <a href="../../../developers/backend/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1203,7 +1203,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../backend/http/cluster-binding/" class="md-nav__link">
+      <a href="../../../developers/backend/http/cluster-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1224,7 +1224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../backend/http/api-binding/" class="md-nav__link">
+      <a href="../../../developers/backend/http/api-binding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1258,8 +1258,6 @@
                 
   
   
-    
-  
   
   
     
@@ -1277,16 +1275,18 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_5" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../" class="md-nav__link ">
+            <a href="../../../developers/konnector/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1303,7 +1303,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5">
             <span class="md-nav__icon md-icon"></span>
             Konnector
@@ -1316,10 +1316,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -1335,11 +1333,13 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_2" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_5_2" >
         
           
           <label class="md-nav__link" for="__nav_5_5_2" id="__nav_5_5_2_label" tabindex="0">
@@ -1353,7 +1353,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_5_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_2">
             <span class="md-nav__icon md-icon"></span>
             Controllers
@@ -1367,7 +1367,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../konnector/" class="md-nav__link">
+      <a href="../../../developers/konnector/controllers/konnector/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1388,7 +1388,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../apiservicebinding/" class="md-nav__link">
+      <a href="../../../developers/konnector/controllers/apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1406,10 +1406,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -1427,11 +1425,13 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5_2_3" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5_5_2_3" >
         
           
           <label class="md-nav__link" for="__nav_5_5_2_3" id="__nav_5_5_2_3_label" tabindex="0">
@@ -1445,7 +1445,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_5_5_2_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_5_5_2_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_5_2_3">
             <span class="md-nav__icon md-icon"></span>
             Cluster
@@ -1459,7 +1459,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../clusterbinding/" class="md-nav__link">
+      <a href="../../../developers/konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1480,7 +1480,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../apiservicenamespace/" class="md-nav__link">
+      <a href="../../../developers/konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1501,7 +1501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../apiservicebinding/" class="md-nav__link">
+      <a href="../../../developers/konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1522,7 +1522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../apiserviceexport/" class="md-nav__link">
+      <a href="../../../developers/konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1567,7 +1567,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../publishing-a-release/" class="md-nav__link">
+      <a href="../../../developers/publishing-a-release/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1588,7 +1588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../testing-changes/" class="md-nav__link">
+      <a href="../../../developers/testing-changes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1613,6 +1613,8 @@
       
   
   
+    
+  
   
   
     
@@ -1629,21 +1631,22 @@
     
     
       
+        
+        
+      
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../reference/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -1654,13 +1657,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             API References
@@ -1673,8 +1676,10 @@
                 
   
   
+    
   
   
+  
     
     
       
@@ -1706,13 +1711,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6_2" checked>
         
           
           <label class="md-nav__link" for="__nav_6_2" id="__nav_6_2_label" tabindex="0">
@@ -1726,7 +1729,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_6_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6_2">
             <span class="md-nav__icon md-icon"></span>
             CLI
@@ -1740,7 +1743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind/" class="md-nav__link">
+      <a href="../bind/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1761,7 +1764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind_apiservice/" class="md-nav__link">
+      <a href="../bind_apiservice/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1782,7 +1785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind_cluster-identity/" class="md-nav__link">
+      <a href="../bind_cluster-identity/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1803,7 +1806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind_collections/" class="md-nav__link">
+      <a href="../bind_collections/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1821,10 +1824,28 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind_deploy/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    bind deploy
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1833,6 +1854,69 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#synopsis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Synopsis
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options" class="md-nav__link">
+    <span class="md-ellipsis">
+      Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options-inherited-from-parent-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Options inherited from parent commands
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1845,7 +1929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind_dev/" class="md-nav__link">
+      <a href="../bind_dev/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1866,7 +1950,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind_dev_create/" class="md-nav__link">
+      <a href="../bind_dev_create/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1887,7 +1971,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind_dev_delete/" class="md-nav__link">
+      <a href="../bind_dev_delete/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1908,7 +1992,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind_dev_example/" class="md-nav__link">
+      <a href="../bind_dev_example/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1929,7 +2013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind_login/" class="md-nav__link">
+      <a href="../bind_login/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1950,7 +2034,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/cli/bind_templates/" class="md-nav__link">
+      <a href="../bind_templates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2085,7 +2169,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/crd/kube-bind.io/apiconversions/" class="md-nav__link">
+      <a href="../../crd/kube-bind.io/apiconversions/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2106,7 +2190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
+      <a href="../../crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2127,7 +2211,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
+      <a href="../../crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2148,7 +2232,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
+      <a href="../../crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2169,7 +2253,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/crd/kube-bind.io/apiserviceexporttemplates/" class="md-nav__link">
+      <a href="../../crd/kube-bind.io/apiserviceexporttemplates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2190,7 +2274,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
+      <a href="../../crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2211,7 +2295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/crd/kube-bind.io/bindableresourcesrequests/" class="md-nav__link">
+      <a href="../../crd/kube-bind.io/bindableresourcesrequests/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2232,7 +2316,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/crd/kube-bind.io/boundschemas/" class="md-nav__link">
+      <a href="../../crd/kube-bind.io/boundschemas/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2253,7 +2337,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/crd/kube-bind.io/clusterbindings/" class="md-nav__link">
+      <a href="../../crd/kube-bind.io/clusterbindings/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2274,7 +2358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../reference/crd/kube-bind.io/collections/" class="md-nav__link">
+      <a href="../../crd/kube-bind.io/collections/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -2328,8 +2412,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -2338,27 +2420,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#key-features" class="md-nav__link">
+  <a href="#synopsis" class="md-nav__link">
     <span class="md-ellipsis">
-      Key Features
+      Synopsis
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#boundschema-structure" class="md-nav__link">
+  <a href="#examples" class="md-nav__link">
     <span class="md-ellipsis">
-      BoundSchema Structure
+      Examples
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#integration-with-apiserviceexport" class="md-nav__link">
+  <a href="#options" class="md-nav__link">
     <span class="md-ellipsis">
-      Integration with APIServiceExport
+      Options
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#options-inherited-from-parent-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Options inherited from parent commands
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
     </span>
   </a>
   
@@ -2382,48 +2482,90 @@
   
 
 
-<h1 id="boundschema">BoundSchema</h1>
-<p>The BoundSchema controller manages <code>BoundSchema</code> resources in the consumer cluster, introduced in v1alpha2.</p>
-<p><code>BoundSchema</code> represents bound API resource schemas in consumer clusters and tracks the underlying status of synced resources.</p>
-<h2 id="key-features">Key Features</h2>
-<ul>
-<li><strong>Schema Validation</strong>: Ensures the bound schema is valid and properly applied</li>
-<li><strong>Drift Detection</strong>: Monitors for differences between expected and actual schema state  </li>
-<li><strong>Condition Management</strong>: Provides status conditions for validation and drift detection</li>
-</ul>
-<h2 id="boundschema-structure">BoundSchema Structure</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-bind.io/v1alpha2</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BoundSchema</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">metadata</span><span class="p">:</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">    </span><span class="nt">kube-bind.io/exported</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cowboys.wildwest.dev</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">kube-bind-flsd8</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nt">spec</span><span class="p">:</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">  </span><span class="nt">group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wildwest.dev</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="nt">informerScope</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Namespaced</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="nt">names</span><span class="p">:</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cowboy</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">listKind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CowboyList</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">plural</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cowboys</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">singular</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cowboy</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="nt">scope</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Namespaced</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">  </span><span class="nt">versions</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+  <h1>bind deploy</h1>
+
+<h3 id="synopsis">Synopsis</h3>
+<p>Deploy the konnector and create APIServiceBindings from a BindingResourceResponse.</p>
+<p>This command is useful when you have obtained a BindingResourceResponse through
+the CRD-based flow (BindableResourcesRequest) and want to deploy the konnector
+to establish the connection.</p>
+<p>The BindingResourceResponse can be provided via:
+- A Kubernetes secret (--secret namespace/name)
+- A file (--file path/to/file.yaml)
+- Standard input (--file -)</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>bind deploy [flags]
 </code></pre></div>
-<h2 id="integration-with-apiserviceexport">Integration with APIServiceExport</h2>
-<p>BoundSchema works closely with the APIServiceExport resource-based model:</p>
-<ol>
-<li>APIServiceExport references multiple resources via <code>Resources []APIServiceExportResource</code></li>
-<li>Each resource can map to a BoundSchema in the consumer cluster</li>
-<li>BoundSchema tracks the actual application and status of these schemas</li>
-<li>This enables better multi-resource management and status tracking</li>
-</ol>
+<h3 id="examples">Examples</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># Deploy konnector from a BindingResourceResponse stored in a secret
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl bind deploy --secret kube-bind/my-binding-response
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a># Deploy konnector from a BindingResourceResponse file
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>kubectl bind deploy --file binding-response.yaml
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a># Deploy konnector reading from stdin
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>kubectl bind deploy --file -
+</code></pre></div>
+<h3 id="options">Options</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>      --allow-missing-template-keys          If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to golang and jsonpath output formats. (default true)
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>      --as-uid string                        UID to impersonate for the operation
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>      --certificate-authority string         Path to a cert file for the certificate authority
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>      --cluster string                       The kube-bind cluster name to use (overrides kube-bind config current cluster)
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>      --config-file string                   Path to the kube-bind configuration file
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>      --context string                       The name of the kubeconfig context to use
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>      --disable-compression                  If true, opt-out of response compression for all requests to the server
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>      --downgrade-konnector                  Downgrade the konnector to the version of the kubectl-bind binary
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>  -d, --dry-run                              If true, only print the actions that would be taken without executing them
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>  -f, --file string                          A file with a BindingResourceResponse manifest. Use - to read from stdin
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>  -h, --help                                 help for deploy
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>      --insecure-skip-tls-verify             Skip TLS certificate verification (not recommended)
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>      --kubeconfig string                    path to the kubeconfig file
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>      --log-flush-frequency duration         Maximum number of seconds between log flushes (default 5s)
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>      --log-text-info-buffer-size quantity   [Alpha] In text format with split output streams, the info messages can be buffered for a while to increase performance. The default value of zero bytes disables buffering. The size can be specified as number of bytes (512), multiples of 1000 (1K), multiples of 1024 (2Ki), or powers of those (3M, 4G, 5Mi, 6Gi). Enable the LoggingAlphaOptions feature gate to use this.
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>      --log-text-split-stream                [Alpha] In text format, write error messages to stderr and info messages to stdout. The default is to write a single stream to stdout. Enable the LoggingAlphaOptions feature gate to use this.
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>      --logging-format string                Sets the log format. Permitted formats: &quot;text&quot;. (default &quot;text&quot;)
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>  -n, --namespace string                     If present, the namespace scope for this CLI request
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>  -o, --output string                        Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath, jsonpath-as-json, jsonpath-file).
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>      --password string                      Password for basic authentication to the API server
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      --proxy-url string                     If provided, this URL will be used to connect via proxy
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>      --secret string                        Reference to a secret containing the BindingResourceResponse (format: namespace/name)
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>      --secret-key string                    Key in the secret containing the BindingResourceResponse (default: kubeconfig) (default &quot;kubeconfig&quot;)
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>      --server string                        The kube-bind server name to use (overrides kube-bind config current server)
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>      --show-managed-fields                  If true, keep the managedFields when printing objects in JSON or YAML format.
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>      --skip-konnector                       Skip the deployment of the konnector
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>      --template string                      Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>      --tls-server-name string               If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>      --token string                         Bearer token for authentication to the API server
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>      --user string                          The name of the kubeconfig user to use
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>      --username string                      Username for basic authentication to the API server
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>  -v, --v Level                              number for the log level verbosity
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>      --vmodule pattern=N,...                comma-separated list of pattern=N settings for file-filtered logging (only works for text log format)
+</code></pre></div>
+<h3 id="options-inherited-from-parent-commands">Options inherited from parent commands</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>      --add_dir_header                   If true, adds the file directory to the header of the log messages
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>      --alsologtostderr                  log to standard error as well as files (no effect when -logtostderr=true)
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>      --log_dir string                   If non-empty, write log files in this directory (no effect when -logtostderr=true)
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>      --log_file string                  If non-empty, use this log file (no effect when -logtostderr=true)
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>      --log_file_max_size uint           Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>      --logtostderr                      log to standard error instead of files (default true)
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>      --one_output                       If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>      --skip_headers                     If true, avoid header prefixes in the log messages
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>      --skip_log_headers                 If true, avoid headers when opening log files (no effect when -logtostderr=true)
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>      --stderrthreshold severity         logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true) (default 2)
+</code></pre></div>
+<h3 id="see-also">See Also</h3>
+<ul>
+<li><a href="../bind/">bind</a> – Open kube-bind UI or bind templates from a remote server.</li>
+</ul>
 
 
 
 
 
 
+
+  
+  
 
 
 
@@ -2496,10 +2638,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../../../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate"], "search": "../../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
       
     
   </body>

@@ -218,7 +218,7 @@ func (r *reconciler) syncAPIServiceBindings(ctx context.Context, bundle *kubebin
 	for _, binding := range allBindings {
 		for _, ownerRef := range binding.OwnerReferences {
 			if ownerRef.APIVersion == kubebindv1alpha2.SchemeGroupVersion.String() &&
-				ownerRef.Kind == kubebindv1alpha2.KindAPIServiceBindingBundle &&
+				ownerRef.Kind == "APIServiceBindingBundle" &&
 				ownerRef.Name == bundle.Name &&
 				ownerRef.UID == bundle.UID {
 				ownedBindings[binding.Name] = binding
@@ -252,7 +252,7 @@ func (r *reconciler) syncAPIServiceBindings(ctx context.Context, bundle *kubebin
 				OwnerReferences: []metav1.OwnerReference{
 					{
 						APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
-						Kind:       kubebindv1alpha2.KindAPIServiceBindingBundle,
+						Kind:       "APIServiceBindingBundle",
 						Name:       bundle.Name,
 						UID:        bundle.UID,
 						Controller: func() *bool { b := true; return &b }(),

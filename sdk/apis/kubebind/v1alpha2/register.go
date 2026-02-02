@@ -33,22 +33,6 @@ const (
 
 	// GroupVersion is the group version used in this package.
 	GroupVersion = "v1alpha2"
-
-	// Kind constants for the types in this package.
-	KindBoundSchema              = "BoundSchema"
-	KindAPIServiceBinding        = "APIServiceBinding"
-	KindAPIServiceBindingBundle  = "APIServiceBindingBundle"
-	KindAPIServiceExport         = "APIServiceExport"
-	KindAPIServiceExportRequest  = "APIServiceExportRequest"
-	KindAPIServiceNamespace      = "APIServiceNamespace"
-	KindClusterBinding           = "ClusterBinding"
-	KindBindingProvider          = "BindingProvider"
-	KindBindingResourceResponse  = "BindingResourceResponse"
-	KindAPIServiceExportTemplate = "APIServiceExportTemplate"
-	KindCollection               = "Collection"
-	KindCluster                  = "Cluster"
-	KindBindableResourcesRequest = "BindableResourcesRequest"
-	KindAPIConversion            = "APIConversion"
 )
 
 // SchemeGroupVersion is group version used to register these objects.

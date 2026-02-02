@@ -328,11 +328,10 @@ func (s *Server) Run(ctx context.Context) error {
 
 	if !s.Config.Options.FrontendDisabled {
 		return s.WebServer.Start(ctx)
-	} else {
-		logger.Info("Frontend is disabled; skipping web server start")
-		<-ctx.Done()
-		return nil
 	}
+	logger.Info("Frontend is disabled; skipping web server start")
+	<-ctx.Done()
+	return nil
 }
 
 func (s *Server) seedCluster(ctx context.Context) error {

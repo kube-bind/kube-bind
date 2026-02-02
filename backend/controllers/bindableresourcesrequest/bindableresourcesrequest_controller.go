@@ -313,7 +313,7 @@ func (r *reconciler) ensureBindingResponseSecret(
 	response := kubebindv1alpha2.BindingResourceResponse{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
-			Kind:       kubebindv1alpha2.KindBindingResourceResponse,
+			Kind:       "BindingResourceResponse",
 		},
 		Kubeconfig: kubeconfig,
 	}
@@ -333,7 +333,7 @@ func (r *reconciler) ensureBindingResponseSecret(
 	// Build owner reference - the secret is owned by the BindableResourcesRequest
 	ownerRef := metav1.OwnerReference{
 		APIVersion: kubebindv1alpha2.SchemeGroupVersion.String(),
-		Kind:       kubebindv1alpha2.KindBindableResourcesRequest,
+		Kind:       "BindableResourcesRequest",
 		Name:       req.Name,
 		UID:        req.UID,
 		Controller: func() *bool { b := true; return &b }(),

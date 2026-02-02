@@ -150,8 +150,7 @@ func (m *Manager) HandleResources(
 		return nil, err
 	}
 
-	err = kuberesources.EnsureBinderRoleBinding(ctx, c, ns, sa.Name)
-	if err != nil {
+	if err = kuberesources.EnsureBinderRoleBinding(ctx, c, ns, sa.Name); err != nil {
 		return nil, err
 	}
 

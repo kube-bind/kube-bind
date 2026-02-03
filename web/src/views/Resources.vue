@@ -335,11 +335,14 @@ const handleBind = async (templateName: string, bindingName: string) => {
       metadata: {
         name: bindingName
       },
-      templateRef: {
-        name: templateName
-      },
-      clusterIdentity: {
-        identity: clusterIdentity
+      spec: {
+        templateRef: {
+          name: templateName
+        },
+        clusterIdentity: {
+          identity: clusterIdentity
+        },
+        author: 'web-ui'
       }
     }
 

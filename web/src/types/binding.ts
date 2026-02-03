@@ -11,8 +11,11 @@ export interface BindableResourcesRequest {
   metadata: {
     name: string
   }
-  templateRef: BindingTemplate
-  clusterIdentity: ClusterIdentity
+  spec: {
+    templateRef: BindingTemplate
+    clusterIdentity: ClusterIdentity
+    author: string
+  }
 }
 
 export interface APIServiceExportRequestResponse {

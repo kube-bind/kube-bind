@@ -98,7 +98,7 @@ var __yieldStar = (value) => {
 };
 var __forAwait = (obj, it, method) => (it = obj[__knownSymbol("asyncIterator")]) ? it.call(obj) : (obj = obj[__knownSymbol("iterator")](), it = {}, method = (key, fn) => (fn = obj[key]) && (it[key] = (arg) => new Promise((yes, no, done) => (arg = fn.call(obj, arg), done = arg.done, Promise.resolve(arg.value).then((value) => yes({ value, done }), no)))), method("next"), method("return"), it);
 var require_index_001 = __commonJS({
-  "assets/index.a8fc1aeb.js"(exports) {
+  "assets/index.b10aa2d7.js"(exports) {
     (function polyfill() {
       const relList = document.createElement("link").relList;
       if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -12377,11 +12377,14 @@ ${formattedObject}`;
               metadata: {
                 name: bindingName
               },
-              templateRef: {
-                name: templateName
-              },
-              clusterIdentity: {
-                identity: clusterIdentity
+              spec: {
+                templateRef: {
+                  name: templateName
+                },
+                clusterIdentity: {
+                  identity: clusterIdentity
+                },
+                author: "web-ui"
               }
             };
             const response = yield httpClient.post(bindUrl, bindingRequest);
@@ -12598,8 +12601,8 @@ Details: ${kubeError.details || "No additional details available"}`;
         };
       }
     });
-    const Resources_vue_vue_type_style_index_0_scoped_32c19ba7_lang = "";
-    const Resources = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-32c19ba7"]]);
+    const Resources_vue_vue_type_style_index_0_scoped_adbc8337_lang = "";
+    const Resources = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-adbc8337"]]);
     const routes = [
       { path: "/", component: Resources },
       { path: "/resources", component: Resources }

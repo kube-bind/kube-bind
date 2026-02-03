@@ -143,6 +143,9 @@ spec:
     apiVersion: v1alpha1
     kind: LoadBalancer
     group: networking.kro.run
+    metadata:
+      labels:
+        kube-bind.io/exported: "true"
     spec:
       domain: string
       configMapRef: string
@@ -212,14 +215,6 @@ spec:
               - name: X-Custom-Message
                 value: ${configmap.?data["custom-header"]}
 EOF
-```
-
-### Add kube-bind Export Label
-
-Add the export label to the `LoadBalancer` CRD.
-
-```bash
-kubectl label crd loadbalancers.networking.kro.run kube-bind.io/exported=true --overwrite
 ```
 
 ### Export the LoadBalancer API

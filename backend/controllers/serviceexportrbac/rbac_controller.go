@@ -82,9 +82,8 @@ func NewAPIServiceExportRBACReconciler(
 				return &ns, nil
 			},
 			// ClusterRole.
-			getClusterRole: func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error) {
+			getClusterRole: func(ctx context.Context, cache cache.Cache, key types.NamespacedName) (*rbacv1.ClusterRole, error) {
 				var role rbacv1.ClusterRole
-				key := types.NamespacedName{Name: name}
 				if err := cache.Get(ctx, key, &role); err != nil {
 					return nil, err
 				}
@@ -97,9 +96,8 @@ func NewAPIServiceExportRBACReconciler(
 				return client.Update(ctx, binding)
 			},
 			// ClusterRoleBinding.
-			getClusterRoleBinding: func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error) {
+			getClusterRoleBinding: func(ctx context.Context, cache cache.Cache, key types.NamespacedName) (*rbacv1.ClusterRoleBinding, error) {
 				var binding rbacv1.ClusterRoleBinding
-				key := types.NamespacedName{Name: name}
 				if err := cache.Get(ctx, key, &binding); err != nil {
 					return nil, err
 				}
@@ -112,9 +110,8 @@ func NewAPIServiceExportRBACReconciler(
 				return client.Update(ctx, binding)
 			},
 			// Role.
-			getRole: func(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.Role, error) {
+			getRole: func(ctx context.Context, cache cache.Cache, key types.NamespacedName) (*rbacv1.Role, error) {
 				var role rbacv1.Role
-				key := types.NamespacedName{Namespace: namespace, Name: name}
 				if err := cache.Get(ctx, key, &role); err != nil {
 					return nil, err
 				}
@@ -127,9 +124,8 @@ func NewAPIServiceExportRBACReconciler(
 				return client.Update(ctx, role)
 			},
 			// RoleBinding.
-			getRoleBinding: func(ctx context.Context, cache cache.Cache, ns, name string) (*rbacv1.RoleBinding, error) {
+			getRoleBinding: func(ctx context.Context, cache cache.Cache, key types.NamespacedName) (*rbacv1.RoleBinding, error) {
 				var binding rbacv1.RoleBinding
-				key := types.NamespacedName{Namespace: ns, Name: name}
 				if err := cache.Get(ctx, key, &binding); err != nil {
 					return nil, err
 				}

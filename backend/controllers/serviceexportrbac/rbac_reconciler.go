@@ -28,6 +28,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,19 +44,19 @@ type reconciler struct {
 	listServiceNamespaces func(ctx context.Context, cache cache.Cache, namespace string) ([]*kubebindv1alpha2.APIServiceNamespace, error)
 	getNamespace          func(ctx context.Context, cache cache.Cache, name string) (*corev1.Namespace, error)
 
-	getClusterRole    func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRole, error)
+	getClusterRole    func(ctx context.Context, cache cache.Cache, key types.NamespacedName) (*rbacv1.ClusterRole, error)
 	createClusterRole func(ctx context.Context, client client.Client, clusterRole *rbacv1.ClusterRole) error
 	updateClusterRole func(ctx context.Context, client client.Client, clusterRole *rbacv1.ClusterRole) error
 
-	getClusterRoleBinding    func(ctx context.Context, cache cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error)
+	getClusterRoleBinding    func(ctx context.Context, cache cache.Cache, key types.NamespacedName) (*rbacv1.ClusterRoleBinding, error)
 	createClusterRoleBinding func(ctx context.Context, client client.Client, clusterRoleBinding *rbacv1.ClusterRoleBinding) error
 	updateClusterRoleBinding func(ctx context.Context, client client.Client, clusterRoleBinding *rbacv1.ClusterRoleBinding) error
 
-	getRole    func(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.Role, error)
+	getRole    func(ctx context.Context, cache cache.Cache, key types.NamespacedName) (*rbacv1.Role, error)
 	createRole func(ctx context.Context, client client.Client, role *rbacv1.Role) error
 	updateRole func(ctx context.Context, client client.Client, role *rbacv1.Role) error
 
-	getRoleBinding    func(ctx context.Context, cache cache.Cache, namespace, name string) (*rbacv1.RoleBinding, error)
+	getRoleBinding    func(ctx context.Context, cache cache.Cache, key types.NamespacedName) (*rbacv1.RoleBinding, error)
 	createRoleBinding func(ctx context.Context, client client.Client, roleBinding *rbacv1.RoleBinding) error
 	updateRoleBinding func(ctx context.Context, client client.Client, roleBinding *rbacv1.RoleBinding) error
 }
@@ -236,22 +237,21 @@ func (r *reconciler) ensureRoleAndRoleBinding(ctx context.Context, client client
 		Rules: rules,
 	}
 
-	role, err := r.getRole(ctx, cache, namespace, name)
-	if err != nil && !apierrors.IsNotFound(err) {
+	role, err := getOrCreate(ctx,
+		cache,
+		client,
+		&expectedRole,
+		r.getRole,
+		r.createRole,
+	)
+	if err != nil {
 		return err
 	}
-	if role == nil {
-		err = r.createRole(ctx, client, &expectedRole)
-		if err != nil && apierrors.IsAlreadyExists(err) {
-			return err
-		}
-		role = &expectedRole
-	}
+
 	if !reflect.DeepEqual(expectedRole.Rules, role.Rules) {
 		copyRole := role.DeepCopy()
 		copyRole.Rules = expectedRole.Rules
-		err = r.updateRole(ctx, client, copyRole)
-		if err != nil {
+		if err := r.updateRole(ctx, client, copyRole); err != nil {
 			return err
 		}
 	}
@@ -271,19 +271,16 @@ func (r *reconciler) ensureRoleAndRoleBinding(ctx context.Context, client client
 		Subjects: subjects,
 	}
 
-	roleBinding, err := r.getRoleBinding(ctx, cache, namespace, name)
-	if err != nil && !apierrors.IsNotFound(err) {
+	roleBinding, err := getOrCreate(
+		ctx,
+		cache,
+		client,
+		&expectedRoleBinding,
+		r.getRoleBinding,
+		r.createRoleBinding,
+	)
+	if err != nil {
 		return err
-	}
-	if roleBinding == nil {
-		err = r.createRoleBinding(ctx, client, &expectedRoleBinding)
-		if err == nil {
-			return nil
-		}
-		if !apierrors.IsAlreadyExists(err) {
-			return err
-		}
-		roleBinding = &expectedRoleBinding
 	}
 
 	if !reflect.DeepEqual(expectedRoleBinding.Subjects, roleBinding.Subjects) {
@@ -308,19 +305,15 @@ func (r *reconciler) ensureAggregatedClusterRole(ctx context.Context, client cli
 		Rules: rules,
 	}
 
-	clusterRole, err := r.getClusterRole(ctx, cache, name)
-	if err != nil && !apierrors.IsNotFound(err) {
+	clusterRole, err := getOrCreate(ctx,
+		cache,
+		client,
+		&expectedClusterRole,
+		r.getClusterRole,
+		r.createClusterRole,
+	)
+	if err != nil {
 		return err
-	}
-	if clusterRole == nil {
-		err = r.createClusterRole(ctx, client, &expectedClusterRole)
-		if err == nil {
-			return nil
-		}
-		if !apierrors.IsAlreadyExists(err) {
-			return err
-		}
-		clusterRole = &expectedClusterRole
 	}
 
 	if clusterRole.Labels == nil || clusterRole.Labels[rbacAggregateLabelKey] != "true" ||
@@ -360,23 +353,21 @@ func (r *reconciler) ensureAggregatingClusteRoleAndClusterRoleBinding(ctx contex
 		},
 	}
 
-	clusterRole, err := r.getClusterRole(ctx, cache, name)
-	if err != nil && !apierrors.IsNotFound(err) {
+	clusterRole, err := getOrCreate(ctx,
+		cache,
+		client,
+		&expectedClusterRole,
+		r.getClusterRole,
+		r.createClusterRole,
+	)
+	if err != nil {
 		return err
-	}
-	if clusterRole == nil {
-		err = r.createClusterRole(ctx, client, &expectedClusterRole)
-		if err != nil && apierrors.IsAlreadyExists(err) {
-			return err
-		}
-		clusterRole = &expectedClusterRole
 	}
 
 	if !reflect.DeepEqual(expectedClusterRole.AggregationRule, clusterRole.AggregationRule) {
 		copyClusterRole := clusterRole.DeepCopy()
 		copyClusterRole.AggregationRule = expectedClusterRole.AggregationRule
-		err = r.updateClusterRole(ctx, client, copyClusterRole)
-		if err != nil {
+		if err := r.updateClusterRole(ctx, client, copyClusterRole); err != nil {
 			return err
 		}
 	}
@@ -395,19 +386,15 @@ func (r *reconciler) ensureAggregatingClusteRoleAndClusterRoleBinding(ctx contex
 		Subjects: subjects,
 	}
 
-	clusterRoleBinding, err := r.getClusterRoleBinding(ctx, cache, name)
-	if err != nil && !apierrors.IsNotFound(err) {
+	clusterRoleBinding, err := getOrCreate(ctx,
+		cache,
+		client,
+		&expectedClusterRoleBinding,
+		r.getClusterRoleBinding,
+		r.createClusterRoleBinding,
+	)
+	if err != nil {
 		return err
-	}
-	if clusterRoleBinding == nil {
-		err = r.createClusterRoleBinding(ctx, client, &expectedClusterRoleBinding)
-		if err == nil {
-			return nil
-		}
-		if !apierrors.IsAlreadyExists(err) {
-			return err
-		}
-		clusterRoleBinding = &expectedClusterRoleBinding
 	}
 
 	if !reflect.DeepEqual(expectedClusterRoleBinding.Subjects, clusterRoleBinding.Subjects) {
@@ -418,4 +405,39 @@ func (r *reconciler) ensureAggregatingClusteRoleAndClusterRoleBinding(ctx contex
 	}
 
 	return nil
+}
+
+func getOrCreate[R client.Object](
+	ctx context.Context,
+	cache cache.Cache,
+	client client.Client,
+	expectedObj R,
+
+	get func(
+		ctx context.Context,
+		cache cache.Cache,
+		key types.NamespacedName,
+	) (R, error),
+
+	create func(
+		ctx context.Context,
+		client client.Client,
+		obj R,
+	) error,
+
+) (R, error) {
+	var empty R
+	obj, err := get(ctx, cache, types.NamespacedName{Name: expectedObj.GetName(), Namespace: expectedObj.GetNamespace()})
+
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			return empty, err
+		}
+		if err = create(ctx, client, expectedObj); err != nil && !apierrors.IsAlreadyExists(err) {
+			return empty, err
+		}
+		return expectedObj, nil
+	}
+
+	return obj, nil
 }

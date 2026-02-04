@@ -65,10 +65,10 @@ func Test_reconciler_reconcile(t *testing.T) {
 			listServiceNamespaces: func(ctx context.Context, _ cache.Cache, namespace string) ([]*kubebindv1alpha2.APIServiceNamespace, error) {
 				return slices.Collect(maps.Values(apiServiceNamespaces)), nil
 			},
-			getClusterRole: func(ctx context.Context, _ cache.Cache, name string) (*rbacv1.ClusterRole, error) {
-				clusterRole, ok := st.clusterRoles[name]
+			getClusterRole: func(ctx context.Context, _ cache.Cache, key types.NamespacedName) (*rbacv1.ClusterRole, error) {
+				clusterRole, ok := st.clusterRoles[key.Name]
 				if !ok {
-					return nil, apierrors.NewNotFound(rbacv1.Resource("clusterroles"), name)
+					return nil, apierrors.NewNotFound(rbacv1.Resource("clusterroles"), key.Name)
 				}
 				return clusterRole, nil
 			},
@@ -88,11 +88,10 @@ func Test_reconciler_reconcile(t *testing.T) {
 				st.clusterRoles[binding.Name] = binding
 				return nil
 			},
-			getRole: func(ctx context.Context, _ cache.Cache, namespace, name string) (*rbacv1.Role, error) {
-				key := types.NamespacedName{Namespace: namespace, Name: name}.String()
-				role, ok := st.roles[key]
+			getRole: func(ctx context.Context, _ cache.Cache, key types.NamespacedName) (*rbacv1.Role, error) {
+				role, ok := st.roles[key.String()]
 				if !ok {
-					return nil, apierrors.NewNotFound(rbacv1.Resource("roles"), key)
+					return nil, apierrors.NewNotFound(rbacv1.Resource("roles"), key.String())
 				}
 				return role, nil
 			},
@@ -114,10 +113,10 @@ func Test_reconciler_reconcile(t *testing.T) {
 				st.roles[key] = role
 				return nil
 			},
-			getClusterRoleBinding: func(ctx context.Context, _ cache.Cache, name string) (*rbacv1.ClusterRoleBinding, error) {
-				clusterRoleBinding, ok := st.clusterRoleBindings[name]
+			getClusterRoleBinding: func(ctx context.Context, _ cache.Cache, key types.NamespacedName) (*rbacv1.ClusterRoleBinding, error) {
+				clusterRoleBinding, ok := st.clusterRoleBindings[key.Name]
 				if !ok {
-					return nil, apierrors.NewNotFound(rbacv1.Resource("clusterrolebindings"), name)
+					return nil, apierrors.NewNotFound(rbacv1.Resource("clusterrolebindings"), key.Name)
 				}
 				return clusterRoleBinding, nil
 			},
@@ -137,11 +136,10 @@ func Test_reconciler_reconcile(t *testing.T) {
 				st.clusterRoleBindings[binding.Name] = binding
 				return nil
 			},
-			getRoleBinding: func(ctx context.Context, _ cache.Cache, ns, name string) (*rbacv1.RoleBinding, error) {
-				key := types.NamespacedName{Namespace: ns, Name: name}.String()
-				roleBinding, ok := st.roleBindings[key]
+			getRoleBinding: func(ctx context.Context, _ cache.Cache, key types.NamespacedName) (*rbacv1.RoleBinding, error) {
+				roleBinding, ok := st.roleBindings[key.String()]
 				if !ok {
-					return nil, apierrors.NewNotFound(rbacv1.Resource("rolebindings"), key)
+					return nil, apierrors.NewNotFound(rbacv1.Resource("rolebindings"), key.String())
 				}
 				return roleBinding, nil
 			},

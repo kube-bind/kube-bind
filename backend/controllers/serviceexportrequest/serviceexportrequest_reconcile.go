@@ -31,6 +31,7 @@ import (
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -75,11 +76,50 @@ func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cach
 		return fmt.Errorf("failed to ensure APIServiceNamespaces: %w", err)
 	}
 
-	// TODO(mjudeikis): we could potentially add finallizer to APIServiceExport above or "adopt" boundschemas
-	// with owner references once export is created.
-	// https://github.com/kube-bind/kube-bind/issues/297
+	if err := r.setBoundSchemaOwnerRefs(ctx, cl, cache, req); err != nil {
+		conditions.SetSummary(req)
+		return fmt.Errorf("failed to adopt BoundSchemas: %w", err)
+	}
 
 	conditions.SetSummary(req)
+
+	return nil
+}
+
+func (r *reconciler) setBoundSchemaOwnerRefs(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	logger := klog.FromContext(ctx)
+
+	export, err := r.getServiceExport(ctx, cache, req.Namespace, req.Name)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return fmt.Errorf("failed to get APIServiceExport: %w", err)
+	}
+
+	for _, res := range req.Spec.Resources {
+		name := res.ResourceGroupName()
+		boundSchema, err := r.getBoundSchema(ctx, cl, req.Namespace, name)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				continue
+			}
+			return fmt.Errorf("failed to get BoundSchema %s: %w", name, err)
+		}
+
+		if err := controllerutil.SetControllerReference(export, boundSchema, cl.Scheme()); err != nil {
+			return fmt.Errorf("failed to set owner reference on BoundSchema %s: %w", name, err)
+		}
+
+		if err := cl.Update(ctx, boundSchema); err != nil {
+			return fmt.Errorf("failed to update BoundSchema %s with owner reference: %w", name, err)
+		}
+
+		logger.V(6).Info("Set owner reference on BoundSchema",
+			"boundSchema", name,
+			"export", export.Name,
+			"namespace", req.Namespace)
+	}
 
 	return nil
 }

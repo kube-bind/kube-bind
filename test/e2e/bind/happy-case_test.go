@@ -448,6 +448,41 @@ func testHappyCase(
 						require.NotEqual(t, consumer.providerContractNamespace, "unknown")
 					},
 				},
+				{
+					name: "verify BoundSchemas have owner references to APIServiceExport",
+					step: func(t *testing.T) {
+						t.Logf("Verifying BoundSchemas have owner references to APIServiceExport")
+						export, err := providerBindClient.KubeBindV1alpha2().APIServiceExports(consumer.providerContractNamespace).Get(ctx, "test-binding", metav1.GetOptions{})
+						require.NoError(t, err, "APIServiceExport should exist")
+
+						boundSchemas, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(consumer.providerContractNamespace).List(ctx, metav1.ListOptions{})
+						require.NoError(t, err, "should be able to list BoundSchemas")
+						require.NotEmpty(t, boundSchemas.Items, "should have at least one BoundSchema")
+
+						// Verify each BoundSchema has an owner reference to the APIServiceExport
+						for _, boundSchema := range boundSchemas.Items {
+							t.Logf("Checking owner reference for BoundSchema %s", boundSchema.Name)
+
+							var hasOwnerRef bool
+							for _, ownerRef := range boundSchema.OwnerReferences {
+								if ownerRef.Kind == "APIServiceExport" &&
+									ownerRef.Name == export.Name &&
+									ownerRef.UID == export.UID &&
+									ownerRef.Controller != nil &&
+									*ownerRef.Controller {
+									hasOwnerRef = true
+									break
+								}
+							}
+
+							require.True(t, hasOwnerRef,
+								"BoundSchema %s should have controller owner reference to APIServiceExport %s",
+								boundSchema.Name, export.Name)
+						}
+
+						t.Logf("All BoundSchemas have proper owner references")
+					},
+				},
 				// Request included namespace, so we check it first
 				{
 					name: "verify provider side namespace pre-seeding and RBAC management",
@@ -757,6 +792,45 @@ func testHappyCase(
 							}
 							return errors.IsNotFound(err)
 						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be deleted on provider side for %s", serviceGVR.Resource, consumer.name)
+					},
+				},
+				{
+					name: "verify BoundSchemas are cleaned up when APIServiceExport is deleted",
+					step: func(t *testing.T) {
+						t.Logf("Verifying BoundSchema cleanup via owner reference for %s", consumer.name)
+
+						boundSchemasBefore, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(consumer.providerContractNamespace).List(ctx, metav1.ListOptions{})
+						require.NoError(t, err)
+						require.NotEmpty(t, boundSchemasBefore.Items, "should have BoundSchemas before deletion")
+
+						boundSchemaNames := make([]string, 0, len(boundSchemasBefore.Items))
+						for _, bs := range boundSchemasBefore.Items {
+							boundSchemaNames = append(boundSchemaNames, bs.Name)
+						}
+						t.Logf("Found %d BoundSchemas before deletion: %v", len(boundSchemaNames), boundSchemaNames)
+
+						t.Logf("Deleting APIServiceExport for %s", consumer.name)
+						err = providerBindClient.KubeBindV1alpha2().APIServiceExports(consumer.providerContractNamespace).Delete(ctx, "test-binding", metav1.DeleteOptions{})
+						require.NoError(t, err)
+
+						require.Eventually(t, func() bool {
+							_, err := providerBindClient.KubeBindV1alpha2().APIServiceExports(consumer.providerContractNamespace).Get(ctx, "test-binding", metav1.GetOptions{})
+							return errors.IsNotFound(err)
+						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for APIServiceExport to be deleted")
+
+						t.Logf("Verifying all BoundSchemas are automatically deleted")
+						require.Eventually(t, func() bool {
+							for _, boundSchemaName := range boundSchemaNames {
+								_, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(consumer.providerContractNamespace).Get(ctx, boundSchemaName, metav1.GetOptions{})
+								if !errors.IsNotFound(err) {
+									t.Logf("BoundSchema %s still exists or error: %v", boundSchemaName, err)
+									return false
+								}
+							}
+							return true
+						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for all BoundSchemas to be garbage collected")
+
+						t.Logf("Successfully verified BoundSchema cleanup for %s", consumer.name)
 					},
 				},
 			} {

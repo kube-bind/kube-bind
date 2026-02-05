@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -477,89 +478,104 @@ func testHappyCase(
 						_, err := providerCoreClient.Namespaces().Get(ctx, actualProviderNamespace, metav1.GetOptions{})
 						require.NoError(t, err, "Actual provider side namespace object should exist")
 
+						expectedVerbs := []string{"get", "list", "watch", "create", "update", "patch", "delete"}
+						slices.Sort(expectedVerbs)
+
 						switch informerScope {
 						case kubebindv1alpha2.ClusterScope:
 							t.Logf("Verifying RBAC resources were created for secret management in cluster scope")
 							rbacClient := framework.KubeClient(t, providerConfig).RbacV1()
 
-							clusterRoles, err := rbacClient.ClusterRoles().List(ctx, metav1.ListOptions{})
-							require.NoError(t, err)
-
-							var foundSecretClusterRole bool
-							for _, cr := range clusterRoles.Items {
-								if strings.Contains(cr.Name, "kube-binder-export") {
-									for _, rule := range cr.Rules {
-										for _, resource := range rule.Resources {
-											if resource == "secrets" {
-												foundSecretClusterRole = true
-												require.Contains(t, rule.Verbs, "*", "ClusterRole should have * permissions for secrets")
-												require.Contains(t, rule.APIGroups, "", "ClusterRole should target core API group")
-												break
-											}
+							require.Eventually(t, func() bool {
+								clusterRoles, err := rbacClient.ClusterRoles().List(ctx, metav1.ListOptions{})
+								require.NoError(t, err)
+								for _, clusterRole := range clusterRoles.Items {
+									if !strings.HasPrefix(clusterRole.Name, "kube-binder-claims-") {
+										continue
+									}
+									for _, rule := range clusterRole.Rules {
+										if !slices.Contains(rule.Resources, "secrets") || !slices.Contains(rule.APIGroups, "") {
+											continue
+										}
+										slices.Sort(rule.Verbs)
+										if slices.Equal(expectedVerbs, rule.Verbs) {
+											return true
 										}
 									}
 								}
-							}
-							require.True(t, foundSecretClusterRole, "ClusterRole for secrets should be created")
+								return false
+							}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for ClusterRole for claimed secrets resource to be ready on provider side")
 
-							t.Logf("Verifying ClusterRoleBinding was created for pre-seeded namespace secret access")
-							clusterRoleBindings, err := rbacClient.ClusterRoleBindings().List(ctx, metav1.ListOptions{})
-							require.NoError(t, err)
+							t.Logf("Verifying ClusterRole for secrets claim has been aggregated into kube-binder-exports ClusterRole")
 
-							var foundSecretClusterRoleBinding bool
-							for _, crb := range clusterRoleBindings.Items {
-								if strings.Contains(crb.Name, "kube-binder-export") {
-									for _, subject := range crb.Subjects {
-										if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
-											foundSecretClusterRoleBinding = true
-											require.Equal(t, "ClusterRole", crb.RoleRef.Kind, "Should reference ClusterRole")
-											break
-										}
+							require.Eventually(t, func() bool {
+								aggregatingClusterRole, err := rbacClient.ClusterRoles().Get(ctx, "kube-binder-exports", metav1.GetOptions{})
+								require.NoError(t, err) // kube-binder-exports must already exist: it is created before kube-binder-claims-* ClusterRole.
+								for _, rule := range aggregatingClusterRole.Rules {
+									if !slices.Contains(rule.Resources, "secrets") || !slices.Contains(rule.APIGroups, "") {
+										continue
+									}
+									slices.Sort(rule.Verbs)
+									if slices.Equal(expectedVerbs, rule.Verbs) {
+										return true
 									}
 								}
-							}
-							require.True(t, foundSecretClusterRoleBinding, "ClusterRoleBinding for ServiceAccount should be created")
+								return false
+							}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for ClusterRoleBinding to be ready on provider side")
+
+							t.Logf("Verifying ClusterRoleBinding for kube-binder-exports ClusterRole was created")
+
+							require.Eventually(t, func() bool {
+								aggregatingCRB, err := rbacClient.ClusterRoleBindings().Get(ctx, "kube-binder-exports", metav1.GetOptions{})
+								require.NoError(t, err)
+								for _, subject := range aggregatingCRB.Subjects {
+									if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
+										return true
+									}
+								}
+								return false
+							}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for ClusterRoleBinding kube-binder-exports to be ready on provider side")
 						case kubebindv1alpha2.NamespacedScope:
 							t.Logf("Verifying RBAC resources were created for secret management in namespace scope")
 							rbacClient := framework.KubeClient(t, providerConfig).RbacV1()
 
-							roles, err := rbacClient.Roles(consumer.providerObjectNamespace).List(ctx, metav1.ListOptions{})
-							require.NoError(t, err)
-
-							var foundSecretRole bool
-							for _, cr := range roles.Items {
-								if strings.Contains(cr.Name, "kube-binder-export") {
+							require.Eventually(t, func() bool {
+								roles, err := rbacClient.Roles(consumer.providerObjectNamespace).List(ctx, metav1.ListOptions{})
+								require.NoError(t, err)
+								for _, cr := range roles.Items {
+									if !strings.HasPrefix(cr.Name, "kube-binder-claims-") {
+										continue
+									}
 									for _, rule := range cr.Rules {
-										for _, resource := range rule.Resources {
-											if resource == "secrets" {
-												foundSecretRole = true
-												require.Contains(t, rule.Verbs, "*", "Role should have * permissions for secrets")
-												require.Contains(t, rule.APIGroups, "", "Role should target core API group")
-												break
-											}
+										if !slices.Contains(rule.Resources, "secrets") || !slices.Contains(rule.APIGroups, "") {
+											continue
+										}
+										slices.Sort(rule.Verbs)
+										if slices.Equal(expectedVerbs, rule.Verbs) {
+											return true
 										}
 									}
 								}
-							}
-							require.True(t, foundSecretRole, "Role for secrets should be created")
+								return false
+							}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for RoleBinding for claimed secrets resource to be ready on provider side")
 
 							t.Logf("Verifying RoleBinding was created for pre-seeded namespace secret access")
-							roleBindings, err := rbacClient.RoleBindings(consumer.providerObjectNamespace).List(ctx, metav1.ListOptions{})
-							require.NoError(t, err)
 
-							var foundSecretRoleBinding bool
-							for _, crb := range roleBindings.Items {
-								if strings.Contains(crb.Name, "kube-binder-") && strings.Contains(crb.Name, "-export-") {
-									for _, subject := range crb.Subjects {
+							require.Eventually(t, func() bool {
+								roleBindings, err := rbacClient.RoleBindings(consumer.providerObjectNamespace).List(ctx, metav1.ListOptions{})
+								require.NoError(t, err)
+								for _, rb := range roleBindings.Items {
+									if !strings.HasPrefix(rb.Name, "kube-binder-claims-") {
+										continue
+									}
+									for _, subject := range rb.Subjects {
 										if subject.Kind == "ServiceAccount" && subject.Name == kuberesources.ServiceAccountName {
-											foundSecretRoleBinding = true
-											require.Equal(t, "Role", crb.RoleRef.Kind, "Should reference Role")
-											break
+											return true
 										}
 									}
 								}
-							}
-							require.True(t, foundSecretRoleBinding, "RoleBinding for ServiceAccount should be created")
+								return false
+							}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for RoleBinding for claimed secrets resource to be ready on provider side")
 						}
 
 						t.Logf("Provider side namespace pre-seeding and secret management RBAC verified successfully")

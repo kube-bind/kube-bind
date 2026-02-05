@@ -150,6 +150,10 @@ func (m *Manager) HandleResources(
 		return nil, err
 	}
 
+	if err = kuberesources.EnsureBinderRoleBinding(ctx, c, ns, sa.Name); err != nil {
+		return nil, err
+	}
+
 	kfgSecret, err := kuberesources.GenerateKubeconfig(ctx, c, cl.GetConfig(), m.externalAddressGenerator, m.externalCA, m.externalTLSServerName, saSecret.Name, ns, kubeconfigSecretName)
 	if err != nil {
 		return nil, err

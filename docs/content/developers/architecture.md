@@ -278,6 +278,41 @@ Running with 2 consumers validates:
 - For cluster-scoped resources with IsolationPrefixed, resources are name-prefixed
 - For cluster-scoped resources with IsolationNamespaced, provider CRD is toggled to NamespaceScoped
 
+## RBAC Infrastructure
+
+### Exported resources
+
+Exported resources always use cluster-scoped RBACs:
+
+- Aggregating `kube-binder-exports` ClusterRole
+  - Bound with `kube-binder-exports` ClusterRoleBinding to `<APIServiceExport.Namespace>/kube-binder` ServiceAccount
+
+This aggregating ClusterRole includes all subsequent ClusterRoles that are created for each APIServiceExport.
+
+- `kube-binder-<APIServiceExport.Namespace>-<APIServiceExport.Name>` ClusterRole for each APIServiceExport
+  - Each resource in the APIServiceExport is granted `"get", "list", "watch", "create", "update", "patch", "delete"` set of verbs.
+  - Aggregates into `kube-binder-exports` ClusterRole.
+
+### Claimed resources
+
+Claimed resources use namespace- or cluster-scoped RBACs depending on the resource scope of the claimed resource itself, as well as backend's informer scope.
+
+For cluster-scoped informers:
+
+**Scope of the claimed resource** | **Informer scope** | **What happens**
+--- | --- | ---
+cluster | cluster | Creates ClusterRole & ClusterRoleBinding
+namespace | cluster | Creates ClusterRole & ClusterRoleBinding
+
+For namespace-scoped informers:
+
+**Scope of the claimed resource** | **Informer scope** | **What happens**
+--- | --- | ---
+cluster | namespace | Creates ClusterRole & ClusterRoleBinding
+namespace | namespace | Creates Role & RoleBinding
+
+Regardless of the configuration, claimed resources are granted `"get", "list", "watch", "create", "update", "patch", "delete"` set of verbs.
+
 ## Implementation Details
 
 ### Code Structure

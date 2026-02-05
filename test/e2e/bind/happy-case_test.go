@@ -453,6 +453,9 @@ func testHappyCase(
 					step: func(t *testing.T) {
 						t.Logf("Verifying BoundSchemas have owner references to APIServiceExport")
 						export, err := providerBindClient.KubeBindV1alpha2().APIServiceExports(consumer.providerContractNamespace).Get(ctx, "test-binding", metav1.GetOptions{})
+						if errors.IsNotFound(err) && consumer.name != "consumer1" {
+							t.Skip("APIServiceExport already deleted by another consumer")
+						}
 						require.NoError(t, err, "APIServiceExport should exist")
 
 						boundSchemas, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(consumer.providerContractNamespace).List(ctx, metav1.ListOptions{})
@@ -797,7 +800,19 @@ func testHappyCase(
 				{
 					name: "verify BoundSchemas are cleaned up when APIServiceExport is deleted",
 					step: func(t *testing.T) {
+						// Skip for consumer2 since consumer1 will have already deleted the shared APIServiceExport
+						if consumer.name != "consumer1" {
+							t.Skip("Skipping cleanup test for non-first consumer to avoid shared resource conflict")
+						}
+
 						t.Logf("Verifying BoundSchema cleanup via owner reference for %s", consumer.name)
+
+						// Get the APIServiceExport first to check it exists
+						export, err := providerBindClient.KubeBindV1alpha2().APIServiceExports(consumer.providerContractNamespace).Get(ctx, "test-binding", metav1.GetOptions{})
+						if errors.IsNotFound(err) {
+							t.Skip("APIServiceExport already deleted by another consumer")
+						}
+						require.NoError(t, err, "APIServiceExport should exist")
 
 						boundSchemasBefore, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(consumer.providerContractNamespace).List(ctx, metav1.ListOptions{})
 						require.NoError(t, err)
@@ -806,10 +821,12 @@ func testHappyCase(
 						boundSchemaNames := make([]string, 0, len(boundSchemasBefore.Items))
 						for _, bs := range boundSchemasBefore.Items {
 							boundSchemaNames = append(boundSchemaNames, bs.Name)
+							t.Logf("BoundSchema %s has %d finalizers: %v, ownerRefs: %d",
+								bs.Name, len(bs.Finalizers), bs.Finalizers, len(bs.OwnerReferences))
 						}
 						t.Logf("Found %d BoundSchemas before deletion: %v", len(boundSchemaNames), boundSchemaNames)
 
-						t.Logf("Deleting APIServiceExport for %s", consumer.name)
+						t.Logf("Deleting APIServiceExport %s (UID: %s) for %s", export.Name, export.UID, consumer.name)
 						err = providerBindClient.KubeBindV1alpha2().APIServiceExports(consumer.providerContractNamespace).Delete(ctx, "test-binding", metav1.DeleteOptions{})
 						require.NoError(t, err)
 
@@ -821,11 +838,18 @@ func testHappyCase(
 						t.Logf("Verifying all BoundSchemas are automatically deleted")
 						require.Eventually(t, func() bool {
 							for _, boundSchemaName := range boundSchemaNames {
-								_, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(consumer.providerContractNamespace).Get(ctx, boundSchemaName, metav1.GetOptions{})
-								if !errors.IsNotFound(err) {
-									t.Logf("BoundSchema %s still exists or error: %v", boundSchemaName, err)
+								bs, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(consumer.providerContractNamespace).Get(ctx, boundSchemaName, metav1.GetOptions{})
+								if err != nil {
+									if errors.IsNotFound(err) {
+										continue
+									}
+									t.Logf("Error getting BoundSchema %s: %v", boundSchemaName, err)
 									return false
 								}
+								// Still exists - log details
+								t.Logf("BoundSchema %s still exists: finalizers=%v, deletionTimestamp=%v, ownerRefs=%d",
+									boundSchemaName, bs.Finalizers, bs.DeletionTimestamp, len(bs.OwnerReferences))
+								return false
 							}
 							return true
 						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for all BoundSchemas to be garbage collected")

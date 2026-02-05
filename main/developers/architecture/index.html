@@ -1206,6 +1206,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rbac-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      RBAC Infrastructure
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RBAC Infrastructure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exported-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exported resources
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claimed-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claimed resources
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#implementation-details" class="md-nav__link">
     <span class="md-ellipsis">
       Implementation Details
@@ -2804,6 +2837,39 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rbac-infrastructure" class="md-nav__link">
+    <span class="md-ellipsis">
+      RBAC Infrastructure
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RBAC Infrastructure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exported-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exported resources
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#claimed-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Claimed resources
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#implementation-details" class="md-nav__link">
     <span class="md-ellipsis">
       Implementation Details
@@ -3133,6 +3199,66 @@ If you are looking for user-focused documentation, please refer to the <a href="
 - For cluster-scoped resources with IsolationNone, last-write-wins
 - For cluster-scoped resources with IsolationPrefixed, resources are name-prefixed
 - For cluster-scoped resources with IsolationNamespaced, provider CRD is toggled to NamespaceScoped</p>
+<h2 id="rbac-infrastructure">RBAC Infrastructure</h2>
+<h3 id="exported-resources">Exported resources</h3>
+<p>Exported resources always use cluster-scoped RBACs:</p>
+<ul>
+<li>Aggregating <code>kube-binder-exports</code> ClusterRole</li>
+<li>Bound with <code>kube-binder-exports</code> ClusterRoleBinding to <code>&lt;APIServiceExport.Namespace&gt;/kube-binder</code> ServiceAccount</li>
+</ul>
+<p>This aggregating ClusterRole includes all subsequent ClusterRoles that are created for each APIServiceExport.</p>
+<ul>
+<li><code>kube-binder-&lt;APIServiceExport.Namespace&gt;-&lt;APIServiceExport.Name&gt;</code> ClusterRole for each APIServiceExport</li>
+<li>Each resource in the APIServiceExport is granted <code>"get", "list", "watch", "create", "update", "patch", "delete"</code> set of verbs.</li>
+<li>Aggregates into <code>kube-binder-exports</code> ClusterRole.</li>
+</ul>
+<h3 id="claimed-resources">Claimed resources</h3>
+<p>Claimed resources use namespace- or cluster-scoped RBACs depending on the resource scope of the claimed resource itself, as well as backend's informer scope.</p>
+<p>For cluster-scoped informers:</p>
+<table>
+<thead>
+<tr>
+<th><strong>Scope of the claimed resource</strong></th>
+<th><strong>Informer scope</strong></th>
+<th><strong>What happens</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cluster</td>
+<td>cluster</td>
+<td>Creates ClusterRole &amp; ClusterRoleBinding</td>
+</tr>
+<tr>
+<td>namespace</td>
+<td>cluster</td>
+<td>Creates ClusterRole &amp; ClusterRoleBinding</td>
+</tr>
+</tbody>
+</table>
+<p>For namespace-scoped informers:</p>
+<table>
+<thead>
+<tr>
+<th><strong>Scope of the claimed resource</strong></th>
+<th><strong>Informer scope</strong></th>
+<th><strong>What happens</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cluster</td>
+<td>namespace</td>
+<td>Creates ClusterRole &amp; ClusterRoleBinding</td>
+</tr>
+<tr>
+<td>namespace</td>
+<td>namespace</td>
+<td>Creates Role &amp; RoleBinding</td>
+</tr>
+</tbody>
+</table>
+<p>Regardless of the configuration, claimed resources are granted <code>"get", "list", "watch", "create", "update", "patch", "delete"</code> set of verbs.</p>
 <h2 id="implementation-details">Implementation Details</h2>
 <h3 id="code-structure">Code Structure</h3>
 <ul>

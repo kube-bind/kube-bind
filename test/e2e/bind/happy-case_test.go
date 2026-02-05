@@ -448,6 +448,44 @@ func testHappyCase(
 						require.NotEqual(t, consumer.providerContractNamespace, "unknown")
 					},
 				},
+				{
+					name: "verify BoundSchemas have owner references to APIServiceExport",
+					step: func(t *testing.T) {
+						t.Logf("Verifying BoundSchemas have owner references to APIServiceExport")
+						export, err := providerBindClient.KubeBindV1alpha2().APIServiceExports(consumer.providerContractNamespace).Get(ctx, "test-binding", metav1.GetOptions{})
+						if errors.IsNotFound(err) && consumer.name != "consumer1" {
+							t.Skip("APIServiceExport already deleted by another consumer")
+						}
+						require.NoError(t, err, "APIServiceExport should exist")
+
+						boundSchemas, err := providerBindClient.KubeBindV1alpha2().BoundSchemas(consumer.providerContractNamespace).List(ctx, metav1.ListOptions{})
+						require.NoError(t, err, "should be able to list BoundSchemas")
+						require.NotEmpty(t, boundSchemas.Items, "should have at least one BoundSchema")
+
+						// Verify each BoundSchema has an owner reference to the APIServiceExport
+						for _, boundSchema := range boundSchemas.Items {
+							t.Logf("Checking owner reference for BoundSchema %s", boundSchema.Name)
+
+							var hasOwnerRef bool
+							for _, ownerRef := range boundSchema.OwnerReferences {
+								if ownerRef.Kind == "APIServiceExport" &&
+									ownerRef.Name == export.Name &&
+									ownerRef.UID == export.UID &&
+									ownerRef.Controller != nil &&
+									*ownerRef.Controller {
+									hasOwnerRef = true
+									break
+								}
+							}
+
+							require.True(t, hasOwnerRef,
+								"BoundSchema %s should have controller owner reference to APIServiceExport %s",
+								boundSchema.Name, export.Name)
+						}
+
+						t.Logf("All BoundSchemas have proper owner references")
+					},
+				},
 				// Request included namespace, so we check it first
 				{
 					name: "verify provider side namespace pre-seeding and RBAC management",

@@ -1,7 +1,7 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
-  name: v251112-503d98b.apiserviceexporttemplates.kube-bind.io
+  name: v260209-099939a.apiserviceexporttemplates.kube-bind.io
 spec:
   group: kube-bind.io
   names:
@@ -244,6 +244,17 @@ spec:
                 type: object
               minItems: 1
               type: array
+            schemaUpdatePolicy:
+              default: Never
+              description: |-
+                SchemaUpdatePolicy defines how BoundSchemas should be updated.
+                Valid values: Never, OnHashChange, Always
+                Default: Never
+              enum:
+              - Never
+              - OnHashChange
+              - Always
+              type: string
             scope:
               allOf:
               - enum:

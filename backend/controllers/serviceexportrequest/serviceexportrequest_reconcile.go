@@ -46,6 +46,7 @@ type reconciler struct {
 
 	getBoundSchema    func(ctx context.Context, cl client.Client, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
 	createBoundSchema func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error
+	updateBoundSchema func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error
 
 	getServiceExport           func(ctx context.Context, cache cache.Cache, ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
 	createServiceExport        func(ctx context.Context, cl client.Client, resource *kubebindv1alpha2.APIServiceExport) error
@@ -153,16 +154,6 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, _
 				boundSchema.Spec.InformerScope = r.informerScope
 				boundSchema.ResourceVersion = ""
 
-				obj, err := r.getBoundSchema(ctx, cl, boundSchema.Namespace, boundSchema.Name)
-				if err != nil && !apierrors.IsNotFound(err) && !strings.Contains(err.Error(), "no matches for kind") {
-					return err
-				}
-
-				// TODO(mjudeikis): https://github.com/kube-bind/kube-bind/issues/297
-				if obj != nil {
-					continue
-				}
-
 				// If namespaced isolation is configured for cluster-scoped objects,
 				// we need to rewrite the BoundSchema's scope accordingly. For all
 				// other isolation strategies, as well as for namespaced schemas,
@@ -171,6 +162,47 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, _
 					boundSchema.Spec.Scope = apiextensionsv1.ClusterScoped
 				}
 
+				// Compute hash for the desired spec.
+				hash, err := helpers.BoundSchemaSpecHash(&boundSchema.Spec)
+				if err != nil {
+					return err
+				}
+
+				obj, err := r.getBoundSchema(ctx, cl, boundSchema.Namespace, boundSchema.Name)
+				if err != nil && !apierrors.IsNotFound(err) && !strings.Contains(err.Error(), "no matches for kind") {
+					return err
+				}
+
+				if obj != nil {
+					var shouldUpdate bool
+					switch req.Spec.SchemaUpdatePolicy {
+					case kubebindv1alpha2.SchemaUpdatePolicyNever, "":
+						shouldUpdate = false
+					case kubebindv1alpha2.SchemaUpdatePolicyOnHashChange:
+						shouldUpdate = obj.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] != hash
+					case kubebindv1alpha2.SchemaUpdatePolicyAlways:
+						shouldUpdate = true
+					default:
+						return fmt.Errorf("unknown schema update policy: %s", req.Spec.SchemaUpdatePolicy)
+					}
+
+					if shouldUpdate {
+						obj.Spec = boundSchema.Spec
+						if obj.Annotations == nil {
+							obj.Annotations = make(map[string]string)
+						}
+						obj.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hash
+						if err := r.updateBoundSchema(ctx, cl, obj); err != nil {
+							return err
+						}
+					}
+					continue
+				}
+
+				if boundSchema.Annotations == nil {
+					boundSchema.Annotations = make(map[string]string)
+				}
+				boundSchema.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hash
 				if err := r.createBoundSchema(ctx, cl, boundSchema); err != nil {
 					return err
 				}
@@ -219,7 +251,6 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 			return nil
 		}
 
-		// https://github.com/kube-bind/kube-bind/issues/297 To fix.
 		hash, err := helpers.BoundSchemasSpecHash(schemas)
 		if err != nil {
 			return err

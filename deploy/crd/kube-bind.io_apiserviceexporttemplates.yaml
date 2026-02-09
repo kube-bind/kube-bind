@@ -248,6 +248,17 @@ spec:
                   type: object
                 minItems: 1
                 type: array
+              schemaUpdatePolicy:
+                default: Never
+                description: |-
+                  SchemaUpdatePolicy defines how BoundSchemas should be updated.
+                  Valid values: Never, OnHashChange, Always
+                  Default: Never
+                enum:
+                - Never
+                - OnHashChange
+                - Always
+                type: string
               scope:
                 allOf:
                 - enum:

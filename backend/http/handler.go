@@ -393,9 +393,10 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 			Name: bindRequest.Name,
 		},
 		Spec: kubebindv1alpha2.APIServiceExportRequestSpec{
-			Resources:        template.Spec.Resources,
-			PermissionClaims: template.Spec.PermissionClaims,
-			Namespaces:       template.Spec.Namespaces,
+			Resources:          template.Spec.Resources,
+			PermissionClaims:   template.Spec.PermissionClaims,
+			Namespaces:         template.Spec.Namespaces,
+			SchemaUpdatePolicy: template.Spec.SchemaUpdatePolicy,
 		},
 	}
 

@@ -248,6 +248,17 @@ spec:
                   type: object
                 minItems: 1
                 type: array
+              schemaUpdatePolicy:
+                default: Never
+                description: |-
+                  SchemaUpdatePolicy defines how BoundSchemas should be updated.
+                  Never means schemas are immutable after creation.
+                  Always means schemas are updated when the source content changes.
+                  Default: Never
+                enum:
+                - Never
+                - Always
+                type: string
               scope:
                 allOf:
                 - enum:

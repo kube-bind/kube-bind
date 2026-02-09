@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -237,6 +238,12 @@ func (r *APIServiceExportRequestReconciler) Reconcile(ctx context.Context, req m
 			return ctrl.Result{}, fmt.Errorf("failed to update APIServiceExportRequest status: %w", err)
 		}
 		logger.Info("APIServiceExportRequest status updated", "namespace", apiServiceExportRequest.Namespace, "name", apiServiceExportRequest.Name)
+	}
+
+	// When SchemaUpdatePolicy is Always, periodically re-reconcile to pick up
+	// source CRD changes and sync them into BoundSchemas.
+	if apiServiceExportRequest.Spec.SchemaUpdatePolicy == kubebindv1alpha2.SchemaUpdatePolicyAlways {
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
 	return ctrl.Result{}, nil

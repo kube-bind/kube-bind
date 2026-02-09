@@ -154,7 +154,7 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, e
 				boundSchema.Spec.InformerScope = r.informerScope
 				boundSchema.ResourceVersion = ""
 
-				if err := r.createOrUpdateBoundSchema(ctx, cl, export, boundSchema); err != nil {
+				if err := r.createOrUpdateBoundSchema(ctx, cl, export, boundSchema, req.Spec.SchemaUpdatePolicy); err != nil {
 					return err
 				}
 			}
@@ -164,8 +164,19 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, e
 	return nil
 }
 
-func (r *reconciler) createOrUpdateBoundSchema(ctx context.Context, cl client.Client, export *kubebindv1alpha2.APIServiceExport, desired *kubebindv1alpha2.BoundSchema) error {
+func (r *reconciler) createOrUpdateBoundSchema(ctx context.Context, cl client.Client, export *kubebindv1alpha2.APIServiceExport, desired *kubebindv1alpha2.BoundSchema, schemaUpdatePolicy kubebindv1alpha2.SchemaUpdatePolicy) error {
 	logger := klog.FromContext(ctx)
+
+	// If namespaced isolation is configured for cluster-scoped objects,
+	// we need to rewrite the BoundSchema's scope accordingly.
+	if desired.Spec.Scope == apiextensionsv1.NamespaceScoped && r.isolation == kubebindv1alpha2.IsolationNamespaced {
+		desired.Spec.Scope = apiextensionsv1.ClusterScoped
+	}
+
+	hash, err := helpers.BoundSchemaSpecHash(&desired.Spec)
+	if err != nil {
+		return err
+	}
 
 	existing, err := r.getBoundSchema(ctx, cl, desired.Namespace, desired.Name)
 	if err != nil && !apierrors.IsNotFound(err) && !strings.Contains(err.Error(), "no matches for kind") {
@@ -173,29 +184,44 @@ func (r *reconciler) createOrUpdateBoundSchema(ctx context.Context, cl client.Cl
 	}
 
 	if existing != nil {
-		if export == nil {
-			return nil
+		var needsUpdate bool
+		if export != nil {
+			existingRefs := len(existing.GetOwnerReferences())
+			if err := controllerutil.SetControllerReference(export, existing, cl.Scheme()); err != nil {
+				return fmt.Errorf("failed to set owner reference on BoundSchema %s: %w", desired.Name, err)
+			}
+			if len(existing.GetOwnerReferences()) != existingRefs {
+				needsUpdate = true
+			}
 		}
-		if err := controllerutil.SetControllerReference(export, existing, cl.Scheme()); err != nil {
-			return fmt.Errorf("failed to set owner reference on BoundSchema %s: %w", desired.Name, err)
+
+		if schemaUpdatePolicy == kubebindv1alpha2.SchemaUpdatePolicyAlways {
+			if existing.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] != hash {
+				existing.Spec = desired.Spec
+				if existing.Annotations == nil {
+					existing.Annotations = make(map[string]string)
+				}
+				existing.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hash
+				needsUpdate = true
+			}
 		}
-		if err := r.updateBoundSchema(ctx, cl, existing); err != nil {
-			return fmt.Errorf("failed to update BoundSchema %s with owner reference: %w", desired.Name, err)
+
+		if needsUpdate {
+			if err := r.updateBoundSchema(ctx, cl, existing); err != nil {
+				return fmt.Errorf("failed to update BoundSchema %s: %w", desired.Name, err)
+			}
+			logger.V(6).Info("Updated existing BoundSchema",
+				"boundSchema", desired.Name,
+				"namespace", desired.Namespace)
 		}
-		logger.V(6).Info("Updated owner reference on existing BoundSchema",
-			"boundSchema", desired.Name,
-			"export", export.Name,
-			"namespace", desired.Namespace)
 		return nil
 	}
 
-	// If namespaced isolation is configured for cluster-scoped objects,
-	// we need to rewrite the BoundSchema's scope accordingly. For all
-	// other isolation strategies, as well as for namespaced schemas,
-	// no changes are necessary.
-	if desired.Spec.Scope == apiextensionsv1.NamespaceScoped && r.isolation == kubebindv1alpha2.IsolationNamespaced {
-		desired.Spec.Scope = apiextensionsv1.ClusterScoped
+	// Create path: new BoundSchema.
+	if desired.Annotations == nil {
+		desired.Annotations = make(map[string]string)
 	}
+	desired.Annotations[kubebindv1alpha2.SourceSpecHashAnnotationKey] = hash
 
 	return r.createBoundSchema(ctx, cl, desired)
 }
@@ -233,7 +259,6 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, existi
 			return nil
 		}
 
-		// https://github.com/kube-bind/kube-bind/issues/297 To fix.
 		hash, err := helpers.BoundSchemasSpecHash(schemas)
 		if err != nil {
 			return err

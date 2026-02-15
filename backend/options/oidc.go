@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/spf13/pflag"
 
@@ -128,6 +129,10 @@ func (options *OIDC) Validate() error {
 
 	if options.Type != string(kubebindv1alpha2.OIDCProviderTypeEmbedded) && options.Type != string(kubebindv1alpha2.OIDCProviderTypeExternal) {
 		return fmt.Errorf("invalid OIDC provider type: %s", options.Type)
+	}
+
+	if options.Type == string(kubebindv1alpha2.OIDCProviderTypeEmbedded) && !strings.HasSuffix(options.IssuerURL, "/oidc") {
+		return fmt.Errorf("--oidc-issuer-url must end with '/oidc' when using embedded OIDC provider")
 	}
 
 	if options.Type == string(kubebindv1alpha2.OIDCProviderTypeExternal) && len(options.AllowedGroups) == 0 && len(options.AllowedUsers) == 0 {

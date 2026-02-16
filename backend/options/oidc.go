@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strings"
 
@@ -123,12 +124,32 @@ func (options *OIDC) Validate() error {
 	if options.CallbackURL == "" {
 		return fmt.Errorf("OIDC callback URL cannot be empty")
 	}
+
 	if options.CAFile != "" && options.TLSConfig != nil {
 		return fmt.Errorf("cannot use both CA file and embedded OIDC server")
 	}
 
 	if options.Type != string(kubebindv1alpha2.OIDCProviderTypeEmbedded) && options.Type != string(kubebindv1alpha2.OIDCProviderTypeExternal) {
 		return fmt.Errorf("invalid OIDC provider type: %s", options.Type)
+	}
+
+	issuerURL, err := url.Parse(options.IssuerURL)
+	if err != nil {
+		return fmt.Errorf("--oidc-issuer-url must be a valid URL: %w", err)
+	}
+	if issuerURL.Scheme != "http" && issuerURL.Scheme != "https" {
+		return fmt.Errorf("--oidc-issuer-url must use http or https scheme, got: %s", issuerURL.Scheme)
+	}
+
+	callbackURL, err := url.Parse(options.CallbackURL)
+	if err != nil {
+		return fmt.Errorf("--oidc-callback-url must be a valid URL: %w", err)
+	}
+	if callbackURL.Scheme != "http" && callbackURL.Scheme != "https" {
+		return fmt.Errorf("--oidc-callback-url must use http or https scheme, got: %s", callbackURL.Scheme)
+	}
+	if !strings.HasSuffix(callbackURL.Path, "/api/callback") {
+		return fmt.Errorf("--oidc-callback-url must end with '/api/callback', got path: %s", callbackURL.Path)
 	}
 
 	if options.Type == string(kubebindv1alpha2.OIDCProviderTypeEmbedded) && !strings.HasSuffix(options.IssuerURL, "/oidc") {

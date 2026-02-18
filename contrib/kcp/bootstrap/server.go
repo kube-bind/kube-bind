@@ -24,7 +24,7 @@ import (
 
 	bootstrapconfig "github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/config/config"
 	bootstrapcore "github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/config/core"
-	bootstrapkubebind "github.com/kube-bind/kube-bind/contrib/kcp/bootstrap/config/kcp"
+	bootstrapkubebind "github.com/kube-bind/kube-bind/contrib/kcp/deploy"
 )
 
 type Server struct {

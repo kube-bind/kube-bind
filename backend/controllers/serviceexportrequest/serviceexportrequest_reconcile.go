@@ -189,6 +189,10 @@ func (r *reconciler) createOrUpdateBoundSchema(ctx context.Context, cl client.Cl
 		return nil
 	}
 
+	// If namespaced isolation is configured for cluster-scoped objects,
+	// we need to rewrite the BoundSchema's scope accordingly. For all
+	// other isolation strategies, as well as for namespaced schemas,
+	// no changes are necessary.
 	if desired.Spec.Scope == apiextensionsv1.NamespaceScoped && r.isolation == kubebindv1alpha2.IsolationNamespaced {
 		desired.Spec.Scope = apiextensionsv1.ClusterScoped
 	}

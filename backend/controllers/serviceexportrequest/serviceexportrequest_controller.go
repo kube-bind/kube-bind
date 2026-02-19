@@ -105,6 +105,9 @@ func NewAPIServiceExportRequestReconciler(
 			createBoundSchema: func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error {
 				return cl.Create(ctx, schema)
 			},
+			updateBoundSchema: func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error {
+				return cl.Update(ctx, schema)
+			},
 			deleteServiceExportRequest: func(ctx context.Context, cl client.Client, ns, name string) error {
 				return cl.Delete(ctx, &kubebindv1alpha2.APIServiceExportRequest{
 					ObjectMeta: metav1.ObjectMeta{

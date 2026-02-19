@@ -1,3 +1,5 @@
 venv
 generated
 __pycache__
+.cache/
+site/

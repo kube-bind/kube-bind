@@ -262,7 +262,7 @@ func (o *DevOptions) runWithColors(ctx context.Context) error {
 	if providerIP != "" {
 		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias %s:kube-bind.dev.local", o.ConsumerClusterName, providerIP)))
 	} else {
-		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("PROVIDER_IP=$(docker inspect %s-control-plane | jq -r '.[0].NetworkSettings.Networks[\"%s\"].IPAddress') && KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local", o.KindNetwork, o.ProviderClusterName, o.ConsumerClusterName)))
+		fmt.Fprintf(o.Streams.ErrOut, "%s\n", blueCommand(fmt.Sprintf("PROVIDER_IP=$(docker inspect %s-control-plane | jq -r '.[0].NetworkSettings.Networks[\"%s\"].IPAddress') && KUBECONFIG=%s.kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local", o.ProviderClusterName, o.KindNetwork, o.ConsumerClusterName)))
 	}
 
 	return nil

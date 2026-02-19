@@ -3395,12 +3395,12 @@ Add <code>127.0.0.1 kube-bind-backend.kube-bind.svc</code> to <code>C:\Windows\S
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span>--namespace<span class="w"> </span>kube-bind<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span>--set<span class="w"> </span>image.tag<span class="o">=</span>v0.7.0<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span>--set<span class="w"> </span>image.tag<span class="o">=</span>v0.7.1<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span>--set<span class="w"> </span>backend.externalAddress<span class="o">=</span>https://provider-control-plane:6443<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span>--set<span class="w"> </span>backend.tlsExternalServerName<span class="o">=</span>kubernetes.default.svc<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.issuerUrl<span class="o">=</span>http://kube-bind-backend.kube-bind.svc:8080/oidc<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.callbackUrl<span class="o">=</span>http://kube-bind-backend.kube-bind.svc:8080/api/callback<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">    </span>kube-bind<span class="w"> </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="m">0</span>.7.0
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">    </span>kube-bind<span class="w"> </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="m">0</span>.7.1
 </code></pre></div>
 <blockquote>
 <p><strong>Note:</strong> The OIDC configuration used here (which uses the built-in mock OIDC provider of <code>kube-bind-backend</code>) is for demonstration purposes only. For a production deployment, you must integrate with a real OIDC provider. See <a href="../../../../../setup/helm/">Installation with Helm</a> for production guidelines.</p>
@@ -3479,7 +3479,7 @@ Add <code>127.0.0.1 kube-bind-backend.kube-bind.svc</code> to <code>C:\Windows\S
 <a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>Binding completed successfully!
 <a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>Created kube-bind namespace.
 <a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>🔒 Created secret kube-bind/kubeconfig-9lbzx for host https://provider-control-plane:6443, namespace kube-bind-enkvby5uzkct
-<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>🚀 Deploying konnector v0.7.0 to namespace kube-bind.
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>🚀 Deploying konnector v0.7.1 to namespace kube-bind.
 <a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>   Waiting for the konnector to be ready.................
 <a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>✅ Created APIServiceBinding cowboys for 1 resources
 <a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>Created 1 APIServiceBinding(s):

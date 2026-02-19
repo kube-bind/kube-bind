@@ -72,7 +72,7 @@ func (o *Options) BindFlags(cmd *cobra.Command) {
 		return
 	}
 
-	cmd.Flags().StringVar(&o.Kubeconfig, "kubeconfig", o.Kubeconfig, "path to the kubeconfig file")
+	cmd.Flags().StringVar(&o.Kubeconfig, "kubeconfig", o.Kubeconfig, "Path to the kubeconfig file")
 
 	// We add only a subset of kubeconfig-related flags to the plugin.
 	// All those with LongName == "" will be ignored.

@@ -60,8 +60,8 @@ func NewClusterIdentityOptions(streams genericclioptions.IOStreams) *ClusterIden
 
 // AddCmdFlags adds command line flags
 func (o *ClusterIdentityOptions) AddCmdFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVar(&o.Kubeconfig, "kubeconfig", o.Kubeconfig, "path to the kubeconfig file")
-	cmd.Flags().StringVarP(&o.Namespace, "namespace", "n", o.Namespace, "namespace to use for deriving the cluster identity (default: kube-system)")
+	cmd.Flags().StringVar(&o.Kubeconfig, "kubeconfig", o.Kubeconfig, "Path to the kubeconfig file")
+	cmd.Flags().StringVarP(&o.Namespace, "namespace", "n", o.Namespace, "Namespace to use for deriving the cluster identity (default: kube-system)")
 
 	// Add context flag from kubectl overrides
 	kubectlConfigOverrideFlags := clientcmd.RecommendedConfigOverrideFlags("")

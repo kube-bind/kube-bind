@@ -172,12 +172,12 @@ kubectl config use-context kind-provider
 helm upgrade --install \
     --namespace kube-bind \
     --create-namespace \
-    --set image.tag=v0.7.0 \
+    --set image.tag=v0.7.1 \
     --set backend.externalAddress=https://provider-control-plane:6443 \
     --set backend.tlsExternalServerName=kubernetes.default.svc \
     --set backend.oidc.issuerUrl=http://kube-bind-backend.kube-bind.svc:8080/oidc \
     --set backend.oidc.callbackUrl=http://kube-bind-backend.kube-bind.svc:8080/api/callback \
-    kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.7.0
+    kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.7.1
 ```
 
 > **Note:** The OIDC configuration used here (which uses the built-in mock OIDC provider of `kube-bind-backend`) is for demonstration purposes only. For a production deployment, you must integrate with a real OIDC provider. See [Installation with Helm](../../setup/helm.md) for production guidelines.
@@ -307,7 +307,7 @@ Waiting for binding completion from UI...
 Binding completed successfully!
 Created kube-bind namespace.
 🔒 Created secret kube-bind/kubeconfig-9lbzx for host https://provider-control-plane:6443, namespace kube-bind-enkvby5uzkct
-🚀 Deploying konnector v0.7.0 to namespace kube-bind.
+🚀 Deploying konnector v0.7.1 to namespace kube-bind.
    Waiting for the konnector to be ready.................
 ✅ Created APIServiceBinding cowboys for 1 resources
 Created 1 APIServiceBinding(s):

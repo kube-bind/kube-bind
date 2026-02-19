@@ -31,6 +31,7 @@ import (
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -46,6 +47,7 @@ type reconciler struct {
 
 	getBoundSchema    func(ctx context.Context, cl client.Client, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
 	createBoundSchema func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error
+	updateBoundSchema func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error
 
 	getServiceExport           func(ctx context.Context, cache cache.Cache, ns, name string) (*kubebindv1alpha2.APIServiceExport, error)
 	createServiceExport        func(ctx context.Context, cl client.Client, resource *kubebindv1alpha2.APIServiceExport) error
@@ -53,9 +55,13 @@ type reconciler struct {
 }
 
 func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+	export, err := r.getServiceExport(ctx, cache, req.Namespace, req.Name)
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("failed to get APIServiceExport: %w", err)
+	}
 	// We must ensure schemas are created in form of boundSchemas first for the validation.
 	// Worst case scenario if validation fails, we will reuse schemas for same consumer once issues are fixed.
-	if err := r.ensureBoundSchemas(ctx, cl, cache, req); err != nil {
+	if err := r.ensureBoundSchemas(ctx, cl, export, req); err != nil {
 		conditions.SetSummary(req)
 		return fmt.Errorf("failed to ensure bound schemas: %w", err)
 	}
@@ -65,7 +71,7 @@ func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cach
 		return fmt.Errorf("failed to validate APIServiceExportRequest: %w", err)
 	}
 
-	if err := r.ensureExports(ctx, cl, cache, req); err != nil {
+	if err := r.ensureExports(ctx, cl, export, req); err != nil {
 		conditions.SetSummary(req)
 		return fmt.Errorf("failed to ensure exports: %w", err)
 	}
@@ -74,10 +80,6 @@ func (r *reconciler) reconcile(ctx context.Context, cl client.Client, cache cach
 		conditions.SetSummary(req)
 		return fmt.Errorf("failed to ensure APIServiceNamespaces: %w", err)
 	}
-
-	// TODO(mjudeikis): we could potentially add finallizer to APIServiceExport above or "adopt" boundschemas
-	// with owner references once export is created.
-	// https://github.com/kube-bind/kube-bind/issues/297
 
 	conditions.SetSummary(req)
 
@@ -134,13 +136,12 @@ func (r *reconciler) getExportedSchemas(ctx context.Context, cl client.Client) (
 	return boundSchemas, nil
 }
 
-func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, _ cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, export *kubebindv1alpha2.APIServiceExport, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	exportedSchemas, err := r.getExportedSchemas(ctx, cl)
 	if err != nil {
 		return err
 	}
 
-	// Ensure all bound schemas exist
 	for _, res := range req.Spec.Resources {
 		if len(res.Versions) == 0 {
 			continue
@@ -153,25 +154,7 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, _
 				boundSchema.Spec.InformerScope = r.informerScope
 				boundSchema.ResourceVersion = ""
 
-				obj, err := r.getBoundSchema(ctx, cl, boundSchema.Namespace, boundSchema.Name)
-				if err != nil && !apierrors.IsNotFound(err) && !strings.Contains(err.Error(), "no matches for kind") {
-					return err
-				}
-
-				// TODO(mjudeikis): https://github.com/kube-bind/kube-bind/issues/297
-				if obj != nil {
-					continue
-				}
-
-				// If namespaced isolation is configured for cluster-scoped objects,
-				// we need to rewrite the BoundSchema's scope accordingly. For all
-				// other isolation strategies, as well as for namespaced schemas,
-				// no changes are necessary.
-				if boundSchema.Spec.Scope == apiextensionsv1.NamespaceScoped && r.isolation == kubebindv1alpha2.IsolationNamespaced {
-					boundSchema.Spec.Scope = apiextensionsv1.ClusterScoped
-				}
-
-				if err := r.createBoundSchema(ctx, cl, boundSchema); err != nil {
+				if err := r.createOrUpdateBoundSchema(ctx, cl, export, boundSchema); err != nil {
 					return err
 				}
 			}
@@ -181,7 +164,43 @@ func (r *reconciler) ensureBoundSchemas(ctx context.Context, cl client.Client, _
 	return nil
 }
 
-func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache cache.Cache, req *kubebindv1alpha2.APIServiceExportRequest) error {
+func (r *reconciler) createOrUpdateBoundSchema(ctx context.Context, cl client.Client, export *kubebindv1alpha2.APIServiceExport, desired *kubebindv1alpha2.BoundSchema) error {
+	logger := klog.FromContext(ctx)
+
+	existing, err := r.getBoundSchema(ctx, cl, desired.Namespace, desired.Name)
+	if err != nil && !apierrors.IsNotFound(err) && !strings.Contains(err.Error(), "no matches for kind") {
+		return err
+	}
+
+	if existing != nil {
+		if export == nil {
+			return nil
+		}
+		if err := controllerutil.SetControllerReference(export, existing, cl.Scheme()); err != nil {
+			return fmt.Errorf("failed to set owner reference on BoundSchema %s: %w", desired.Name, err)
+		}
+		if err := r.updateBoundSchema(ctx, cl, existing); err != nil {
+			return fmt.Errorf("failed to update BoundSchema %s with owner reference: %w", desired.Name, err)
+		}
+		logger.V(6).Info("Updated owner reference on existing BoundSchema",
+			"boundSchema", desired.Name,
+			"export", export.Name,
+			"namespace", desired.Namespace)
+		return nil
+	}
+
+	// If namespaced isolation is configured for cluster-scoped objects,
+	// we need to rewrite the BoundSchema's scope accordingly. For all
+	// other isolation strategies, as well as for namespaced schemas,
+	// no changes are necessary.
+	if desired.Spec.Scope == apiextensionsv1.NamespaceScoped && r.isolation == kubebindv1alpha2.IsolationNamespaced {
+		desired.Spec.Scope = apiextensionsv1.ClusterScoped
+	}
+
+	return r.createBoundSchema(ctx, cl, desired)
+}
+
+func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, existingExport *kubebindv1alpha2.APIServiceExport, req *kubebindv1alpha2.APIServiceExportRequest) error {
 	logger := klog.FromContext(ctx)
 
 	var schemas []*kubebindv1alpha2.BoundSchema
@@ -209,12 +228,7 @@ func (r *reconciler) ensureExports(ctx context.Context, cl client.Client, cache 
 			schemas = append(schemas, boundSchema)
 		}
 
-		if _, err := r.getServiceExport(ctx, cache, req.Namespace, req.Name); err != nil {
-			if !apierrors.IsNotFound(err) {
-				return err
-			}
-		} else {
-			// already exists; nothing to do
+		if existingExport != nil {
 			conditions.MarkTrue(req, kubebindv1alpha2.APIServiceExportRequestConditionExportsReady)
 			return nil
 		}

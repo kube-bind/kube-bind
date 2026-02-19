@@ -1,8 +1,9 @@
 nav:
   - Home:
-    - index.md
+      - index.md
   - Setup: setup
   - Usage: usage
   - Contributing: contributing
   - Developers: developers
   - API References: reference
+  - Blog: blog

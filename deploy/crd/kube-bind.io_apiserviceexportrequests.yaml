@@ -422,6 +422,20 @@ spec:
                 x-kubernetes-validations:
                 - message: resources are immutable
                   rule: self == oldSelf
+              schemaUpdatePolicy:
+                default: Never
+                description: |-
+                  schemaUpdatePolicy defines how BoundSchemas should be updated when the source schema changes.
+                  This is propagated from the APIServiceExportTemplate.
+                  Valid values: Never, OnHashChange, Always
+                enum:
+                - Never
+                - OnHashChange
+                - Always
+                type: string
+                x-kubernetes-validations:
+                - message: schemaUpdatePolicy is immutable
+                  rule: self == oldSelf
             required:
             - resources
             type: object

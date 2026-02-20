@@ -1,5 +1,9 @@
 <img alt="Logo" width="196px" style="margin-right: 30px;" align="left" src="./docs/images/logo.svg"></img>
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/kube-bind/kube-bind)](https://goreportcard.com/report/github.com/kube-bind/kube-bind)
+[![GitHub](https://img.shields.io/github/license/kube-bind/kube-bind)](https://github.com/kube-bind/kube-bind/blob/main/LICENSE)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kube-bind/kube-bind?sort=semver)](https://github.com/kube-bind/kube-bind/releases/latest)
+
 # kube-bind
 
 ### Disclaimer: work in progress and not ready for production use.

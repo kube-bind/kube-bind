@@ -101,10 +101,10 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.ConsumerClusterName, "consumer-cluster-name", "kind-consumer", "Name of the consumer cluster in dev mode")
 	cmd.Flags().DurationVar(&o.WaitForReadyTimeout, "wait-for-ready-timeout", 2*time.Minute, "Timeout for waiting for the cluster to be ready")
 	cmd.Flags().StringVar(&o.ChartPath, "chart-path", o.ChartPath, "Helm chart path or OCI registry URL")
-	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", o.ChartVersion, "Helm chart version")
-	cmd.Flags().StringVar(&o.Image, "image", "ghcr.io/kube-bind/backend", "kube-bind backend image to use in dev mode")
-	cmd.Flags().StringVar(&o.Tag, "tag", "", "kube-bind backend image tag to use in dev mode")
-	cmd.Flags().StringVar(&o.KindNetwork, "kind-network", "kube-bind-dev", "kind network to use in dev mode")
+	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", o.ChartVersion, "The version of the Helm chart to use")
+	cmd.Flags().StringVar(&o.Image, "image", "ghcr.io/kube-bind/backend", "The name of kube-bind backend to use in dev mode")
+	cmd.Flags().StringVar(&o.Tag, "tag", "", "The tag of the kube-bind backend image to use in dev mode")
+	cmd.Flags().StringVar(&o.KindNetwork, "kind-network", "kube-bind-dev", "The name of the kind network to use in dev mode")
 }
 
 // Complete completes the options

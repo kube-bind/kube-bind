@@ -115,6 +115,8 @@ func UnstructuredToBoundSchema(u unstructured.Unstructured) (*kubebindv1alpha2.B
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(u.UnstructuredContent(), boundSchema); err != nil {
 		return nil, err
 	}
+
+	boundSchema.ObjectMeta = metav1.ObjectMeta{Name: boundSchema.Name}
 	return boundSchema, nil
 }
 

@@ -225,6 +225,10 @@
          <lastmod>2026-02-23</lastmod>
     </url>
     <url>
+         <loc>https://docs.kube-bind.io/main/usage/integrations/</loc>
+         <lastmod>2026-02-23</lastmod>
+    </url>
+    <url>
          <loc>https://docs.kube-bind.io/main/usage/integrations/cert-manager/</loc>
          <lastmod>2026-02-23</lastmod>
     </url>

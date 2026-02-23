@@ -6,36 +6,33 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Comprehensive guide to using kube-bind APIs, concepts, and workflows for service providers and consumers.
-">
       
       
-      
-        <link rel="canonical" href="https://docs.kube-bind.io/main/usage/">
-      
-      
-        <link rel="prev" href="../setup/helm/">
+        <link rel="canonical" href="https://docs.kube-bind.io/main/usage/integrations/">
       
       
-        <link rel="next" href="api-concepts/">
+        <link rel="prev" href="../synchronization/">
+      
+      
+        <link rel="next" href="cert-manager/">
       
       
         
       
       
-      <link rel="icon" href="../logo.svg">
+      <link rel="icon" href="../../logo.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.2">
     
     
       
-        <title>Usage Guide - kube-bind</title>
+        <title>Integrations - kube-bind</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -54,7 +51,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -79,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#kube-bind-usage-guide" class="md-skip">
+        <a href="#integrations" class="md-skip">
           Skip to content
         </a>
       
@@ -97,9 +94,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="kube-bind" class="md-header__button md-logo" aria-label="kube-bind" data-md-component="logo">
+    <a href="../.." title="kube-bind" class="md-header__button md-logo" aria-label="kube-bind" data-md-component="logo">
       
-  <img src="../logo.svg" alt="logo">
+  <img src="../../logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -116,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Usage Guide
+              Integrations
             
           </span>
         </div>
@@ -239,7 +236,7 @@
     
     
       <li class="md-tabs__item">
-        <a href=".." class="md-tabs__link">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -261,7 +258,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../setup/" class="md-tabs__link">
+        <a href="../../setup/" class="md-tabs__link">
           
   
   
@@ -285,7 +282,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -307,7 +304,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../contributing/" class="md-tabs__link">
+        <a href="../../contributing/" class="md-tabs__link">
           
   
   
@@ -329,7 +326,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../developers/" class="md-tabs__link">
+        <a href="../../developers/" class="md-tabs__link">
           
   
   
@@ -351,7 +348,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../reference/" class="md-tabs__link">
+        <a href="../../reference/" class="md-tabs__link">
           
   
   
@@ -373,7 +370,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../blog/" class="md-tabs__link">
+        <a href="../../blog/" class="md-tabs__link">
           
   
   
@@ -411,9 +408,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="kube-bind" class="md-nav__button md-logo" aria-label="kube-bind" data-md-component="logo">
+    <a href="../.." title="kube-bind" class="md-nav__button md-logo" aria-label="kube-bind" data-md-component="logo">
       
-  <img src="../logo.svg" alt="logo">
+  <img src="../../logo.svg" alt="logo">
 
     </a>
     kube-bind
@@ -463,7 +460,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href=".." class="md-nav__link ">
+            <a href="../.." class="md-nav__link ">
               
   
   
@@ -538,7 +535,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../setup/" class="md-nav__link ">
+            <a href="../../setup/" class="md-nav__link ">
               
   
   
@@ -582,7 +579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../setup/kubectl-plugin/" class="md-nav__link">
+      <a href="../../setup/kubectl-plugin/" class="md-nav__link">
         
   
   
@@ -610,7 +607,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../setup/quickstart/" class="md-nav__link">
+      <a href="../../setup/quickstart/" class="md-nav__link">
         
   
   
@@ -638,7 +635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../setup/helm/" class="md-nav__link">
+      <a href="../../setup/helm/" class="md-nav__link">
         
   
   
@@ -705,7 +702,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -723,7 +720,7 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_3" id="__nav_3_label" tabindex="">
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
@@ -749,7 +746,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api-concepts/" class="md-nav__link">
+      <a href="../api-concepts/" class="md-nav__link">
         
   
   
@@ -777,7 +774,7 @@
   
   
     <li class="md-nav__item">
-      <a href="synchronization/" class="md-nav__link">
+      <a href="../synchronization/" class="md-nav__link">
         
   
   
@@ -802,6 +799,8 @@
                 
   
   
+    
+  
   
   
     
@@ -826,17 +825,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="integrations/" class="md-nav__link ">
+            <a href="./" class="md-nav__link md-nav__link--active">
               
   
   
@@ -854,13 +851,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+              <label class="md-nav__link md-nav__link--active" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -880,7 +877,7 @@
   
   
     <li class="md-nav__item">
-      <a href="integrations/cert-manager/" class="md-nav__link">
+      <a href="cert-manager/" class="md-nav__link">
         
   
   
@@ -908,7 +905,7 @@
   
   
     <li class="md-nav__item">
-      <a href="integrations/crossplane/" class="md-nav__link">
+      <a href="crossplane/" class="md-nav__link">
         
   
   
@@ -936,7 +933,7 @@
   
   
     <li class="md-nav__item">
-      <a href="integrations/cloudnativepg/" class="md-nav__link">
+      <a href="cloudnativepg/" class="md-nav__link">
         
   
   
@@ -964,7 +961,7 @@
   
   
     <li class="md-nav__item">
-      <a href="integrations/kro/" class="md-nav__link">
+      <a href="kro/" class="md-nav__link">
         
   
   
@@ -1030,7 +1027,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../contributing/" class="md-nav__link ">
+            <a href="../../contributing/" class="md-nav__link ">
               
   
   
@@ -1111,7 +1108,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../developers/" class="md-nav__link ">
+            <a href="../../developers/" class="md-nav__link ">
               
   
   
@@ -1155,7 +1152,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/architecture/" class="md-nav__link">
+      <a href="../../developers/architecture/" class="md-nav__link">
         
   
   
@@ -1210,7 +1207,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../developers/dev-environment/" class="md-nav__link ">
+            <a href="../../developers/dev-environment/" class="md-nav__link ">
               
   
   
@@ -1254,7 +1251,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/dev-environment/kcp/" class="md-nav__link">
+      <a href="../../developers/dev-environment/kcp/" class="md-nav__link">
         
   
   
@@ -1282,7 +1279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/dev-environment/kind/" class="md-nav__link">
+      <a href="../../developers/dev-environment/kind/" class="md-nav__link">
         
   
   
@@ -1343,7 +1340,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../developers/backend/" class="md-nav__link ">
+            <a href="../../developers/backend/" class="md-nav__link ">
               
   
   
@@ -1445,7 +1442,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/backend/http/cluster-binding/" class="md-nav__link">
+      <a href="../../developers/backend/http/cluster-binding/" class="md-nav__link">
         
   
   
@@ -1473,7 +1470,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/backend/http/api-binding/" class="md-nav__link">
+      <a href="../../developers/backend/http/api-binding/" class="md-nav__link">
         
   
   
@@ -1542,7 +1539,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../developers/konnector/" class="md-nav__link ">
+            <a href="../../developers/konnector/" class="md-nav__link ">
               
   
   
@@ -1646,7 +1643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/konnector/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/konnector/" class="md-nav__link">
         
   
   
@@ -1674,7 +1671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/apiservicebinding/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/apiservicebinding/" class="md-nav__link">
         
   
   
@@ -1764,7 +1761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/cluster/clusterbinding/" class="md-nav__link">
         
   
   
@@ -1792,7 +1789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/cluster/apiservicenamespace/" class="md-nav__link">
         
   
   
@@ -1820,7 +1817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/cluster/apiservicebinding/" class="md-nav__link">
         
   
   
@@ -1848,7 +1845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
+      <a href="../../developers/konnector/controllers/cluster/apiserviceexport/" class="md-nav__link">
         
   
   
@@ -1900,7 +1897,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/publishing-a-release/" class="md-nav__link">
+      <a href="../../developers/publishing-a-release/" class="md-nav__link">
         
   
   
@@ -1928,7 +1925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../developers/testing-changes/" class="md-nav__link">
+      <a href="../../developers/testing-changes/" class="md-nav__link">
         
   
   
@@ -1990,7 +1987,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../reference/" class="md-nav__link ">
+            <a href="../../reference/" class="md-nav__link ">
               
   
   
@@ -2110,7 +2107,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind/" class="md-nav__link">
+      <a href="../../reference/cli/bind/" class="md-nav__link">
         
   
   
@@ -2138,7 +2135,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_apiservice/" class="md-nav__link">
+      <a href="../../reference/cli/bind_apiservice/" class="md-nav__link">
         
   
   
@@ -2166,7 +2163,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_cluster-identity/" class="md-nav__link">
+      <a href="../../reference/cli/bind_cluster-identity/" class="md-nav__link">
         
   
   
@@ -2194,7 +2191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_collections/" class="md-nav__link">
+      <a href="../../reference/cli/bind_collections/" class="md-nav__link">
         
   
   
@@ -2222,7 +2219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_deploy/" class="md-nav__link">
+      <a href="../../reference/cli/bind_deploy/" class="md-nav__link">
         
   
   
@@ -2250,7 +2247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_dev/" class="md-nav__link">
+      <a href="../../reference/cli/bind_dev/" class="md-nav__link">
         
   
   
@@ -2278,7 +2275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_dev_create/" class="md-nav__link">
+      <a href="../../reference/cli/bind_dev_create/" class="md-nav__link">
         
   
   
@@ -2306,7 +2303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_dev_delete/" class="md-nav__link">
+      <a href="../../reference/cli/bind_dev_delete/" class="md-nav__link">
         
   
   
@@ -2334,7 +2331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_dev_example/" class="md-nav__link">
+      <a href="../../reference/cli/bind_dev_example/" class="md-nav__link">
         
   
   
@@ -2362,7 +2359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_login/" class="md-nav__link">
+      <a href="../../reference/cli/bind_login/" class="md-nav__link">
         
   
   
@@ -2390,7 +2387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/cli/bind_templates/" class="md-nav__link">
+      <a href="../../reference/cli/bind_templates/" class="md-nav__link">
         
   
   
@@ -2556,7 +2553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiconversions/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiconversions/" class="md-nav__link">
         
   
   
@@ -2584,7 +2581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiservicebindings/" class="md-nav__link">
         
   
   
@@ -2612,7 +2609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiserviceexportrequests/" class="md-nav__link">
         
   
   
@@ -2640,7 +2637,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiserviceexports/" class="md-nav__link">
         
   
   
@@ -2668,7 +2665,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiserviceexporttemplates/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiserviceexporttemplates/" class="md-nav__link">
         
   
   
@@ -2696,7 +2693,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/apiservicenamespaces/" class="md-nav__link">
         
   
   
@@ -2724,7 +2721,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/bindableresourcesrequests/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/bindableresourcesrequests/" class="md-nav__link">
         
   
   
@@ -2752,7 +2749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/boundschemas/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/boundschemas/" class="md-nav__link">
         
   
   
@@ -2780,7 +2777,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/clusterbindings/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/clusterbindings/" class="md-nav__link">
         
   
   
@@ -2808,7 +2805,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/crd/kube-bind.io/collections/" class="md-nav__link">
+      <a href="../../reference/crd/kube-bind.io/collections/" class="md-nav__link">
         
   
   
@@ -2884,7 +2881,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../blog/" class="md-nav__link ">
+            <a href="../../blog/" class="md-nav__link ">
               
   
   
@@ -2986,7 +2983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../blog/archive/2026/" class="md-nav__link">
+      <a href="../../blog/archive/2026/" class="md-nav__link">
         
   
   
@@ -3042,71 +3039,14 @@
   
 
 
-<h1 id="kube-bind-usage-guide">kube-bind Usage Guide</h1>
-<p>This section provides comprehensive documentation on how to use kube-bind's core APIs and concepts. Whether you're a service provider looking to export APIs or a consumer wanting to bind to services, this guide covers the essential workflows and components.</p>
-<h2 id="core-concepts">Core Concepts</h2>
-<p>kube-bind operates on three fundamental concepts:</p>
-<h3 id="service-provider">Service Provider</h3>
-<p>The cluster that <strong>exports</strong> APIs and resources, making them available for other clusters to consume. Service providers create templates and handle permission claims.</p>
-<h3 id="service-consumer">Service Consumer</h3>
-<p>The cluster that <strong>imports</strong> and uses APIs from service providers. Consumers bind to templates and get access to resources through a secure, controlled process.</p>
-<h3 id="konnector-agent">Konnector Agent</h3>
-<p>The component that establishes and maintains the secure connection between provider and consumer clusters, synchronizing resources and handling permissions.</p>
-<h2 id="key-api-types">Key API Types</h2>
-<h3 id="apiserviceexporttemplate">APIServiceExportTemplate</h3>
-<p><strong>Purpose</strong>: Defines a reusable service template that groups related CRDs and permission claims.
-<strong>Used by</strong>: Service providers
-<strong>Scope</strong>: Template definition for multiple consumers</p>
-<h3 id="apiserviceexport">APIServiceExport</h3>
-<p><strong>Purpose</strong>: Represents an active export of a specific CRD to consumer clusters.
-<strong>Used by</strong>: Automatically created by konnector agents
-<strong>Scope</strong>: Per-CRD export instance</p>
-<h3 id="apiserviceexportrequest">APIServiceExportRequest</h3>
-<p><strong>Purpose</strong>: Consumer's request to bind to a specific service template.
-<strong>Used by</strong>: Service consumers (via CLI/UI)
-<strong>Scope</strong>: Per-binding request</p>
-<h3 id="apiservicenamespace">APIServiceNamespace</h3>
-<p><strong>Purpose</strong>: Manages namespace mapping and isolation between provider and consumer clusters.
-<strong>Used by</strong>: Automatically managed by konnector agents
-<strong>Scope</strong>: Per-namespace sync</p>
-<h2 id="documentation-structure">Documentation Structure</h2>
-<h3 id="api-concepts"><a href="api-concepts/">API Concepts</a></h3>
-<p>Deep dive into the core API types, their relationships, and how they work together in the kube-bind ecosystem.</p>
-<h3 id="template-references"><a href="template-references.md">Template References</a></h3>
-<p>Advanced guide for using dynamic resource selection through references in templates.</p>
-<h2 id="common-workflows">Common Workflows</h2>
-<h3 id="for-service-providers">For Service Providers</h3>
-<ol>
-<li><strong>Create templates</strong> defining what APIs and resources to export, including permission claims</li>
-<li><strong>Implement service</strong> to act on the synced/bound objects so it can be returned to the consumer/user.</li>
-</ol>
-<h3 id="for-service-consumers">For Service Consumers</h3>
-<ol>
-<li><strong>Authenticate</strong> to the kube-bind backend</li>
-<li><strong>Discover available templates</strong> through the web UI or CLI</li>
-<li><strong>Request bindings</strong> to specific templates</li>
-<li><strong>Authenticate and authorize</strong> access through OAuth2 flows</li>
-<li><strong>Use imported APIs</strong> in their local cluster</li>
-</ol>
-<h3 id="for-platform-operators">For Platform Operators</h3>
-<ol>
-<li><strong>Deploy kube-bind infrastructure</strong> on both provider and consumer sides (if using GitOps)</li>
-<li><strong>Configure authentication</strong> and security policies</li>
-<li><strong>Monitor connections</strong> and resource synchronization</li>
-</ol>
-<h2 id="getting-started">Getting Started</h2>
-<p>If you're new to kube-bind:</p>
-<ol>
-<li><strong>Start with the <a href="../setup/quickstart/">Quickstart Guide</a></strong> for a hands-on introduction</li>
-<li><strong>Review <a href="api-concepts/">API Concepts</a></strong> to understand the fundamental types</li>
-<li><strong>Check the <a href="../reference/">Reference Documentation</a></strong> for complete API specifications</li>
-</ol>
-<p>The konnector agents establish a secure, authenticated connection that allows:</p>
+<h1 id="integrations">Integrations</h1>
+<p>Kube-bind works seamlessly with various platforms and tools to extend and enhance its capabilities. Explore the integrations available below to see how you can use kube-bind with your favorite technologies.</p>
+<h2 id="available-integrations">Available Integrations</h2>
 <ul>
-<li><strong>API schema synchronization</strong> from provider to consumer</li>
-<li><strong>Resource data flow</strong> based on permission claims</li>
-<li><strong>Namespace isolation</strong> and mapping</li>
-<li><strong>Authentication and authorization</strong> enforcement</li>
+<li><strong><a href="cert-manager/">cert-manager</a></strong>: Certificate management as a service.</li>
+<li><strong><a href="cloudnativepg/">CloudNativePG</a></strong>: Database-as-a-Service on Kubernetes.</li>
+<li><strong><a href="crossplane/">Crossplane</a></strong>: Example Database-as-a-Service using Crossplane provider.</li>
+<li><strong><a href="kro/">kro</a></strong>: Integrate with kro to serve LoadBalancer-as-a-Service example.</li>
 </ul>
 
 
@@ -3114,9 +3054,6 @@
 
 
 
-
-  
-  
 
 
 
@@ -3193,10 +3130,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "toc.integrate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.indexes", "navigation.tabs", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "toc.integrate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
     
   </body>

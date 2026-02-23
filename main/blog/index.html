@@ -3035,6 +3035,52 @@
     <div class="md-post__meta md-meta">
       <ul class="md-meta__list">
         <li class="md-meta__item">
+          <time datetime="2026-02-22 00:00:00+00:00">February 22, 2026</time></li>
+        
+        
+          
+          <li class="md-meta__item">
+            
+              11 min read
+            
+          </li>
+        
+        
+      </ul>
+      
+    </div>
+  </header>
+  <div class="md-post__content md-typeset">
+    <h2 id="securing-kube-bind-with-keycloak-a-production-ready-oidc-setup"><a class="toclink" href="2026/02/22/securing-kube-bind-with-keycloak-a-production-ready-oidc-setup/">Securing kube-bind with Keycloak: A Production-Ready OIDC Setup</a></h2>
+<p>In this tutorial, I'll be showing you how to integrate Keycloak into <code>kube-bind</code> so that authentication is handled by an external identity provider instead of the embedded mock one.</p>
+<p>If you've been following along from the <a href="2026/02/14/deep-dive-understanding-kube-bind-internals/">previous posts</a>, you know that <code>kube-bind</code> lets you project APIs from a provider cluster into a consumer cluster. To do that securely, it uses OIDC for authentication. In the quickstart guide, we used the embedded OIDC provider — which is great for tinkering locally, but absolutely not something you'd ship to production.</p>
+<p>In production, you want a proper identity provider. One that manages users, groups, tokens, and sessions correctly. For this, we'll be making use of Keycloak.</p>
+
+    
+      <nav class="md-post__action">
+        <a href="2026/02/22/securing-kube-bind-with-keycloak-a-production-ready-oidc-setup/">
+          Continue reading
+        </a>
+      </nav>
+    
+    
+  </div>
+</article>
+      
+        <article class="md-post md-post--excerpt">
+  <header class="md-post__header">
+    
+      <nav class="md-post__authors md-typeset">
+        
+          <span class="md-author">
+            <img src="https://avatars.githubusercontent.com/u/24735571?v=4" alt="Olalekan Odukoya">
+          </span>
+        
+      </nav>
+    
+    <div class="md-post__meta md-meta">
+      <ul class="md-meta__list">
+        <li class="md-meta__item">
           <time datetime="2026-02-14 00:00:00+00:00">February 14, 2026</time></li>
         
         

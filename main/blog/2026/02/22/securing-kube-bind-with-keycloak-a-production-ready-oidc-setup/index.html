@@ -6,17 +6,15 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="A comprehensive look at how kube-bind works under the hood, covering the Service Provider, Service Consumer, and Konnector architecture.">
+        <meta name="description" content="Learn how to integrate Keycloak as an OIDC provider with kube-bind to secure your cross-cluster API bindings with enterprise-grade authentication.">
       
       
       
-        <link rel="canonical" href="https://docs.kube-bind.io/main/blog/2026/02/14/deep-dive-understanding-kube-bind-internals/">
+        <link rel="canonical" href="https://docs.kube-bind.io/main/blog/2026/02/22/securing-kube-bind-with-keycloak-a-production-ready-oidc-setup/">
       
       
-        <link rel="prev" href="../getting-started-with-kube-bind-the-quick-way/">
+        <link rel="prev" href="../../14/deep-dive-understanding-kube-bind-internals/">
       
-      
-        <link rel="next" href="../../22/securing-kube-bind-with-keycloak-a-production-ready-oidc-setup/">
       
       
         
@@ -27,7 +25,7 @@
     
     
       
-        <title>Deep Dive: Understanding kube-bind Internals - kube-bind</title>
+        <title>Securing kube-bind with Keycloak: A Production-Ready OIDC Setup - kube-bind</title>
       
     
     
@@ -78,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#deep-dive-understanding-kube-bind-internals" class="md-skip">
+        <a href="#securing-kube-bind-with-keycloak-a-production-ready-oidc-setup" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +113,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Deep Dive: Understanding kube-bind Internals
+              Securing kube-bind with Keycloak: A Production-Ready OIDC Setup
             
           </span>
         </div>
@@ -3066,7 +3064,7 @@
                     <li class="md-nav__item">
                       <div class="md-nav__link">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 19H5V8h14m-3-7v2H8V1H6v2H5c-1.11 0-2 .89-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1V1m-1 11h-5v5h5z"/></svg>
-                        <time datetime="2026-02-14 00:00:00+00:00" class="md-ellipsis">February 14, 2026</time>
+                        <time datetime="2026-02-22 00:00:00+00:00" class="md-ellipsis">February 22, 2026</time>
                       </div>
                     </li>
                     
@@ -3078,7 +3076,7 @@
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a8 8 0 0 0 8-8 8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8m0-18a10 10 0 0 1 10 10 10 10 0 0 1-10 10C6.47 22 2 17.5 2 12A10 10 0 0 1 12 2m.5 5v5.25l4.5 2.67-.75 1.23L11 13V7z"/></svg>
                           <span class="md-ellipsis">
                             
-                              9 min read
+                              11 min read
                             
                           </span>
                         </div>
@@ -3107,40 +3105,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-is-kube-bind" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What Is kube-bind?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#core-concepts-api-objects" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Core Concepts &amp; API Objects
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-hard-way-manual-setup-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The "Hard Way": Manual Setup &amp; Architecture
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="The &#34;Hard Way&#34;: Manual Setup &amp; Architecture">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#prerequisites" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3150,95 +3114,157 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#install-kube-bind" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#step-1-create-the-provider-cluster" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install kube-bind
+        Step 1: Create the Provider Cluster
       
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-1-create-the-clusters" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 1: Create the Clusters
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-2-set-up-the-provider" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 2: Set Up the Provider
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-3-exporting-an-api-service" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 3: Exporting an API Service
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-4-bind-the-consumer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 4: Bind the Consumer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#step-5-verify-and-use" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Step 5: Verify and Use
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#real-world-use-cases" class="md-nav__link">
+  <a href="#step-2-deploy-keycloak" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Real-World Use Cases
+        Step 2: Deploy Keycloak
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Real-World Use Cases">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-configure-keycloak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Configure Keycloak
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3: Configure Keycloak">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#see-it-in-action" class="md-nav__link">
+  <a href="#create-a-realm" class="md-nav__link">
     <span class="md-ellipsis">
       
-        See It In Action
+        Create a Realm
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create a Client
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#retrieve-the-client-secret" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieve the Client Secret
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-group" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create a Group
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-test-user" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Create a Test User
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configure-client-scopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure Client Scopes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configure Client Scopes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-create-the-groups-scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Create the 'groups' Scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-assign-scopes-to-the-client" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Assign Scopes to the Client
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-deploy-kube-bind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Deploy kube-bind
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 4: Deploy kube-bind">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#networking-adjustment-kind-specific" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Networking Adjustment (Kind Specific)
       
     </span>
   </a>
@@ -3251,10 +3277,43 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#recap" class="md-nav__link">
+  <a href="#step-5-export-an-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Recap
+        Step 5: Export an API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-bind-from-the-consumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Bind from the Consumer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-verify-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Verify It Works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
       
     </span>
   </a>
@@ -3279,286 +3338,369 @@
   
 
 
-<h1 id="deep-dive-understanding-kube-bind-internals">Deep Dive: Understanding kube-bind Internals</h1>
-<blockquote>
-<p><strong>Note:</strong> Just want to get started quickly? Check out our <a href="../getting-started-with-kube-bind-the-quick-way/">Quick Start Guide</a> which sets up everything automatically with <code>kubectl bind dev create</code>. This article explains the machinery under the hood—the "Hard Way".</p>
-</blockquote>
-<p>If you’ve ever tried to make one cluster consume resources from another, you’ve probably had to deal with complicated networking setups, VPN tunnels, duplicated Custom Resource Definitions (CRDs), or custom-built controllers to keep everything in sync.</p>
-<p>As organizations grow, the need for multi-cluster setups become inevitable, and this comes with its own headache especially when you need to share services or resource between clusters. Doing this in Kubernetes is inherently hard because clusters are isolated by design. They don’t natively “talk” to each other.</p>
-<p>This is where kube-bind comes in.</p>
+<h1 id="securing-kube-bind-with-keycloak-a-production-ready-oidc-setup">Securing kube-bind with Keycloak: A Production-Ready OIDC Setup</h1>
+<p>In this tutorial, I'll be showing you how to integrate Keycloak into <code>kube-bind</code> so that authentication is handled by an external identity provider instead of the embedded mock one.</p>
+<p>If you've been following along from the <a href="../../14/deep-dive-understanding-kube-bind-internals/">previous posts</a>, you know that <code>kube-bind</code> lets you project APIs from a provider cluster into a consumer cluster. To do that securely, it uses OIDC for authentication. In the quickstart guide, we used the embedded OIDC provider — which is great for tinkering locally, but absolutely not something you'd ship to production.</p>
+<p>In production, you want a proper identity provider. One that manages users, groups, tokens, and sessions correctly. For this, we'll be making use of Keycloak.</p>
 <!-- more -->
 
-<p>To understand kube-bind, it helps to think about how mobile apps work.</p>
-<p>When a developer builds an app, they don’t send the source code directly to every user. Instead, they publish it to an app marketplace like the App Store. Users can then browse, install, and use the app without needing direct access to the developer’s system.</p>
-<p>kube-bind works in a similar way.</p>
-<p>One Kubernetes cluster can “publish” selected APIs, and another cluster can “install” or bind to them. The consumer cluster doesn’t need full access to the provider cluster, it only interacts with the exported APIs, just like installing an app.</p>
-<p>kube-bind provides a Kubernetes-native way to securely export APIs from one cluster and bind to them in another without stitching clusters together through complex networking configurations or manual synchronization.</p>
-<p>In this article, we’ll explore what kube-bind is, why it exists, and how to use it step-by-step to share services across Kubernetes clusters.</p>
-<h2 id="what-is-kube-bind">What Is kube-bind?</h2>
-<p><code>kube-bind</code> is an open-source tool that allows you to export Kubernetes APIs from a <strong>Service Provider</strong> cluster and consume them in a <strong>Consumer</strong> cluster.</p>
-<p>It effectively "projects" an API (like a CRD) from one cluster to another. To the consumer, it feels like the resource is local. They can create a <code>PostgreSQL</code> object in their namespace and interact with it just like any other Kubernetes resource, however, the actual logic and heavy operational workload happens on the provider's side.</p>
-<pre class="mermaid"><code>graph LR
-    subgraph Provider Cluster
-        A[PostgreSQL Controller] --&gt; B[Actual Postgres DB]
-        C[APIServiceExport]
+<p><a href="https://www.keycloak.org/">Keycloak</a> is one of the most widely deployed open-source identity solutions out there. It supports OpenID Connect (OIDC), has a nice admin UI, and is battle-tested. Since <code>kube-bind</code> speaks OIDC, Keycloak is a very natural fit.</p>
+<p>Here is what we'll build:</p>
+<pre class="mermaid"><code>graph TB
+    User((You / Consumer))
+
+    subgraph Provider["Provider Cluster"]
+        Backend["kube-bind Backend"]
+        Keycloak["Keycloak OIDC Provider"]
+        ProviderAPI["Exported API (CRD)"]
     end
 
-    subgraph Consumer Cluster
-        D[Konnector]
-        E[Shadow CRD]
+    subgraph Consumer["Consumer Cluster"]
+        Konnector["Konnector Agent"]
+        BoundCRD["Bound CRD (local copy)"]
     end
 
-    D &lt;--&gt;|Syncs Resources| C
-    E -.-&gt;|User Creates Resource| D</code></pre>
-<blockquote>
-<p><code>kube-bind</code> focuses on <strong>service binding</strong>. It does not merge or federate control planes. Instead, it allows one cluster to securely consume specific APIs exported by another.</p>
-</blockquote>
-<h2 id="core-concepts-api-objects">Core Concepts &amp; API Objects</h2>
-<p>Under the hood, <code>kube-bind</code> uses a set of Custom Resource Definitions (CRDs) to manage the lifecycle of exported services and bindings. Here are the key objects you'll encounter:</p>
-<ul>
-<li><strong><code>APIServiceExport</code></strong>: Represents a specific API (CRD) that the provider wants to export. An export makes the API available to bind.</li>
-<li><strong><code>APIServiceExportTemplate</code></strong>: A template used to instantiate the <code>APIServiceExport</code>. It defines what resources can be exported and carries configuration for the export.</li>
-<li><strong><code>ClusterBinding</code></strong>: A resource on the consumer side that represents the connection to a specific provider. It holds the authentication details and endpoint information.</li>
-<li><strong><code>APIServiceBinding</code></strong>: A resource on the consumer side that represents a binding to a specific exported API. When created, it triggers the synchronization process.</li>
-<li><strong><code>Konnector</code></strong>: The lightweight agent running in the consumer cluster. It watches <code>APIServiceBinding</code> resources and handles the actual synchronization of data between the consumer and provider.</li>
-</ul>
-<h2 id="the-hard-way-manual-setup-architecture">The "Hard Way": Manual Setup &amp; Architecture</h2>
-<p>To really understand how <code>kube-bind</code> works, we're going to set it up manually. This is what the <code>dev create</code> command does automatically, but looking at the individual steps reveals the architecture.</p>
-<p>Let's see this in action. We'll simulate both the provider and consumer on your local machine.</p>
-<h3 id="prerequisites">Prerequisites</h3>
+    User --&gt;|"1. kubectl bind login"| Backend
+    Backend --&gt;|"2. Redirects to Keycloak"| Keycloak
+    Keycloak --&gt;|"3. Issues token on login"| Backend
+    Backend --&gt;|"4. Session established"| User
+
+    User --&gt;|"5. kubectl bind"| Backend
+    Backend --&gt;|"6. Install Konnector"| Konnector
+    Konnector &lt;--&gt;|"7. Syncs resources"| ProviderAPI
+    Konnector --&gt; BoundCRD</code></pre>
+<p>The key difference from the dev setup is steps 2 and 3 — instead of clicking through a mock login screen, users are redirected to Keycloak's real login page. <code>kube-bind</code> validates the resulting tokens against Keycloak's OIDC discovery endpoint.</p>
+<h2 id="prerequisites">Prerequisites</h2>
 <p>You'll need:</p>
 <ul>
 <li><a href="https://kind.sigs.k8s.io/">kind</a></li>
 <li><a href="https://kubernetes.io/docs/tasks/tools/">kubectl</a></li>
-<li><a href="https://github.com/kube-bind/kube-bind/releases">kube-bind CLI</a></li>
+<li><a href="https://helm.sh/">Helm</a> 3.x</li>
+<li>The <code>kube-bind</code> CLI — see <a href="../../14/getting-started-with-kube-bind-the-quick-way/">Quick Start</a> for installation</li>
 </ul>
-<h3 id="install-kube-bind">Install kube-bind</h3>
-<p>The easiest way to install the <code>kube-bind</code> CLI is via <a href="https://krew.sigs.k8s.io/">krew</a>, the plugin manager for <code>kubectl</code>. Since <code>kube-bind</code> is in its own index, you need to add it first:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>index<span class="w"> </span>add<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>https://github.com/kube-bind/krew-index.git
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>bind/bind
-</code></pre></div>
-<p>You should see output similar to this:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>➜  kubectl krew index add bind https://github.com/kube-bind/krew-index.git
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>WARNING: You have added a new index from &quot;https://github.com/kube-bind/krew-index.git&quot;
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>The plugins in this index are not audited for security by the Krew maintainers.
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Install them at your own risk.
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>➜  kubectl krew install bind/bind
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>Updated the local copy of plugin index &quot;bind&quot;.
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>Installing plugin: bind
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>Installed plugin: bind
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>\
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a> | Use this plugin:
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a> |      kubectl bind
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a> | Documentation:
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a> |      https://kube-bind.io/
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>/
-</code></pre></div>
-<p>If you don't have krew installed, you can download the binary directly from the <a href="https://github.com/kube-bind/kube-bind/releases">releases page</a>.</p>
-<h3 id="step-1-create-the-clusters">Step 1: Create the Clusters</h3>
-<p>We need at least two clusters, but first, we'll start by creating a <strong>provider</strong> cluster.</p>
-<p><strong>Create the provider cluster with port mapping:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kind create cluster --name provider --config=-</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="s">kind: Cluster</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="s">apiVersion: kind.x-k8s.io/v1alpha4</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="s">nodes:</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="s">- role: control-plane</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="s">  extraPortMappings:</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="s">  - containerPort: 6443</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="s">    hostPort: 6443</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="s">EOF</span>
-</code></pre></div>
-<p><strong>Create the consumer cluster:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--name<span class="w"> </span>consumer
-</code></pre></div>
-<p>You can verify that your clusters are ready by checking the nodes:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>➜<span class="w">  </span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>--context<span class="w"> </span>kind-provider
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>NAME<span class="w">                     </span>STATUS<span class="w">   </span>ROLES<span class="w">           </span>AGE<span class="w">     </span>VERSION
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>provider-control-plane<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>3m58s<span class="w">   </span>v1.27.3
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>➜<span class="w">  </span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>--context<span class="w"> </span>kind-consumer
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>NAME<span class="w">                     </span>STATUS<span class="w">   </span>ROLES<span class="w">           </span>AGE<span class="w">     </span>VERSION
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>consumer-control-plane<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>3m16s<span class="w">   </span>v1.27.3
-</code></pre></div>
-<h3 id="step-2-set-up-the-provider">Step 2: Set Up the Provider</h3>
-<p>Switch to the provider context. We need to install the <strong>kube-bind backend</strong>.</p>
-<p>To ensure authentication works correctly and enable cross-cluster connectivity, we need to configure hostname resolution:</p>
-<p><strong>Linux/macOS</strong>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>sudo<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;echo &#39;127.0.0.1 kube-bind-backend.kube-bind.svc provider-control-plane&#39; &gt;&gt; /etc/hosts&quot;</span>
-</code></pre></div>
-<p><strong>Windows</strong>:
-Add <code>127.0.0.1 kube-bind-backend.kube-bind.svc</code> to <code>C:\Windows\System32\drivers\etc\hosts</code>.</p>
-<p>Now, install the backend using Helm, configuring it to use this domain:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>config<span class="w"> </span>use-context<span class="w"> </span>kind-provider
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># Install the backend using Helm</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span>--namespace<span class="w"> </span>kube-bind<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span>--set<span class="w"> </span>image.tag<span class="o">=</span>v0.7.1<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span>--set<span class="w"> </span>backend.externalAddress<span class="o">=</span>https://provider-control-plane:6443<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span>--set<span class="w"> </span>backend.tlsExternalServerName<span class="o">=</span>kubernetes.default.svc<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.issuerUrl<span class="o">=</span>http://kube-bind-backend.kube-bind.svc:8080/oidc<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.callbackUrl<span class="o">=</span>http://kube-bind-backend.kube-bind.svc:8080/api/callback<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">    </span>kube-bind<span class="w"> </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="m">0</span>.7.1
+<blockquote>
+<p><strong>Note:</strong> We'll use port-forwarding here to keep things simple. A production setup would use a proper Ingress or Gateway with TLS. See <a href="../../../../../setup/helm/">Installation with Helm</a> for that.</p>
+</blockquote>
+<hr />
+<h2 id="step-1-create-the-provider-cluster">Step 1: Create the Provider Cluster</h2>
+<p>We need a Kind cluster with port mappings so we can reach both Keycloak and the kube-bind backend from our machine:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kind create cluster --name provider --config=-</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="s">kind: Cluster</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="s">apiVersion: kind.x-k8s.io/v1alpha4</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="s">nodes:</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s">- role: control-plane</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s">  kubeadmConfigPatches:</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="s">  - |</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="s">    kind: ClusterConfiguration</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s">    apiServer:</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="s">        certSANs:</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="s">        - &quot;provider-control-plane&quot;</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s">        - &quot;127.0.0.1&quot;</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s">  extraPortMappings:</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s">  - containerPort: 8080</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s">    hostPort: 8080</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="s">  - containerPort: 8443</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="s">    hostPort: 8443</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="s">  - containerPort: 6443</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="s">    hostPort: 6443</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="s">EOF</span>
 </code></pre></div>
 <blockquote>
-<p><strong>Note:</strong> The OIDC configuration used here (which uses the built-in mock OIDC provider of <code>kube-bind-backend</code>) is for demonstration purposes only. For a production deployment, you must integrate with a real OIDC provider. See <a href="../../../../../setup/helm/">Installation with Helm</a> for production guidelines.</p>
-<p><strong>Important Configuration Details:</strong></p>
-<ul>
-<li><code>backend.externalAddress=https://provider-control-plane:6443</code> - This is the address the Konnector will use to connect to the provider's API server.</li>
-<li><code>backend.tlsExternalServerName=kubernetes.default.svc</code> - This ensures TLS verification succeeds even though we're connecting via a custom hostname.</li>
-<li><code>backend.oidc.callbackUrl</code> - Must include the <code>http://</code> scheme to ensure proper browser redirects during authentication.</li>
-</ul>
+<p><strong>Why the certSANs?</strong> Since we are exposing the API server on port <code>6443</code> and using custom hostnames like <code>provider-control-plane</code>, we need to tell Kind to include these in its TLS certificates. Without this, both <strong>kubectl</strong> and the <strong>kube-bind CLI</strong> would reject the connection with a certificate validation error.</p>
 </blockquote>
-<p>After installing, verify that the backend is running:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-bind
+<p>Then add some hostname aliases so we can refer to our services by name:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>sudo<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;echo &#39;127.0.0.1 kube-bind.local keycloak.local provider-control-plane&#39; &gt;&gt; /etc/hosts&quot;</span>
 </code></pre></div>
-<p>You should see something like this:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>NAME                                 READY   STATUS    RESTARTS   AGE
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>kube-bind-backend-6779b5b99f-vczmq   1/1     Running   0          18m
+<blockquote>
+<p>[!TIP]
+<strong>Fixing "Certificate is valid for..." Errors:</strong> If you see an error like <code>x509: certificate is valid for ..., not 0.0.0.0</code>, it's because <code>kubectl</code> is trying to connect via an IP that is not in the certificate. You can fix your current context instantly by running:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>config<span class="w"> </span>set-cluster<span class="w"> </span>kind-provider<span class="w"> </span>--server<span class="o">=</span>https://127.0.0.1:6443
 </code></pre></div>
-<p>Since we are running locally in Kind without an Ingress, we need to port-forward the backend service.</p>
-<p><strong>Open a new terminal window</strong> and run:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/kube-bind-backend<span class="w"> </span>-n<span class="w"> </span>kube-bind<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span>--context<span class="w"> </span>kind-provider
+</blockquote>
+<hr />
+<h2 id="step-2-deploy-keycloak">Step 2: Deploy Keycloak</h2>
+<p>We'll use the <strong>KeycloakX</strong> Helm chart from <a href="https://github.com/codecentric/helm-charts">codecentric</a>. This is a great community-maintained chart that uses the official Keycloak images.</p>
+<p>Because we need to set some environment variables for the admin user, we'll create a small <code>values-keycloak.yaml</code> file. This is much cleaner than trying to pass complex strings via the CLI.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; values-keycloak.yaml</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="s">fullnameOverride: keycloak</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="s">command:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="s">  - &quot;/opt/keycloak/bin/kc.sh&quot;</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="s">  - &quot;start-dev&quot;</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="s">extraEnv: |</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="s">  - name: KEYCLOAK_ADMIN</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="s">    value: admin</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="s">  - name: KEYCLOAK_ADMIN_PASSWORD</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="s">    value: admin123</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="s">  - name: KC_HTTP_RELATIVE_PATH</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="s">    value: /auth</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="s">EOF</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>codecentric<span class="w"> </span>https://codecentric.github.io/helm-charts
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>helm<span class="w"> </span>repo<span class="w"> </span>update
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>keycloak<span class="w"> </span>codecentric/keycloakx<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">  </span>--create-namespace<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">  </span>-f<span class="w"> </span>values-keycloak.yaml
 </code></pre></div>
-<p><img alt="Kube Bind Authentication Required" src="../../../../images/auth-required.png" />
-<em>If you visit <code>http://kube-bind-backend.kube-bind.svc:8080</code> in your browser, you'll see this screen. This is normal and confirms the backend is running!</em></p>
-<h3 id="step-3-exporting-an-api-service">Step 3: Exporting an API Service</h3>
-<p>Now that the backend is running, we can export an API. We'll use the <strong>Cowboy</strong> CRD included in the <code>kube-bind</code> repository as our example.</p>
-<p>First, apply the CRD to the <strong>provider</strong> cluster:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/crd-cowboys.yaml
+<p>You should see the following output:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Release &quot;keycloak&quot; does not exist. Installing it now.
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>NAME: keycloak
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>LAST DEPLOYED: Sun Feb 22 21:52:49 2026
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>NAMESPACE: keycloak
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>STATUS: deployed
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>REVISION: 1
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>TEST SUITE: None
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>NOTES:
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>***********************************************************************
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>*                                                                     *
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>*                Keycloak.X Helm Chart by codecentric AG              *
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>*                                                                     *
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>***********************************************************************
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>Keycloak was installed with a Service of type ClusterIP
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>Create a port-forwarding with the following commands:
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>export POD_NAME=$(kubectl get pods --namespace keycloak -l &quot;app.kubernetes.io/name=keycloakx,app.kubernetes.io/instance=keycloak&quot; -o name)
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>echo &quot;Visit http://127.0.0.1:8080 to use your application&quot;
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>kubectl --namespace keycloak port-forward &quot;$POD_NAME&quot; 8080
 </code></pre></div>
-<p>Verify that the CRD is installed:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd
+<p>Wait for it to come up (Heads up: this chart deploys a <strong>StatefulSet</strong>, not a Deployment):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>statefulset/keycloak<span class="w"> </span>-n<span class="w"> </span>keycloak<span class="w"> </span>--timeout<span class="o">=</span>120s
 </code></pre></div>
-<p>You should see <code>cowboys.wildwest.dev</code> in the list:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>NAME                                     CREATED AT
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>apiserviceexports.kube-bind.io           2026-02-14T13:04:56Z
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>...
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>cowboys.wildwest.dev                     2026-02-14T13:57:13Z
+<p>Patch the service to expose port 8443 for OIDC compatibility since we're
+technically running the cluster in our local machine.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>service<span class="w"> </span>keycloak-http<span class="w"> </span>-n<span class="w"> </span>keycloak<span class="w"> </span>--type<span class="o">=</span><span class="s1">&#39;json&#39;</span><span class="w"> </span>-p<span class="o">=</span><span class="s1">&#39;[</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="s1">  {&quot;op&quot;: &quot;replace&quot;, &quot;path&quot;: &quot;/spec/ports/2/port&quot;, &quot;value&quot;: 8444},</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="s1">  {&quot;op&quot;: &quot;add&quot;, &quot;path&quot;: &quot;/spec/ports/-&quot;, &quot;value&quot;: {&quot;name&quot;: &quot;oidc-compat&quot;, &quot;port&quot;: 8443, &quot;targetPort&quot;: &quot;http&quot;, &quot;protocol&quot;: &quot;TCP&quot;}}</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="s1">]&#39;</span>
 </code></pre></div>
-<p>Now, we need to <strong>export</strong> this service so consumers can find it. We do this by creating an <code>APIServiceExportTemplate</code>. This tells the backend to list "Cowboys" in its service catalog.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/template-cowboys.yaml
+<p>Port-forward so we can access the admin console:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/keycloak-http<span class="w"> </span>-n<span class="w"> </span>keycloak<span class="w"> </span><span class="m">8443</span>:80<span class="w"> </span><span class="p">&amp;</span>
 </code></pre></div>
-<p>Verify that the template is created:</p>
+<p>Head over to <a href="http://keycloak.local:8443">http://keycloak.local:8443</a>. You'll be redirected to the Keycloak login page:</p>
+<p><img alt="Keycloak Login" src="../../../../images/keycloak-login.png" /></p>
+<p>Log in with <code>admin</code> / <code>admin123</code>. You should see the Keycloak admin console.</p>
+<hr />
+<h2 id="step-3-configure-keycloak">Step 3: Configure Keycloak</h2>
+<p>This is the most important step. We need to set up a few things in Keycloak:</p>
+<ol>
+<li>A <strong>Realm</strong> — a logical namespace for our identity space</li>
+<li>A <strong>Client</strong> — representing the <code>kube-bind</code> backend</li>
+<li>A <strong>Group</strong> — to control which users can bind services</li>
+<li>A <strong>User</strong> — so we have someone to log in as</li>
+</ol>
+<h3 id="create-a-realm">Create a Realm</h3>
+<p>In the top-left corner of the admin console, you'll see a <strong>Manage realms</strong> option; click it. You'll see a list of realms, one of which is named <code>master</code>. We won't be using that one. Click on the <strong>Create realm</strong> button.</p>
+<p><img alt="Create Keycloak Realm" src="../../../../images/keycloak-create-realm.png" /></p>
+<p>Name the new realm <code>kube-bind</code> and click <strong>Create</strong>.</p>
+<h3 id="create-a-client">Create a Client</h3>
+<p>This is the entry for the <code>kube-bind</code> backend application in Keycloak.</p>
+<p>Go to <strong>Clients</strong> → <strong>Create client</strong> and fill in the following:</p>
+<ul>
+<li><strong>Client ID</strong>: <code>kube-bind</code></li>
+<li><strong>Client type</strong>: <code>OpenID Connect</code></li>
+</ul>
+<p>Click <strong>Next</strong>. On the capability config screen:</p>
+<ul>
+<li>Enable <strong>Client authentication</strong> (this generates a client secret)</li>
+<li>Keep <strong>Standard flow</strong> checked</li>
+</ul>
+<p><img alt="Keycloak Client Capability Config" src="../../../../images/keycloak-client-capabilities.png" /></p>
+<p>Click <strong>Next</strong>. On the login settings screen:</p>
+<ul>
+<li><strong>Valid redirect URIs</strong>: <code>http://kube-bind.local:8080/api/callback</code></li>
+<li><strong>Web origins</strong>: <code>http://kube-bind.local:8080</code></li>
+</ul>
+<p><img alt="Keycloak Client Login Settings" src="../../../../images/keycloak-client-login-settings.png" /></p>
+<p>Click <strong>Save</strong>.</p>
+<h3 id="retrieve-the-client-secret">Retrieve the Client Secret</h3>
+<p>Now that the client is created, we need its secret to give to the <code>kube-bind</code> backend.</p>
+<ol>
+<li>Go to the <strong>Credentials</strong> tab at the top.</li>
+<li>Under <strong>Client Secret</strong>, click the copy icon to copy the value to your clipboard.</li>
+</ol>
+<p><img alt="Keycloak Client Credentials" src="../../../../images/keycloak-client-credentials.png" /></p>
+<blockquote>
+<p><strong>Note:</strong> If you don't see the <strong>Credentials</strong> tab, make sure <strong>Client authentication</strong> is toggled to <strong>ON</strong> in the client's <strong>Settings</strong> tab.</p>
+</blockquote>
+<h3 id="create-a-group">Create a Group</h3>
+<p><code>kube-bind</code> lets you restrict who can create bindings based on OIDC group membership. Let's set that up.</p>
+<p>Go to <strong>Groups</strong> → <strong>Create group</strong>, name it <code>kube-bind-users</code>, and click <strong>Create</strong>.</p>
+<h3 id="create-a-test-user">Create a Test User</h3>
+<p>Go to <strong>Users</strong> → <strong>Create new user</strong> and fill in a <strong>Username</strong> (e.g., <code>platform-operator</code>). Toggle <strong>Email verified</strong> to on, then click <strong>Create</strong>.</p>
+<p><img alt="Create Keycloak User" src="../../../../images/keycloak-create-user.png" /></p>
+<p>Go to the <strong>Credentials</strong> tab → <strong>Set password</strong> (something like <code>password123</code>, and disable temporary). Then go to the <strong>Groups</strong> tab → <strong>Join group</strong> → select <code>kube-bind-users</code>.</p>
+<blockquote>
+<p><strong>Technical Note on Groups:</strong> The <code>kube-bind</code> backend is hardcoded to look for a claim named <code>groups</code> in your OIDC token. This is why the <strong>Token Claim Name</strong> in the Keycloak mapper MUST be exactly <code>groups</code>. If you use a different name, the backend won't "see" your group membership even if you are in the right group!</p>
+</blockquote>
+<h3 id="configure-client-scopes">Configure Client Scopes</h3>
+<p>Keycloak won't grant scopes like <code>profile</code> or <code>groups</code> unless they are explicitly assigned to the client.</p>
+<h4 id="1-create-the-groups-scope">1. Create the 'groups' Scope</h4>
+<p>Instead of adding a mapper directly to the client, we'll create a reusable scope:</p>
+<ol>
+<li>In the sidebar, click <strong>Client scopes</strong> → <strong>Create client scope</strong>.</li>
+<li><strong>Name</strong>: <code>groups</code></li>
+<li>Click <strong>Save</strong>.</li>
+<li>Go to the <strong>Mappers</strong> tab → <strong>Configure a new mapper</strong> → <strong>Group Membership</strong>.</li>
+<li><strong>Name</strong>: <code>groups</code>, <strong>Token Claim Name</strong>: <code>groups</code>.</li>
+<li>Ensure <strong>Full group path</strong> is <code>OFF</code>.</li>
+<li>Click <strong>Save</strong>.</li>
+</ol>
+<p><img alt="Keycloak Client Scope Mappers" src="../../../../images/keycloak-mappers-ui.png" /></p>
+<h4 id="2-assign-scopes-to-the-client">2. Assign Scopes to the Client</h4>
+<p>Now, we must tell the <code>kube-bind</code> client to actually use these scopes. Some of these are built-in to Keycloak, while <code>groups</code> is the one we just created:</p>
+<ol>
+<li>Go to <strong>Clients</strong> → <code>kube-bind</code> → <strong>Client scopes</strong> tab.</li>
+<li>Click <strong>Add client scope</strong>.</li>
+<li>Select <code>profile</code>, <code>email</code>, and <code>offline_access</code> (these are built-in and already exist).</li>
+<li>Also select the <code>groups</code> scope you just created.</li>
+</ol>
+<blockquote>
+<p><strong>Check the pagination!</strong> Keycloak's "Add client scope" dialog is paginated. If you don't see <code>profile</code> or <code>email</code> on the first page, click the arrow at the bottom right to go to the next page.</p>
+</blockquote>
+<ol>
+<li>Click <strong>Add</strong> and choose <strong>Default</strong>.</li>
+</ol>
+<p><img alt="Keycloak Assign Scopes" src="../../../../images/keycloak-assign-scopes.png" /></p>
+<p>That's Keycloak done! The <code>kube-bind</code> backend will now be able to request and receive these scopes.</p>
+<hr />
+<h2 id="step-4-deploy-kube-bind">Step 4: Deploy kube-bind</h2>
+<p>Keycloak's OIDC issuer URL follows this pattern: <code>http://&lt;host&gt;/auth/realms/&lt;realm&gt;</code>. For us, that's <code>http://keycloak.local:8443/auth/realms/kube-bind</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>config<span class="w"> </span>use-context<span class="w"> </span>kind-provider
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>kube-bind<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="hll"><span class="w">    </span>--namespace<span class="w"> </span>kube-bind<span class="w"> </span><span class="se">\</span>
+</span><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span>--create-namespace<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span>--set<span class="w"> </span>image.tag<span class="o">=</span>v0.7.1<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span>--set<span class="w"> </span>backend.externalAddress<span class="o">=</span>https://provider-control-plane:6443<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span>--set<span class="w"> </span>backend.tlsExternalServerName<span class="o">=</span>kubernetes.default.svc<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.type<span class="o">=</span>external<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.issuerUrl<span class="o">=</span>http://keycloak.local:8443/auth/realms/kube-bind<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.clientId<span class="o">=</span>kube-bind<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.clientSecret<span class="o">=</span>cSmfhB3RNuetE8pgz1hDVjDHsDpc2r2v<span class="se">\</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.callbackUrl<span class="o">=</span>http://kube-bind.local:8080/api/callback<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.allowedGroups<span class="o">={</span>kube-bind-users<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="hll"><span class="w">    </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="m">0</span>.7.1
+</span></code></pre></div>
+<p>Replace <code>&lt;YOUR-CLIENT-SECRET&gt;</code> with what you copied from the Keycloak credentials tab.</p>
+<blockquote>
+<p><strong>Heads up:</strong> Never paste secrets directly into shell history in production. Use a Kubernetes Secret or an environment variable via <code>--set backend.oidc.clientSecret=$OIDC_CLIENT_SECRET</code>.</p>
+</blockquote>
+<h3 id="networking-adjustment-kind-specific">Networking Adjustment (Kind Specific)</h3>
+<p>Since we are running in Kind, the <code>kube-bind</code> pod doesn't know about the <code>keycloak.local</code> entry on your host's <code>/etc/hosts</code> file. Without this next step, the backend will try to reach itself on <code>127.0.0.1:8443</code> and fail.</p>
+<p>We need to tell the pod that <code>keycloak.local</code> is actually the IP of our Keycloak Service.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># 1. Get the ClusterIP of the Keycloak service</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nv">KEYCLOAK_IP</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>keycloak-http<span class="w"> </span>-n<span class="w"> </span>keycloak<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clusterIP}&#39;</span><span class="k">)</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># 2. Patch the backend to add a hostAlias</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>deployment<span class="w"> </span>kube-bind-backend<span class="w"> </span>-n<span class="w"> </span>kube-bind<span class="w"> </span>--type<span class="o">=</span><span class="s1">&#39;json&#39;</span><span class="w"> </span>-p<span class="o">=</span><span class="s2">&quot;[</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="s2">  {\&quot;op\&quot;: \&quot;add\&quot;, \&quot;path\&quot;: \&quot;/spec/template/spec/hostAliases\&quot;, \&quot;value\&quot;: [</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="s2">    {\&quot;ip\&quot;: \&quot;</span><span class="nv">$KEYCLOAK_IP</span><span class="s2">\&quot;, \&quot;hostnames\&quot;: [\&quot;keycloak.local\&quot;]}</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="s2">  ]}</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="s2">]&quot;</span>
+</code></pre></div>
+<p>Verify everything is running:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-bind
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>NAME                                 READY   STATUS    RESTARTS   AGE
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>kube-bind-backend-67b5bc9768-l9vr4  1/1     Running   0          45s
+</code></pre></div>
+<p>Port-forward the backend:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/kube-bind-backend<span class="w"> </span>-n<span class="w"> </span>kube-bind<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span><span class="p">&amp;</span>
+</code></pre></div>
+<hr />
+<h2 id="step-5-export-an-api">Step 5: Export an API</h2>
+<p>Now let's give the consumer something to bind to. We'll use the <strong>Cowboys</strong> example CRD that ships with <code>kube-bind</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/crd-cowboys.yaml
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/template-cowboys.yaml
+</code></pre></div>
+<p>Verify it's exported:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>apiserviceexporttemplates
 </code></pre></div>
-<p>Output:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>NAME      RESOURCES      PERMISSIONCLAIMS   AGE
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>cowboys   wildwest.dev   secrets            12s
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>cowboys   wildwest.dev   secrets            8s
 </code></pre></div>
-<p>The service is now exported!</p>
-<h3 id="step-4-bind-the-consumer">Step 4: Bind the Consumer</h3>
-<p>Switch to the <strong>consumer</strong> cluster.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>kubectl<span class="w"> </span>config<span class="w"> </span>use-context<span class="w"> </span>kind-consumer
+<hr />
+<h2 id="step-6-bind-from-the-consumer">Step 6: Bind from the Consumer</h2>
+<p>Create the consumer cluster:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--name<span class="w"> </span>consumer
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>kubectl<span class="w"> </span>config<span class="w"> </span>use-context<span class="w"> </span>kind-consumer
 </code></pre></div>
-<p>Run the login command to authenticate with the provider:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>http://kube-bind-backend.kube-bind.svc:8080
+<p>Run the login command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>http://kube-bind.local:8080
 </code></pre></div>
-<p>You should see output similar to:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>Connecting to kube-bind server http://kube-bind-backend.kube-bind.svc:8080...
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>Started local callback server at http://127.0.0.1:64184/callback
+<p>Your browser will open — and instead of the mock login page, you'll see <strong>Keycloak's real login form</strong>. Log in with <code>platform-operator</code> and the password you set earlier.</p>
+<p><img alt="Keycloak Login Form" src="../../../../images/keycloak-login-form.png" /></p>
+<blockquote>
+<p>On your first login, Keycloak might ask you to <strong>Update Account Information</strong> (First name, Last name, and Email). This is a standard "Required Action" for new users. Just fill in the details and click <strong>Submit</strong>.</p>
+<p><img alt="Keycloak Update Account" src="../../../../images/keycloak-update-account.png" /></p>
+<p>Once you submit your information, you'll see the classic <code>kube-bind</code> success page:</p>
+<p><img alt="Authentication Successful" src="../../../../images/kube-bind-auth-success.png" /></p>
+</blockquote>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>Connecting to kube-bind server http://kube-bind.local:8080...
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>Started local callback server at http://127.0.0.1:59371/callback
 <a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>Opening browser for authentication...
-<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>🔑 Successfully authenticated to kube-bind-backend.kube-bind.svc:8080
-<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>Configuration saved to: /Users/username/.kube-bind/config
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>🔑 Successfully authenticated to kube-bind.local:8080
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>Configuration saved to: /Users/olalekanodukoya/.kube-bind/config
 </code></pre></div>
-<p>Now run the bind command:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>http://kube-bind-backend.kube-bind.svc:8080
+<p>Now bind the API:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>http://kube-bind.local:8080
 </code></pre></div>
-<p>This will open your browser showing the available services in the Provider's template catalog. Amongst them, you'll see the <strong>Cowboys</strong> template that we exported earlier.</p>
-<p><img alt="Available Resources - Cowboys Template" src="../../../../images/cowboys_template_ui.png" /></p>
-<p>Click <strong>"Bind for CLI"</strong> to proceed. After clicking, your browser will show a success message:</p>
-<p><img alt="Binding Completed Successfully" src="../../../../images/binding_success.png" /></p>
-<p>Meanwhile, back in your terminal, you'll see the CLI deploying the Konnector:</p>
+<p>The CLI will once again open your browser to confirm the binding. Since you just logged in, Keycloak's SSO will likely skip the username/password prompt and take you straight to the resource selection screen.</p>
+<p>Select <strong>Cowboys</strong> in the browser UI and click <strong>Bind for CLI</strong>.</p>
+<p><img alt="Available Resources" src="../../../../images/kube-bind-available-resources.png" /></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>🌐 Opening kube-bind UI in your browser...
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>Browser opened successfully
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>Waiting for binding completion from UI...
-<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>   (Press Ctrl+C to cancel)
-<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>
-<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>Binding completed successfully!
-<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>Created kube-bind namespace.
-<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>🔒 Created secret kube-bind/kubeconfig-9lbzx for host https://provider-control-plane:6443, namespace kube-bind-enkvby5uzkct
-<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>🚀 Deploying konnector v0.7.1 to namespace kube-bind.
-<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>   Waiting for the konnector to be ready.................
-<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>✅ Created APIServiceBinding cowboys for 1 resources
-<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>Created 1 APIServiceBinding(s):
-<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>  - cowboys
-<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>Resources bound successfully!
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    http://kube-bind.local:8080?consumer_id=ef0dc4ce-c867-48eb-ba6d-94178eefeca5&amp;redirect_url=http%3A%2F%2F127.0.0.1%3A53613%2Fcallback&amp;session_id=OV4RLFOX2V7HXSTY5FFJFGF4BX
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>Browser opened successfully
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>Waiting for binding completion from UI...
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>   (Press Ctrl+C to cancel)
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>Binding completed successfully!
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>Created kube-bind namespace.
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>🔒 Created secret kube-bind/kubeconfig-2gf2s for host https://provider-control-plane:6443, namespace kube-bind-4fx0okhmvche
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>🚀 Deploying konnector v0.7.1 to namespace kube-bind.
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>   Waiting for the konnector to be ready.............
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>✅ Created APIServiceBinding cowboys for 1 resources
+<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>Created 1 APIServiceBinding(s):
+<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>  - cowboys
+<a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>Resources bound successfully!
 </code></pre></div>
-<p>Behind the scenes, the CLI created a <code>kube-bind</code> namespace, an <code>APIServiceBinding</code>, deploys the <code>konnector</code> and creates some other resource in the consumer cluster. The <code>APIServiceBinding</code> resource tells the Konnector which services to sync from the provider.</p>
-<p>Check available namespaces</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>ns
+<hr />
+<h2 id="step-7-verify-it-works">Step 7: Verify It Works</h2>
+<p>Check that the CRD is now available in the consumer:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>cowboys.wildwest.dev
 </code></pre></div>
-<p>You should see the <code>kube-bind</code> namespace:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>NAME                 STATUS   AGE
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>default              Active   6h6m
-<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>kube-bind            Active   92s
-<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>kube-node-lease      Active   6h6m
-<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>kube-public          Active   6h6m
-<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>kube-system          Active   6h6m
-<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>local-path-storage   Active   6h6m
+<p>Create a resource:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="s">apiVersion: wildwest.dev/v1alpha1</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="s">kind: Cowboy</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="s">metadata:</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="s">  name: wyatt-earp</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="s">  namespace: default</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="s">spec:</span>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="s">  intent: &quot;Keep the peace&quot;</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="s">EOF</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cowboys
 </code></pre></div>
-<p>Check the Konnector pods:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-bind
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>NAME         AGE
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>wyatt-earp   4s
 </code></pre></div>
-<p>Output:
-We can see the konnector pods running in the <code>kube-bind</code> namespace.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>NAME                         READY   STATUS    RESTARTS   AGE
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>konnector-547ff86976-5rmh8   1/1     Running   0          98s
-<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>konnector-547ff86976-xkcdm   1/1     Running   0          98s
-</code></pre></div>
-<h3 id="step-5-verify-and-use">Step 5: Verify and Use</h3>
-<p>After the binding completes, several CRDs will be installed in your consumer cluster. Let's verify:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd
-</code></pre></div>
-<p>You should see the kube-bind infrastructure CRDs along with the Cowboys CRD:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>NAME                                    CREATED AT
-<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>apiservicebindingbundles.kube-bind.io   2026-02-14T23:37:29Z
-<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>apiservicebindings.kube-bind.io         2026-02-14T23:37:29Z
-<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>cowboys.wildwest.dev                    2026-02-14T23:37:37Z
-</code></pre></div>
-<p>The <code>cowboys.wildwest.dev</code> CRD is now available locally! The other CRDs are part of the kube-bind infrastructure that manages the binding lifecycle.</p>
-<p>Check that the <strong>Cowboy</strong> CRD is available:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>cowboys.wildwest.dev
-</code></pre></div>
-<p>Now, you can create a <code>Cowboy</code> resource directly in your consumer cluster. The magic is that this resource will be managed by the provider!</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
-<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="s">apiVersion: wildwest.dev/v1alpha1</span>
-<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="s">kind: Cowboy</span>
-<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="s">metadata:</span>
-<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="s">  name: billy-the-kid</span>
-<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="s">  namespace: default</span>
-<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="s">spec:</span>
-<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="s">  intent: &quot;Ride the range and protect the cattle&quot;</span>
-<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a><span class="s">EOF</span>
-</code></pre></div>
-<p>Verify it exists:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cowboys
-</code></pre></div>
-<p>Output:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>NAME            AGE
-<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>billy-the-kid   6s
-</code></pre></div>
-<p>The resource is created locally, but managed remotely!</p>
-<h2 id="real-world-use-cases">Real-World Use Cases</h2>
+<p>The resource is created in the consumer cluster and synced to the provider — all authenticated through Keycloak.</p>
+<hr />
+<h2 id="conclusion">Conclusion</h2>
+<p>In this (relatively short 😄) tutorial, we've seen how straightforward it is to swap out <code>kube-bind</code>'s embedded OIDC provider for Keycloak. With a real identity provider in place, you get proper user management, group-based access control, and token lifecycle management out of the box.</p>
+<p>In a regular production setup, ensure you're using HTTPS everywhere and storing your Keycloak client secret in a proper secrets manager. The <a href="../../../../../setup/helm/">Installation with Helm</a> guide covers the full production setup.</p>
+<p>Check out the integration guides to see what you can actually bind once this is all set up:</p>
 <ul>
-<li><strong>SaaS Platforms</strong>: Software vendors can deliver their application into customer clusters without requiring complex installs. Customers get a native CRD, vendors manage the complexity remotely.</li>
-<li><strong>Centralized Platform Teams</strong>: Offer "Database-as-a-Service" or "AI-Model-as-a-Service" to internal dev teams from a central management cluster. The dev teams just see a <code>Postgres</code> or <code>Model</code> resource in their namespace.</li>
-<li><strong>Hybrid Cloud</strong>: Keep sensitive data (like a database) in a secure on-prem cluster while allowing cloud-based clusters to interact with it via Kubernetes APIs. <code>kube-bind</code> handles the secure connection.</li>
+<li><a href="../../../../../usage/integrations/crossplane/"><strong>Crossplane</strong></a>: Cloud resources as a service</li>
+<li><a href="../../../../../usage/integrations/cloudnativepg/"><strong>CloudNativePG</strong></a>: Database-as-a-Service</li>
+<li><a href="../../../../../usage/integrations/cert-manager/"><strong>cert-manager</strong></a>: Certificate management as a service</li>
 </ul>
-<h3 id="see-it-in-action">See It In Action</h3>
-<p>Check out our integration guides to see how <code>kube-bind</code> works with popular projects:</p>
-<ul>
-<li><a href="../../../../../usage/integrations/crossplane/"><strong>Crossplane</strong></a>: Manage cloud resources like AWS S3 or GCP CloudSQL as a service.</li>
-<li><a href="../../../../../usage/integrations/kro/"><strong>Kro</strong></a>: The easiest way to create and export custom APIs.</li>
-<li><a href="../../../../../usage/integrations/cloudnativepg/"><strong>CloudNativePG</strong></a>: Database-as-a-Service on Kubernetes.</li>
-<li><a href="../../../../../usage/integrations/cert-manager/"><strong>cert-manager</strong></a>: Certificate management as a service.</li>
-</ul>
-<h2 id="recap">Recap</h2>
-<p><code>kube-bind</code> solves the multi-cluster service sharing problem by projecting APIs rather than moving infrastructure. It keeps the consumer cluster lightweight while giving platform teams full control over the service lifecycle.</p>
+<p>Thank you!</p>
 
 
 

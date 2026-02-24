@@ -41,9 +41,10 @@ import (
 )
 
 type reconciler struct {
-	informerScope kubebindv1alpha2.InformerScope
-	isolation     kubebindv1alpha2.Isolation
-	schemaSource  string
+	informerScope      kubebindv1alpha2.InformerScope
+	isolation          kubebindv1alpha2.Isolation
+	schemaSource       string
+	schemaSyncInterval time.Duration
 
 	getBoundSchema    func(ctx context.Context, cl client.Client, namespace, name string) (*kubebindv1alpha2.BoundSchema, error)
 	createBoundSchema func(ctx context.Context, cl client.Client, schema *kubebindv1alpha2.BoundSchema) error
@@ -185,6 +186,9 @@ func (r *reconciler) createOrUpdateBoundSchema(ctx context.Context, cl client.Cl
 
 	if existing != nil {
 		var needsUpdate bool
+		// When export is nil (APIServiceExport not yet created), we skip owner-reference
+		// management but still proceed with schema sync so BoundSchemas are ready
+		// before the export is created on the next reconcile pass.
 		if export != nil {
 			existingRefs := len(existing.GetOwnerReferences())
 			if err := controllerutil.SetControllerReference(export, existing, cl.Scheme()); err != nil {

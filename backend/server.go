@@ -221,6 +221,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		kubebindv1alpha2.InformerScope(c.Options.ConsumerScope),
 		kubebindv1alpha2.Isolation(c.Options.Isolation),
 		c.Options.SchemaSource,
+		c.Options.SchemaSyncInterval,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up ServiceExportRequest Controller: %w", err)

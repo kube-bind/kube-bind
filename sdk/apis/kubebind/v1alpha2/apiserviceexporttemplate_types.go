@@ -91,6 +91,12 @@ type APIServiceExportTemplateSpec struct {
 	// Never means schemas are immutable after creation.
 	// Always means schemas are updated when the source content changes.
 	// Default: Never
+	//
+	// NOTE: This field is intentionally mutable on the template so that providers
+	// can change the default for future binding requests. Already-created
+	// APIServiceExportRequests use CEL validation (self == oldSelf) to lock in
+	// the policy chosen at binding time.
+	//
 	// +optional
 	// +kubebuilder:default="Never"
 	// +kubebuilder:validation:Enum=Never;Always

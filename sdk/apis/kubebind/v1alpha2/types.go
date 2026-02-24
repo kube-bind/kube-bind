@@ -21,4 +21,9 @@ const (
 	OIDCProviderTypeEmbedded = "embedded"
 	// OIDCProviderTypeExternal represents an external OIDC provider managed outside of kube-bind.
 	OIDCProviderTypeExternal = "external"
+
+	// LabelProviderKubeconfig identifies secrets containing provider kubeconfig.
+	// Secrets with this label are used by konnector to start heartbeat reporting
+	// immediately at startup, even without APIServiceBinding resources.
+	LabelProviderKubeconfig = "kube-bind.io/provider-kubeconfig"
 )

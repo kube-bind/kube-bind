@@ -19,6 +19,7 @@ package konnector
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -231,6 +232,14 @@ func (c *Controller) enqueueSecret(logger klog.Logger, obj any) {
 		return
 	}
 
+	// Check if this is a provider kubeconfig secret (for early heartbeat)
+	secret, ok := obj.(*corev1.Secret)
+	if ok && secret.Labels[kubebindv1alpha2.LabelProviderKubeconfig] == "true" {
+		// Queue it as a heartbeat secret with a special prefix
+		logger.V(2).Info("queueing heartbeat secret", "key", key)
+		c.queue.Add("__heartbeat_secret__" + key)
+	}
+
 	bindings, err := c.serviceBindingIndexer.ByIndex(indexers.ByServiceBindingKubeconfigSecret, fmt.Sprintf("%s/%s", ns, name))
 	if err != nil {
 		runtime.HandleError(err)
@@ -302,7 +311,33 @@ func (c *Controller) processNextWorkItem(ctx context.Context) bool {
 	return true
 }
 
+const heartbeatSecretPrefix = "__heartbeat_secret__"
+
 func (c *Controller) process(ctx context.Context, key string) error {
+	logger := klog.FromContext(ctx)
+
+	// Handle heartbeat secret keys (for early heartbeat without APIServiceBinding)
+	if strings.HasPrefix(key, heartbeatSecretPrefix) {
+		secretKey := strings.TrimPrefix(key, heartbeatSecretPrefix)
+		ns, name, err := cache.SplitMetaNamespaceKey(secretKey)
+		if err != nil {
+			runtime.HandleError(err)
+			return nil
+		}
+
+		secret, err := c.secretLister.Secrets(ns).Get(name)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				logger.V(2).Info("heartbeat secret not found, skipping", "secret", secretKey)
+				return nil
+			}
+			return err
+		}
+
+		// Start controller for this secret
+		return c.reconciler.startClusterControllerForSecret(ctx, secret)
+	}
+
 	_, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		runtime.HandleError(err)

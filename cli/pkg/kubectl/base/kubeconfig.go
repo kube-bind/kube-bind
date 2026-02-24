@@ -29,6 +29,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
+
+	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
 func ParseRemoteKubeconfig(kubeconfig []byte) (host string, ns string, err error) {
@@ -96,6 +98,9 @@ func EnsureKubeconfigSecret(ctx context.Context, kubeconfig, name string, client
 			ObjectMeta: v1.ObjectMeta{
 				Namespace:    "kube-bind",
 				GenerateName: "kubeconfig-",
+				Labels: map[string]string{
+					kubebindv1alpha2.LabelProviderKubeconfig: "true",
+				},
 			},
 			Data: map[string][]byte{
 				"kubeconfig": []byte(kubeconfig),
@@ -129,6 +134,11 @@ func EnsureKubeconfigSecret(ctx context.Context, kubeconfig, name string, client
 			return errors.NewAlreadyExists(corev1.Resource("secret"), secret.Name)
 		}
 		secret.Data["kubeconfig"] = []byte(kubeconfig)
+		// Ensure label is set on existing secrets
+		if secret.Labels == nil {
+			secret.Labels = make(map[string]string)
+		}
+		secret.Labels[kubebindv1alpha2.LabelProviderKubeconfig] = "true"
 		if _, err := client.CoreV1().Secrets("kube-bind").Update(ctx, secret, v1.UpdateOptions{}); err != nil {
 			return err
 		}

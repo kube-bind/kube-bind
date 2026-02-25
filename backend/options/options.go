@@ -306,5 +306,9 @@ func (options *CompletedOptions) Validate() error {
 		return fmt.Errorf("invalid schema source: %q", options.SchemaSource)
 	}
 
+	if options.SchemaSyncInterval < 10*time.Second {
+		return fmt.Errorf("--schema-sync-interval must be at least 10s, got %v", options.SchemaSyncInterval)
+	}
+
 	return nil
 }

@@ -189,14 +189,13 @@ func (r *reconciler) createOrUpdateBoundSchema(ctx context.Context, cl client.Cl
 		// When export is nil (APIServiceExport not yet created), we skip owner-reference
 		// management but still proceed with schema sync so BoundSchemas are ready
 		// before the export is created on the next reconcile pass.
-		// For policy=Never this is a no-op (needsUpdate stays false); for policy=Always
+		// For policy=Never this is a no-op; for policy=Always
 		// it allows hash-based spec sync to run independently of export lifecycle.
 		if export != nil {
-			existingRefs := len(existing.GetOwnerReferences())
-			if err := controllerutil.SetControllerReference(export, existing, cl.Scheme()); err != nil {
-				return fmt.Errorf("failed to set owner reference on BoundSchema %s: %w", desired.Name, err)
-			}
-			if len(existing.GetOwnerReferences()) != existingRefs {
+			if !metav1.IsControlledBy(existing, export) {
+				if err := controllerutil.SetControllerReference(export, existing, cl.Scheme()); err != nil {
+					return fmt.Errorf("failed to set owner reference on BoundSchema %s: %w", desired.Name, err)
+				}
 				needsUpdate = true
 			}
 		}

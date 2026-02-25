@@ -178,6 +178,13 @@ type BindableResourcesRequestStatus struct {
 	// +kubebuilder:validation:Enum=Pending;Failed;Succeeded
 	Phase BindableResourcesRequestPhase `json:"phase,omitempty"`
 
+	// namespace is the namespace assigned to this binding request on the service provider cluster.
+	// This is where the resources for this binding are created and managed.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	Namespace string `json:"namespace,omitempty"`
+
 	// kubeconfigSecretRef is a reference to a secret containing the kubeconfig, used
 	// to be used by the konnector agent.
 	KubeconfigSecretRef *LocalSecretKeyRef `json:"kubeconfigSecretRef,omitempty"`

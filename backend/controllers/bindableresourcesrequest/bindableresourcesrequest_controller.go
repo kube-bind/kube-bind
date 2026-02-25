@@ -251,7 +251,7 @@ func (r *reconciler) reconcile(ctx context.Context, clusterName string, cl clien
 	}
 
 	// Handle resources and get kubeconfig
-	kfg, err := r.kubeManager.HandleResources(ctx, req.Spec.Author, req.Spec.ClusterIdentity.Identity, clusterName)
+	result, err := r.kubeManager.HandleResources(ctx, req.Spec.Author, req.Spec.ClusterIdentity.Identity, clusterName)
 	if err != nil {
 		meta.SetStatusCondition(&req.Status.Conditions, metav1.Condition{
 			Type:               string(kubebindv1alpha2.BindableResourcesRequestConditionReady),
@@ -263,8 +263,11 @@ func (r *reconciler) reconcile(ctx context.Context, clusterName string, cl clien
 		return ctrl.Result{}, fmt.Errorf("failed to handle resources for cluster identity %q: %w", req.Spec.ClusterIdentity.Identity, err)
 	}
 
+	// Set the namespace in the status
+	req.Status.Namespace = result.Namespace
+
 	// Create or update the BindingResourceResponse secret
-	if err := r.ensureBindingResponseSecret(ctx, cl, req, kfg, secretName, secretKey); err != nil {
+	if err := r.ensureBindingResponseSecret(ctx, cl, req, result.Kubeconfig, secretName, secretKey); err != nil {
 		meta.SetStatusCondition(&req.Status.Conditions, metav1.Condition{
 			Type:               string(kubebindv1alpha2.BindableResourcesRequestConditionReady),
 			Status:             metav1.ConditionFalse,

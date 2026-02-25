@@ -35,6 +35,7 @@ type Options struct {
 
 type ExtraOptions struct {
 	KubeConfigPath string
+	Context        string
 
 	LeaseLockName      string
 	LeaseLockNamespace string
@@ -80,6 +81,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	logsv1.AddFlags(options.Logs, fs)
 
 	fs.StringVar(&options.KubeConfigPath, "kubeconfig", options.KubeConfigPath, "Kubeconfig file for the local cluster.")
+	fs.StringVar(&options.Context, "context", options.Context, "The name of the kubeconfig context to use.")
 	fs.StringVar(&options.LeaseLockName, "lease-name", options.LeaseLockName, "Name of lease lock")
 	fs.StringVar(&options.LeaseLockNamespace, "lease-namespace", options.LeaseLockNamespace, "Name of lease lock namespace")
 	fs.StringVar(&options.ServerAddr, "server-address", options.ServerAddr, "Address for server")

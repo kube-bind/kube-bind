@@ -45,6 +45,7 @@ type Options struct {
 
 type ExtraOptions struct {
 	KubeConfig string
+	Context    string
 
 	Provider string
 
@@ -152,6 +153,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	options.ProviderKcp.AddFlags(fs)
 
 	fs.StringVar(&options.KubeConfig, "kubeconfig", options.KubeConfig, "path to a kubeconfig. Only required if out-of-cluster")
+	fs.StringVar(&options.Context, "context", options.Context, "The name of the kubeconfig context to use.")
 	fs.StringVar(&options.NamespacePrefix, "namespace-prefix", options.NamespacePrefix, "The prefix to use for cluster namespaces")
 	fs.StringVar(&options.PrettyName, "pretty-name", options.PrettyName, "Pretty name for the backend")
 	fs.StringVar(&options.ConsumerScope, "consumer-scope", options.ConsumerScope, "How consumers access the service provider cluster. In Kubernetes, \"namespaced\" allows namespace isolation. In kcp, \"cluster\" allows workspace isolation, and with that allows cluster-scoped resources to bind and it is generally more performant.")

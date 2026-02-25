@@ -61,8 +61,14 @@ func NewConfig(options *options.CompletedOptions) (*Config, error) {
 	// create clients
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
 	rules.ExplicitPath = options.KubeConfig
+	var overrides *clientcmd.ConfigOverrides
+	if options.Context != "" {
+		overrides = &clientcmd.ConfigOverrides{
+			CurrentContext: options.Context,
+		}
+	}
 	var err error
-	config.ClientConfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, nil).ClientConfig()
+	config.ClientConfig, err = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, overrides).ClientConfig()
 	if err != nil {
 		return nil, err
 	}

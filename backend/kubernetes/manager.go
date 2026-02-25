@@ -83,10 +83,18 @@ func NewKubernetesManager(
 	return m, nil
 }
 
+// HandleResourcesResult contains the result of HandleResources operation.
+type HandleResourcesResult struct {
+	// Kubeconfig is the kubeconfig data for accessing the service provider cluster.
+	Kubeconfig []byte
+	// Namespace is the namespace assigned to this binding on the service provider cluster.
+	Namespace string
+}
+
 func (m *Manager) HandleResources(
 	ctx context.Context,
 	author, identity, cluster string,
-) ([]byte, error) {
+) (*HandleResourcesResult, error) {
 	logger := klog.FromContext(ctx).WithValues("identity", identity)
 	ctx = klog.NewContext(ctx, logger)
 
@@ -159,7 +167,10 @@ func (m *Manager) HandleResources(
 		return nil, err
 	}
 
-	return kfgSecret.Data["kubeconfig"], nil
+	return &HandleResourcesResult{
+		Kubeconfig: kfgSecret.Data["kubeconfig"],
+		Namespace:  ns,
+	}, nil
 }
 
 func (m *Manager) ListCustomResourceDefinitions(ctx context.Context, cluster string, selector labels.Selector) (*apiextensionsv1.CustomResourceDefinitionList, error) {

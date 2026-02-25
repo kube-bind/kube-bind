@@ -367,7 +367,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	kfg, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, params.ConsumerID, params.ClusterID)
+	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, params.ConsumerID, params.ClusterID)
 	if err != nil {
 		logger.Error(err, "failed to handle resources")
 		statusCode, code, details := mapErrorToCode(err)
@@ -418,7 +418,7 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 				ID:        state.Token.Issuer + "/" + state.Token.Subject,
 			},
 		},
-		Kubeconfig: kfg,
+		Kubeconfig: handleResult.Kubeconfig,
 		Requests:   []runtime.RawExtension{{Raw: requestBytes}},
 	}
 

@@ -34,18 +34,134 @@ type startable interface {
 	Start(ctx context.Context)
 }
 
+// reconciler manages cluster controllers for provider connections.
+//
+// Controller Sharing Model:
+// -------------------------
+// Multiple APIServiceBindings can share the same cluster controller if they use the same
+// kubeconfig (i.e., connect to the same provider namespace). This is tracked via controllerContext:
+//
+//	r.controllers map:
+//	  "__heartbeat__kubeconfig-xyz" -> controllerContext{kubeconfig: "...", serviceBindings: ["__heartbeat__kubeconfig-xyz", "binding-a", "binding-b"]}
+//	  "binding-a"                   -> (same controllerContext as above)
+//	  "binding-b"                   -> (same controllerContext as above)
+//
+// Flow when APIServiceBinding arrives using same kubeconfig as existing heartbeat controller:
+//  1. reconcile() is called with the new binding
+//  2. It extracts kubeconfig from binding.Spec.KubeconfigSecretRef
+//  3. It loops through r.controllers looking for matching kubeconfig (lines 174-182)
+//  4. Finds the existing controllerContext (created by startClusterControllerForSecret)
+//  5. Points r.controllers[binding.Name] to the SAME controllerContext
+//  6. Adds binding.Name to controllerContext.serviceBindings set
+//  7. No new controller is started - the existing one handles everything
 type reconciler struct {
 	lock        sync.RWMutex
-	controllers map[string]*controllerContext // by service binding name
+	controllers map[string]*controllerContext // keyed by binding name or synthetic heartbeat key
 
 	newClusterController func(consumerSecretRefKey, providerNamespace string, reconcileServiceBinding func(binding *kubebindv1alpha2.APIServiceBinding) bool, providerConfig *rest.Config) (startable, error)
 	getSecret            func(ns, name string) (*corev1.Secret, error)
 }
 
+// controllerContext tracks a running cluster controller and the bindings it serves.
+// Multiple map entries in reconciler.controllers can point to the same controllerContext
+// when they share the same kubeconfig.
 type controllerContext struct {
-	kubeconfig      string
-	cancel          func()
-	serviceBindings sets.Set[string] // when this is empty, the Controller should be stopped by closing the context
+	kubeconfig      string           // the kubeconfig content - used to match bindings to controllers
+	cancel          func()           // cancels the controller's context when no bindings remain
+	serviceBindings sets.Set[string] // all binding names (including synthetic heartbeat keys) using this controller
+}
+
+// startClusterControllerForSecret starts a cluster controller for the given kubeconfig secret.
+// This enables heartbeat reporting immediately without requiring an APIServiceBinding.
+//
+// The controller is registered with a synthetic key "__heartbeat__<secret-name>".
+// When an APIServiceBinding later arrives using the same kubeconfig, reconcile() will:
+// 1. Find this existing controller by matching kubeconfig content
+// 2. Add the binding to the same controllerContext.serviceBindings set
+// 3. Point r.controllers[binding.Name] to the same controllerContext
+// 4. NOT start a new controller (reuses existing one)
+func (r *reconciler) startClusterControllerForSecret(ctx context.Context, secret *corev1.Secret) error {
+	logger := klog.FromContext(ctx)
+
+	kubeconfig := string(secret.Data["kubeconfig"])
+	if kubeconfig == "" {
+		logger.V(2).Info("secret does not contain kubeconfig", "secret", secret.Namespace+"/"+secret.Name)
+		return nil
+	}
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	// Check if we already have a controller for this kubeconfig
+	for _, ctrlContext := range r.controllers {
+		if ctrlContext.kubeconfig == kubeconfig {
+			logger.V(2).Info("cluster controller already exists for secret", "secret", secret.Namespace+"/"+secret.Name)
+			return nil
+		}
+	}
+
+	// Extract which namespace this kubeconfig points to
+	cfg, err := clientcmd.Load([]byte(kubeconfig))
+	if err != nil {
+		logger.Error(err, "invalid kubeconfig in secret", "namespace", secret.Namespace, "name", secret.Name)
+		return nil // nothing we can do here
+	}
+	kubeContext, found := cfg.Contexts[cfg.CurrentContext]
+	if !found {
+		logger.Error(err, "kubeconfig in secret does not have a current context", "namespace", secret.Namespace, "name", secret.Name)
+		return nil
+	}
+	if kubeContext.Namespace == "" {
+		logger.Error(err, "kubeconfig in secret does not have a namespace set for the current context", "namespace", secret.Namespace, "name", secret.Name)
+		return nil
+	}
+	providerNamespace := kubeContext.Namespace
+	providerConfig, err := clientcmd.RESTConfigFromKubeConfig([]byte(kubeconfig))
+	if err != nil {
+		logger.Error(err, "invalid kubeconfig in secret", "namespace", secret.Namespace, "name", secret.Name)
+		return nil
+	}
+
+	// Use the secret name as a synthetic binding key for tracking.
+	// This key is used to track the controller context, but the controller
+	// will also handle real APIServiceBindings that use the same kubeconfig.
+	syntheticKey := "__heartbeat__" + secret.Name
+
+	ctrlCtx, cancel := context.WithCancel(ctx)
+	ctrlContext := &controllerContext{
+		kubeconfig:      kubeconfig,
+		cancel:          cancel,
+		serviceBindings: sets.New(syntheticKey),
+	}
+	r.controllers[syntheticKey] = ctrlContext
+
+	// Create and start the cluster controller.
+	// The reconcileServiceBinding function checks if a binding should be processed
+	// by this controller. We check if the binding is in our serviceBindings set,
+	// which will include both the synthetic heartbeat key and any real bindings
+	// that get added later when they use the same kubeconfig.
+	logger.Info("starting cluster controller for early heartbeat", "secret", secret.Namespace+"/"+secret.Name, "providerNamespace", providerNamespace)
+	ctrl, err := r.newClusterController(
+		secret.Namespace+"/"+secret.Name,
+		providerNamespace,
+		func(svcBinding *kubebindv1alpha2.APIServiceBinding) bool {
+			r.lock.RLock()
+			defer r.lock.RUnlock()
+			// Check if this binding is registered with this controller context
+			return ctrlContext.serviceBindings.Has(svcBinding.Name)
+		},
+		providerConfig,
+	)
+	if err != nil {
+		logger.Error(err, "failed to start cluster controller for heartbeat")
+		cancel()
+		delete(r.controllers, syntheticKey)
+		return err
+	}
+
+	go ctrl.Start(ctrlCtx)
+
+	return nil
 }
 
 func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha2.APIServiceBinding) error {
@@ -83,11 +199,18 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha2.AP
 		return nil
 	}
 
-	// find existing with new kubeconfig
+	// Find existing controller with the same kubeconfig.
+	// This handles the case where:
+	// 1. A heartbeat controller was started from a labeled secret (via startClusterControllerForSecret)
+	// 2. An APIServiceBinding now arrives that uses the same kubeconfig
+	// 3. Instead of starting a duplicate controller, we reuse the existing one
+	//
+	// The binding is added to the existing controllerContext's serviceBindings set,
+	// and r.controllers[binding.Name] points to the same controllerContext.
 	for _, ctrlContext := range r.controllers {
 		if ctrlContext.kubeconfig == kubeconfig {
-			// add to it
-			logger.V(2).Info("adding to existing Controller", "secret", ref.Namespace+"/"+ref.Name)
+			// Reuse existing controller - no new controller started
+			logger.V(2).Info("adding binding to existing Controller", "secret", ref.Namespace+"/"+ref.Name)
 			r.controllers[binding.Name] = ctrlContext
 			ctrlContext.serviceBindings.Insert(binding.Name)
 			return nil

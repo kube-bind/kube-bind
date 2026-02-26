@@ -89,15 +89,16 @@ func (b *BindAPIServiceOptions) DeployKonnector(ctx context.Context, config *res
 				bindSemVer, bindErr := semver.Parse(strings.TrimLeft(bindVersion, "v"))
 
 				// If either version is not a valid SemVer (e.g., a git hash), skip version comparison
-				if konnectorErr != nil || bindErr != nil {
+				switch {
+				case konnectorErr != nil || bindErr != nil:
 					fmt.Fprintf(b.Options.ErrOut, "konnector version %s or bind version %s is not a valid SemVer, skipping version comparison\n", konnectorVersion, bindVersion)
 					// fall through to CRD test
-				} else if bindSemVer.GT(konnectorSemVer) {
+				case bindSemVer.GT(konnectorSemVer):
 					fmt.Fprintf(b.Options.ErrOut, "Updating konnector from %s to %s.\n", konnectorVersion, bindVersion)
 					if err := bootstrapKonnector(ctx, discoveryClient, dynamicClient, konnectorImage, b.KonnectorHostAliasParsed); err != nil {
 						return err
 					}
-				} else if bindSemVer.LT(konnectorSemVer) {
+				case bindSemVer.LT(konnectorSemVer):
 					fmt.Fprintf(b.Options.ErrOut, "Newer konnector %s installed. To downgrade to %s use --downgrade-konnector.\n", konnectorVersion, bindVersion)
 				}
 			}

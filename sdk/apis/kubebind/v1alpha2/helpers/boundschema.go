@@ -118,11 +118,19 @@ func UnstructuredToBoundSchema(u unstructured.Unstructured) (*kubebindv1alpha2.B
 	return boundSchema, nil
 }
 
+func BoundSchemaSpecHash(spec *kubebindv1alpha2.BoundSchemaSpec) (string, error) {
+	hash := sha256.New()
+	if err := json.NewEncoder(hash).Encode(spec); err != nil {
+		return "", fmt.Errorf("failed to encode schema spec: %w", err)
+	}
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
+}
+
 func BoundSchemasSpecHash(schemas []*kubebindv1alpha2.BoundSchema) (string, error) {
 	hash := sha256.New()
 	for _, schema := range schemas {
-		if err := json.NewEncoder(hash).Encode(schema); err != nil {
-			return "", fmt.Errorf("failed to encode schema %s: %w", schema.Name, err)
+		if err := json.NewEncoder(hash).Encode(schema.Spec); err != nil {
+			return "", fmt.Errorf("failed to encode schema spec %s: %w", schema.Name, err)
 		}
 	}
 	return fmt.Sprintf("%x", hash.Sum(nil)), nil

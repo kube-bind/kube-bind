@@ -1,7 +1,7 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
-  name: v251112-503d98b.apiserviceexporttemplates.kube-bind.io
+  name: v260224-1c64e9a.apiserviceexporttemplates.kube-bind.io
 spec:
   group: kube-bind.io
   names:
@@ -244,6 +244,22 @@ spec:
                 type: object
               minItems: 1
               type: array
+            schemaUpdatePolicy:
+              default: Never
+              description: |-
+                SchemaUpdatePolicy defines how BoundSchemas should be updated.
+                Never means schemas are immutable after creation.
+                Always means schemas are updated when the source content changes.
+                Default: Never
+
+                NOTE: This field is intentionally mutable on the template so that providers
+                can change the default for future binding requests. Already-created
+                APIServiceExportRequests use CEL validation (self == oldSelf) to lock in
+                the policy chosen at binding time.
+              enum:
+              - Never
+              - Always
+              type: string
             scope:
               allOf:
               - enum:

@@ -124,6 +124,16 @@ type APIServiceExportRequestSpec struct {
 	// +optional
 	// +kubebuilder:validation:Optional
 	Namespaces []Namespaces `json:"namespaces,omitempty"`
+
+	// schemaUpdatePolicy defines how BoundSchemas should be updated when the source schema changes.
+	// This is propagated from the APIServiceExportTemplate.
+	// Never means schemas are immutable after creation.
+	// Always means schemas are updated when the source content changes.
+	// +optional
+	// +kubebuilder:default="Never"
+	// +kubebuilder:validation:Enum=Never;Always
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="schemaUpdatePolicy is immutable"
+	SchemaUpdatePolicy SchemaUpdatePolicy `json:"schemaUpdatePolicy,omitempty"`
 }
 
 type Namespaces struct {

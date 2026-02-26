@@ -23,6 +23,9 @@ import (
 )
 
 const (
+	// SourceSpecHashAnnotationKey is the annotation key used on BoundSchemas and APIServiceExports
+	// to store a SHA256 hash of the schema spec content. This is used to detect schema drift
+	// when SchemaUpdatePolicy is Always.
 	SourceSpecHashAnnotationKey = "kube-bind.io/source-spec-hash"
 
 	// Label is used to indicate which side owns the resource. By changing the label value,

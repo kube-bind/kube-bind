@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,6 +63,7 @@ func NewAPIServiceExportRequestReconciler(
 	scope kubebindv1alpha2.InformerScope,
 	isolation kubebindv1alpha2.Isolation,
 	schemaSource string,
+	schemaSyncInterval time.Duration,
 ) (*APIServiceExportRequestReconciler, error) {
 	// Set up field indexers for APIServiceExportRequests
 	if err := mgr.GetFieldIndexer().IndexField(ctx, &kubebindv1alpha2.APIServiceExportRequest{}, indexers.ServiceExportRequestByServiceExport,
@@ -80,9 +82,10 @@ func NewAPIServiceExportRequestReconciler(
 		informerScope: scope,
 		isolation:     isolation,
 		reconciler: reconciler{
-			informerScope: scope,
-			isolation:     isolation,
-			schemaSource:  schemaSource,
+			informerScope:      scope,
+			isolation:          isolation,
+			schemaSource:       schemaSource,
+			schemaSyncInterval: schemaSyncInterval,
 			getBoundSchema: func(ctx context.Context, cl client.Client, namespace, name string) (*kubebindv1alpha2.BoundSchema, error) {
 				var schema kubebindv1alpha2.BoundSchema
 				key := types.NamespacedName{Namespace: namespace, Name: name}
@@ -237,6 +240,12 @@ func (r *APIServiceExportRequestReconciler) Reconcile(ctx context.Context, req m
 			return ctrl.Result{}, fmt.Errorf("failed to update APIServiceExportRequest status: %w", err)
 		}
 		logger.Info("APIServiceExportRequest status updated", "namespace", apiServiceExportRequest.Namespace, "name", apiServiceExportRequest.Name)
+	}
+
+	// When SchemaUpdatePolicy is Always, periodically re-reconcile to pick up
+	// source CRD changes and sync them into BoundSchemas.
+	if apiServiceExportRequest.Spec.SchemaUpdatePolicy == kubebindv1alpha2.SchemaUpdatePolicyAlways {
+		return ctrl.Result{RequeueAfter: r.reconciler.schemaSyncInterval}, nil
 	}
 
 	return ctrl.Result{}, nil

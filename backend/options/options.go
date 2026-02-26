@@ -74,6 +74,10 @@ type ExtraOptions struct {
 	FrontendDisabled bool
 
 	TokenExpiry time.Duration
+
+	// SchemaSyncInterval is how often the serviceexportrequest controller re-reconciles
+	// to detect source schema changes when SchemaUpdatePolicy is Always.
+	SchemaSyncInterval time.Duration
 }
 
 type completedOptions struct {
@@ -105,15 +109,16 @@ func NewOptions() *Options {
 		ProviderKcp: providerkcp.NewOptions(),
 
 		ExtraOptions: ExtraOptions{
-			Provider:         "kubernetes",
-			NamespacePrefix:  "cluster-",
-			PrettyName:       "Backend",
-			ConsumerScope:    string(kubebindv1alpha2.NamespacedScope),
-			Isolation:        string(kubebindv1alpha2.IsolationPrefixed),
-			SchemaSource:     CustomResourceDefinitionSource.String(),
-			Frontend:         "embedded", // Not used, but indicates to use embedded frontend using SPA.
-			TokenExpiry:      1 * time.Hour,
-			FrontendDisabled: false,
+			Provider:           "kubernetes",
+			NamespacePrefix:    "cluster-",
+			PrettyName:         "Backend",
+			ConsumerScope:      string(kubebindv1alpha2.NamespacedScope),
+			Isolation:          string(kubebindv1alpha2.IsolationPrefixed),
+			SchemaSource:       CustomResourceDefinitionSource.String(),
+			Frontend:           "embedded", // Not used, but indicates to use embedded frontend using SPA.
+			TokenExpiry:        1 * time.Hour,
+			FrontendDisabled:   false,
+			SchemaSyncInterval: 5 * time.Minute,
 		},
 	}
 	return opts
@@ -181,6 +186,8 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 		fmt.Sprintf("Defines the source of the schema in Kind.Version.Group format for the bind screen. Defaults to CustomResourceDefinition.v1.apiextensions.k8s.io. Possible values are: %v",
 			values),
 	)
+
+	fs.DurationVar(&options.SchemaSyncInterval, "schema-sync-interval", options.SchemaSyncInterval, "How often to re-sync BoundSchemas when SchemaUpdatePolicy is Always. Default is 5m.")
 
 	fs.StringVar(&options.TestingAutoSelect, "testing-auto-select", options.TestingAutoSelect, "<resource>.<group> that is automatically selected on th bind screen for testing")
 	fs.MarkHidden("testing-auto-select") //nolint:errcheck
@@ -299,6 +306,10 @@ func (options *CompletedOptions) Validate() error {
 	parts := strings.SplitN(options.SchemaSource, ".", 3)
 	if len(parts) != 3 { // We check this in validation, but just in case.
 		return fmt.Errorf("invalid schema source: %q", options.SchemaSource)
+	}
+
+	if options.SchemaSyncInterval < 10*time.Second {
+		return fmt.Errorf("--schema-sync-interval must be at least 10s, got %v", options.SchemaSyncInterval)
 	}
 
 	return nil

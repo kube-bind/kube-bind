@@ -299,6 +299,23 @@ spec:
                   - type
                   type: object
                 type: array
+              consumerSecretRef:
+                description: |-
+                  consumerSecretRef is the reference to the secret in the consumer cluster
+                  that contains the kubeconfig for connecting to the service provider.
+                properties:
+                  name:
+                    description: Name of the referent.
+                    minLength: 1
+                    type: string
+                  namespace:
+                    description: Namespace of the referent.
+                    minLength: 1
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
               heartbeatInterval:
                 description: |-
                   heartbeatInterval is the maximal interval between heartbeats that the

@@ -108,9 +108,30 @@ type ClusterBindingStatus struct {
 	// consumer cluster.
 	KonnectorVersion string `json:"konnectorVersion,omitempty"`
 
+	// consumerSecretRef is the reference to the secret in the consumer cluster
+	// that contains the kubeconfig for connecting to the service provider.
+	ConsumerSecretRef *LocalSecretRef `json:"consumerSecretRef,omitempty"`
+
 	// conditions is a list of conditions that apply to the ClusterBinding. It is
 	// updated by the konnector and the service provider.
 	Conditions conditionsapi.Conditions `json:"conditions,omitempty"`
+}
+
+// LocalSecretRef is a reference to a secret in a specific namespace.
+type LocalSecretRef struct {
+	// Name of the referent.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+
+	// Namespace of the referent.
+	//
+	// +required
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	Namespace string `json:"namespace"`
 }
 
 // ClusterBindingList is the objects list that represents the ClusterBinding.

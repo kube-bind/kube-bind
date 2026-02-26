@@ -86,6 +86,9 @@ func FindRemoteKubeconfig(ctx context.Context, kubeClient *kubernetes.Clientset,
 // the binding session id and the kubeconfig of the service provider cluster. If it is pre-existing, the kubeconfig
 // is updated.
 //
+// If name is provided, the secret will be created with that name or updated if it already exists.
+// If name is empty, a new secret with a generated name (kubeconfig-<random>) will be created.
+//
 // It does special checking that only kubeconfigs with the same host and default namespace are updated.
 func EnsureKubeconfigSecret(ctx context.Context, kubeconfig, name string, client kubernetes.Interface) (*corev1.Secret, bool, error) {
 	remoteHost, remoteNamespace, err := ParseRemoteKubeconfig([]byte(kubeconfig))
@@ -93,6 +96,7 @@ func EnsureKubeconfigSecret(ctx context.Context, kubeconfig, name string, client
 		return nil, false, err
 	}
 
+	// If no name provided, create with generated name
 	if name == "" {
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
@@ -114,7 +118,35 @@ func EnsureKubeconfigSecret(ctx context.Context, kubeconfig, name string, client
 		return secret, true, nil
 	}
 
-	// update existing secret
+	// Name provided - try to get existing secret
+	_, err = client.CoreV1().Secrets("kube-bind").Get(ctx, name, v1.GetOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		return nil, false, err
+	}
+
+	// Secret doesn't exist - create with the provided name
+	if errors.IsNotFound(err) {
+		secret := &corev1.Secret{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: "kube-bind",
+				Name:      name,
+				Labels: map[string]string{
+					kubebindv1alpha2.LabelProviderKubeconfig: "true",
+				},
+			},
+			Data: map[string][]byte{
+				"kubeconfig": []byte(kubeconfig),
+			},
+		}
+
+		secret, err := client.CoreV1().Secrets("kube-bind").Create(ctx, secret, v1.CreateOptions{})
+		if err != nil {
+			return nil, false, err
+		}
+		return secret, true, nil
+	}
+
+	// Secret exists - update it
 	var secret *corev1.Secret
 	if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
 		var err error

@@ -85,20 +85,20 @@ func (b *BindAPIServiceOptions) DeployKonnector(ctx context.Context, config *res
 				fmt.Fprintf(b.Options.ErrOut, "konnector of %s version already installed, skipping\n", konnectorVersion)
 				// fall through to CRD test
 			} else {
-				konnectorSemVer, err := semver.Parse(strings.TrimLeft(konnectorVersion, "v"))
-				if err != nil {
-					return fmt.Errorf("failed to parse konnector SemVer version %q: %w", konnectorVersion, err)
-				}
-				bindSemVer, err := semver.Parse(strings.TrimLeft(bindVersion, "v"))
-				if err != nil {
-					return fmt.Errorf("failed to parse kubectl-bind SemVer version %q: %w", bindVersion, err)
-				}
-				if bindSemVer.GT(konnectorSemVer) {
+				konnectorSemVer, konnectorErr := semver.Parse(strings.TrimLeft(konnectorVersion, "v"))
+				bindSemVer, bindErr := semver.Parse(strings.TrimLeft(bindVersion, "v"))
+
+				// If either version is not a valid SemVer (e.g., a git hash), skip version comparison
+				switch {
+				case konnectorErr != nil || bindErr != nil:
+					fmt.Fprintf(b.Options.ErrOut, "konnector version %s or bind version %s is not a valid SemVer, skipping version comparison\n", konnectorVersion, bindVersion)
+					// fall through to CRD test
+				case bindSemVer.GT(konnectorSemVer):
 					fmt.Fprintf(b.Options.ErrOut, "Updating konnector from %s to %s.\n", konnectorVersion, bindVersion)
 					if err := bootstrapKonnector(ctx, discoveryClient, dynamicClient, konnectorImage, b.KonnectorHostAliasParsed); err != nil {
 						return err
 					}
-				} else if bindSemVer.LT(konnectorSemVer) {
+				case bindSemVer.LT(konnectorSemVer):
 					fmt.Fprintf(b.Options.ErrOut, "Newer konnector %s installed. To downgrade to %s use --downgrade-konnector.\n", konnectorVersion, bindVersion)
 				}
 			}

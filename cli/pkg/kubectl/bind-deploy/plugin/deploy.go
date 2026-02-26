@@ -59,6 +59,9 @@ type BindDeployOptions struct {
 	secretKey string
 	// file is the path to a file containing the BindingResourceResponse
 	file string
+	// kubeconfigSecretName is the name to use for the kubeconfig secret in kube-bind namespace.
+	// If empty, a generated name (kubeconfig-<random>) will be used.
+	kubeconfigSecretName string
 
 	// skipKonnector skips the deployment of the konnector.
 	SkipKonnector          bool
@@ -93,6 +96,7 @@ func (b *BindDeployOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&b.secretRef, "secret", b.secretRef, "Reference to a secret containing the BindingResourceResponse (format: namespace/name)")
 	cmd.Flags().StringVar(&b.secretKey, "secret-key", b.secretKey, "Key in the secret containing the BindingResourceResponse (default: kubeconfig)")
 	cmd.Flags().StringVarP(&b.file, "file", "f", b.file, "A file with a BindingResourceResponse manifest. Use - to read from stdin")
+	cmd.Flags().StringVar(&b.kubeconfigSecretName, "provider-kubeconfig-secret-name", b.kubeconfigSecretName, "Name for the kubeconfig secret in kube-bind namespace. If not specified, a generated name will be used")
 
 	// Konnector configuration
 	cmd.Flags().BoolVar(&b.SkipKonnector, "skip-konnector", b.SkipKonnector, "Skip the deployment of the konnector")
@@ -289,10 +293,14 @@ func (b *BindDeployOptions) bindFromKubeconfig(
 		return nil, fmt.Errorf("failed to create kube client: %w", err)
 	}
 
-	// Find or create the kubeconfig secret
-	secretName, err := base.FindRemoteKubeconfig(ctx, kubeClient, remoteNamespace, remoteHost)
-	if err != nil {
-		return nil, err
+	// Determine the secret name to use
+	secretName := b.kubeconfigSecretName
+	if secretName == "" {
+		// No name provided, try to find existing secret for this remote
+		secretName, err = base.FindRemoteKubeconfig(ctx, kubeClient, remoteNamespace, remoteHost)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	secret, created, err := base.EnsureKubeconfigSecret(ctx, string(response.Kubeconfig), secretName, kubeClient)

@@ -53,6 +53,11 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha2.Cl
 		errs = append(errs, err)
 	}
 
+	// Must run after ensureConsumerSecret to update the condition based on the provider secret and to set the consumer secret ref in status.
+	if err := r.ensureConsumerSecretRef(ctx, binding); err != nil {
+		errs = append(errs, err)
+	}
+
 	if err := r.ensureHeartbeat(ctx, binding); err != nil {
 		errs = append(errs, err)
 	}
@@ -70,6 +75,22 @@ func (r *reconciler) ensureHeartbeat(_ context.Context, binding *kubebindv1alpha
 	binding.Status.HeartbeatInterval.Duration = r.heartbeatInterval
 	if now := time.Now(); binding.Status.LastHeartbeatTime.IsZero() || now.After(binding.Status.LastHeartbeatTime.Add(r.heartbeatInterval/2)) {
 		binding.Status.LastHeartbeatTime.Time = now
+	}
+
+	return nil
+}
+
+func (r *reconciler) ensureConsumerSecretRef(_ context.Context, binding *kubebindv1alpha2.ClusterBinding) error {
+	consumerSecret, err := r.getConsumerSecret()
+	if err != nil && !errors.IsNotFound(err) {
+		return err
+	}
+
+	if consumerSecret != nil {
+		binding.Status.ConsumerSecretRef = &kubebindv1alpha2.LocalSecretRef{
+			Name:      consumerSecret.Name,
+			Namespace: consumerSecret.Namespace,
+		}
 	}
 
 	return nil

@@ -270,22 +270,33 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 func (s *Server) initializeOIDCProvider(ctx context.Context, callback string) (*auth.OIDCServiceProvider, error) {
 	logger := klog.FromContext(ctx)
 	logger.Info("Initializing OIDC Service Provider", "issuerURL", s.Config.Options.OIDC.IssuerURL)
-	if s.Config.Options.OIDC.TLSConfig != nil {
+
+	clientID := s.Config.Options.OIDC.IssuerClientID
+	clientSecret := s.Config.Options.OIDC.IssuerClientSecret
+	issuerURL := s.Config.Options.OIDC.IssuerURL
+	tlsConfig := s.Config.Options.OIDC.TLSConfig
+
+	if clientSecret != "" {
+		logger.Info("WARNING: OIDC client secret is configured. For CLI applications, consider using PKCE.")
+	}
+
+	if tlsConfig != nil {
 		return auth.NewOIDCServiceProviderWithTLS(
 			ctx,
-			s.Config.Options.OIDC.IssuerClientID,
-			s.Config.Options.OIDC.IssuerClientSecret,
+			clientID,
+			clientSecret,
 			callback,
-			s.Config.Options.OIDC.IssuerURL,
-			s.Config.Options.OIDC.TLSConfig,
+			issuerURL,
+			tlsConfig,
 		)
 	}
+
 	return auth.NewOIDCServiceProvider(
 		ctx,
-		s.Config.Options.OIDC.IssuerClientID,
-		s.Config.Options.OIDC.IssuerClientSecret,
+		clientID,
+		clientSecret,
 		callback,
-		s.Config.Options.OIDC.IssuerURL,
+		issuerURL,
 	)
 }
 

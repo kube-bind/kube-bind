@@ -121,11 +121,14 @@ func NewOIDCServiceProviderWithTLS(
 
 func (o *OIDCServiceProvider) OIDCProviderConfig(scopes []string) *oauth2.Config {
 	config := &oauth2.Config{
-		ClientID:     o.clientID,
-		ClientSecret: o.clientSecret,
-		Endpoint:     o.provider.Endpoint(),
-		RedirectURL:  o.redirectURI,
-		Scopes:       scopes,
+		ClientID:    o.clientID,
+		Endpoint:    o.provider.Endpoint(),
+		RedirectURL: o.redirectURI,
+		Scopes:      scopes,
+	}
+
+	if o.clientSecret != "" {
+		config.ClientSecret = o.clientSecret
 	}
 
 	return config
@@ -133,4 +136,16 @@ func (o *OIDCServiceProvider) OIDCProviderConfig(scopes []string) *oauth2.Config
 
 func (o *OIDCServiceProvider) GetTLSConfig() *tls.Config {
 	return o.tlsConfig
+}
+
+func (o *OIDCServiceProvider) ClientID() string {
+	return o.clientID
+}
+
+func (o *OIDCServiceProvider) ClientSecret() string {
+	return o.clientSecret
+}
+
+func (o *OIDCServiceProvider) IssuerURL() string {
+	return o.issuerURL
 }

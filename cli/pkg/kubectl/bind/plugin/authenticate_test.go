@@ -30,8 +30,8 @@ func TestValidateVersion(t *testing.T) {
 		{"v0.0.0", "v0.0.0", false},
 		{"development version", "v0.0.0-master+$Format:%H$", false},
 		{"old", "v0.2.3", true},
-		{"minimum", "v0.3.0", false},
-		{"newer minor", "v0.3.5", false},
+		{"minimum", "v0.6.0", false},
+		{"newer minor", "v0.6.1", false},
 		{"newer major", "v1.2.5", false},
 	}
 	for _, tt := range tests {

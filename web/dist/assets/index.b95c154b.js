@@ -98,7 +98,7 @@ var __yieldStar = (value) => {
 };
 var __forAwait = (obj, it, method) => (it = obj[__knownSymbol("asyncIterator")]) ? it.call(obj) : (obj = obj[__knownSymbol("iterator")](), it = {}, method = (key, fn) => (fn = obj[key]) && (it[key] = (arg) => new Promise((yes, no, done) => (arg = fn.call(obj, arg), done = arg.done, Promise.resolve(arg.value).then((value) => yes({ value, done }), no)))), method("next"), method("return"), it);
 var require_index_001 = __commonJS({
-  "assets/index.b10aa2d7.js"(exports) {
+  "assets/index.b95c154b.js"(exports) {
     (function polyfill() {
       const relList = document.createElement("link").relList;
       if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -8480,7 +8480,12 @@ var require_index_001 = __commonJS({
       kind === "object" && isFunction$1(thing.toString) && thing.toString() === "[object FormData]"));
     };
     const isURLSearchParams = kindOfTest("URLSearchParams");
-    const [isReadableStream, isRequest, isResponse, isHeaders] = ["ReadableStream", "Request", "Response", "Headers"].map(kindOfTest);
+    const [isReadableStream, isRequest, isResponse, isHeaders] = [
+      "ReadableStream",
+      "Request",
+      "Response",
+      "Headers"
+    ].map(kindOfTest);
     const trim = (str) => str.trim ? str.trim() : str.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
     function forEach(obj, fn, { allOwnKeys = false } = {}) {
       if (obj === null || typeof obj === "undefined") {
@@ -8534,6 +8539,9 @@ var require_index_001 = __commonJS({
       const { caseless, skipUndefined } = isContextDefined(this) && this || {};
       const result = {};
       const assignValue = (val, key) => {
+        if (key === "__proto__" || key === "constructor" || key === "prototype") {
+          return;
+        }
         const targetKey = caseless && findKey(result, key) || key;
         if (isPlainObject(result[targetKey]) && isPlainObject(val)) {
           result[targetKey] = merge(result[targetKey], val);
@@ -8551,13 +8559,27 @@ var require_index_001 = __commonJS({
       return result;
     }
     const extend = (a, b, thisArg, { allOwnKeys } = {}) => {
-      forEach(b, (val, key) => {
-        if (thisArg && isFunction$1(val)) {
-          a[key] = bind(val, thisArg);
-        } else {
-          a[key] = val;
-        }
-      }, { allOwnKeys });
+      forEach(
+        b,
+        (val, key) => {
+          if (thisArg && isFunction$1(val)) {
+            Object.defineProperty(a, key, {
+              value: bind(val, thisArg),
+              writable: true,
+              enumerable: true,
+              configurable: true
+            });
+          } else {
+            Object.defineProperty(a, key, {
+              value: val,
+              writable: true,
+              enumerable: true,
+              configurable: true
+            });
+          }
+        },
+        { allOwnKeys }
+      );
       return a;
     };
     const stripBOM = (content) => {
@@ -8566,9 +8588,17 @@ var require_index_001 = __commonJS({
       }
       return content;
     };
-    const inherits = (constructor, superConstructor, props, descriptors2) => {
-      constructor.prototype = Object.create(superConstructor.prototype, descriptors2);
-      constructor.prototype.constructor = constructor;
+    const inherits = (constructor, superConstructor, props, descriptors) => {
+      constructor.prototype = Object.create(
+        superConstructor.prototype,
+        descriptors
+      );
+      Object.defineProperty(constructor.prototype, "constructor", {
+        value: constructor,
+        writable: true,
+        enumerable: false,
+        configurable: true
+      });
       Object.defineProperty(constructor, "super", {
         value: superConstructor.prototype
       });
@@ -8643,19 +8673,16 @@ var require_index_001 = __commonJS({
     };
     const isHTMLForm = kindOfTest("HTMLFormElement");
     const toCamelCase = (str) => {
-      return str.toLowerCase().replace(
-        /[-_\s]([a-z\d])(\w*)/g,
-        function replacer2(m, p1, p2) {
-          return p1.toUpperCase() + p2;
-        }
-      );
+      return str.toLowerCase().replace(/[-_\s]([a-z\d])(\w*)/g, function replacer2(m, p1, p2) {
+        return p1.toUpperCase() + p2;
+      });
     };
     const hasOwnProperty = (({ hasOwnProperty: hasOwnProperty2 }) => (obj, prop) => hasOwnProperty2.call(obj, prop))(Object.prototype);
     const isRegExp = kindOfTest("RegExp");
     const reduceDescriptors = (obj, reducer) => {
-      const descriptors2 = Object.getOwnPropertyDescriptors(obj);
+      const descriptors = Object.getOwnPropertyDescriptors(obj);
       const reducedDescriptors = {};
-      forEach(descriptors2, (descriptor, name) => {
+      forEach(descriptors, (descriptor, name) => {
         let ret;
         if ((ret = reducer(descriptor, name, obj)) !== false) {
           reducedDescriptors[name] = ret || descriptor;
@@ -8733,20 +8760,21 @@ var require_index_001 = __commonJS({
         return setImmediate;
       }
       return postMessageSupported ? ((token, callbacks) => {
-        _global.addEventListener("message", ({ source, data }) => {
-          if (source === _global && data === token) {
-            callbacks.length && callbacks.shift()();
-          }
-        }, false);
+        _global.addEventListener(
+          "message",
+          ({ source, data }) => {
+            if (source === _global && data === token) {
+              callbacks.length && callbacks.shift()();
+            }
+          },
+          false
+        );
         return (cb) => {
           callbacks.push(cb);
           _global.postMessage(token, "*");
         };
       })(`axios@${Math.random()}`, []) : (cb) => setTimeout(cb);
-    })(
-      typeof setImmediate === "function",
-      isFunction$1(_global.postMessage)
-    );
+    })(typeof setImmediate === "function", isFunction$1(_global.postMessage));
     const asap = typeof queueMicrotask !== "undefined" ? queueMicrotask.bind(_global) : typeof process !== "undefined" && process.nextTick || _setImmediate;
     const isIterable = (thing) => thing != null && isFunction$1(thing[iterator]);
     const utils$1 = {
@@ -8809,25 +8837,38 @@ var require_index_001 = __commonJS({
       asap,
       isIterable
     };
-    function AxiosError(message, code, config, request, response) {
-      Error.call(this);
-      if (Error.captureStackTrace) {
-        Error.captureStackTrace(this, this.constructor);
-      } else {
-        this.stack = new Error().stack;
+    class AxiosError extends Error {
+      static from(error, code, config, request, response, customProps) {
+        const axiosError = new AxiosError(error.message, code || error.code, config, request, response);
+        axiosError.cause = error;
+        axiosError.name = error.name;
+        customProps && Object.assign(axiosError, customProps);
+        return axiosError;
       }
-      this.message = message;
-      this.name = "AxiosError";
-      code && (this.code = code);
-      config && (this.config = config);
-      request && (this.request = request);
-      if (response) {
-        this.response = response;
-        this.status = response.status ? response.status : null;
+      /**
+       * Create an Error with the specified message, config, error code, request and response.
+       *
+       * @param {string} message The error message.
+       * @param {string} [code] The error code (for example, 'ECONNABORTED').
+       * @param {Object} [config] The config.
+       * @param {Object} [request] The request.
+       * @param {Object} [response] The response.
+       *
+       * @returns {Error} The created error.
+       */
+      constructor(message, code, config, request, response) {
+        super(message);
+        this.name = "AxiosError";
+        this.isAxiosError = true;
+        code && (this.code = code);
+        config && (this.config = config);
+        request && (this.request = request);
+        if (response) {
+          this.response = response;
+          this.status = response.status;
+        }
       }
-    }
-    utils$1.inherits(AxiosError, Error, {
-      toJSON: function toJSON() {
+      toJSON() {
         return {
           // Standard
           message: this.message,
@@ -8846,45 +8887,20 @@ var require_index_001 = __commonJS({
           status: this.status
         };
       }
-    });
-    const prototype$1 = AxiosError.prototype;
-    const descriptors = {};
-    [
-      "ERR_BAD_OPTION_VALUE",
-      "ERR_BAD_OPTION",
-      "ECONNABORTED",
-      "ETIMEDOUT",
-      "ERR_NETWORK",
-      "ERR_FR_TOO_MANY_REDIRECTS",
-      "ERR_DEPRECATED",
-      "ERR_BAD_RESPONSE",
-      "ERR_BAD_REQUEST",
-      "ERR_CANCELED",
-      "ERR_NOT_SUPPORT",
-      "ERR_INVALID_URL"
-      // eslint-disable-next-line func-names
-    ].forEach((code) => {
-      descriptors[code] = { value: code };
-    });
-    Object.defineProperties(AxiosError, descriptors);
-    Object.defineProperty(prototype$1, "isAxiosError", { value: true });
-    AxiosError.from = (error, code, config, request, response, customProps) => {
-      const axiosError = Object.create(prototype$1);
-      utils$1.toFlatObject(error, axiosError, function filter(obj) {
-        return obj !== Error.prototype;
-      }, (prop) => {
-        return prop !== "isAxiosError";
-      });
-      const msg = error && error.message ? error.message : "Error";
-      const errCode = code == null && error ? error.code : code;
-      AxiosError.call(axiosError, msg, errCode, config, request, response);
-      if (error && axiosError.cause == null) {
-        Object.defineProperty(axiosError, "cause", { value: error, configurable: true });
-      }
-      axiosError.name = error && error.name || "Error";
-      customProps && Object.assign(axiosError, customProps);
-      return axiosError;
-    };
+    }
+    AxiosError.ERR_BAD_OPTION_VALUE = "ERR_BAD_OPTION_VALUE";
+    AxiosError.ERR_BAD_OPTION = "ERR_BAD_OPTION";
+    AxiosError.ECONNABORTED = "ECONNABORTED";
+    AxiosError.ETIMEDOUT = "ETIMEDOUT";
+    AxiosError.ERR_NETWORK = "ERR_NETWORK";
+    AxiosError.ERR_FR_TOO_MANY_REDIRECTS = "ERR_FR_TOO_MANY_REDIRECTS";
+    AxiosError.ERR_DEPRECATED = "ERR_DEPRECATED";
+    AxiosError.ERR_BAD_RESPONSE = "ERR_BAD_RESPONSE";
+    AxiosError.ERR_BAD_REQUEST = "ERR_BAD_REQUEST";
+    AxiosError.ERR_CANCELED = "ERR_CANCELED";
+    AxiosError.ERR_NOT_SUPPORT = "ERR_NOT_SUPPORT";
+    AxiosError.ERR_INVALID_URL = "ERR_INVALID_URL";
+    const AxiosError$1 = AxiosError;
     const httpAdapter = null;
     function isVisitable(thing) {
       return utils$1.isPlainObject(thing) || utils$1.isArray(thing);
@@ -8937,7 +8953,7 @@ var require_index_001 = __commonJS({
           return value.toString();
         }
         if (!useBlob && utils$1.isBlob(value)) {
-          throw new AxiosError("Blob is not supported. Use a Buffer instead.");
+          throw new AxiosError$1("Blob is not supported. Use a Buffer instead.");
         }
         if (utils$1.isArrayBuffer(value) || utils$1.isTypedArray(value)) {
           return useBlob && typeof Blob === "function" ? new Blob([value]) : Buffer.from(value);
@@ -9039,17 +9055,15 @@ var require_index_001 = __commonJS({
         return url;
       }
       const _encode = options && options.encode || encode;
-      if (utils$1.isFunction(options)) {
-        options = {
-          serialize: options
-        };
-      }
-      const serializeFn = options && options.serialize;
+      const _options = utils$1.isFunction(options) ? {
+        serialize: options
+      } : options;
+      const serializeFn = _options && _options.serialize;
       let serializedParams;
       if (serializeFn) {
-        serializedParams = serializeFn(params, options);
+        serializedParams = serializeFn(params, _options);
       } else {
-        serializedParams = utils$1.isURLSearchParams(params) ? params.toString() : new AxiosURLSearchParams(params, options).toString(_encode);
+        serializedParams = utils$1.isURLSearchParams(params) ? params.toString() : new AxiosURLSearchParams(params, _options).toString(_encode);
       }
       if (serializedParams) {
         const hashmarkIndex = url.indexOf("#");
@@ -9069,6 +9083,7 @@ var require_index_001 = __commonJS({
        *
        * @param {Function} fulfilled The function to handle `then` for a `Promise`
        * @param {Function} rejected The function to handle `reject` for a `Promise`
+       * @param {Object} options The options for the interceptor, synchronous and runWhen
        *
        * @return {Number} An ID used to remove interceptor later
        */
@@ -9086,7 +9101,7 @@ var require_index_001 = __commonJS({
        *
        * @param {Number} id The ID that was returned by `use`
        *
-       * @returns {Boolean} `true` if the interceptor was removed, `false` otherwise
+       * @returns {void}
        */
       eject(id) {
         if (this.handlers[id]) {
@@ -9125,7 +9140,8 @@ var require_index_001 = __commonJS({
     const transitionalDefaults = {
       silentJSONParsing: true,
       forcedJSONParsing: true,
-      clarifyTimeoutError: false
+      clarifyTimeoutError: false,
+      legacyInterceptorReqResOrdering: true
     };
     const URLSearchParams$1 = typeof URLSearchParams !== "undefined" ? URLSearchParams : AxiosURLSearchParams;
     const FormData$1 = typeof FormData !== "undefined" ? FormData : null;
@@ -9290,7 +9306,7 @@ var require_index_001 = __commonJS({
           } catch (e) {
             if (strictJSONParsing) {
               if (e.name === "SyntaxError") {
-                throw AxiosError.from(e, AxiosError.ERR_BAD_RESPONSE, this, null, this.response);
+                throw AxiosError$1.from(e, AxiosError$1.ERR_BAD_RESPONSE, this, null, this.response);
               }
               throw e;
             }
@@ -9610,21 +9626,31 @@ var require_index_001 = __commonJS({
     function isCancel(value) {
       return !!(value && value.__CANCEL__);
     }
-    function CanceledError(message, config, request) {
-      AxiosError.call(this, message == null ? "canceled" : message, AxiosError.ERR_CANCELED, config, request);
-      this.name = "CanceledError";
+    class CanceledError extends AxiosError$1 {
+      /**
+       * A `CanceledError` is an object that is thrown when an operation is canceled.
+       *
+       * @param {string=} message The message.
+       * @param {Object=} config The config.
+       * @param {Object=} request The request.
+       *
+       * @returns {CanceledError} The created error.
+       */
+      constructor(message, config, request) {
+        super(message == null ? "canceled" : message, AxiosError$1.ERR_CANCELED, config, request);
+        this.name = "CanceledError";
+        this.__CANCEL__ = true;
+      }
     }
-    utils$1.inherits(CanceledError, AxiosError, {
-      __CANCEL__: true
-    });
+    const CanceledError$1 = CanceledError;
     function settle(resolve2, reject, response) {
       const validateStatus = response.config.validateStatus;
       if (!response.status || !validateStatus || validateStatus(response.status)) {
         resolve2(response);
       } else {
-        reject(new AxiosError(
+        reject(new AxiosError$1(
           "Request failed with status code " + response.status,
-          [AxiosError.ERR_BAD_REQUEST, AxiosError.ERR_BAD_RESPONSE][Math.floor(response.status / 100) - 4],
+          [AxiosError$1.ERR_BAD_REQUEST, AxiosError$1.ERR_BAD_RESPONSE][Math.floor(response.status / 100) - 4],
           response.config,
           response.request,
           response
@@ -9743,20 +9769,35 @@ var require_index_001 = __commonJS({
     const cookies = platform.hasStandardBrowserEnv ? (
       // Standard browser envs support document.cookie
       {
-        write(name, value, expires, path, domain, secure) {
-          const cookie = [name + "=" + encodeURIComponent(value)];
-          utils$1.isNumber(expires) && cookie.push("expires=" + new Date(expires).toGMTString());
-          utils$1.isString(path) && cookie.push("path=" + path);
-          utils$1.isString(domain) && cookie.push("domain=" + domain);
-          secure === true && cookie.push("secure");
+        write(name, value, expires, path, domain, secure, sameSite) {
+          if (typeof document === "undefined")
+            return;
+          const cookie = [`${name}=${encodeURIComponent(value)}`];
+          if (utils$1.isNumber(expires)) {
+            cookie.push(`expires=${new Date(expires).toUTCString()}`);
+          }
+          if (utils$1.isString(path)) {
+            cookie.push(`path=${path}`);
+          }
+          if (utils$1.isString(domain)) {
+            cookie.push(`domain=${domain}`);
+          }
+          if (secure === true) {
+            cookie.push("secure");
+          }
+          if (utils$1.isString(sameSite)) {
+            cookie.push(`SameSite=${sameSite}`);
+          }
           document.cookie = cookie.join("; ");
         },
         read(name) {
-          const match = document.cookie.match(new RegExp("(^|;\\s*)(" + name + ")=([^;]*)"));
-          return match ? decodeURIComponent(match[3]) : null;
+          if (typeof document === "undefined")
+            return null;
+          const match = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+          return match ? decodeURIComponent(match[1]) : null;
         },
         remove(name) {
-          this.write(name, "", Date.now() - 864e5);
+          this.write(name, "", Date.now() - 864e5, "/");
         }
       }
     ) : (
@@ -9772,6 +9813,9 @@ var require_index_001 = __commonJS({
       }
     );
     function isAbsoluteURL(url) {
+      if (typeof url !== "string") {
+        return false;
+      }
       return /^([a-z][a-z\d+\-.]*:)?\/\//i.test(url);
     }
     function combineURLs(baseURL, relativeURL) {
@@ -9855,11 +9899,16 @@ var require_index_001 = __commonJS({
         validateStatus: mergeDirectKeys,
         headers: (a, b, prop) => mergeDeepProperties(headersToObject(a), headersToObject(b), prop, true)
       };
-      utils$1.forEach(Object.keys(__spreadValues(__spreadValues({}, config1), config2)), function computeConfigValue(prop) {
-        const merge2 = mergeMap[prop] || mergeDeepProperties;
-        const configValue = merge2(config1[prop], config2[prop], prop);
-        utils$1.isUndefined(configValue) && merge2 !== mergeDirectKeys || (config[prop] = configValue);
-      });
+      utils$1.forEach(
+        Object.keys(__spreadValues(__spreadValues({}, config1), config2)),
+        function computeConfigValue(prop) {
+          if (prop === "__proto__" || prop === "constructor" || prop === "prototype")
+            return;
+          const merge2 = utils$1.hasOwnProp(mergeMap, prop) ? mergeMap[prop] : mergeDeepProperties;
+          const configValue = merge2(config1[prop], config2[prop], prop);
+          utils$1.isUndefined(configValue) && merge2 !== mergeDirectKeys || (config[prop] = configValue);
+        }
+      );
       return config;
     }
     const resolveConfig = (config) => {
@@ -9958,12 +10007,12 @@ var require_index_001 = __commonJS({
           if (!request) {
             return;
           }
-          reject(new AxiosError("Request aborted", AxiosError.ECONNABORTED, config, request));
+          reject(new AxiosError$1("Request aborted", AxiosError$1.ECONNABORTED, config, request));
           request = null;
         };
         request.onerror = function handleError2(event) {
           const msg = event && event.message ? event.message : "Network Error";
-          const err = new AxiosError(msg, AxiosError.ERR_NETWORK, config, request);
+          const err = new AxiosError$1(msg, AxiosError$1.ERR_NETWORK, config, request);
           err.event = event || null;
           reject(err);
           request = null;
@@ -9974,9 +10023,9 @@ var require_index_001 = __commonJS({
           if (_config.timeoutErrorMessage) {
             timeoutErrorMessage = _config.timeoutErrorMessage;
           }
-          reject(new AxiosError(
+          reject(new AxiosError$1(
             timeoutErrorMessage,
-            transitional.clarifyTimeoutError ? AxiosError.ETIMEDOUT : AxiosError.ECONNABORTED,
+            transitional.clarifyTimeoutError ? AxiosError$1.ETIMEDOUT : AxiosError$1.ECONNABORTED,
             config,
             request
           ));
@@ -10008,7 +10057,7 @@ var require_index_001 = __commonJS({
             if (!request) {
               return;
             }
-            reject(!cancel || cancel.type ? new CanceledError(null, config, request) : cancel);
+            reject(!cancel || cancel.type ? new CanceledError$1(null, config, request) : cancel);
             request.abort();
             request = null;
           };
@@ -10019,7 +10068,7 @@ var require_index_001 = __commonJS({
         }
         const protocol = parseProtocol(_config.url);
         if (protocol && platform.protocols.indexOf(protocol) === -1) {
-          reject(new AxiosError("Unsupported protocol " + protocol + ":", AxiosError.ERR_BAD_REQUEST, config));
+          reject(new AxiosError$1("Unsupported protocol " + protocol + ":", AxiosError$1.ERR_BAD_REQUEST, config));
           return;
         }
         request.send(requestData || null);
@@ -10035,12 +10084,12 @@ var require_index_001 = __commonJS({
             aborted = true;
             unsubscribe();
             const err = reason instanceof Error ? reason : this.reason;
-            controller.abort(err instanceof AxiosError ? err : new CanceledError(err instanceof Error ? err.message : err));
+            controller.abort(err instanceof AxiosError$1 ? err : new CanceledError$1(err instanceof Error ? err.message : err));
           }
         };
         let timer = timeout && setTimeout(() => {
           timer = null;
-          onabort(new AxiosError(`timeout ${timeout} of ms exceeded`, AxiosError.ETIMEDOUT));
+          onabort(new AxiosError$1(`timeout of ${timeout}ms exceeded`, AxiosError$1.ETIMEDOUT));
         }, timeout);
         const unsubscribe = () => {
           if (signals) {
@@ -10207,7 +10256,7 @@ var require_index_001 = __commonJS({
             if (method) {
               return method.call(res);
             }
-            throw new AxiosError(`Response type '${type}' is not supported`, AxiosError.ERR_NOT_SUPPORT, config);
+            throw new AxiosError$1(`Response type '${type}' is not supported`, AxiosError$1.ERR_NOT_SUPPORT, config);
           });
         });
       })();
@@ -10331,19 +10380,19 @@ var require_index_001 = __commonJS({
           unsubscribe && unsubscribe();
           if (err && err.name === "TypeError" && /Load failed|fetch/i.test(err.message)) {
             throw Object.assign(
-              new AxiosError("Network Error", AxiosError.ERR_NETWORK, config, request),
+              new AxiosError$1("Network Error", AxiosError$1.ERR_NETWORK, config, request, err && err.response),
               {
                 cause: err.cause || err
               }
             );
           }
-          throw AxiosError.from(err, err && err.code, config, request);
+          throw AxiosError$1.from(err, err && err.code, config, request, err && err.response);
         }
       });
     };
     const seedCache = /* @__PURE__ */ new Map();
     const getFetch = (config) => {
-      let env = config ? config.env : {};
+      let env = config && config.env || {};
       const { fetch: fetch2, Request, Response } = env;
       const seeds = [
         Request,
@@ -10378,40 +10427,49 @@ var require_index_001 = __commonJS({
     });
     const renderReason = (reason) => `- ${reason}`;
     const isResolvedHandle = (adapter) => utils$1.isFunction(adapter) || adapter === null || adapter === false;
+    function getAdapter(adapters2, config) {
+      adapters2 = utils$1.isArray(adapters2) ? adapters2 : [adapters2];
+      const { length } = adapters2;
+      let nameOrAdapter;
+      let adapter;
+      const rejectedReasons = {};
+      for (let i = 0; i < length; i++) {
+        nameOrAdapter = adapters2[i];
+        let id;
+        adapter = nameOrAdapter;
+        if (!isResolvedHandle(nameOrAdapter)) {
+          adapter = knownAdapters[(id = String(nameOrAdapter)).toLowerCase()];
+          if (adapter === void 0) {
+            throw new AxiosError$1(`Unknown adapter '${id}'`);
+          }
+        }
+        if (adapter && (utils$1.isFunction(adapter) || (adapter = adapter.get(config)))) {
+          break;
+        }
+        rejectedReasons[id || "#" + i] = adapter;
+      }
+      if (!adapter) {
+        const reasons = Object.entries(rejectedReasons).map(
+          ([id, state]) => `adapter ${id} ` + (state === false ? "is not supported by the environment" : "is not available in the build")
+        );
+        let s = length ? reasons.length > 1 ? "since :\n" + reasons.map(renderReason).join("\n") : " " + renderReason(reasons[0]) : "as no adapter specified";
+        throw new AxiosError$1(
+          `There is no suitable adapter to dispatch the request ` + s,
+          "ERR_NOT_SUPPORT"
+        );
+      }
+      return adapter;
+    }
     const adapters = {
-      getAdapter: (adapters2, config) => {
-        adapters2 = utils$1.isArray(adapters2) ? adapters2 : [adapters2];
-        const { length } = adapters2;
-        let nameOrAdapter;
-        let adapter;
-        const rejectedReasons = {};
-        for (let i = 0; i < length; i++) {
-          nameOrAdapter = adapters2[i];
-          let id;
-          adapter = nameOrAdapter;
-          if (!isResolvedHandle(nameOrAdapter)) {
-            adapter = knownAdapters[(id = String(nameOrAdapter)).toLowerCase()];
-            if (adapter === void 0) {
-              throw new AxiosError(`Unknown adapter '${id}'`);
-            }
-          }
-          if (adapter && (utils$1.isFunction(adapter) || (adapter = adapter.get(config)))) {
-            break;
-          }
-          rejectedReasons[id || "#" + i] = adapter;
-        }
-        if (!adapter) {
-          const reasons = Object.entries(rejectedReasons).map(
-            ([id, state]) => `adapter ${id} ` + (state === false ? "is not supported by the environment" : "is not available in the build")
-          );
-          let s = length ? reasons.length > 1 ? "since :\n" + reasons.map(renderReason).join("\n") : " " + renderReason(reasons[0]) : "as no adapter specified";
-          throw new AxiosError(
-            `There is no suitable adapter to dispatch the request ` + s,
-            "ERR_NOT_SUPPORT"
-          );
-        }
-        return adapter;
-      },
+      /**
+       * Resolve an adapter from a list of adapter names or functions.
+       * @type {Function}
+       */
+      getAdapter,
+      /**
+       * Exposes all known adapters
+       * @type {Object<string, Function|Object>}
+       */
       adapters: knownAdapters
     };
     function throwIfCancellationRequested(config) {
@@ -10419,7 +10477,7 @@ var require_index_001 = __commonJS({
         config.cancelToken.throwIfRequested();
       }
       if (config.signal && config.signal.aborted) {
-        throw new CanceledError(null, config);
+        throw new CanceledError$1(null, config);
       }
     }
     function dispatchRequest(config) {
@@ -10457,7 +10515,7 @@ var require_index_001 = __commonJS({
         return Promise.reject(reason);
       });
     }
-    const VERSION = "1.12.2";
+    const VERSION = "1.13.5";
     const validators$1 = {};
     ["object", "boolean", "number", "function", "string", "symbol"].forEach((type, i) => {
       validators$1[type] = function validator2(thing) {
@@ -10471,9 +10529,9 @@ var require_index_001 = __commonJS({
       }
       return (value, opt, opts) => {
         if (validator2 === false) {
-          throw new AxiosError(
+          throw new AxiosError$1(
             formatMessage(opt, " has been removed" + (version2 ? " in " + version2 : "")),
-            AxiosError.ERR_DEPRECATED
+            AxiosError$1.ERR_DEPRECATED
           );
         }
         if (version2 && !deprecatedWarnings[opt]) {
@@ -10496,7 +10554,7 @@ var require_index_001 = __commonJS({
     };
     function assertOptions(options, schema, allowUnknown) {
       if (typeof options !== "object") {
-        throw new AxiosError("options must be an object", AxiosError.ERR_BAD_OPTION_VALUE);
+        throw new AxiosError$1("options must be an object", AxiosError$1.ERR_BAD_OPTION_VALUE);
       }
       const keys = Object.keys(options);
       let i = keys.length;
@@ -10507,12 +10565,12 @@ var require_index_001 = __commonJS({
           const value = options[opt];
           const result = value === void 0 || validator2(value, opt, options);
           if (result !== true) {
-            throw new AxiosError("option " + opt + " must be " + result, AxiosError.ERR_BAD_OPTION_VALUE);
+            throw new AxiosError$1("option " + opt + " must be " + result, AxiosError$1.ERR_BAD_OPTION_VALUE);
           }
           continue;
         }
         if (allowUnknown !== true) {
-          throw new AxiosError("Unknown option " + opt, AxiosError.ERR_BAD_OPTION);
+          throw new AxiosError$1("Unknown option " + opt, AxiosError$1.ERR_BAD_OPTION);
         }
       }
     }
@@ -10572,7 +10630,8 @@ var require_index_001 = __commonJS({
           validator.assertOptions(transitional, {
             silentJSONParsing: validators.transitional(validators.boolean),
             forcedJSONParsing: validators.transitional(validators.boolean),
-            clarifyTimeoutError: validators.transitional(validators.boolean)
+            clarifyTimeoutError: validators.transitional(validators.boolean),
+            legacyInterceptorReqResOrdering: validators.transitional(validators.boolean)
           }, false);
         }
         if (paramsSerializer != null) {
@@ -10617,7 +10676,13 @@ var require_index_001 = __commonJS({
             return;
           }
           synchronousRequestInterceptors = synchronousRequestInterceptors && interceptor.synchronous;
-          requestInterceptorChain.unshift(interceptor.fulfilled, interceptor.rejected);
+          const transitional2 = config.transitional || transitionalDefaults;
+          const legacyInterceptorReqResOrdering = transitional2 && transitional2.legacyInterceptorReqResOrdering;
+          if (legacyInterceptorReqResOrdering) {
+            requestInterceptorChain.unshift(interceptor.fulfilled, interceptor.rejected);
+          } else {
+            requestInterceptorChain.push(interceptor.fulfilled, interceptor.rejected);
+          }
         });
         const responseInterceptorChain = [];
         this.interceptors.response.forEach(function pushResponseInterceptors(interceptor) {
@@ -10727,7 +10792,7 @@ var require_index_001 = __commonJS({
           if (token.reason) {
             return;
           }
-          token.reason = new CanceledError(message, config, request);
+          token.reason = new CanceledError$1(message, config, request);
           resolvePromise(token.reason);
         });
       }
@@ -10861,7 +10926,13 @@ var require_index_001 = __commonJS({
       InsufficientStorage: 507,
       LoopDetected: 508,
       NotExtended: 510,
-      NetworkAuthenticationRequired: 511
+      NetworkAuthenticationRequired: 511,
+      WebServerIsDown: 521,
+      ConnectionTimedOut: 522,
+      OriginIsUnreachable: 523,
+      TimeoutOccurred: 524,
+      SslHandshakeFailed: 525,
+      InvalidSslCertificate: 526
     };
     Object.entries(HttpStatusCode).forEach(([key, value]) => {
       HttpStatusCode[value] = key;
@@ -10879,12 +10950,12 @@ var require_index_001 = __commonJS({
     }
     const axios = createInstance(defaults$1);
     axios.Axios = Axios$1;
-    axios.CanceledError = CanceledError;
+    axios.CanceledError = CanceledError$1;
     axios.CancelToken = CancelToken$1;
     axios.isCancel = isCancel;
     axios.VERSION = VERSION;
     axios.toFormData = toFormData;
-    axios.AxiosError = AxiosError;
+    axios.AxiosError = AxiosError$1;
     axios.Cancel = axios.CanceledError;
     axios.all = function all(promises) {
       return Promise.all(promises);
@@ -11051,7 +11122,11 @@ var require_index_001 = __commonJS({
             const authCheckUrl = clusterId ? `/ping?cluster_id=${clusterId}` : "/ping";
             const response = yield httpClient.get(authCheckUrl);
             const isAuth = response.status === 200;
-            console.log("Auth check:", { clusterId, status: response.status, isAuth });
+            console.log("Auth check:", {
+              clusterId,
+              status: response.status,
+              isAuth
+            });
             return { isAuthenticated: isAuth };
           } catch (error) {
             if (error instanceof StructuredError) {
@@ -11064,7 +11139,9 @@ var require_index_001 = __commonJS({
               }
             }
             if (((_a = error == null ? void 0 : error.response) == null ? void 0 : _a.status) === 401 || ((_b = error == null ? void 0 : error.response) == null ? void 0 : _b.status) === 403) {
-              console.log("Auth check failed with authentication error but no structured response");
+              console.log(
+                "Auth check failed with authentication error but no structured response"
+              );
               return {
                 isAuthenticated: false,
                 error: "Authentication required"
@@ -11096,7 +11173,10 @@ var require_index_001 = __commonJS({
           if (currentParams.has("cluster_id")) {
             paramsToPreserve.cluster_id = currentParams.get("cluster_id");
           }
-          sessionStorage.setItem(PRESERVED_PARAMS_STORAGE_KEY, JSON.stringify(paramsToPreserve));
+          sessionStorage.setItem(
+            PRESERVED_PARAMS_STORAGE_KEY,
+            JSON.stringify(paramsToPreserve)
+          );
           const params = new URLSearchParams({
             session_id: sessionId,
             redirect_url,
@@ -11135,7 +11215,9 @@ var require_index_001 = __commonJS({
         if (urlParams.has("redirect_url")) {
           return true;
         }
-        const preservedParams = sessionStorage.getItem(PRESERVED_PARAMS_STORAGE_KEY);
+        const preservedParams = sessionStorage.getItem(
+          PRESERVED_PARAMS_STORAGE_KEY
+        );
         if (preservedParams) {
           try {
             const params = JSON.parse(preservedParams);
@@ -11152,7 +11234,9 @@ var require_index_001 = __commonJS({
         let sessionId = urlParams.get("session_id");
         let consumerId = urlParams.get("consumer_id");
         if (!redirectUrl) {
-          const preservedParams = sessionStorage.getItem(PRESERVED_PARAMS_STORAGE_KEY);
+          const preservedParams = sessionStorage.getItem(
+            PRESERVED_PARAMS_STORAGE_KEY
+          );
           if (preservedParams) {
             try {
               const params = JSON.parse(preservedParams);
@@ -11180,9 +11264,11 @@ var require_index_001 = __commonJS({
         }
       }
       restorePreservedParams() {
-        const preservedParamsJson = sessionStorage.getItem(PRESERVED_PARAMS_STORAGE_KEY);
+        const preservedParamsJson = sessionStorage.getItem(
+          PRESERVED_PARAMS_STORAGE_KEY
+        );
         if (!preservedParamsJson) {
-          return;
+          return false;
         }
         try {
           const preservedParams = JSON.parse(preservedParamsJson);
@@ -11198,12 +11284,15 @@ var require_index_001 = __commonJS({
             sessionStorage.removeItem(PRESERVED_PARAMS_STORAGE_KEY);
             const newUrl = `${window.location.pathname}?${currentParams.toString()}`;
             window.location.replace(newUrl);
+            return true;
           } else {
             sessionStorage.removeItem(PRESERVED_PARAMS_STORAGE_KEY);
+            return false;
           }
         } catch (error) {
           console.error("Failed to restore preserved params:", error);
           sessionStorage.removeItem(PRESERVED_PARAMS_STORAGE_KEY);
+          return false;
         }
       }
     }
@@ -11295,7 +11384,9 @@ var require_index_001 = __commonJS({
           return Math.random().toString(36).substring(2) + Date.now().toString(36);
         };
         onMounted(() => {
-          authService.restorePreservedParams();
+          if (authService.restorePreservedParams()) {
+            return;
+          }
           checkAuthStatus();
           window.addEventListener("auth-expired", () => {
             console.log("Received auth-expired event, updating authentication status");
@@ -11303,10 +11394,14 @@ var require_index_001 = __commonJS({
             authStatus.value.error = "Session expired. Please re-authenticate.";
             const hasRequiredParams = route.query.cluster_id || route.query.session_id;
             if (hasRequiredParams && !hasAttemptedAuth.value) {
-              console.log("Auto-redirecting to authentication due to auth-expired event");
+              console.log(
+                "Auto-redirecting to authentication due to auth-expired event"
+              );
               authenticate();
             } else if (!hasRequiredParams) {
-              console.log("No cluster_id or session_id parameters found, requiring manual authentication");
+              console.log(
+                "No cluster_id or session_id parameters found, requiring manual authentication"
+              );
             } else {
               console.log("Authentication already attempted, preventing hot loop");
             }
@@ -11317,7 +11412,7 @@ var require_index_001 = __commonJS({
           return openBlock(), createElementBlock("div", _hoisted_1$4, [
             createBaseVNode("header", _hoisted_2$4, [
               createBaseVNode("div", _hoisted_3$4, [
-                _cache[2] || (_cache[2] = createStaticVNode('<div class="brand" data-v-99283ff2><div class="logo" data-v-99283ff2><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" data-v-99283ff2><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-99283ff2></path><path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-99283ff2></path><path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-99283ff2></path></svg></div><h1 data-v-99283ff2>Kube Bind</h1></div>', 1)),
+                _cache[2] || (_cache[2] = createStaticVNode('<div class="brand" data-v-0b535f4a><div class="logo" data-v-0b535f4a><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" data-v-0b535f4a><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-0b535f4a></path><path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-0b535f4a></path><path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round" data-v-0b535f4a></path></svg></div><h1 data-v-0b535f4a>Kube Bind</h1></div>', 1)),
                 authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_4$4, [
                   _cache[1] || (_cache[1] = createBaseVNode("div", { class: "user-info" }, [
                     createBaseVNode("div", { class: "status-indicator" }),
@@ -11387,7 +11482,7 @@ var require_index_001 = __commonJS({
         };
       }
     });
-    const App_vue_vue_type_style_index_0_scoped_99283ff2_lang = "";
+    const App_vue_vue_type_style_index_0_scoped_0b535f4a_lang = "";
     const _export_sfc = (sfc, props) => {
       const target = sfc.__vccOpts || sfc;
       for (const [key, val] of props) {
@@ -11395,7 +11490,7 @@ var require_index_001 = __commonJS({
       }
       return target;
     };
-    const App = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-99283ff2"]]);
+    const App = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-0b535f4a"]]);
     var __async$2 = (__this, __arguments, generator) => {
       return new Promise((resolve2, reject) => {
         var fulfilled = (value) => {

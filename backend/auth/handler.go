@@ -74,7 +74,7 @@ func (ah *AuthHandler) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 	var authReq AuthorizeRequest
 	if r.Method == http.MethodPost {
 		if err := json.NewDecoder(r.Body).Decode(&authReq); err != nil {
-			http.Error(w, "invalid JSON request", http.StatusBadRequest)
+			ah.respondWithError(w, authReq.ClientType, "invalid JSON request", http.StatusBadRequest)
 			return
 		}
 	} else {
@@ -135,19 +135,10 @@ func (ah *AuthHandler) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 
 func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
-	if errMsg := r.Form.Get("error"); errMsg != "" {
-		logger.Error(errors.New(errMsg), "failed to authorize")
-		http.Error(w, errMsg+": "+r.Form.Get("error_description"), http.StatusBadRequest)
-		return
-	}
 
-	code := r.Form.Get("code")
-	if code == "" {
-		code = r.URL.Query().Get("code")
-	}
-	if code == "" {
-		logger.Error(errors.New("missing code"), "no code in request")
-		http.Error(w, fmt.Sprintf("no code in request: %q", r.Form), http.StatusBadRequest)
+	if err := r.ParseForm(); err != nil {
+		logger.Error(err, "failed to parse form")
+		ah.respondWithError(w, "", "failed to parse form", http.StatusBadRequest)
 		return
 	}
 
@@ -164,22 +155,39 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	decoded, err := base64.URLEncoding.DecodeString(state)
 	if err != nil {
 		logger.Error(err, "failed to decode state")
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		ah.respondWithError(w, "", "invalid state parameter", http.StatusBadRequest)
 		return
 	}
 
 	authCode := &AuthorizeRequest{}
 	if err := json.Unmarshal(decoded, authCode); err != nil {
 		logger.Error(err, "failed to unmarshal authCode")
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		ah.respondWithError(w, authCode.ClientType, "invalid state format", http.StatusBadRequest)
+		return
+	}
+
+	if errMsg := r.Form.Get("error"); errMsg != "" {
+		desc := r.Form.Get("error_description")
+		logger.Error(errors.New(errMsg), "OIDC provider returned error", "description", desc)
+		ah.respondWithError(w, authCode.ClientType, fmt.Sprintf("%s: %s", errMsg, desc), http.StatusBadRequest)
+		return
+	}
+
+	code := r.Form.Get("code")
+	if code == "" {
+		code = r.URL.Query().Get("code")
+	}
+	if code == "" {
+		logger.Error(errors.New("missing code"), "no code in request")
+		ah.respondWithError(w, authCode.ClientType, "no authorization code in request", http.StatusBadRequest)
 		return
 	}
 	logger.V(2).Info("HandleCallback state unmarshaled", "authCode", authCode)
 
 	provider, err := ah.oidc.GetOIDCProvider(r.Context())
 	if err != nil {
-		logger.Error(err, "failed to get OIDC provider")
-		ah.respondWithError(w, authCode.ClientType, err.Error(), http.StatusInternalServerError)
+		logger.Info("failed to get OIDC provider", "error", err)
+		ah.respondWithError(w, authCode.ClientType, "failed to get OIDC provider", http.StatusInternalServerError)
 		return
 	}
 
@@ -206,21 +214,21 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	token, err := provider.OIDCProviderConfig(nil).Exchange(ctx, code, exchangeOpts...)
 	if err != nil {
 		logger.Error(err, "failed to exchange token")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		ah.respondWithError(w, authCode.ClientType, "failed to exchange authorization code for token", http.StatusInternalServerError)
 		return
 	}
 
 	sessionState, err := ah.createSessionState(authCode, token)
 	if err != nil {
 		logger.Error(err, "failed to create session sessionState")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		ah.respondWithError(w, authCode.ClientType, "failed to create user session", http.StatusInternalServerError)
 		return
 	}
 	// Set session expiration and store in middleware
 	err = ah.sessionStore.Save(sessionState)
 	if err != nil {
 		logger.Error(err, "failed to save session state")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		ah.respondWithError(w, authCode.ClientType, "failed to save session state", http.StatusInternalServerError)
 		return
 	}
 
@@ -240,7 +248,7 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		)
 		if err != nil {
 			logger.Error(err, "failed to generate JWT token")
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			ah.respondWithError(w, authCode.ClientType, "failed to generate JWT token", http.StatusInternalServerError)
 			return
 		}
 
@@ -248,7 +256,7 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		parsedRedirectURL, err := url.Parse(authCode.RedirectURL)
 		if err != nil {
 			logger.Error(err, "failed to parse redirect URL")
-			http.Error(w, "internal error", http.StatusInternalServerError)
+			ah.respondWithError(w, authCode.ClientType, "failed to parse redirect URL", http.StatusInternalServerError)
 			return
 		}
 
@@ -272,7 +280,7 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	encoded, err := s.Encode(cookieName, sessionState)
 	if err != nil {
 		logger.Error(err, "failed to encode secure session cookie")
-		http.Error(w, "internal error", http.StatusInternalServerError)
+		ah.respondWithError(w, authCode.ClientType, "failed to encode session cookie", http.StatusInternalServerError)
 		return
 	}
 

@@ -41,13 +41,15 @@ See [values.yaml](values.yaml) for the full list of configurable parameters.
 | backend.oidc.allowedUsers | list | `[]` | List of users allowed to access bindings |
 | backend.oidc.callbackUrl | string | `""` | OIDC callback URL |
 | backend.oidc.clientId | string | `""` | OIDC client ID |
-| backend.oidc.clientSecret | string | `""` | OIDC client secret (plaintext, prefer clientSecretName for production) |
+| backend.oidc.clientSecret | string | `""` | Not required for providers using PKCE or public clients |
 | backend.oidc.clientSecretKey | string | `""` | Key within the secret (e.g., "client-secret") |
-| backend.oidc.clientSecretName | string | `""` | Name of the Kubernetes secret containing the OIDC client secret |
+| backend.oidc.clientSecretName | string | `""` | If set, the secret will be mounted as OIDC_CLIENT_SECRET env var |
 | backend.oidc.issuerUrl | string | `""` | OIDC issuer URL (leave empty for embedded OIDC server) |
 | backend.oidc.type | string | `"embedded"` | OIDC provider type. Options: "embedded" or "external" |
 | backend.prettyName | string | `""` | Human-readable name for this backend instance |
 | backend.schemaSource | string | `""` | Schema source (e.g., "apiresourceschemas") |
+| backend.sessionStorage.redisAddress | string | `""` |  |
+| backend.sessionStorage.redisPassword | string | `""` |  |
 | backend.tls.certSecretName | string | `""` | Name of the Kubernetes secret containing TLS certificate |
 | backend.tls.enabled | bool | `false` | Enable TLS for the backend |
 | backend.tls.tlsCertFile | string | `"/etc/kube-bind/tls/tls.crt"` | Path to TLS certificate file inside the container |

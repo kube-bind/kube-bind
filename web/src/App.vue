@@ -4,10 +4,31 @@
       <div class="header-content">
         <div class="brand">
           <div class="logo">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-              <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-              <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 2L2 7L12 12L22 7L12 2Z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M2 17L12 22L22 17"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M2 12L12 17L22 12"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+              />
             </svg>
           </div>
           <h1>Kube Bind</h1>
@@ -18,10 +39,34 @@
             <span class="welcome-text">Connected</span>
           </div>
           <button @click="logout" class="logout-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M16 17L21 12L16 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M16 17L21 12L16 7"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M21 12H9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
             Sign out
           </button>
@@ -40,9 +85,15 @@
           </div>
         </div>
         <p v-else>Please authenticate to access resources.</p>
-        <button @click="authenticate" class="auth-btn" :disabled="authStatus.loading">
+        <button
+          @click="authenticate"
+          class="auth-btn"
+          :disabled="authStatus.loading"
+        >
           <span v-if="authStatus.loading">Authenticating...</span>
-          <span v-else>{{ authStatus.error ? 'Try Again' : 'Authenticate' }}</span>
+          <span v-else>{{
+            authStatus.error ? "Try Again" : "Authenticate"
+          }}</span>
         </button>
       </div>
 
@@ -52,92 +103,100 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { authService, type AuthCheckResult } from './services/auth'
+import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { authService, type AuthCheckResult } from "./services/auth";
 
-const route = useRoute()
+const route = useRoute();
 
 const authStatus = ref({
   isAuthenticated: false,
   loading: true,
-  error: null as string | null
-})
+  error: null as string | null,
+});
 
 // Track if we've already attempted authentication to prevent hot loops
-const hasAttemptedAuth = ref(false)
+const hasAttemptedAuth = ref(false);
 
 const checkAuthStatus = async () => {
   try {
-    const result: AuthCheckResult = await authService.checkAuthentication()
-    authStatus.value.isAuthenticated = result.isAuthenticated
-    authStatus.value.error = result.error || null
+    const result: AuthCheckResult = await authService.checkAuthentication();
+    authStatus.value.isAuthenticated = result.isAuthenticated;
+    authStatus.value.error = result.error || null;
   } catch (error) {
-    console.error('Auth check failed:', error)
-    authStatus.value.error = 'Authentication check failed'
+    console.error("Auth check failed:", error);
+    authStatus.value.error = "Authentication check failed";
   } finally {
-    authStatus.value.loading = false
+    authStatus.value.loading = false;
   }
-}
+};
 
 const authenticate = async () => {
   try {
-    hasAttemptedAuth.value = true
-    const cluster = route.query.cluster_id as string || ''
-    const sessionId = route.query.session_id as string || generateSessionId()
-    const consumerId = route.query.consumer_id as string || ''
+    hasAttemptedAuth.value = true;
+    const cluster = (route.query.cluster_id as string) || "";
+    const sessionId = (route.query.session_id as string) || generateSessionId();
+    const consumerId = (route.query.consumer_id as string) || "";
 
-    await authService.initiateAuth(sessionId, cluster, consumerId)
+    await authService.initiateAuth(sessionId, cluster, consumerId);
   } catch (error) {
-    console.error('Authentication failed:', error)
-    authStatus.value.error = 'Authentication failed'
+    console.error("Authentication failed:", error);
+    authStatus.value.error = "Authentication failed";
   }
-}
+};
 
 const logout = async () => {
   try {
-    await authService.logout()
-    authStatus.value.isAuthenticated = false
+    await authService.logout();
+    authStatus.value.isAuthenticated = false;
   } catch (error) {
-    console.error('Logout failed:', error)
+    console.error("Logout failed:", error);
   }
-}
+};
 
 const generateSessionId = (): string => {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36)
-}
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+};
 
 onMounted(() => {
   // Restore preserved params first (before checking auth status)
   // This ensures that params lost during OAuth redirect are restored
-  authService.restorePreservedParams()
+  if (authService.restorePreservedParams()) {
+    return; // Stop execution, the page is reloading
+  }
 
-  checkAuthStatus()
+  checkAuthStatus();
 
   // Listen for authentication expiration events from HTTP interceptor
-  window.addEventListener('auth-expired', () => {
-    console.log('Received auth-expired event, updating authentication status')
-    authStatus.value.isAuthenticated = false
-    authStatus.value.error = 'Session expired. Please re-authenticate.'
+  window.addEventListener("auth-expired", () => {
+    console.log("Received auth-expired event, updating authentication status");
+    authStatus.value.isAuthenticated = false;
+    authStatus.value.error = "Session expired. Please re-authenticate.";
 
     // Automatically trigger authentication redirect if we have the necessary parameters
     // and haven't already attempted authentication (to prevent hot loops)
-    const hasRequiredParams = route.query.cluster_id || route.query.session_id
+    const hasRequiredParams = route.query.cluster_id || route.query.session_id;
     if (hasRequiredParams && !hasAttemptedAuth.value) {
-      console.log('Auto-redirecting to authentication due to auth-expired event')
-      authenticate()
+      console.log(
+        "Auto-redirecting to authentication due to auth-expired event",
+      );
+      authenticate();
     } else if (!hasRequiredParams) {
-      console.log('No cluster_id or session_id parameters found, requiring manual authentication')
+      console.log(
+        "No cluster_id or session_id parameters found, requiring manual authentication",
+      );
     } else {
-      console.log('Authentication already attempted, preventing hot loop')
+      console.log("Authentication already attempted, preventing hot loop");
     }
-  })
-})
+  });
+});
 </script>
 
 <style scoped>
 #app {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
+    "Cantarell", sans-serif;
 }
 
 .header {
@@ -204,7 +263,8 @@ onMounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {

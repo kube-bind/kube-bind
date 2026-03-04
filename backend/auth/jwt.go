@@ -32,11 +32,12 @@ type JWTService struct {
 }
 
 type Claims struct {
-	Subject     string `json:"sub"`
-	Issuer      string `json:"iss"`
-	SessionID   string `json:"sid"`
-	ClusterID   string `json:"cid"`
-	RedirectURL string `json:"red,omitempty"`
+	Subject     string   `json:"sub"`
+	Issuer      string   `json:"iss"`
+	SessionID   string   `json:"sid"`
+	ClusterID   string   `json:"cid"`
+	Groups      []string `json:"groups,omitempty"`
+	RedirectURL string   `json:"red,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -53,13 +54,14 @@ func NewJWTService(issuer string) (*JWTService, error) {
 	}, nil
 }
 
-func (js *JWTService) GenerateToken(subject, oidcIssuer, sessionID, clusterID, redirectURL string, expiration time.Duration) (string, error) {
+func (js *JWTService) GenerateToken(subject, oidcIssuer, sessionID, clusterID, redirectURL string, groups []string, expiration time.Duration) (string, error) {
 	now := time.Now()
 	claims := &Claims{
 		Subject:     subject,
 		Issuer:      oidcIssuer,
 		SessionID:   sessionID,
 		ClusterID:   clusterID,
+		Groups:      groups,
 		RedirectURL: redirectURL,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   subject,

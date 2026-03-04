@@ -19,6 +19,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -111,6 +112,7 @@ func (am *AuthMiddleware) authenticate(next http.Handler) http.Handler {
 						Token: session.TokenInfo{
 							Subject: claims.Subject,
 							Issuer:  claims.Issuer,
+							Groups:  claims.Groups,
 						},
 						SessionID:   claims.SessionID,
 						ClusterID:   claims.ClusterID,
@@ -219,7 +221,8 @@ func (am *AuthMiddleware) authorizeK8S(next http.Handler) http.Handler {
 		if err != nil {
 			logger.V(2).Info("Kubernetes RBAC authorization failed", "error", err)
 			statusCode, code, details := mapErrorToCode(err)
-			writeErrorResponse(w, statusCode, code, "Cluster authorization failed. Missing required permissions in the cluster to access bindings.", details)
+			hint := fmt.Sprintf("%s Start the backend with --oidc-allowed-users=%s or --oidc-allowed-groups=<group> (user must be in one of the allowed groups).", details, authCtx.SessionState.Token.Subject)
+			writeErrorResponse(w, statusCode, code, "Cluster authorization failed. Missing required permissions in the cluster to access bindings.", hint)
 			return
 		}
 

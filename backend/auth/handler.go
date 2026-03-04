@@ -18,6 +18,8 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -85,6 +87,8 @@ func (ah *AuthHandler) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	logger.V(2).Info("AuthorizeRequest prepared", "authReq", authReq, "params", params)
+
 	if authReq.RedirectURL == "" || authReq.SessionID == "" {
 		logger.Error(errors.New("missing required parameters"), "failed to authorize")
 		ah.respondWithError(w, authReq.ClientType, "missing redirect_url or session_id", http.StatusBadRequest)
@@ -94,20 +98,37 @@ func (ah *AuthHandler) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 	scopes := []string{"openid", "profile", "email", "offline_access", "groups"}
 	dataCode, err := json.Marshal(authReq)
 	if err != nil {
-		logger.Info("failed to marshal auth code", "error", err)
+		logger.Error(err, "failed to marshal auth code")
 		ah.respondWithError(w, authReq.ClientType, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	provider, err := ah.oidc.GetOIDCProvider(r.Context())
 	if err != nil {
-		logger.Info("failed to get OIDC provider", "error", err)
+		logger.Error(err, "failed to get OIDC provider")
 		ah.respondWithError(w, authReq.ClientType, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	encoded := base64.URLEncoding.EncodeToString(dataCode)
-	authURL := provider.OIDCProviderConfig(scopes).AuthCodeURL(encoded)
+
+	verifier, challenge, err := generatePKCE()
+	if err != nil {
+		logger.Error(err, "failed to generate PKCE")
+		ah.respondWithError(w, authReq.ClientType, "failed to generate PKCE", http.StatusInternalServerError)
+		return
+	}
+	if err := ah.sessionStore.SavePKCEVerifier(authReq.SessionID, verifier); err != nil {
+		logger.Error(err, "failed to store PKCE verifier")
+		ah.respondWithError(w, authReq.ClientType, "failed to store PKCE verifier", http.StatusInternalServerError)
+		return
+	}
+
+	opts := []oauth2.AuthCodeOption{
+		oauth2.SetAuthURLParam("code_challenge", challenge),
+		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
+	}
+	authURL := provider.OIDCProviderConfig(scopes).AuthCodeURL(encoded, opts...)
 
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
@@ -153,10 +174,11 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	logger.V(2).Info("HandleCallback state unmarshaled", "authCode", authCode)
 
 	provider, err := ah.oidc.GetOIDCProvider(r.Context())
 	if err != nil {
-		logger.Info("failed to get OIDC provider", "error", err)
+		logger.Error(err, "failed to get OIDC provider")
 		ah.respondWithError(w, authCode.ClientType, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -172,7 +194,16 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
 	}
 
-	token, err := provider.OIDCProviderConfig(nil).Exchange(ctx, code)
+	verifier, err := ah.sessionStore.LoadAndDeletePKCEVerifier(authCode.SessionID)
+	if err != nil || verifier == "" {
+		logger.Error(err, "PKCE verifier not found for session; cannot exchange code", "sessionID", authCode.SessionID)
+		msg := "PKCE verifier not found. If you run multiple backend instances, use a shared session store (e.g. Redis) so the instance handling the callback can read the verifier stored at authorize time."
+		ah.respondWithError(w, authCode.ClientType, msg, http.StatusBadRequest)
+		return
+	}
+
+	exchangeOpts := []oauth2.AuthCodeOption{oauth2.VerifierOption(verifier)}
+	token, err := provider.OIDCProviderConfig(nil).Exchange(ctx, code, exchangeOpts...)
 	if err != nil {
 		logger.Error(err, "failed to exchange token")
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -204,6 +235,7 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 			sessionState.SessionID,
 			sessionState.ClusterID,
 			sessionState.RedirectURL,
+			sessionState.Token.Groups,
 			24*time.Hour, // 24 hours expiration
 		)
 		if err != nil {
@@ -325,4 +357,15 @@ func (ah *AuthHandler) unwrapJWT(p string) ([]byte, error) {
 		return nil, fmt.Errorf("OIDC: malformed JWT payload: %w", err)
 	}
 	return payload, nil
+}
+
+func generatePKCE() (string, string, error) {
+	data := make([]byte, 32)
+	if _, err := rand.Read(data); err != nil {
+		return "", "", err
+	}
+	verifier := base64.RawURLEncoding.EncodeToString(data)
+	hash := sha256.Sum256([]byte(verifier))
+	challenge := base64.RawURLEncoding.EncodeToString(hash[:])
+	return verifier, challenge, nil
 }

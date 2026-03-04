@@ -112,9 +112,6 @@ func (options *OIDC) Validate() error {
 	if options.IssuerClientID == "" {
 		return fmt.Errorf("OIDC issuer client ID cannot be empty")
 	}
-	if options.IssuerClientSecret == "" && os.Getenv("OIDC_CLIENT_SECRET") == "" {
-		return fmt.Errorf("OIDC issuer client secret cannot be empty")
-	}
 	if os.Getenv("OIDC_CLIENT_SECRET") != "" && options.Type == string(kubebindv1alpha2.OIDCProviderTypeEmbedded) {
 		return fmt.Errorf("OIDC issuer client secret cannot be provided via environment variable when using embedded OIDC provider")
 	}

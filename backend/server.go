@@ -41,6 +41,8 @@ import (
 	kube "github.com/kube-bind/kube-bind/backend/kubernetes"
 	"github.com/kube-bind/kube-bind/backend/provider/kcp/controllers/apibindingtemplate"
 	"github.com/kube-bind/kube-bind/backend/provider/kcp/controllers/apiresourceschema"
+	"github.com/kube-bind/kube-bind/backend/session/memory"
+	"github.com/kube-bind/kube-bind/backend/session/redis"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -139,6 +141,16 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 			}
 		}
 
+		sessionStore := memory.New()
+
+		if addr := c.Options.Session.Redis.Address; addr != "" {
+			redisStore, err := redis.New(addr, c.Options.Session.Redis.Password)
+			if err != nil {
+				return nil, fmt.Errorf("error setting up Redis session store: %w", err)
+			}
+			sessionStore = redisStore
+		}
+
 		handler, err := http.NewHandler(
 			s,
 			s.Config.Options.OIDC.OIDCServer,
@@ -153,6 +165,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 			s.Kubernetes,
 			c.Options.Frontend,
 			c.Options.TokenExpiry,
+			sessionStore,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("error setting up HTTP Handler: %w", err)

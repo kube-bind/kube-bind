@@ -327,6 +327,7 @@ test-e2e-contribs: $(CONTRIBS_E2E) ## Run e2e tests for external integrations
 .PHONY: test-e2e-contrib-kcp
 test-e2e-contrib-kcp: $(DEX_BINARY)
 $(CONTRIBS_E2E):
+	rm -rf .kcp
 	mkdir .kcp
 	$(MAKE) run-kcp &>.kcp/kcp.log & KCP_PID=$$!; \
 	trap 'kill -TERM $$KCP_PID; rm -rf .kcp' TERM INT EXIT && \

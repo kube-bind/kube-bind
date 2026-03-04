@@ -33,10 +33,11 @@ import (
 )
 
 type Options struct {
-	Logs   *logs.Options
-	OIDC   *OIDC
-	Cookie *Cookie
-	Serve  *Serve
+	Logs    *logs.Options
+	OIDC    *OIDC
+	Cookie  *Cookie
+	Serve   *Serve
+	Session *Session
 
 	ProviderKcp *providerkcp.Options
 
@@ -81,10 +82,11 @@ type ExtraOptions struct {
 }
 
 type completedOptions struct {
-	Logs   *logs.Options
-	OIDC   *OIDC
-	Cookie *Cookie
-	Serve  *Serve
+	Logs    *logs.Options
+	OIDC    *OIDC
+	Cookie  *Cookie
+	Serve   *Serve
+	Session *Session
 
 	// Provider specific options
 	ProviderKcp *providerkcp.CompletedOptions
@@ -106,6 +108,7 @@ func NewOptions() *Options {
 		OIDC:        NewOIDC(),
 		Cookie:      NewCookie(),
 		Serve:       NewServe(),
+		Session:     NewSession(),
 		ProviderKcp: providerkcp.NewOptions(),
 
 		ExtraOptions: ExtraOptions{
@@ -155,6 +158,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	options.OIDC.AddFlags(fs)
 	options.Cookie.AddFlags(fs)
 	options.Serve.AddFlags(fs)
+	options.Session.AddFlags(fs)
 	options.ProviderKcp.AddFlags(fs)
 
 	fs.StringVar(&options.KubeConfig, "kubeconfig", options.KubeConfig, "path to a kubeconfig. Only required if out-of-cluster")
@@ -207,6 +211,9 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 		if err := options.Cookie.Complete(); err != nil {
 			return nil, err
 		}
+		if err := options.Session.Complete(); err != nil {
+			return nil, err
+		}
 	}
 
 	// normalize the scope and the isolation
@@ -243,6 +250,7 @@ func (options *Options) Complete() (*CompletedOptions, error) {
 			OIDC:         options.OIDC,
 			Cookie:       options.Cookie,
 			Serve:        options.Serve,
+			Session:      options.Session,
 			ExtraOptions: options.ExtraOptions,
 		},
 	}
@@ -274,6 +282,9 @@ func (options *CompletedOptions) Validate() error {
 			return err
 		}
 		if err := options.Cookie.Validate(); err != nil {
+			return err
+		}
+		if err := options.Session.Validate(); err != nil {
 			return err
 		}
 	}

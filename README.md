@@ -6,13 +6,11 @@
 
 # kube-bind
 
-### Disclaimer: work in progress and not ready for production use.
-
 You are invited to [contribute](#contributing)!
 
 ## What is it?
 
-kube-bind is a prototype project that aims to provide better support for service providers and consumers that reside in distinct Kubernetes clusters.
+kube-bind provides better support for service providers and consumers that reside in distinct Kubernetes clusters.
 
 - A service provider defines its API in terms of CRDs and associated permission claims/limitations, and exports it for use from other clusters.
 - Service consumers identify the services they want to consume.
@@ -41,7 +39,7 @@ $ kubectl get mangodbs
 For more information go to https://kube-bind.io or watch the [ContainerDays talk](https://www.youtube.com/watch?v=dg0g15Qv5Fo&t=1s)
 or the [KubeCon talk](https://www.youtube.com/watch?v=Uv0ivz5xej4).
 
-The kube-bind prototype is following this manifesto from the linked talk:
+kube-bind is following this manifesto from the linked talk:
 
 ![kube-bind manifesto](docs/images/manifesto.png)
 

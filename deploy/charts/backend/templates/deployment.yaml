@@ -93,6 +93,12 @@ spec:
             {{- if .Values.backend.cookieEncryptionKey }}
             - --cookie-encryption-key={{ .Values.backend.cookieEncryptionKey }}
             {{- end }}
+            {{- if .Values.backend.sessionStorage.redisAddress }}
+            - --redis-addr={{ .Values.backend.sessionStorage.redisAddress }}
+            {{- end }}
+            {{- if .Values.backend.sessionStorage.redisPassword }}
+            - --redis-password={{ .Values.backend.sessionStorage.redisPassword }}
+            {{- end }}
             {{- if .Values.backend.tls.enabled }}
             - --tls-cert-file={{ .Values.backend.tls.tlsCertFile }}
             - --tls-key-file={{ .Values.backend.tls.tlsKeyFile }}

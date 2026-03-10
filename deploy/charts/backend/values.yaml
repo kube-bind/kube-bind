@@ -20,24 +20,31 @@ backend:
   oidc:
     issuerUrl: ""
     clientId: ""
+    # Optional: Client secret (not required for providers using PKCE or public clients)
     clientSecret: ""
     # Alternative: reference a secret for client secret (more secure than plaintext)
     # If clientSecretName is set, the secret will be mounted as OIDC_CLIENT_SECRET env var
-    clientSecretName: ""  # Name of the Kubernetes secret containing the client secret
-    clientSecretKey: ""   # Key within the secret (e.g., "client-secret")
+    clientSecretName: "" # Name of the Kubernetes secret containing the client secret
+    clientSecretKey: "" # Key within the secret (e.g., "client-secret")
     callbackUrl: ""
-    type: "embedded"  # Options: "embedded" or "external"
+    type: "embedded" # Options: "embedded" or "external"
     # List of groups allowed to access bindings inside the cluster
     # If using embedded OIDC provider, system:authenticated will be added automatically
     allowedGroups: []
     # List of users allowed to access bindings inside the cluster
     allowedUsers: []
-  
+    cookieEncryptionKey: ""
+
   # General backend configuration
   prettyName: ""
   namespacePrefix: "kube-bind-"
   consumerScope: "namespaced"
   clusterScopeIsolation: "prefix" # Options: none, prefix, namespaced
+
+  # Session storage configuration
+  sessionStorage:
+    redisAddress: ""
+    redisPassword: ""
 
   # Cookie configuration - these should be base64 encoded keys
   # Empty values - will generate random keys on each start (not for production!)
@@ -77,11 +84,11 @@ examples:
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
-    repository: ghcr.io/kube-bind/backend
-    # This sets the pull policy for images.
-    pullPolicy: IfNotPresent
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: ""
+  repository: ghcr.io/kube-bind/backend
+  # This sets the pull policy for images.
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []

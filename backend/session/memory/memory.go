@@ -1,5 +1,5 @@
 /*
-Copyright 2025 The Kube Bind Authors.
+Copyright 2026 The Kube Bind Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,63 +14,54 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package session
+package memory
 
 import (
+	"context"
 	"errors"
-	"fmt"
 	"sync"
+
+	"github.com/kube-bind/kube-bind/backend/session"
 )
 
-var ErrSessionNotFound = fmt.Errorf("session not found")
-var ErrPKCEVerifierNotFound = fmt.Errorf("pkce verifier not found")
-
-type Store interface {
-	Save(state *State) error
-	Load(sessionID string) (*State, error)
-	Delete(sessionID string) error
-	SavePKCEVerifier(sessionID, verifier string) error
-	LoadAndDeletePKCEVerifier(sessionID string) (string, error)
-}
-
-type InMemoryStore struct {
+type inMemoryStore struct {
 	lock          sync.RWMutex
-	sessions      map[string]*State
+	sessions      map[string]*session.State
 	pkceVerifiers map[string]string
 }
 
-func NewInMemoryStore() *InMemoryStore {
-	return &InMemoryStore{
-		sessions:      make(map[string]*State),
+func NewInMemoryStore() session.Store {
+	return &inMemoryStore{
+		sessions:      make(map[string]*session.State),
 		pkceVerifiers: make(map[string]string),
 	}
 }
 
-func (s *InMemoryStore) Save(state *State) error {
+func (s *inMemoryStore) Save(ctx context.Context, state *session.State) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.sessions[state.SessionID] = state
 	return nil
 }
 
-func (s *InMemoryStore) Load(sessionID string) (*State, error) {
+func (s *inMemoryStore) Load(ctx context.Context, sessionID string) (*session.State, error) {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	state, exists := s.sessions[sessionID]
 	if !exists {
-		return nil, ErrSessionNotFound
+		return nil, session.ErrSessionNotFound
 	}
 	return state, nil
 }
 
-func (s *InMemoryStore) Delete(sessionID string) error {
+func (s *inMemoryStore) Delete(ctx context.Context, sessionID string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	delete(s.sessions, sessionID)
 	return nil
 }
 
-func (s *InMemoryStore) SavePKCEVerifier(sessionID, verifier string) error {
+func (s *inMemoryStore) SavePKCEVerifier(ctx context.Context, sessionID, verifier string) error {
 	if sessionID == "" || verifier == "" {
 		return errors.New("sessionID and verifier cannot be empty")
 	}
@@ -80,15 +71,15 @@ func (s *InMemoryStore) SavePKCEVerifier(sessionID, verifier string) error {
 	return nil
 }
 
-func (s *InMemoryStore) LoadAndDeletePKCEVerifier(sessionID string) (string, error) {
+func (s *inMemoryStore) LoadAndDeletePKCEVerifier(ctx context.Context, sessionID string) (string, error) {
 	if sessionID == "" {
-		return "", ErrPKCEVerifierNotFound
+		return "", session.ErrPKCEVerifierNotFound
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	verifier, ok := s.pkceVerifiers[sessionID]
 	if !ok {
-		return "", ErrPKCEVerifierNotFound
+		return "", session.ErrPKCEVerifierNotFound
 	}
 	delete(s.pkceVerifiers, sessionID)
 	return verifier, nil

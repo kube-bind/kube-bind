@@ -112,14 +112,13 @@ func NewHandler(
 	mgr *kubernetes.Manager,
 	frontend string,
 	tokenExpiry time.Duration,
+	sessionStore session.Store,
 ) (*handler, error) {
 	// Create JWT service for CLI authentication
 	jwtService, err := auth.NewJWTService("kube-bind-backend")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create JWT service: %w", err)
 	}
-
-	sessionStore := session.NewInMemoryStore()
 
 	// Create auth middleware for request authentication
 	authMiddleware := auth.NewAuthMiddleware(jwtService, cookieSigningKey, cookieEncryptionKey, mgr, sessionStore)

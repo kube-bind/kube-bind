@@ -118,7 +118,7 @@ func (ah *AuthHandler) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 		ah.respondWithError(w, authReq.ClientType, "failed to generate PKCE", http.StatusInternalServerError)
 		return
 	}
-	if err := ah.sessionStore.SavePKCEVerifier(authReq.SessionID, verifier); err != nil {
+	if err := ah.sessionStore.SavePKCEVerifier(r.Context(), authReq.SessionID, verifier); err != nil {
 		logger.Error(err, "failed to store PKCE verifier")
 		ah.respondWithError(w, authReq.ClientType, "failed to store PKCE verifier", http.StatusInternalServerError)
 		return
@@ -202,7 +202,7 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
 	}
 
-	verifier, err := ah.sessionStore.LoadAndDeletePKCEVerifier(authCode.SessionID)
+	verifier, err := ah.sessionStore.LoadAndDeletePKCEVerifier(r.Context(), authCode.SessionID)
 	if err != nil || verifier == "" {
 		logger.Error(err, "PKCE verifier not found for session; cannot exchange code", "sessionID", authCode.SessionID)
 		msg := "PKCE verifier not found. If you run multiple backend instances, use a shared session store (e.g. Redis) so the instance handling the callback can read the verifier stored at authorize time."
@@ -225,7 +225,7 @@ func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Set session expiration and store in middleware
-	err = ah.sessionStore.Save(sessionState)
+	err = ah.sessionStore.Save(r.Context(), sessionState)
 	if err != nil {
 		logger.Error(err, "failed to save session state")
 		ah.respondWithError(w, authCode.ClientType, "failed to save session state", http.StatusInternalServerError)

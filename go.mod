@@ -166,3 +166,5 @@ require (
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 )
+
+replace k8s.io/apimachinery => github.com/kubermatic/kubernetes/staging/src/k8s.io/apimachinery 15bb7c67300cee22840e342f10d02ae8cc87a7ba

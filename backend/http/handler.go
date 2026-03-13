@@ -360,14 +360,20 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Move to validating admission.
-	if bindRequest.Spec.ClusterIdentity.Identity == "" {
-		logger.Error(fmt.Errorf("missing cluster identity"), "invalid bind request")
-		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Missing cluster identity in bind request", "The cluster identity must be provided in the bind request")
-		return
+	// Use the cluster identity from the request, or derive from the authenticated session
+	// for UI-only flows where no consumer_id is available.
+	identity := bindRequest.Spec.ClusterIdentity.Identity
+	if identity == "" {
+		identity = state.Token.Issuer + "/" + state.Token.Subject
+		logger.Info("Using session-derived identity for UI-only flow", "identity", identity)
 	}
 
-	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, params.ConsumerID, params.ClusterID)
+	consumerID := params.ConsumerID
+	if consumerID == "" {
+		consumerID = identity
+	}
+
+	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, consumerID, params.ClusterID)
 	if err != nil {
 		logger.Error(err, "failed to handle resources")
 		statusCode, code, details := mapErrorToCode(err)

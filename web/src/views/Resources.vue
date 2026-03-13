@@ -326,10 +326,8 @@ const handleBind = async (templateName: string, bindingName: string) => {
     const sessionIdFromRoute = route.query.session_id as string || ''
     const clusterIdentity = consumerId.value || sessionIdFromRoute
 
-    if (!clusterIdentity) {
-      showAlertModal('Missing cluster identity. Please ensure you have authenticated properly.', 'Binding Failed', 'error')
-      return
-    }
+    // In UI-only flow, clusterIdentity may be empty - the backend will derive
+    // identity from the authenticated session (OIDC subject/issuer).
 
     const bindingRequest: BindableResourcesRequest = {
       metadata: {

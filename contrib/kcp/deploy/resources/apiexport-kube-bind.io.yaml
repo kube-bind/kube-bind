@@ -44,6 +44,10 @@ spec:
     resource: apiresourceschemas
     verbs:
     - '*'
+  - group: apis.kcp.io
+    resource: apibindings
+    verbs:
+    - '*'
   resources:
   - group: kube-bind.io
     name: apiconversions

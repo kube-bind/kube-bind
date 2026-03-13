@@ -253,6 +253,36 @@ func bindAPIExport(ctx context.Context, kcpClient kcpclient.Interface, exportNam
 			},
 			State: apisv1alpha2.ClaimAccepted,
 		},
+		{
+			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
+				PermissionClaim: apisv1alpha2.PermissionClaim{
+					GroupResource: apisv1alpha2.GroupResource{
+						Group:    "apis.kcp.io",
+						Resource: "apibindings",
+					},
+					Verbs: []string{"*"},
+				},
+				Selector: apisv1alpha2.PermissionClaimSelector{
+					MatchAll: true,
+				},
+			},
+			State: apisv1alpha2.ClaimAccepted,
+		},
+		{
+			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
+				PermissionClaim: apisv1alpha2.PermissionClaim{
+					GroupResource: apisv1alpha2.GroupResource{
+						Group:    "authorization.k8s.io",
+						Resource: "subjectaccessreviews",
+					},
+					Verbs: []string{"*"},
+				},
+				Selector: apisv1alpha2.PermissionClaimSelector{
+					MatchAll: true,
+				},
+			},
+			State: apisv1alpha2.ClaimAccepted,
+		},
 	}
 
 	_, err := kcpClient.ApisV1alpha2().APIBindings().Create(ctx, binding, metav1.CreateOptions{})

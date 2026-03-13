@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kube-bind/kube-bind/backend/provider/kcp/controllers/shared"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -45,10 +46,6 @@ func templateNameForBinding(bindingName string, scope kubebindv1alpha2.InformerS
 		return bindingName + "-namespaced"
 	}
 }
-
-// annotationOwnerBinding is the annotation key used to link a template back to
-// the APIBinding that owns it.
-const annotationOwnerBinding = "apibindingtemplate.kube-bind.io/owner-binding"
 
 type reconciler struct {
 	client               client.Client
@@ -73,7 +70,10 @@ func (r *reconciler) reconcile(ctx context.Context, binding *apisv1alpha2.APIBin
 		return err
 	}
 
+	desiredNames := make(map[string]bool, len(templates))
 	for _, desired := range templates {
+		desiredNames[desired.Name] = true
+
 		// Set owner reference: APIBinding owns the template.
 		if err := controllerutil.SetOwnerReference(binding, desired, r.scheme); err != nil {
 			return fmt.Errorf("failed to set owner reference on APIServiceExportTemplate %q: %w", desired.Name, err)
@@ -81,6 +81,36 @@ func (r *reconciler) reconcile(ctx context.Context, binding *apisv1alpha2.APIBin
 
 		if err := r.ensureTemplate(ctx, binding, desired); err != nil {
 			return err
+		}
+	}
+
+	// Prune orphaned templates: if a binding used to have resources of a
+	// given scope but no longer does, the old template must be deleted.
+	return r.pruneOrphanedTemplates(ctx, binding, desiredNames)
+}
+
+// pruneOrphanedTemplates lists templates owned by this binding and deletes any
+// that are no longer in the desired set.
+func (r *reconciler) pruneOrphanedTemplates(ctx context.Context, binding *apisv1alpha2.APIBinding, desiredNames map[string]bool) error {
+	logger := klog.FromContext(ctx)
+
+	var allTemplates kubebindv1alpha2.APIServiceExportTemplateList
+	if err := r.client.List(ctx, &allTemplates); err != nil {
+		return fmt.Errorf("failed to list APIServiceExportTemplates: %w", err)
+	}
+
+	for i := range allTemplates.Items {
+		tmpl := &allTemplates.Items[i]
+		ann := tmpl.Annotations
+		if ann == nil || ann[shared.AnnotationOwnerBinding] != binding.Name {
+			continue
+		}
+		if desiredNames[tmpl.Name] {
+			continue
+		}
+		logger.Info("Deleting orphaned APIServiceExportTemplate", "name", tmpl.Name, "binding", binding.Name)
+		if err := r.client.Delete(ctx, tmpl); err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("failed to delete orphaned APIServiceExportTemplate %q: %w", tmpl.Name, err)
 		}
 	}
 
@@ -184,7 +214,7 @@ func (r *reconciler) buildTemplates(ctx context.Context, binding *apisv1alpha2.A
 			ObjectMeta: metav1.ObjectMeta{
 				Name: templateName,
 				Annotations: map[string]string{
-					annotationOwnerBinding: binding.Name,
+					shared.AnnotationOwnerBinding: binding.Name,
 				},
 			},
 			Spec: kubebindv1alpha2.APIServiceExportTemplateSpec{

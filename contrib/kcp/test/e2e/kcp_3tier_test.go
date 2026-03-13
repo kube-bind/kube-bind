@@ -175,7 +175,7 @@ func testKcp3TierIntegration(t *testing.T, name string, scope kubebindv1alpha2.I
 	// The apiresourceschema controller should copy the bound schemas with the
 	// kube-bind.io/exported=true label.
 	t.Log("Waiting for APIResourceSchema copies with exported label")
-	waitForExportedSchemas(t, backendCfg, kcpClusterClient, backendWsPath)
+	waitForExportedSchemas(t, backendCfg)
 
 	// --- Get logical cluster ID for login ---
 	t.Log("Get logical cluster of backend workspace")
@@ -221,7 +221,7 @@ func testKcp3TierIntegration(t *testing.T, name string, scope kubebindv1alpha2.I
 
 // waitForExportedSchemas waits for APIResourceSchemas with the kube-bind.io/exported=true
 // label to appear in the backend workspace. These are created by the apiresourceschema controller.
-func waitForExportedSchemas(t *testing.T, backendCfg *rest.Config, _ *kcpclientset.ClusterClientset, _ logicalcluster.Path) {
+func waitForExportedSchemas(t *testing.T, backendCfg *rest.Config) {
 	t.Helper()
 
 	schemaGVR := schema.GroupVersionResource{Group: "apis.kcp.io", Version: "v1alpha1", Resource: "apiresourceschemas"}

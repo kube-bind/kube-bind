@@ -26,6 +26,12 @@ type Options struct {
 
 type ExtraOptions struct {
 	APIExportEndpointSliceName string
+
+	// APIBindingIgnorePrefixes is a list of name prefixes for APIBindings
+	// that should be ignored by the APIBindingTemplate controller. System
+	// bindings like "kube-bind.io", "tenancy.kcp.io-*", "topology.kcp.io-*"
+	// should typically be excluded.
+	APIBindingIgnorePrefixes []string
 }
 
 type completedOptions struct {
@@ -40,12 +46,18 @@ func NewOptions() *Options {
 	return &Options{
 		ExtraOptions: ExtraOptions{
 			APIExportEndpointSliceName: "kube-bind.io",
+			APIBindingIgnorePrefixes: []string{
+				"kube-bind.io",
+				"tenancy.kcp.io",
+				"topology.kcp.io",
+			},
 		},
 	}
 }
 
 func (options *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.ExtraOptions.APIExportEndpointSliceName, "apiexport-endpoint-slice-name", options.ExtraOptions.APIExportEndpointSliceName, "name of the APIExport EndpointSlice to watch")
+	fs.StringSliceVar(&options.ExtraOptions.APIBindingIgnorePrefixes, "apibinding-ignore-prefixes", options.ExtraOptions.APIBindingIgnorePrefixes, "name prefixes of APIBindings to ignore when generating APIServiceExportTemplates")
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {

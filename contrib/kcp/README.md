@@ -1,47 +1,98 @@
 # kcp
 
-kcp folder contains isolated set of tooling to bootstrap the kube-bind to allow it to work with kcp instance.
-It is split into separate package to avoid vendoring pollution.
+kcp folder contains isolated set of tooling to bootstrap kube-bind to work with a kcp instance.
+It is split into a separate package to avoid vendoring pollution.
 
-kcp requires initial setup to be run before it can be used.
-This includes setting up workspace/provider and setting up all the APIResourceSchemas and APIExports.
+kcp requires initial setup before it can be used.
+This includes setting up workspaces, `APIResourceSchema`s, and `APIExport`s.
 
-It was its own GO module to avoid kcp dependencies in the main kube-bind module.
+It was its own Go module to avoid kcp dependencies in the main kube-bind module.
 
-This is not required if you are doing deeper integration, and controlling the setup with your own scripts.
+This is not required if you are doing deeper integration and controlling the setup with your own scripts.
 
-It will do the following:
-1. Create a provider workspace:
+## Architecture
+
+This example demonstrates a **three-tier** kube-bind setup with kcp:
+
 ```
-:root:kube-bind
+:root:provider   — owns the Cowboys APIResourceSchema + APIExport (source of truth)
+      |
+      |  (APIBinding: :root:backend binds cowboys from :root:provider)
+      v
+:root:backend    — binds cowboys from provider, re-exposes them to consumers via kube-bind
+      |
+      |  (kube-bind runs in :root:kube-bind, serves the binding API for consumers)
+      v
+  consumer       — any kcp workspace or external cluster that wants cowboys
 ```
-2. Create apiexport inside the workspace:
-```
-:root:kube-bind/apiexport/kube-bind.io
-```
 
+Three kubeconfigs are used throughout this guide:
 
-# How to run
+| File | Points to | Used for |
+|------|-----------|----------|
+| `provider.kubeconfig` | `:root:provider` | creating cowboys `APIResourceSchema` + `APIExport` |
+| `backend.kubeconfig` | `:root:backend` | binding cowboys from provider, creating templates |
+| `kube-bind.kubeconfig` | `:root:kube-bind` | running the kube-bind backend process |
 
-## Preparation
+- **Provider** (`:root:provider`): defines the `cowboys` API (`APIResourceSchema` + `APIExport`). The upstream API owner.
+- **Backend** (`:root:backend`): binds provider's `cowboys` APIExport, creates `APIServiceExport` templates. The broker layer.
+- **kube-bind** (`:root:kube-bind`): where the kube-bind backend process runs, serving the binding HTTP API to consumers.
+- **Consumer**: binds cowboys via kube-bind, with no direct dependency on the provider.
 
-1. Start kcp
+## How to run
+
+### Preparation
+
+1. Start kcp:
 
 ```bash
 make run-kcp
 ```
 
-## Backend
+---
 
-2. Bootstrap kcp:
+### Provider
+
+The provider workspace owns the `cowboys` `APIResourceSchema` and `APIExport`.
+
+2. Set up the provider workspace:
+
+cp ../../kcp-dev/kcp/.kcp/admin.kubeconfig .kcp/admin.kubeconfig
+
 ```bash
-cp .kcp/admin.kubeconfig .kcp/backend.kubeconfig
-export KUBECONFIG=.kcp/backend.kubeconfig
+cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
+export KUBECONFIG=.kcp/provider.kubeconfig
+kubectl ws use :root
+kubectl ws create provider --enter
+```
+
+3. Create the `APIResourceSchema` and `APIExport` for cowboys:
+
+```bash
+kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
+kubectl apply -f contrib/kcp/deploy/examples/apiexport-cowboys.yaml
+```
+
+The `APIExport` named `cowboys` makes the cowboys API available for other workspaces to bind.
+
+---
+
+### kube-bind
+
+The `:root:kube-bind` workspace is where the kube-bind backend process runs. `kcp-init` creates this workspace and installs the kube-bind `APIExport` into it.
+
+4. Bootstrap the kube-bind workspace:
+
+```bash
+cp .kcp/admin.kubeconfig .kcp/kube-bind.kubeconfig
+export KUBECONFIG=.kcp/kube-bind.kubeconfig
 ./bin/kcp-init --kcp-kubeconfig $KUBECONFIG
 ```
-3. Run the backend:
-```
-k ws use :root:kube-bind
+
+5. Run the kube-bind backend:
+
+```bash
+kubectl ws use :root:kube-bind
 
 go run ./cmd/backend \
   --multicluster-runtime-provider kcp \
@@ -55,20 +106,22 @@ go run ./cmd/backend \
   --consumer-scope=cluster
 ```
 
-This process will keep running, so open a new terminal.
+This process keeps running — open a new terminal.
 
-## Provider
+---
 
-4. Copy the kubeconfig to the provider and create provider workspace:
+### Backend
+
+The backend workspace (`:root:backend`) binds the provider's cowboys `APIExport` and sets up `APIServiceExport` templates so kube-bind knows what to offer consumers.
+
+6. Set up the backend workspace and bind the kube-bind `APIExport`:
+
 ```bash
-cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
-export KUBECONFIG=.kcp/provider.kubeconfig
-k ws use :root
-kubectl create-workspace provider --enter
-```
+cp .kcp/admin.kubeconfig .kcp/backend.kubeconfig
+export KUBECONFIG=.kcp/backend.kubeconfig
+kubectl ws use :root
+kubectl ws create backend --enter
 
-5. Bind the APIExport to the provider workspace
-```bash
 kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
   --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
   --accept-permission-claim clusterroles.rbac.authorization.k8s.io \
@@ -80,22 +133,17 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
   --accept-permission-claim roles.rbac.authorization.k8s.io \
   --accept-permission-claim subjectaccessreviews.authorization.k8s.io \
   --accept-permission-claim rolebindings.rbac.authorization.k8s.io \
-  --accept-permission-claim apiresourceschemas.apis.kcp.io
+  --accept-permission-claim apiresourceschemas.apis.kcp.io \
+  --accept-permission-claim apibindings.apis.kcp.io
 ```
 
-6. Create CRD in provider:
+7. Bind the provider's cowboys `APIExport` into `:root:backend`:
+
 ```bash
-kubectl apply -f contrib/kcp/deploy/examples/apiexport.yaml
-kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
-kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
-kubectl kcp bind apiexport root:provider:cowboys-stable
-
-kubectl apply -f deploy/examples/template-cowboys.yaml
-kubectl apply -f deploy/examples/template-sheriffs.yaml
-kubectl apply -f deploy/examples/collection.yaml
+kubectl kcp bind apiexport root:provider:cowboys
 ```
 
-7. Get LogicalCluster:
+9. Get the LogicalCluster identity (needed for consumer binding):
 
 ```bash
 kubectl get logicalcluster
@@ -103,9 +151,14 @@ kubectl get logicalcluster
 # cluster   Ready   https://192.168.2.166:6443/clusters/2ocmmccjkme8bof4
 ```
 
-## Consumer
+---
 
-8. Now we gonna initiate consumer:
+### Consumer
+
+The consumer binds cowboys from kube-bind (backed by `:root:backend`), with no direct dependency on the provider.
+
+10. Set up the consumer workspace:
+
 ```bash
 cp .kcp/admin.kubeconfig .kcp/consumer.kubeconfig
 export KUBECONFIG=.kcp/consumer.kubeconfig
@@ -113,62 +166,97 @@ kubectl ws use :root
 kubectl ws create consumer --enter
 ```
 
-9. Bind the thing:
+// TODO: Backend in kcp should dynamically lifecycle schemas.
+
+11. Log in and bind cowboys:
 
 ```bash
-./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 2ocmmccjkme8bof4 
+./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 216gnjm1cqct4x1j
+
 ./bin/kubectl-bind --dry-run -o yaml > apiserviceexport.yaml
 
-# Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret
-# name by running `kubectl get secret -n kube-bind`
+# Extract the secret for the binding process.
+# Note: the secret name may differ — check with `kubectl get secret -n kube-bind`
 kubectl get secrets -n kube-bind -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d > remote.kubeconfig
 
 namespace=$(yq '.contexts[0].context.namespace' remote.kubeconfig)
 
-./bin/kubectl-bind apiservice -v 6 --remote-kubeconfig remote.kubeconfig -f apiserviceexport.yaml --skip-konnector --remote-namespace "$namespace"
+./bin/kubectl-bind apiservice -v 6 \
+  --remote-kubeconfig remote.kubeconfig \
+  -f apiserviceexport.yaml \
+  --skip-konnector \
+  --remote-namespace "$namespace"
 ```
 
-This will keep running, so switch to a new terminal.
+This process keeps running — switch to a new terminal.
 
-### Consumer Konnector
-
-Start konnector:
+12. Start the konnector:
 
 ```bash
 ./bin/konnector --lease-namespace default --kubeconfig .kcp/consumer.kubeconfig
 ```
 
-# Create an instance 
+---
+
+### Create an instance
+
+Once binding is complete, create a cowboy on the consumer:
 
 ```bash
 kubectl apply -f deploy/examples/cr-cowboy.yaml
-kubectl apply -f deploy/examples/cr-sheriff.yaml
 ```
 
+The cowboy is synced to `:root:backend`, which in turn stores it via the provider's APIExport in `:root:provider`.
 
-# Backend only mode
+---
 
-Sometimes when integrating with existing systems, you might want to run kube-bind backend without any frontend, API and OIDC.
-This is useful when running in multi-tenant environments where each tenant has its own identity provider and frontend (or no frontend at all).
+## Backend-only mode
 
+Sometimes you want to run kube-bind without any frontend, HTTP API, or OIDC — useful in multi-tenant environments, GitOps pipelines, or when each tenant has their own identity provider.
 
-1. Start kcp
+The same three kubeconfigs apply:
+
+| File | Points to | Used for |
+|------|-----------|----------|
+| `provider.kubeconfig` | `:root:provider` | creating cowboys `APIResourceSchema` + `APIExport` |
+| `backend.kubeconfig` | `:root:backend` | binding cowboys from provider, creating templates |
+| `kube-bind.kubeconfig` | `:root:kube-bind` | running the kube-bind backend process |
+
+### Preparation
+
+1. Start kcp:
 
 ```bash
 make run-kcp
 ```
 
-## Backend
+### Provider
 
-2. Bootstrap kcp:
+2. Set up the provider workspace and cowboys API:
+
 ```bash
-cp .kcp/admin.kubeconfig .kcp/backend.kubeconfig
-export KUBECONFIG=.kcp/backend.kubeconfig
+cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
+export KUBECONFIG=.kcp/provider.kubeconfig
+kubectl ws use :root
+kubectl ws create provider --enter
+kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
+kubectl apply -f contrib/kcp/deploy/examples/apiexport-cowboys.yaml
+```
+
+### kube-bind
+
+3. Bootstrap the kube-bind workspace:
+
+```bash
+cp .kcp/admin.kubeconfig .kcp/kube-bind.kubeconfig
+export KUBECONFIG=.kcp/kube-bind.kubeconfig
 ./bin/kcp-init --kcp-kubeconfig $KUBECONFIG
 ```
-3. Run the backend with `--isolation-mode=None` for no isolation mode.
-```
-k ws use :root:kube-bind
+
+4. Run the backend in backend-only mode (no OIDC, no HTTP frontend):
+
+```bash
+kubectl ws use :root:kube-bind
 
 go run ./cmd/backend \
   --multicluster-runtime-provider kcp \
@@ -181,20 +269,18 @@ go run ./cmd/backend \
   --isolation=None
 ```
 
-This process will keep running, so open a new terminal.
+This process keeps running — open a new terminal.
 
-## Provider
+### Backend
 
-4. Copy the kubeconfig to the provider and create provider workspace:
+5. Set up the backend workspace:
+
 ```bash
-cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
-export KUBECONFIG=.kcp/provider.kubeconfig
-k ws use :root
-kubectl create-workspace provider --enter
-```
+cp .kcp/admin.kubeconfig .kcp/backend.kubeconfig
+export KUBECONFIG=.kcp/backend.kubeconfig
+kubectl ws use :root
+kubectl ws create backend --enter
 
-5. Bind the APIExport to the provider workspace
-```bash
 kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
   --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
   --accept-permission-claim clusterroles.rbac.authorization.k8s.io \
@@ -206,32 +292,35 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
   --accept-permission-claim roles.rbac.authorization.k8s.io \
   --accept-permission-claim subjectaccessreviews.authorization.k8s.io \
   --accept-permission-claim rolebindings.rbac.authorization.k8s.io \
-  --accept-permission-claim apiresourceschemas.apis.kcp.io
+  --accept-permission-claim apiresourceschemas.apis.kcp.io \
+  --accept-permission-claim apibindings.apis.kcp.io
 ```
 
-6. Create CRD in provider:
+6. Bind the provider's cowboys `APIExport` into `:root:backend`:
+
 ```bash
-kubectl apply -f contrib/kcp/deploy/examples/apiexport.yaml
-kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
-kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
-kubectl kcp bind apiexport root:provider:cowboys-stable
-
-kubectl apply -f deploy/examples/template-cowboys.yaml
-kubectl apply -f deploy/examples/template-sheriffs.yaml
-kubectl apply -f deploy/examples/collection.yaml
+kubectl kcp bind apiexport root:provider:cowboys
 ```
 
-7. Get LogicalCluster:
+7. Create the `APIResourceSchema` and `APIServiceExport` template for cowboys:
+
+```bash
+kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
+kubectl apply -f deploy/examples/template-cowboys.yaml
+```
+
+8. Get the LogicalCluster identity:
 
 ```bash
 kubectl get logicalcluster
 # NAME      PHASE   URL                                                    AGE
-# cluster   Ready   https://192.168.2.166:6443/clusters/20nuv280snhqd5j4  
+# cluster   Ready   https://192.168.2.166:6443/clusters/20nuv280snhqd5j4
 ```
 
-## Consumer
+### Consumer (backend-only)
 
-8. Now we gonna initiate consumer:
+9. Set up the consumer workspace:
+
 ```bash
 cp .kcp/admin.kubeconfig .kcp/consumer.kubeconfig
 export KUBECONFIG=.kcp/consumer.kubeconfig
@@ -239,27 +328,34 @@ kubectl ws use :root
 kubectl ws create consumer --enter
 ```
 
-This is where it starts to differ from normal setup. CLI login and binding will not work without OIDC and API.
-So we need manually create binding request.
+In backend-only mode there is no HTTP API or OIDC, so the CLI login flow does not apply.
+Instead, binding is initiated via a `BindableResourcesRequest` CRD.
 
-**Backend-Only Binding Process:**
+**How backend-only binding works:**
 
-In traditional mode, `BindableResourcesRequest` is sent as a REST API payload to the backend HTTP server, which then:
+In traditional mode, `BindableResourcesRequest` is sent as a REST API payload to the backend HTTP server, which:
 1. Creates a dedicated namespace for the consumer
 2. Generates a kubeconfig for that namespace
 3. Returns it as an HTTP response
 
-In backend-only mode, `BindableResourcesRequest` is a **CRD** that triggers the same binding process:
-1. A controller watches for `BindableResourcesRequest` resources
-2. Creates the namespace and kubeconfig automatically
-3. Stores the response in a Secret (specified by `kubeconfigSecretRef`)
+In backend-only mode, `BindableResourcesRequest` is a **CRD** watched by a controller, which:
+1. Creates the namespace and kubeconfig automatically
+2. Stores the result in a Secret specified by `kubeconfigSecretRef`
 
 This enables GitOps and automation without requiring HTTP API access.
 
-We need first to get identity for the cluster we gonna use. 
-```
-kubectl bind cluster-identity
+10. Get the cluster identity:
+
 ```bash
+./bin/kubectl-bind cluster-identity
+```
+
+11. Create the `BindableResourcesRequest` (applied against `:root:kube-bind` where the backend is running):
+
+```bash
+export KUBECONFIG=.kcp/kube-bind.kubeconfig
+kubectl ws use :root:kube-bind
+
 kubectl apply -f - <<EOF
 apiVersion: kube-bind.io/v1alpha2
 kind: BindableResourcesRequest
@@ -276,27 +372,27 @@ spec:
 EOF
 ```
 
-This will generate a secret in `default` namespace with settingds for binding:
-
-```
-kubectl get secret 0ac6800e-bc4f-4c70-814b-45b44e04aa02-response -o jsonpath='{.data.response}' | base64 -d > remote.data
-```
-
-9. Bind the thing on the consumer cluster:
+12. Extract the binding response:
 
 ```bash
+kubectl get secret 0ac6800e-bc4f-4c70-814b-45b44e04aa02-response \
+  -o jsonpath='{.data.response}' | base64 -d > remote.data
+```
+
+13. Deploy the binding on the consumer:
+
+```bash
+export KUBECONFIG=.kcp/consumer.kubeconfig
 ./bin/kubectl-bind deploy --file remote.data --skip-konnector
 ```
 
-### Consumer Konnector
-
-Start konnector:
+14. Start the konnector:
 
 ```bash
 ./bin/konnector --lease-namespace default --kubeconfig .kcp/consumer.kubeconfig
 ```
 
-We will be doing wild card pull, meaning pull every contract we have access to.
+15. Create an `APIServiceBindingBundle` to pull all available contracts:
 
 ```bash
 kubectl apply -f - <<EOF
@@ -307,16 +403,21 @@ metadata:
 spec:
   kubeconfigSecretRef:
     key: kubeconfig
-    name: kubeconfig-rxwnz 
+    name: kubeconfig-rxwnz
     namespace: kube-bind
 EOF
 ```
 
-After this is running, one can start binding instances.
-Binding is 2 way process: Request on provider side, and binding on the consumer side:
+### Approve exports on the backend
 
-On the provider: 
+Binding is a two-way process: the backend must approve what gets exported to each consumer.
+
+On `:root:backend`, create an `APIServiceExportRequest` for the consumer's namespace:
+
 ```bash
+export KUBECONFIG=.kcp/backend.kubeconfig
+kubectl ws use :root:backend
+
 kubectl apply -n kube-bind-1iax4hdl6mmvc -f - <<EOF
 apiVersion: kube-bind.io/v1alpha2
 kind: APIServiceExportRequest
@@ -338,35 +439,11 @@ spec:
 EOF
 ```
 
-On the provider: 
-```bash
-kubectl apply -n kube-bind-1iax4hdl6mmvc -f - <<EOF
-apiVersion: kube-bind.io/v1alpha2
-kind: APIServiceExportRequest
-metadata:
-  name: sheriffs
-spec:
-  permissionClaims:
-  - group: ""
-    resource: secrets
-    selector:
-      labelSelector:
-        matchLabels:
-          app: sheriffs
-  resources:
-  - group: wildwest.dev
-    resource: sheriffs
-    versions:
-    - v1alpha1
-EOF
-```
+This automatically creates the required contracts and bindings on the consumer side.
 
-This will automatically pull required contracts and create bindings on the provider side.
-
-# Create an instance 
+### Create an instance (backend-only)
 
 ```bash
+export KUBECONFIG=.kcp/consumer.kubeconfig
 kubectl apply -f deploy/examples/cr-cowboy.yaml
-kubectl apply -f deploy/examples/cr-sheriff.yaml
 ```
-

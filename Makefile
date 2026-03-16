@@ -37,7 +37,7 @@ GORELEASER_VERSION := 2.13.0
 GOTESTSUM_VERSION := 1.8.1
 HELM_VERSION := 3.18.6
 # unlreleased kcp version with vw code for schemas
-KCP_VERSION := a45a66683 
+KCP_VERSION := 301a8f749e7b99a0c81f43b37aa5b5e5ff0fc0b4 
 KUBE_APPLYCONFIGURATION_GEN_VERSION := v0.32.0
 KUBE_CLIENT_GEN_VERSION := v0.32.0
 KUBE_INFORMER_GEN_VERSION := v0.32.0
@@ -157,7 +157,11 @@ install-boilerplate:
 
 .PHONY: install-kcp
 install-kcp:
-	@hack/uget.sh https://github.com/kcp-dev/kcp/releases/download/v{VERSION}/kcp_{VERSION}_{GOOS}_{GOARCH}.tar.gz kcp $(KCP_VERSION)
+	@if echo "$(KCP_VERSION)" | grep -qE '^v?[0-9]+\.[0-9]+'; then \
+		hack/uget.sh https://github.com/kcp-dev/kcp/releases/download/v{VERSION}/kcp_{VERSION}_{GOOS}_{GOARCH}.tar.gz kcp $(KCP_VERSION); \
+	else \
+		GOBIN=$(abspath $(UGET_DIRECTORY)) hack/go-install.sh github.com/kcp-dev/kcp/cmd/kcp kcp $(KCP_VERSION); \
+	fi
 
 GORELEASER = $(UGET_DIRECTORY)/goreleaser-$(GORELEASER_VERSION)
 

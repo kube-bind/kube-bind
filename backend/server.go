@@ -38,6 +38,8 @@ import (
 	"github.com/kube-bind/kube-bind/backend/controllers/servicenamespace"
 	http "github.com/kube-bind/kube-bind/backend/http"
 	kube "github.com/kube-bind/kube-bind/backend/kubernetes"
+	"github.com/kube-bind/kube-bind/backend/provider/kcp/controllers/apibindingtemplate"
+	"github.com/kube-bind/kube-bind/backend/provider/kcp/controllers/apiresourceschema"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -61,6 +63,10 @@ type Controllers struct {
 	ServiceNamespace         *servicenamespace.APIServiceNamespaceReconciler
 	Cluster                  *cluster.ClusterReconciler
 	BindableResourcesRequest *bindableresourcesrequest.BindableResourcesRequestReconciler
+
+	// Provider specific controllers - only set when provider is "kcp"
+	APIBindingTemplate *apibindingtemplate.APIBindingTemplateReconciler
+	APIResourceSchema  *apiresourceschema.APIResourceSchemaReconciler
 }
 
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
@@ -262,6 +268,28 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 			return nil, fmt.Errorf("error setting up BindableResourcesRequest controller with manager: %w", err)
 		}
 		logger.Info("BindableResourcesRequest controller enabled for CRD-based binding")
+	}
+
+	// Setup kcp-specific controllers. Only active when provider is kcp
+	// (APIBindings and APIResourceSchemas only exist in kcp workspaces).
+	if c.Options.Provider == "kcp" {
+		s.APIBindingTemplate, err = apibindingtemplate.New(ctx, s.Config.Manager, opts, c.Options.ProviderKcp.APIBindingIgnorePrefixes, c.ClientConfig, c.Scheme)
+		if err != nil {
+			return nil, fmt.Errorf("error setting up APIBindingTemplate Controller: %w", err)
+		}
+		if err := s.APIBindingTemplate.SetupWithManager(s.Config.Manager); err != nil {
+			return nil, fmt.Errorf("error setting up APIBindingTemplate controller with manager: %w", err)
+		}
+		logger.Info("APIBindingTemplate controller enabled for kcp provider")
+
+		s.APIResourceSchema, err = apiresourceschema.New(ctx, s.Config.Manager, opts, c.ClientConfig, c.Scheme)
+		if err != nil {
+			return nil, fmt.Errorf("error setting up APIResourceSchema Controller: %w", err)
+		}
+		if err := s.APIResourceSchema.SetupWithManager(s.Config.Manager); err != nil {
+			return nil, fmt.Errorf("error setting up APIResourceSchema controller with manager: %w", err)
+		}
+		logger.Info("APIResourceSchema controller enabled for kcp provider")
 	}
 
 	return s, nil

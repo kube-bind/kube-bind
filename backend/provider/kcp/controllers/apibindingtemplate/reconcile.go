@@ -37,7 +37,14 @@ import (
 )
 
 // templateNameForBinding derives a deterministic APIServiceExportTemplate name
-// from the APIBinding name and scope.
+// from the APIBinding name and scope. The naming convention is:
+//
+//	<bindingName>-cluster     for ClusterScope
+//	<bindingName>-namespaced  for NamespacedScope
+//
+// Note: if a binding name already ends in "-cluster" or "-namespaced", this
+// could theoretically collide with another binding's template name. In practice
+// kcp APIBinding names are generated and unlikely to hit this edge case.
 func templateNameForBinding(bindingName string, scope kubebindv1alpha2.InformerScope) string {
 	switch scope {
 	case kubebindv1alpha2.ClusterScope:

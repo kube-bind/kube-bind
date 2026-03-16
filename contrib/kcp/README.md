@@ -57,7 +57,6 @@ The provider workspace owns the `cowboys` `APIResourceSchema` and `APIExport`.
 
 2. Set up the provider workspace:
 
-cp ../../kcp-dev/kcp/.kcp/admin.kubeconfig .kcp/admin.kubeconfig
 
 ```bash
 cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig

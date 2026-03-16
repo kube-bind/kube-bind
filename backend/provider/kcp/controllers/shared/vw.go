@@ -37,8 +37,12 @@ import (
 const AnnotationOwnerBinding = "apibindingtemplate.kube-bind.io/owner-binding"
 
 // ExtractClusterID extracts the cluster ID from an apiexport virtual workspace
-// URL. The URL format is:
-// https://host:port/services/apiexport/root:org:ws/<apiexport-name>/clusters/{cluster-id}
+// URL. The expected URL format (as of kcp v0.26+) is:
+//
+//	https://host:port/services/apiexport/<path>/<apiexport-name>/clusters/<cluster-id>
+//
+// where path segments 0-3 are /services/apiexport/<workspace-path>/<export>,
+// segment 4 is "clusters", and segment 5 is the cluster ID.
 func ExtractClusterID(clusterConfig *rest.Config) (string, error) {
 	u, err := url.Parse(clusterConfig.Host)
 	if err != nil {

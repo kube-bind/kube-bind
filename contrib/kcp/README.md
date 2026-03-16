@@ -142,7 +142,7 @@ kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
 kubectl kcp bind apiexport root:provider:cowboys
 ```
 
-9. Get the LogicalCluster identity (needed for consumer binding):
+8. Get the LogicalCluster identity (needed for consumer binding):
 
 ```bash
 kubectl get logicalcluster
@@ -156,7 +156,7 @@ kubectl get logicalcluster
 
 The consumer binds cowboys from kube-bind (backed by `:root:backend`), with no direct dependency on the provider.
 
-10. Set up the consumer workspace:
+9. Set up the consumer workspace:
 
 ```bash
 cp .kcp/admin.kubeconfig .kcp/consumer.kubeconfig
@@ -167,7 +167,7 @@ kubectl ws create consumer --enter
 
 // TODO: Backend in kcp should dynamically lifecycle schemas.
 
-11. Log in and bind cowboys:
+10. Log in and bind cowboys:
 
 ```bash
 ./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 216gnjm1cqct4x1j
@@ -189,7 +189,7 @@ namespace=$(yq '.contexts[0].context.namespace' remote.kubeconfig)
 
 This process keeps running — switch to a new terminal.
 
-12. Start the konnector:
+11. Start the konnector:
 
 ```bash
 ./bin/konnector --lease-namespace default --kubeconfig .kcp/consumer.kubeconfig

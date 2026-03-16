@@ -36,8 +36,8 @@ GOLANGCI_LINT_VERSION := 2.1.6
 GORELEASER_VERSION := 2.13.0
 GOTESTSUM_VERSION := 1.8.1
 HELM_VERSION := 3.18.6
-# unlreleased kcp version with vw code for schemas
-KCP_VERSION := 301a8f749e7b99a0c81f43b37aa5b5e5ff0fc0b4 
+# unreleased kcp version with vw code for schemas
+KCP_VERSION := 301a8f749e7b99a0c81f43b37aa5b5e5ff0fc0b4
 KUBE_APPLYCONFIGURATION_GEN_VERSION := v0.32.0
 KUBE_CLIENT_GEN_VERSION := v0.32.0
 KUBE_INFORMER_GEN_VERSION := v0.32.0

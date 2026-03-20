@@ -17,7 +17,7 @@ FROM node:20.18.0-alpine3.20 AS ui-build-env
 WORKDIR /app
 
 # Install build dependencies needed for native modules
-RUN apk add --no-cache python3 make g++ 
+RUN apk add --no-cache python3 make g++
 
 # Copy package files
 COPY ./web/package*.json ./
@@ -39,7 +39,7 @@ ENV VITE_BUILD_TARGET=docker
 RUN npm run build
 
 # Build Go binary with embedded UI assets
-FROM golang:1.25.4 AS go-build-env
+FROM golang:1.25.8 AS go-build-env
 WORKDIR /app
 
 # Accept build arguments for multi-arch support

@@ -6,8 +6,8 @@ module github.com/kube-bind/kube-bind
 // The script hack/verify-go-versions.sh checks that all version
 // references across the codebase are consistent with the versions
 // maintained here.
-// go-build-version 1.25.4
-go 1.24.0
+// go-build-version 1.25.8
+go 1.25.8
 
 replace (
 	github.com/kube-bind/kube-bind => ./

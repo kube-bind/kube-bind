@@ -357,6 +357,9 @@ func (s *Server) GetOIDCProvider(ctx context.Context) (*auth.OIDCServiceProvider
 }
 
 func (s *Server) Addr() net.Addr {
+	if s.WebServer == nil {
+		return nil
+	}
 	return s.WebServer.Addr()
 }
 

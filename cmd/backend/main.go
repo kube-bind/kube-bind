@@ -98,7 +98,11 @@ func run(ctx context.Context) error {
 	if err := server.Run(ctx); err != nil {
 		return err
 	}
-	logger.Info("Listening", "address", server.Addr())
+	if addr := server.Addr(); addr != nil {
+		logger.Info("Listening", "address", addr)
+	} else {
+		logger.Info("Running in backend-only mode (no HTTP frontend)")
+	}
 
 	<-ctx.Done()
 

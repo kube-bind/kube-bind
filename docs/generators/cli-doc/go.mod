@@ -1,6 +1,6 @@
 module github.com/kube-bind/kube-bind/docs/generators/cli-doc
 
-go 1.26.1
+go 1.26.0
 
 replace (
 	github.com/kube-bind/kube-bind => ../../../

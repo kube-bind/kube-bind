@@ -63,7 +63,8 @@ func StartBackend(t testing.TB, args ...string) (net.Addr, *backend.Server) {
 
 	// use a random port via an explicit listener. Then add a kube-bind-<port> client to dex
 	// with the callback URL set to the listener's address.
-	opts.Serve.Listener, err = net.Listen("tcp", "localhost:0")
+	listenConfig := net.ListenConfig{}
+	opts.Serve.Listener, err = listenConfig.Listen(context.Background(), "tcp", "localhost:0")
 	require.NoError(t, err)
 	addr := opts.Serve.Listener.Addr()
 

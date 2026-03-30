@@ -256,7 +256,7 @@ func testHappyCase(
 	var referencedSecretName, labelSelectedSecretName string
 	var filename string
 	if consumerResourceScope == apiextensionsv1.NamespaceScoped {
-		referencedSecretName = "colt-45-permit" //nolint:gosec
+		referencedSecretName = "colt-45-permit"
 		labelSelectedSecretName = "cowboy-gang-affiliation"
 		filename = "cr-cowboy.yaml"
 	} else {

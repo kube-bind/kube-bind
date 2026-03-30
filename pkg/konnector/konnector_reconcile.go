@@ -239,7 +239,7 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha2.AP
 		return nil // nothing we can do here. The APIServiceBinding Controller will set a condition
 	}
 
-	ctrlCtx, cancel := context.WithCancel(ctx)
+	ctrlCtx, cancel := context.WithCancel(ctx) //nolint:gosec
 	r.controllers[binding.Name] = &controllerContext{
 		kubeconfig:      kubeconfig,
 		cancel:          cancel,

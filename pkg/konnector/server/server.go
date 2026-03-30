@@ -61,8 +61,12 @@ func (s *Server) Start(ctx context.Context) {
 		ReadHeaderTimeout: 1 * time.Minute,
 	}
 	go func() {
-		listener, err := net.Listen("tcp", s.ServerAddr)
+		var lc net.ListenConfig
+		listener, err := lc.Listen(ctx, "tcp", s.ServerAddr)
 		if err != nil {
+			if ctx.Err() != nil {
+				return
+			}
 			panic(err)
 		}
 

@@ -298,13 +298,13 @@ func (o *LoginOptions) buildAuthURL(provider *kubebindv1alpha2.BindingProvider, 
 }
 
 func (o *LoginOptions) startCallbackServerWithRandomPort(tokenCh chan<- *TokenResponse, errCh chan<- error) (*http.Server, string, error) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	var lc net.ListenConfig
+	listener, err := lc.Listen(context.Background(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to find available port: %w", err)
 	}
 
 	port := listener.Addr().(*net.TCPAddr).Port
-	listener.Close()
 
 	callbackURL := fmt.Sprintf("http://127.0.0.1:%d/callback", port)
 
@@ -362,7 +362,7 @@ func (o *LoginOptions) startCallbackServerWithRandomPort(tokenCh chan<- *TokenRe
 	}
 
 	go func() {
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		if err := server.Serve(listener); err != http.ErrServerClosed {
 			select {
 			case errCh <- err:
 			default:

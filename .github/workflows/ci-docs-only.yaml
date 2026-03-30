@@ -1,4 +1,4 @@
-name: CI
+name: CI Docs Only
 
 # To satisfy required status checks for docs-only changes, configure jobs that match those in ci.yaml that
 # always return true.
@@ -21,6 +21,12 @@ on:
 jobs:
   go-test-e2e:
     name: go-test-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - run: 'echo "No build required"'
+
+  go-test-e2e-contrib:
+    name: go-test-e2e-contrib
     runs-on: ubuntu-latest
     steps:
       - run: 'echo "No build required"'

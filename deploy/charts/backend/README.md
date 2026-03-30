@@ -27,12 +27,14 @@ See [values.yaml](values.yaml) for the full list of configurable parameters.
 | backend.apiexportEndpointSliceName | string | `""` | APIExport EndpointSlice name to watch |
 | backend.clusterScopeIsolation | string | `"prefix"` | Cluster-scope isolation mode. Options: none, prefix, namespaced |
 | backend.consumerScope | string | `"namespaced"` | Consumer scope. Options: "namespaced" |
+| backend.context | string | `""` | The name of the kubeconfig context to use |
 | backend.cookieEncryptionKey | string | `""` | Cookie encryption key (base64 encoded). Empty generates random key on each start (not for production!) |
 | backend.cookieSigningKey | string | `""` | Cookie signing key (base64 encoded). Empty generates random key on each start (not for production!) |
 | backend.externalAddress | string | `""` | External address clients use to reach the backend |
 | backend.externalServerName | string | `""` | External server name for TLS SNI |
 | backend.extraArgs | list | `[]` | Extra command-line arguments to pass to the backend |
 | backend.frontendDisabled | bool | `false` | Disable the frontend UI |
+| backend.kubeconfig | string | `""` | Path to a kubeconfig file. Only required if out-of-cluster |
 | backend.listenAddress | string | `"0.0.0.0:8080"` | Address the backend listens on |
 | backend.loggingLevel | int | `2` | Logging verbosity level |
 | backend.multiclusterRuntimeProvider | string | `""` | Multicluster runtime provider (e.g., "kcp") |

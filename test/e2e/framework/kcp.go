@@ -72,7 +72,7 @@ func WithStaticName(s string) ClusterWorkspaceOption {
 
 func RandomString(length int) string {
 	token := make([]byte, length)
-	rand.Read(token) //nolint:errcheck
+	rand.Read(token)
 	base36hash := strings.ToLower(base36.EncodeBytes(token))
 	return base36hash[:length+1]
 }
@@ -91,7 +91,7 @@ func WithGenerateName(s string, formatArgs ...any) ClusterWorkspaceOption {
 		}
 
 		token := make([]byte, 4)
-		rand.Read(token) //nolint:errcheck
+		rand.Read(token)
 		base36hash := strings.ToLower(base36.EncodeBytes(token))
 		ws.Name = s + base36hash[:5]
 		ws.GenerateName = ""
@@ -119,7 +119,7 @@ func NewWorkspace(t *testing.T, config *rest.Config, options ...ClusterWorkspace
 	ws.Name = ws.GenerateName
 	ws.GenerateName = ""
 	token := make([]byte, 4)
-	rand.Read(token) //nolint:errcheck
+	rand.Read(token)
 	base36hash := strings.ToLower(base36.EncodeBytes(token))
 	ws.Name += base36hash[:5]
 

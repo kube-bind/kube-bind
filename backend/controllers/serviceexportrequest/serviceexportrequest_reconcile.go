@@ -118,7 +118,7 @@ func (r *reconciler) getExportedSchemas(ctx context.Context, cl client.Client) (
 		resources.ExportedCRDsLabel: "true",
 	}
 
-	listOpts := []client.ListOption{}
+	listOpts := make([]client.ListOption, 0, 1)
 	listOpts = append(listOpts, client.MatchingLabelsSelector{Selector: labelSelector.AsSelector()})
 
 	if err := cl.List(ctx, list, listOpts...); err != nil {

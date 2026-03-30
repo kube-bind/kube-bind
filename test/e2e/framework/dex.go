@@ -66,7 +66,9 @@ func StartDex(t testing.TB) {
 			dexBinary = "dex"
 		}
 
-		dexCmd := exec.Command(
+		//nolint:gosec // test helper intentionally allows overriding dex binary/config via environment for local e2e runs.
+		dexCmd := exec.CommandContext(
+			t.Context(),
 			dexBinary,
 			"serve",
 			dexConfig,
@@ -117,7 +119,7 @@ func CreateDexClient(t testing.TB, addr net.Addr) (string, string) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		ctx, cancel := context.WithDeadline(context.Background(), metav1.Now().Add(10*time.Second))
+		ctx, cancel := context.WithDeadline(t.Context(), metav1.Now().Add(10*time.Second))
 		defer cancel()
 		conn, err := grpc.NewClient("127.0.0.1:5557", grpc.WithTransportCredentials(grpcinsecure.NewCredentials()))
 		require.NoError(t, err)

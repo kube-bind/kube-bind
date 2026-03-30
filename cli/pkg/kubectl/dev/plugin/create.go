@@ -617,7 +617,7 @@ func (o *DevOptions) checkFileLimits() error {
 	}
 
 	// Check fs.inotify.max_user_watches
-	watchesCmd := exec.Command("sysctl", "-n", "fs.inotify.max_user_watches")
+	watchesCmd := exec.CommandContext(context.Background(), "sysctl", "-n", "fs.inotify.max_user_watches")
 	watchesOutput, err := watchesCmd.Output()
 	if err == nil {
 		if watches, err := strconv.Atoi(strings.TrimSpace(string(watchesOutput))); err == nil && watches < 524288 {
@@ -627,7 +627,7 @@ func (o *DevOptions) checkFileLimits() error {
 	}
 
 	// Check fs.inotify.max_user_instances
-	instancesCmd := exec.Command("sysctl", "-n", "fs.inotify.max_user_instances")
+	instancesCmd := exec.CommandContext(context.Background(), "sysctl", "-n", "fs.inotify.max_user_instances")
 	instancesOutput, err := instancesCmd.Output()
 	if err == nil {
 		if instances, err := strconv.Atoi(strings.TrimSpace(string(instancesOutput))); err == nil && instances < 512 {

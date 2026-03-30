@@ -341,13 +341,13 @@ func (b *BindOptions) buildUIURL(callbackPort int, sessionID, backendClusterID, 
 // startCallbackServer starts a local HTTP server to receive the callback from the UI
 func (b *BindOptions) startCallbackServer(resultCh chan<- *BindResult, errCh chan<- error, sessionID string) (*http.Server, int, error) {
 	// Find an available port
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	var lc net.ListenConfig
+	listener, err := lc.Listen(context.Background(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to find available port: %w", err)
 	}
 
 	port := listener.Addr().(*net.TCPAddr).Port
-	listener.Close()
 
 	// Setup HTTP handler
 	mux := http.NewServeMux()
@@ -420,7 +420,7 @@ func (b *BindOptions) startCallbackServer(resultCh chan<- *BindResult, errCh cha
 	}
 
 	go func() {
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		if err := server.Serve(listener); err != http.ErrServerClosed {
 			select {
 			case errCh <- err:
 			default:

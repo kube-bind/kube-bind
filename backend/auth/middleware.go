@@ -182,7 +182,7 @@ func (am *AuthMiddleware) verifyState(next http.Handler) http.Handler {
 			return
 		}
 
-		if !am.isValidSession(state.SessionID) {
+		if !am.isValidSession(r.Context(), state.SessionID) {
 			logger.V(2).Info("Session expired or invalid", "sessionID", state.SessionID)
 			writeErrorResponse(w, http.StatusUnauthorized, kubebindv1alpha2.ErrorCodeAuthenticationFailed, "Authentication required", "Session has expired or is invalid")
 			return
@@ -197,8 +197,8 @@ func (am *AuthMiddleware) verifyState(next http.Handler) http.Handler {
 }
 
 // isValidSession checks if a session ID exists and hasn't expired
-func (am *AuthMiddleware) isValidSession(sessionID string) bool {
-	sessionInfo, err := am.sessionStore.Load(sessionID)
+func (am *AuthMiddleware) isValidSession(ctx context.Context, sessionID string) bool {
+	sessionInfo, err := am.sessionStore.Load(ctx, sessionID)
 	if err != nil {
 		return false
 	}

@@ -31,20 +31,22 @@ backend:
     tlsKeyFile: "/etc/kube-bind/tls/tls.key"
   # OIDC configuration. Empty values will run the embedded OIDC server.
   oidc:
+    # -- OIDC provider type. Options: "embedded" or "external"
+    type: "embedded"
     # -- OIDC issuer URL (leave empty for embedded OIDC server)
     issuerUrl: ""
     # -- OIDC client ID
     clientId: ""
     # -- OIDC client secret (plaintext, prefer clientSecretName for production)
+    # -- Not required for providers using PKCE or public clients
     clientSecret: ""
     # -- Name of the Kubernetes secret containing the OIDC client secret
+    # -- If set, the secret will be mounted as OIDC_CLIENT_SECRET env var
     clientSecretName: ""
     # -- Key within the secret (e.g., "client-secret")
     clientSecretKey: ""
     # -- OIDC callback URL
     callbackUrl: ""
-    # -- OIDC provider type. Options: "embedded" or "external"
-    type: "embedded"
     # -- List of groups allowed to access bindings. With embedded OIDC, system:authenticated is added automatically
     allowedGroups: []
     # -- List of users allowed to access bindings
@@ -72,6 +74,12 @@ backend:
   # -- Extra command-line arguments to pass to the backend
   extraArgs: []
 
+  # Session storage configuration
+  sessionStorage:
+    redisAddress: ""
+    redisPassword: ""
+
+  # Cookie configuration - these should be base64 encoded keys
   # -- Cookie signing key (base64 encoded). Empty generates random key on each start (not for production!)
   cookieSigningKey: ""
   # -- Cookie encryption key (base64 encoded). Empty generates random key on each start (not for production!)

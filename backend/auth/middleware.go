@@ -44,6 +44,10 @@ type ClientType string
 const (
 	ClientTypeUI  ClientType = "ui"
 	ClientTypeCLI ClientType = "cli"
+
+	// UIIdentity is the well-known identity value that the UI sends in bind requests.
+	// The backend resolves it to the actual identity derived from the authenticated session.
+	UIIdentity = "ui-identity"
 )
 
 type AuthContext struct {

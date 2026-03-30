@@ -227,10 +227,11 @@ func testHappyCase(
 	}
 
 	t.Logf("Creating consumer workspace and starting konnector")
-	consumer1Config, consumer1Kubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithName("%s-consumer-%s", name, suffix))
+	consumer1Config, consumer1Kubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t),
+		framework.WithGenerateName("%s-consumer-%s-", name, suffix))
+	consumer2Config, consumer2Kubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t),
+		framework.WithGenerateName("%s-consumer-%s-", name, suffix))
 	framework.StartKonnector(t, consumer1Config, "--kubeconfig="+consumer1Kubeconfig, "--server-address=:0")
-
-	consumer2Config, consumer2Kubeconfig := framework.NewWorkspace(t, framework.ClientConfig(t), framework.WithName("%s-consumer-%s", name, suffix))
 	framework.StartKonnector(t, consumer2Config, "--kubeconfig="+consumer2Kubeconfig, "--server-address=:0")
 
 	serviceGVR := schema.GroupVersionResource{Group: "wildwest.dev", Version: "v1alpha1", Resource: "cowboys"}

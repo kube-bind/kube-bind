@@ -360,14 +360,26 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Move to validating admission.
-	if bindRequest.Spec.ClusterIdentity.Identity == "" {
-		logger.Error(fmt.Errorf("missing cluster identity"), "invalid bind request")
-		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Missing cluster identity in bind request", "The cluster identity must be provided in the bind request")
+	// Identity is always required. CLI provides the cluster identity (kube-system UID),
+	// and the UI sends the well-known "ui-identity" value.
+	identity := bindRequest.Spec.ClusterIdentity.Identity
+	if identity == "" {
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Missing cluster identity", "spec.clusterIdentity.identity is required")
 		return
 	}
 
-	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, params.ConsumerID, params.ClusterID)
+	// Resolve the UI sentinel to a real identity derived from the authenticated session.
+	if identity == auth.UIIdentity {
+		identity = state.Token.Issuer + "/" + state.Token.Subject
+		logger.Info("Resolved ui-identity from session", "identity", identity)
+	}
+
+	consumerID := params.ConsumerID
+	if consumerID == "" {
+		consumerID = identity
+	}
+
+	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, consumerID, params.ClusterID)
 	if err != nil {
 		logger.Error(err, "failed to handle resources")
 		statusCode, code, details := mapErrorToCode(err)

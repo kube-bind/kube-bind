@@ -37,7 +37,7 @@ type matchConditions struct {
 }
 
 func (m matchConditions) Match(actual any) (success bool, err error) {
-	elems := []any{}
+	elems := make([]any, 0, len(m.expected))
 	for _, condition := range m.expected {
 		elems = append(elems, MatchCondition(condition))
 	}

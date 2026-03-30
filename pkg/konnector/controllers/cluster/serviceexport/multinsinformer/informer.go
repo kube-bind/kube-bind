@@ -187,12 +187,12 @@ func (inf *DynamicMultiNamespaceInformer) enqueueServiceNamespace(obj any) {
 	}
 
 	logger.V(1).Info("starting dynamic informer", "namespace", sns.Status.Namespace)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancelCause(context.Background())
 
 	factory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(inf.providerDynamicClient, time.Minute*30, sns.Status.Namespace, nil)
 	gvrInf := factory.ForResource(inf.gvr)
 	gvrInf.Lister() // to wire the GVR up in the informer factory
-	inf.namespaceCancel[name] = cancel
+	inf.namespaceCancel[name] = func() { cancel(nil) }
 	inf.namespaceInformers[name] = gvrInf
 
 	for _, h := range inf.handlers {

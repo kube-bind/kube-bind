@@ -55,6 +55,8 @@ type AuthHandler struct {
 	tokenExpiry         time.Duration
 }
 
+const maxCallbackFormSize int64 = 1 << 20 // 1 MiB
+
 func NewAuthHandler(oidc OIDCProvider, jwtService *JWTService, cookieSigningKey, cookieEncryptionKey []byte, sessionStore session.Store, tokenExpiry time.Duration) *AuthHandler {
 	return &AuthHandler{
 		oidc:                oidc,
@@ -136,6 +138,7 @@ func (ah *AuthHandler) HandleAuthorize(w http.ResponseWriter, r *http.Request) {
 func (ah *AuthHandler) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	logger := klog.FromContext(r.Context()).WithValues("method", r.Method, "url", r.URL.String())
 
+	r.Body = http.MaxBytesReader(w, r.Body, maxCallbackFormSize)
 	if err := r.ParseForm(); err != nil {
 		logger.Error(err, "failed to parse form")
 		ah.respondWithError(w, "", "failed to parse form", http.StatusBadRequest)

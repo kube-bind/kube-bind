@@ -66,7 +66,9 @@ func StartDex(t testing.TB) {
 			dexBinary = "dex"
 		}
 
-		dexCmd := exec.Command(
+		//nolint:gosec // test helper intentionally allows overriding dex binary/config via environment for local e2e runs.
+		dexCmd := exec.CommandContext(
+			context.Background(),
 			dexBinary,
 			"serve",
 			dexConfig,

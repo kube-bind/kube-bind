@@ -17,8 +17,9 @@ limitations under the License.
 package base
 
 import (
+	"context"
 	"os/exec"
-	"strings"
+	"runtime"
 )
 
 // openBrowser opens the given URL in the default browser
@@ -26,29 +27,14 @@ func OpenBrowser(url string) error {
 	var cmd *exec.Cmd
 
 	// Determine the command based on the operating system
-	switch {
-	case isWindows():
-		cmd = exec.Command("cmd", "/c", "start", url)
-	case isMacOS():
-		cmd = exec.Command("open", url)
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.CommandContext(context.Background(), "cmd", "/c", "start", url)
+	case "darwin":
+		cmd = exec.CommandContext(context.Background(), "open", url)
 	default: // Linux and other Unix-like systems
-		cmd = exec.Command("xdg-open", url)
+		cmd = exec.CommandContext(context.Background(), "xdg-open", url)
 	}
 
 	return cmd.Run()
-}
-
-// isWindows checks if the current OS is Windows
-func isWindows() bool {
-	return strings.Contains(strings.ToLower(exec.Command("uname").String()), "windows")
-}
-
-// isMacOS checks if the current OS is macOS
-func isMacOS() bool {
-	cmd := exec.Command("uname")
-	output, err := cmd.Output()
-	if err != nil {
-		return false
-	}
-	return strings.TrimSpace(string(output)) == "Darwin"
 }

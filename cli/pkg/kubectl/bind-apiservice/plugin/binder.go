@@ -145,7 +145,6 @@ func (b *Binder) BindFromFile(ctx context.Context) ([]*kubebindv1alpha2.APIServi
 	}
 
 	// Create bindings for all requests
-	var bindings []*kubebindv1alpha2.APIServiceBinding
 	result, err := b.createServiceExportRequest(ctx, remoteConfig, remoteNamespaceActual, request)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create service export request: %w", err)
@@ -160,9 +159,8 @@ func (b *Binder) BindFromFile(ctx context.Context) ([]*kubebindv1alpha2.APIServi
 	if err != nil {
 		return nil, fmt.Errorf("failed to create API service bindings: %w", err)
 	}
-	bindings = append(bindings, results...)
 
-	return bindings, nil
+	return results, nil
 }
 
 // BindFromResponse processes a BindingResourceResponse and creates all necessary bindings
@@ -237,7 +235,7 @@ func (b *Binder) BindFromResponse(ctx context.Context, response *kubebindv1alpha
 	}
 
 	// Create bindings for all requests
-	var bindings []*kubebindv1alpha2.APIServiceBinding
+	bindings := make([]*kubebindv1alpha2.APIServiceBinding, 0, len(apiRequests))
 	for _, request := range apiRequests {
 		result, err := b.createServiceExportRequest(ctx, remoteConfig, remoteNamespaceActual, request)
 		if err != nil {

@@ -179,11 +179,18 @@ func TestLoadTLSConfig_MultipleCerts(t *testing.T) {
 	}
 
 	// Write combined CA bundle
-	combinedCAFile := filepath.Join(tmpDir, "combined-ca.crt")
-	ca1Data = append(ca1Data, ca2Data...)
-	err = os.WriteFile(combinedCAFile, ca1Data, 0600)
+	combinedCA, err := os.CreateTemp(tmpDir, "combined-ca-*.crt")
 	if err != nil {
+		t.Fatalf("Failed to create combined CA file: %v", err)
+	}
+	combinedCAFile := combinedCA.Name()
+
+	ca1Data = append(ca1Data, ca2Data...)
+	if _, err = combinedCA.Write(ca1Data); err != nil {
 		t.Fatalf("Failed to write combined CA file: %v", err)
+	}
+	if err = combinedCA.Close(); err != nil {
+		t.Fatalf("Failed to close combined CA file: %v", err)
 	}
 
 	// Test LoadTLSConfig with multiple certs

@@ -17,6 +17,7 @@ limitations under the License.
 package options
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
@@ -58,7 +59,8 @@ func (options *Serve) Complete() error {
 			addr = net.JoinHostPort(options.ListenIP, strconv.Itoa(options.ListenPort))
 		}
 		// We only support TCP4 for now to avoid dual stack complications in embedded OIDC server tests.
-		options.Listener, err = net.Listen("tcp4", addr)
+		var lc net.ListenConfig
+		options.Listener, err = lc.Listen(context.Background(), "tcp4", addr)
 		if err != nil {
 			return err
 		}

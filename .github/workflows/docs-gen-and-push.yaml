@@ -1,4 +1,4 @@
-name: Generate and push docs
+name: Docs
 
 on:
   # So we can trigger manually if needed
@@ -24,7 +24,7 @@ concurrency:
 
 jobs:
   generate-and-push:
-    name: Generate and push docs
+    name: Docs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

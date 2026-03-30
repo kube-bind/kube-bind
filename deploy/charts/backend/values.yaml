@@ -39,6 +39,19 @@ backend:
   consumerScope: "namespaced"
   clusterScopeIsolation: "prefix" # Options: none, prefix, namespaced
 
+  # Multicluster runtime provider (e.g., "kcp")
+  multiclusterRuntimeProvider: ""
+  # Schema source (e.g., "apiresourceschemas")
+  schemaSource: ""
+  # APIExport EndpointSlice name to watch
+  apiexportEndpointSliceName: ""
+  # Disable the frontend UI
+  frontendDisabled: false
+  # Name prefixes of APIBindings to ignore when generating APIServiceExportTemplates
+  apibindingIgnorePrefixes: []
+  # Extra command-line arguments to pass to the backend
+  extraArgs: []
+
   # Cookie configuration - these should be base64 encoded keys
   # Empty values - will generate random keys on each start (not for production!)
   cookieSigningKey: ""
@@ -173,6 +186,12 @@ autoscaling:
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
+
+# Additional init containers
+initContainers: []
+# - name: init
+#   image: ghcr.io/platform-mesh/kube-bind-provider-init:latest
+#   args: ["--kcp-kubeconfig", "/etc/kube-bind/kubeconfig"]
 
 # Additional volumes on the output Deployment definition.
 volumes: []

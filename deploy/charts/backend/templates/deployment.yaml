@@ -36,6 +36,10 @@ spec:
       hostAliases:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           {{- with .Values.securityContext }}
@@ -111,6 +115,24 @@ spec:
             {{- range .Values.backend.oidc.allowedUsers }}
             - --oidc-allowed-users={{ . }}
             {{- end }}
+            {{- end }}
+            {{- if .Values.backend.multiclusterRuntimeProvider }}
+            - --multicluster-runtime-provider={{ .Values.backend.multiclusterRuntimeProvider }}
+            {{- end }}
+            {{- if .Values.backend.schemaSource }}
+            - --schema-source={{ .Values.backend.schemaSource }}
+            {{- end }}
+            {{- if .Values.backend.apiexportEndpointSliceName }}
+            - --apiexport-endpoint-slice-name={{ .Values.backend.apiexportEndpointSliceName }}
+            {{- end }}
+            {{- if .Values.backend.frontendDisabled }}
+            - --frontend-disabled=true
+            {{- end }}
+            {{- range .Values.backend.apibindingIgnorePrefixes }}
+            - --apibinding-ignore-prefixes={{ . }}
+            {{- end }}
+            {{- range .Values.backend.extraArgs }}
+            - {{ . }}
             {{- end }}
             {{- if .Values.backend.loggingLevel }}
             - -v={{ .Values.backend.loggingLevel }}

@@ -9,6 +9,10 @@ replicaCount: 1
 backend:
   # -- Address the backend listens on
   listenAddress: "0.0.0.0:8080"
+  # -- Path to a kubeconfig file. Only required if out-of-cluster
+  kubeconfig: ""
+  # -- The name of the kubeconfig context to use
+  context: ""
   # -- External address clients use to reach the backend
   externalAddress: ""
   # -- External server name for TLS SNI

@@ -58,6 +58,12 @@ spec:
           {{- end }}
           args:
             - --listen-address={{ .Values.backend.listenAddress }}
+            {{- if .Values.backend.kubeconfig }}
+            - --kubeconfig={{ .Values.backend.kubeconfig }}
+            {{- end }}
+            {{- if .Values.backend.context }}
+            - --context={{ .Values.backend.context }}
+            {{- end }}
             {{- if .Values.backend.logLevel }}
             - --log-level={{ .Values.backend.logLevel }}
             {{- end }}

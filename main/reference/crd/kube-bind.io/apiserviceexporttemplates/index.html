@@ -26,7 +26,7 @@ This object is considered a static asset on the provider side and is not expecte
       
       
       <link rel="icon" href="../../../../logo.svg">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -3836,6 +3836,32 @@ a sensible default is chosen by the service provider.</p>
 <div class="property-body">
 <div class="property-meta">
 <span class="property-type">string</span>
+
+</div>
+
+</div>
+</div>
+
+<div class="property depth-1">
+<div class="property-header">
+<h3 class="property-path" id="v1alpha2-.spec.schemaUpdatePolicy">.spec.schemaUpdatePolicy</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+<span class="property-type">string</span>
+
+</div>
+
+<div class="property-description">
+<p>SchemaUpdatePolicy defines how BoundSchemas should be updated.
+Never means schemas are immutable after creation.
+Always means schemas are updated when the source content changes.
+Default: Never</p>
+
+<p>NOTE: This field is intentionally mutable on the template so that providers
+can change the default for future binding requests. Already-created
+APIServiceExportRequests use CEL validation (self == oldSelf) to lock in
+the policy chosen at binding time.</p>
 
 </div>
 

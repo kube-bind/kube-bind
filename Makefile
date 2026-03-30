@@ -35,6 +35,7 @@ DEX_VERSION := v2.43.1
 GOLANGCI_LINT_VERSION := 2.1.6
 GORELEASER_VERSION := 2.13.0
 GOTESTSUM_VERSION := 1.8.1
+HELM_DOCS_VERSION := 1.14.2
 HELM_VERSION := 3.18.6
 # unreleased kcp version with vw code for schemas
 KCP_VERSION := 301a8f749e7b99a0c81f43b37aa5b5e5ff0fc0b4
@@ -174,6 +175,14 @@ install-goreleaser:
 .PHONY: install-helm
 install-helm:
 	@hack/uget.sh https://get.helm.sh/helm-v{VERSION}-{GOOS}-{GOARCH}.tar.gz helm $(HELM_VERSION)
+
+HELM_DOCS = $(UGET_DIRECTORY)/helm-docs-$(HELM_DOCS_VERSION)
+
+.PHONY: install-helm-docs
+install-helm-docs: export OS ?= $(shell uname -s)
+install-helm-docs: export ARCH ?= $(shell uname -m)
+install-helm-docs:
+	@hack/uget.sh https://github.com/norwoodj/helm-docs/releases/download/v{VERSION}/helm-docs_{VERSION}_{ENV:OS}_{ENV:ARCH}.tar.gz helm-docs $(HELM_DOCS_VERSION) helm-docs
 
 # e2e tests use this env name to locate the dex binary; make sure it's an absolute path
 export DEX_BINARY = $(ROOT_DIR)/$(UGET_DIRECTORY)/dex-$(DEX_VERSION)
@@ -364,7 +373,7 @@ verify-modules: modules  # Verify go modules are up to date
 	done
 
 .PHONY: verify
-verify: verify-go-versions verify-modules verify-imports verify-codegen verify-boilerplate ## verify formal properties of the code
+verify: verify-go-versions verify-modules verify-imports verify-codegen verify-boilerplate verify-helm-docs ## verify formal properties of the code
 
 .PHONY: help
 help: ## Show this help
@@ -441,5 +450,17 @@ helm-push-local: ## Push Helm charts to IMAGE_REPO registry
 .PHONY: helm-test
 helm-test: helm-build-local ## Test Helm chart installation (dry-run)
 	@hack/helm-test.sh
+
+.PHONY: generate-helm-docs
+generate-helm-docs: install-helm-docs ## Generate Helm chart documentation
+	$(HELM_DOCS) --chart-search-root deploy/charts
+
+.PHONY: verify-helm-docs
+verify-helm-docs: generate-helm-docs ## Verify Helm chart documentation is up to date
+	@if ! git diff --quiet HEAD -- deploy/charts/**/README.md; then \
+		git diff -- deploy/charts/**/README.md; \
+		echo "Helm chart documentation is out of date, please run 'make generate-helm-docs'"; \
+		exit 1; \
+	fi
 
 include Makefile.venv

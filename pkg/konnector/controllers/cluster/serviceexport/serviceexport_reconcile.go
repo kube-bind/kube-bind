@@ -319,7 +319,7 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 	}
 
 	// Create a new context for this controller
-	ctxWithCancel, cancel := context.WithCancelCause(ctx)
+	ctxWithCancel, cancel := context.WithCancel(ctx) //nolint:gosec
 
 	consumerInf.Start(ctxWithCancel.Done())
 	providerInf.Start(ctxWithCancel)
@@ -338,7 +338,7 @@ func (r *reconciler) ensureControllerForSchema(ctx context.Context, export *kube
 
 	r.syncStore.Set(key, contextstore.SyncContext{
 		Generation: export.Generation,
-		Cancel:     func() { cancel(nil) },
+		Cancel:     cancel,
 	})
 
 	return nil
@@ -474,7 +474,7 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 
 	logger.Info("creating claim reconciler", "gvr", claimGVR, "key", claimKey)
 
-	ctxWithCancel, cancel := context.WithCancelCause(ctx)
+	ctxWithCancel, cancel := context.WithCancel(ctx) //nolint:gosec
 	// Start the informers and controllers in a goroutine
 	go func() {
 		defer r.syncStore.Delete(claimKey)
@@ -502,7 +502,7 @@ func (r *reconciler) ensureControllerForPermissionClaim(
 	// Store the controller context for tracking
 	r.syncStore.Set(claimKey, contextstore.SyncContext{
 		Generation: binding.Generation,
-		Cancel:     func() { cancel(nil) },
+		Cancel:     cancel,
 	})
 
 	return nil

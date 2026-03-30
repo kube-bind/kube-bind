@@ -127,10 +127,10 @@ func (r *reconciler) startClusterControllerForSecret(ctx context.Context, secret
 	// will also handle real APIServiceBindings that use the same kubeconfig.
 	syntheticKey := "__heartbeat__" + secret.Name
 
-	ctrlCtx, cancel := context.WithCancelCause(ctx)
+	ctrlCtx, cancel := context.WithCancel(ctx)
 	ctrlContext := &controllerContext{
 		kubeconfig:      kubeconfig,
-		cancel:          func() { cancel(nil) },
+		cancel:          cancel,
 		serviceBindings: sets.New(syntheticKey),
 	}
 	r.controllers[syntheticKey] = ctrlContext
@@ -154,7 +154,7 @@ func (r *reconciler) startClusterControllerForSecret(ctx context.Context, secret
 	)
 	if err != nil {
 		logger.Error(err, "failed to start cluster controller for heartbeat")
-		cancel(nil)
+		cancel()
 		delete(r.controllers, syntheticKey)
 		return err
 	}
@@ -239,10 +239,10 @@ func (r *reconciler) reconcile(ctx context.Context, binding *kubebindv1alpha2.AP
 		return nil // nothing we can do here. The APIServiceBinding Controller will set a condition
 	}
 
-	ctrlCtx, cancel := context.WithCancelCause(ctx)
+	ctrlCtx, cancel := context.WithCancel(ctx) //nolint:gosec
 	r.controllers[binding.Name] = &controllerContext{
 		kubeconfig:      kubeconfig,
-		cancel:          func() { cancel(nil) },
+		cancel:          cancel,
 		serviceBindings: sets.New(binding.Name),
 	}
 

@@ -360,12 +360,18 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Use the cluster identity from the request, or derive from the authenticated session
-	// for UI-only flows where no consumer_id is available.
+	// Identity is always required. CLI provides the cluster identity (kube-system UID),
+	// and the UI sends the well-known "ui-identity" value.
 	identity := bindRequest.Spec.ClusterIdentity.Identity
 	if identity == "" {
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Missing cluster identity", "spec.clusterIdentity.identity is required")
+		return
+	}
+
+	// Resolve the UI sentinel to a real identity derived from the authenticated session.
+	if identity == auth.UIIdentity {
 		identity = state.Token.Issuer + "/" + state.Token.Subject
-		logger.Info("Using session-derived identity for UI-only flow", "identity", identity)
+		logger.Info("Resolved ui-identity from session", "identity", identity)
 	}
 
 	consumerID := params.ConsumerID

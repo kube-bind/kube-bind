@@ -321,13 +321,10 @@ const handleBind = async (templateName: string, bindingName: string) => {
     const bindUrl = buildApiUrl('/bind')
 
     // Create the binding request
-    // Use consumerId if available (CLI flow), otherwise use sessionId as cluster identity
-    // Read from Vue Router's route.query instead of window.location
-    const sessionIdFromRoute = route.query.session_id as string || ''
-    const clusterIdentity = consumerId.value || sessionIdFromRoute
-
-    // In UI-only flow, clusterIdentity may be empty - the backend will derive
-    // identity from the authenticated session (OIDC subject/issuer).
+    // CLI flow: use consumerId (kube-system namespace UID)
+    // UI flow: use the well-known "ui-identity" sentinel - the backend resolves
+    // it to the actual identity from the authenticated OIDC session.
+    const clusterIdentity = consumerId.value || 'ui-identity'
 
     const bindingRequest: BindableResourcesRequest = {
       metadata: {

@@ -86,7 +86,7 @@ func StartDex(t testing.TB) {
 	})
 
 	t.Log("Wait for Dex to be ready")
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://127.0.0.1:5556/dex/.well-known/openid-configuration", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:5556/dex/.well-known/openid-configuration", nil)
 	require.NoError(t, err)
 	require.Eventually(t, func() bool {
 		resp, err := http.DefaultClient.Do(req)

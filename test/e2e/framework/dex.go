@@ -67,8 +67,13 @@ func StartDex(t testing.TB) {
 		}
 
 		//nolint:gosec // test helper intentionally allows overriding dex binary/config via environment for local e2e runs.
+		// Use context.Background() instead of t.Context() because dexOnce.Do
+		// ties the process to the first test that calls StartDex. If we used
+		// t.Context(), Dex would be killed when that test finishes, but
+		// dexOnce prevents restarting it for subsequent tests.
+		// The Dex process will be cleaned up when the test binary exits.
 		dexCmd := exec.CommandContext(
-			t.Context(),
+			context.Background(),
 			dexBinary,
 			"serve",
 			dexConfig,

@@ -21,6 +21,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net"
+	nethttp "net/http"
 	"sync"
 
 	"k8s.io/klog/v2"
@@ -92,15 +93,21 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		return nil, fmt.Errorf("error setting up Kubernetes Manager: %w", err)
 	}
 
+	// Always create the web server for health check endpoints
+	s.WebServer, err = http.NewServer(c.Options.Serve)
+	if err != nil {
+		return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
+	}
+
+	// Register health check endpoint
+	s.WebServer.Router.HandleFunc("/healthz", func(w nethttp.ResponseWriter, r *nethttp.Request) {
+		w.WriteHeader(nethttp.StatusOK)
+		w.Write([]byte("ok")) //nolint:errcheck
+	}).Methods("GET")
+
 	if c.Options.FrontendDisabled {
 		logger.Info("Frontend is disabled; running in backend only mode")
 	} else {
-		var err error
-		s.WebServer, err = http.NewServer(c.Options.Serve)
-		if err != nil {
-			return nil, fmt.Errorf("error setting up HTTP Server: %w", err)
-		}
-
 		// setup oidc backend
 		callback := c.Options.OIDC.CallbackURL
 		if callback == "" {
@@ -385,12 +392,7 @@ func (s *Server) Run(ctx context.Context) error {
 		}
 	}()
 
-	if !s.Config.Options.FrontendDisabled {
-		return s.WebServer.Start(ctx)
-	}
-	logger.Info("Frontend is disabled; skipping web server start")
-	<-ctx.Done()
-	return nil
+	return s.WebServer.Start(ctx)
 }
 
 func (s *Server) seedCluster(ctx context.Context) error {

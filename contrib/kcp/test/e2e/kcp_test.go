@@ -59,9 +59,6 @@ func testKcpIntegration(t *testing.T, name string, scope kubebindv1alpha2.Inform
 	t.Helper()
 	t.Logf("Testing kcp integration with informer scope %s, tempdir: %s", scope, t.TempDir())
 
-	// dex
-	framework.StartDex(t)
-
 	// kcp bootstrap
 	bootstrapKCP(t, framework.ClientConfig(t))
 

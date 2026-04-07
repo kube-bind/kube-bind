@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	authzv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -30,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	authorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -171,6 +173,80 @@ func (m *Manager) HandleResources(
 		Kubeconfig: kfgSecret.Data["kubeconfig"],
 		Namespace:  ns,
 	}, nil
+}
+
+// CreateAPIServiceExportRequest creates an APIServiceExportRequest in the given namespace
+// on the provider cluster and waits for it to be reconciled (Succeeded or Failed).
+func (m *Manager) CreateAPIServiceExportRequest(
+	ctx context.Context,
+	cluster, namespace, name string,
+	spec kubebindv1alpha2.APIServiceExportRequestSpec,
+) (*kubebindv1alpha2.APIServiceExportRequest, error) {
+	logger := klog.FromContext(ctx).WithValues("namespace", namespace, "name", name)
+
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cluster client: %w", err)
+	}
+	c := cl.GetClient()
+
+	exportRequest := &kubebindv1alpha2.APIServiceExportRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: spec,
+	}
+
+	// Create the APIServiceExportRequest, handling name conflicts
+	if err := c.Create(ctx, exportRequest); err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return nil, fmt.Errorf("failed to create APIServiceExportRequest: %w", err)
+		}
+		// Name conflict: use generateName
+		exportRequest.Name = ""
+		exportRequest.GenerateName = name + "-"
+		if err := c.Create(ctx, exportRequest); err != nil {
+			return nil, fmt.Errorf("failed to create APIServiceExportRequest with generated name: %w", err)
+		}
+	}
+
+	createdName := exportRequest.Name
+	logger = logger.WithValues("createdName", createdName)
+	logger.Info("Created APIServiceExportRequest, waiting for reconciliation")
+
+	// Poll until reconciled. The client reads from cache, so the object may not
+	// be visible immediately after creation. Tolerate NotFound for an initial
+	// grace period before treating it as a real deletion.
+	var result *kubebindv1alpha2.APIServiceExportRequest
+	seenOnce := false
+	if err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 60*time.Second, false, func(ctx context.Context) (bool, error) {
+		req := &kubebindv1alpha2.APIServiceExportRequest{}
+		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: createdName}, req); err != nil {
+			if errors.IsNotFound(err) {
+				if seenOnce {
+					return false, fmt.Errorf("APIServiceExportRequest %s was deleted", createdName)
+				}
+				// Cache hasn't synced yet — keep polling.
+				return false, nil
+			}
+			return false, err
+		}
+		seenOnce = true
+		if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhaseSucceeded {
+			result = req
+			return true, nil
+		}
+		if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhaseFailed {
+			return false, fmt.Errorf("APIServiceExportRequest failed: %s", req.Status.TerminalMessage)
+		}
+		return false, nil
+	}); err != nil {
+		return nil, fmt.Errorf("waiting for APIServiceExportRequest: %w", err)
+	}
+
+	logger.Info("APIServiceExportRequest reconciled successfully")
+	return result, nil
 }
 
 func (m *Manager) ListCustomResourceDefinitions(ctx context.Context, cluster string, selector labels.Selector) (*apiextensionsv1.CustomResourceDefinitionList, error) {

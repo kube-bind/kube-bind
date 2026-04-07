@@ -149,6 +149,7 @@ func (h *handler) AddRoutes(mux *mux.Router) error {
 	// Public API routes (no authentication required)
 	mux.HandleFunc("/api/healthz", h.handleHealthz).Methods(http.MethodGet)
 	mux.HandleFunc("/api/bindable-resources", h.handleBindableResources).Methods(http.MethodGet)
+	mux.HandleFunc("/api/konnector-manifests", h.handleKonnectorManifests).Methods(http.MethodGet)
 
 	// Generic authentication routes (support both UI and CLI)
 	mux.HandleFunc("/api/authorize", h.authHandler.HandleAuthorize).Methods(http.MethodGet, http.MethodPost)
@@ -195,6 +196,92 @@ func (h *handler) handlePing(w http.ResponseWriter, r *http.Request) {
 	prepareNoCache(w)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("pong")) //nolint:errcheck
+}
+
+// handleKonnectorManifests returns the pre-rendered konnector YAML manifests
+// that a consumer cluster needs to apply to deploy the konnector agent.
+func (h *handler) handleKonnectorManifests(w http.ResponseWriter, r *http.Request) {
+	prepareNoCache(w)
+
+	konnectorVersion, err := bindversion.BinaryVersion(componentbaseversion.Get().GitVersion)
+	if err != nil {
+		konnectorVersion = "latest"
+	}
+	konnectorImage := fmt.Sprintf("ghcr.io/kube-bind/konnector:%s", konnectorVersion)
+
+	manifests := fmt.Sprintf(`apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-bind
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: konnector
+  namespace: kube-bind
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-bind-konnector
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-bind-konnector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-bind-konnector
+subjects:
+- kind: ServiceAccount
+  name: konnector
+  namespace: kube-bind
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: konnector
+  namespace: kube-bind
+  labels:
+    app: konnector
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: konnector
+  template:
+    metadata:
+      labels:
+        app: konnector
+    spec:
+      restartPolicy: Always
+      serviceAccountName: konnector
+      containers:
+      - name: konnector
+        image: %s
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8090
+`, konnectorImage)
+
+	w.Header().Set("Content-Type", "text/yaml")
+	w.Header().Set("Content-Disposition", "attachment; filename=konnector.yaml")
+	w.Write([]byte(manifests)) //nolint:errcheck
 }
 
 func (h *handler) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -368,7 +455,8 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Resolve the UI sentinel to a real identity derived from the authenticated session.
-	if identity == auth.UIIdentity {
+	isUIFlow := identity == auth.UIIdentity
+	if isUIFlow {
 		identity = state.Token.Issuer + "/" + state.Token.Subject
 		logger.Info("Resolved ui-identity from session", "identity", identity)
 	}
@@ -411,6 +499,26 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	// For UI-only flow, create the APIServiceExportRequest on the provider cluster
+	// and wait for reconciliation. In CLI flow the konnector handles this instead.
+	var exportRequestName string
+	if isUIFlow {
+		exportRequest, err := h.kubeManager.CreateAPIServiceExportRequest(
+			r.Context(),
+			params.ClusterID,
+			handleResult.Namespace,
+			bindRequest.Name,
+			request.Spec,
+		)
+		if err != nil {
+			logger.Error(err, "failed to create APIServiceExportRequest")
+			statusCode, code, details := mapErrorToCode(err)
+			writeErrorResponse(w, statusCode, code, "Failed to create API service export request", details)
+			return
+		}
+		exportRequestName = exportRequest.Name
+	}
+
 	// callback response
 	requestBytes, err := json.Marshal(&request)
 	if err != nil {
@@ -430,8 +538,10 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 				ID:        state.Token.Issuer + "/" + state.Token.Subject,
 			},
 		},
-		Kubeconfig: handleResult.Kubeconfig,
-		Requests:   []runtime.RawExtension{{Raw: requestBytes}},
+		Kubeconfig:        handleResult.Kubeconfig,
+		Requests:          []runtime.RawExtension{{Raw: requestBytes}},
+		ProviderNamespace: handleResult.Namespace,
+		BindingName:       exportRequestName,
 	}
 
 	payload, err := json.Marshal(&response)

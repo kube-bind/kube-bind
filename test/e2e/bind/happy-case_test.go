@@ -446,6 +446,12 @@ func testHappyCase(
 						consumer.providerContractNamespace = ourInstance.GetAnnotations()[types.ClusterNamespaceAnnotationKey]
 						require.NotEmpty(t, consumer.providerContractNamespace, "cluster namespace annotation must always exist")
 						require.NotEqual(t, consumer.providerContractNamespace, "unknown")
+
+						// Verify consumer source metadata annotations are set on the provider-side object.
+						consumerNS := ourInstance.GetAnnotations()[types.ConsumerNamespaceAnnotationKey]
+						require.NotEmpty(t, consumerNS, "consumer-namespace annotation must exist on provider object")
+						consumerUID := ourInstance.GetAnnotations()[types.ConsumerUIDAnnotationKey]
+						require.NotEmpty(t, consumerUID, "consumer-uid annotation must exist on provider object")
 					},
 				},
 				// Request included namespace, so we check it first

@@ -21,3 +21,19 @@ package types
 // This annotation is set on all synced objects, regardless of scope or
 // isolation mode.
 const ClusterNamespaceAnnotationKey = "kube-bind.io/cluster-namespace"
+
+// ConsumerNamespaceAnnotationKey is the annotation key set on provider-side
+// objects to identify the consumer namespace the source object lives in.
+const ConsumerNamespaceAnnotationKey = "kube-bind.io/consumer-namespace"
+
+// ConsumerUIDAnnotationKey is the annotation key set on provider-side objects
+// to uniquely identify the consumer source object.
+const ConsumerUIDAnnotationKey = "kube-bind.io/consumer-uid"
+
+// ProviderNamespaceAnnotationKey is the annotation key set on consumer-side
+// objects to identify the provider namespace the source object lives in.
+const ProviderNamespaceAnnotationKey = "kube-bind.io/provider-namespace"
+
+// ProviderUIDAnnotationKey is the annotation key set on consumer-side objects
+// to uniquely identify the provider source object.
+const ProviderUIDAnnotationKey = "kube-bind.io/provider-uid"

@@ -106,6 +106,9 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 			return err
 		}
 
+		// Annotate the provider-side object with the consumer source metadata.
+		r.setSourceAnnotations(upstream, obj.GetNamespace(), string(obj.GetUID()))
+
 		// let the isolation perform any changes it desires
 		if err := r.isolationStrategy.MutateMetadataAndSpec(upstream, *providerKey); err != nil {
 			return err
@@ -146,6 +149,9 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 	if err := r.setClusterNamespaceAnnotation(upstream); err != nil {
 		return err
 	}
+
+	// (Re)set the consumer source metadata annotations.
+	r.setSourceAnnotations(upstream, obj.GetNamespace(), string(obj.GetUID()))
 
 	// just in case, checking for finalizer
 	if obj, err = r.ensureDownstreamFinalizer(ctx, obj); err != nil {
@@ -243,4 +249,17 @@ func (r *reconciler) setClusterNamespaceAnnotation(obj *unstructured.Unstructure
 	}
 
 	return nil
+}
+
+// setSourceAnnotations sets consumer source metadata annotations on a
+// provider-side object so the provider can trace the origin of the synced
+// object.
+func (r *reconciler) setSourceAnnotations(obj *unstructured.Unstructured, consumerNamespace, consumerUID string) {
+	annotations := obj.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	annotations[konnectortypes.ConsumerNamespaceAnnotationKey] = consumerNamespace
+	annotations[konnectortypes.ConsumerUIDAnnotationKey] = consumerUID
+	obj.SetAnnotations(annotations)
 }

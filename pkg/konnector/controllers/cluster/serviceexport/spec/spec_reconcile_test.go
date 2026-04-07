@@ -77,6 +77,47 @@ func TestInjectClusterNamespace(t *testing.T) {
 	}
 }
 
+func TestSetSourceAnnotations(t *testing.T) {
+	tests := []struct {
+		name              string
+		obj               *unstructured.Unstructured
+		consumerNamespace string
+		consumerUID       string
+	}{
+		{
+			name:              "no existing annotations",
+			obj:               &unstructured.Unstructured{},
+			consumerNamespace: "my-namespace",
+			consumerUID:       "abc-123-def",
+		},
+		{
+			name:              "with existing cluster namespace annotation",
+			obj:               newObjectWithClusterNs("kube-bind-zlp9m"),
+			consumerNamespace: "other-namespace",
+			consumerUID:       "xyz-456-ghi",
+		},
+		{
+			name:              "cluster-scoped object with empty namespace",
+			obj:               &unstructured.Unstructured{},
+			consumerNamespace: "",
+			consumerUID:       "uid-789",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			rec := &reconciler{}
+			rec.setSourceAnnotations(tt.obj, tt.consumerNamespace, tt.consumerUID)
+
+			annotations := tt.obj.GetAnnotations()
+			require.Equal(t, tt.consumerNamespace, annotations[konnectortypes.ConsumerNamespaceAnnotationKey])
+			require.Equal(t, tt.consumerUID, annotations[konnectortypes.ConsumerUIDAnnotationKey])
+		})
+	}
+}
+
 func newObjectWithClusterNs(providerNamespace string) *unstructured.Unstructured {
 	obj := &unstructured.Unstructured{}
 	ans := map[string]string{

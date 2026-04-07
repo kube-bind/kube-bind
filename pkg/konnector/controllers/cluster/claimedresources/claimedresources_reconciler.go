@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 
+	konnectortypes "github.com/kube-bind/kube-bind/pkg/konnector/types"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -117,6 +118,8 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 			logger.Info("Creating missing consumer object", "consumerNamespace", consumerNS, "consumerName", providerObj.GetName())
 
 			candidate := candidateFromOwnerObj(consumerNS, providerObj)
+			setSourceMetadataAnnotations(candidate, providerObj.GetNamespace(), string(providerObj.GetUID()),
+				konnectortypes.ProviderNamespaceAnnotationKey, konnectortypes.ProviderUIDAnnotationKey)
 			r.makeProviderOwner(candidate)
 
 			if _, err := r.createConsumerObject(ctx, candidate); err != nil {
@@ -132,6 +135,8 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 		}
 
 		candidate := candidateFromOwnerObj(consumerNS, providerObj)
+		setSourceMetadataAnnotations(candidate, providerObj.GetNamespace(), string(providerObj.GetUID()),
+			konnectortypes.ProviderNamespaceAnnotationKey, konnectortypes.ProviderUIDAnnotationKey)
 		current := candidateFromOwnerObj(consumerNS, consumerObj)
 		if !equality.Semantic.DeepEqual(candidate, current) {
 			logger.Info("Updating consumer object data", "consumerNamespace", consumerNS, "consumerName", consumerObj.GetName())
@@ -161,6 +166,8 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 		}
 
 		candidate := candidateFromOwnerObj(providerNamespace, ownerCandidate)
+		setSourceMetadataAnnotations(candidate, ownerCandidate.GetNamespace(), string(ownerCandidate.GetUID()),
+			konnectortypes.ConsumerNamespaceAnnotationKey, konnectortypes.ConsumerUIDAnnotationKey)
 		r.makeConsumerOwner(candidate)
 
 		if errors.IsNotFound(providerErr) {
@@ -229,6 +236,18 @@ func candidateFromOwnerObj(downstreamNS string, obj *unstructured.Unstructured) 
 	candidate.SetAnnotations(annotations)
 
 	return candidate
+}
+
+// setSourceMetadataAnnotations sets source metadata annotations on a synced
+// object so the receiving side can trace where the object came from.
+func setSourceMetadataAnnotations(candidate *unstructured.Unstructured, sourceNS, sourceUID, nsKey, uidKey string) {
+	annotations := candidate.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	annotations[nsKey] = sourceNS
+	annotations[uidKey] = sourceUID
+	candidate.SetAnnotations(annotations)
 }
 
 // determineOwner determines the owner of a resource given at least one object exists either on the

@@ -27,12 +27,12 @@ import (
 
 func TestSetSourceMetadataAnnotations(t *testing.T) {
 	tests := []struct {
-		name     string
-		obj      *unstructured.Unstructured
-		sourceNS string
+		name      string
+		obj       *unstructured.Unstructured
+		sourceNS  string
 		sourceUID string
-		nsKey    string
-		uidKey   string
+		nsKey     string
+		uidKey    string
 	}{
 		{
 			name:      "provider annotations on empty object",

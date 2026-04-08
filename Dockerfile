@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Use node:lts-alpine for better compatibility and smaller size
-FROM node:20.18.0-alpine3.20 AS ui-build-env
+FROM node:22-alpine AS ui-build-env
 WORKDIR /app
 
 # Install build dependencies needed for native modules
@@ -23,10 +23,7 @@ RUN apk add --no-cache python3 make g++
 COPY ./web/package*.json ./
 COPY ./web/.npmrc ./
 
-RUN npm install
-
-# Install dependencies with specific flags to handle optional deps and architecture issues
-RUN npm ci --prefer-offline --no-audit --no-fund --no-optional
+RUN npm ci
 
 # Copy the Vue app files
 COPY ./web .

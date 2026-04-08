@@ -118,7 +118,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 			logger.Info("Creating missing consumer object", "consumerNamespace", consumerNS, "consumerName", providerObj.GetName())
 
 			candidate := candidateFromOwnerObj(consumerNS, providerObj)
-			setSourceMetadataAnnotations(candidate, providerObj.GetNamespace(), string(providerObj.GetUID()),
+			konnectortypes.SetSourceMetadataAnnotations(candidate, providerObj.GetNamespace(), string(providerObj.GetUID()),
 				konnectortypes.ProviderNamespaceAnnotationKey, konnectortypes.ProviderUIDAnnotationKey)
 			r.makeProviderOwner(candidate)
 
@@ -135,7 +135,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 		}
 
 		candidate := candidateFromOwnerObj(consumerNS, providerObj)
-		setSourceMetadataAnnotations(candidate, providerObj.GetNamespace(), string(providerObj.GetUID()),
+		konnectortypes.SetSourceMetadataAnnotations(candidate, providerObj.GetNamespace(), string(providerObj.GetUID()),
 			konnectortypes.ProviderNamespaceAnnotationKey, konnectortypes.ProviderUIDAnnotationKey)
 		current := candidateFromOwnerObj(consumerNS, consumerObj)
 		if !equality.Semantic.DeepEqual(candidate, current) {
@@ -166,7 +166,7 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 		}
 
 		candidate := candidateFromOwnerObj(providerNamespace, ownerCandidate)
-		setSourceMetadataAnnotations(candidate, ownerCandidate.GetNamespace(), string(ownerCandidate.GetUID()),
+		konnectortypes.SetSourceMetadataAnnotations(candidate, ownerCandidate.GetNamespace(), string(ownerCandidate.GetUID()),
 			konnectortypes.ConsumerNamespaceAnnotationKey, konnectortypes.ConsumerUIDAnnotationKey)
 		r.makeConsumerOwner(candidate)
 
@@ -236,18 +236,6 @@ func candidateFromOwnerObj(downstreamNS string, obj *unstructured.Unstructured) 
 	candidate.SetAnnotations(annotations)
 
 	return candidate
-}
-
-// setSourceMetadataAnnotations sets source metadata annotations on a synced
-// object so the receiving side can trace where the object came from.
-func setSourceMetadataAnnotations(candidate *unstructured.Unstructured, sourceNS, sourceUID, nsKey, uidKey string) {
-	annotations := candidate.GetAnnotations()
-	if annotations == nil {
-		annotations = map[string]string{}
-	}
-	annotations[nsKey] = sourceNS
-	annotations[uidKey] = sourceUID
-	candidate.SetAnnotations(annotations)
 }
 
 // determineOwner determines the owner of a resource given at least one object exists either on the

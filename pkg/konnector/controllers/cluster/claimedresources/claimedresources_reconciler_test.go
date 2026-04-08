@@ -27,12 +27,13 @@ import (
 
 func TestSetSourceMetadataAnnotations(t *testing.T) {
 	tests := []struct {
-		name      string
-		obj       *unstructured.Unstructured
-		sourceNS  string
-		sourceUID string
-		nsKey     string
-		uidKey    string
+		name                string
+		obj                 *unstructured.Unstructured
+		sourceNS            string
+		sourceUID           string
+		nsKey               string
+		uidKey              string
+		expectedAnnotations map[string]string
 	}{
 		{
 			name:      "provider annotations on empty object",
@@ -41,6 +42,10 @@ func TestSetSourceMetadataAnnotations(t *testing.T) {
 			sourceUID: "provider-uid-123",
 			nsKey:     konnectortypes.ProviderNamespaceAnnotationKey,
 			uidKey:    konnectortypes.ProviderUIDAnnotationKey,
+			expectedAnnotations: map[string]string{
+				konnectortypes.ProviderNamespaceAnnotationKey: "provider-ns",
+				konnectortypes.ProviderUIDAnnotationKey:       "provider-uid-123",
+			},
 		},
 		{
 			name:      "consumer annotations on empty object",
@@ -49,6 +54,10 @@ func TestSetSourceMetadataAnnotations(t *testing.T) {
 			sourceUID: "consumer-uid-456",
 			nsKey:     konnectortypes.ConsumerNamespaceAnnotationKey,
 			uidKey:    konnectortypes.ConsumerUIDAnnotationKey,
+			expectedAnnotations: map[string]string{
+				konnectortypes.ConsumerNamespaceAnnotationKey: "consumer-ns",
+				konnectortypes.ConsumerUIDAnnotationKey:       "consumer-uid-456",
+			},
 		},
 		{
 			name: "preserves existing annotations",
@@ -63,6 +72,11 @@ func TestSetSourceMetadataAnnotations(t *testing.T) {
 			sourceUID: "my-uid",
 			nsKey:     konnectortypes.ProviderNamespaceAnnotationKey,
 			uidKey:    konnectortypes.ProviderUIDAnnotationKey,
+			expectedAnnotations: map[string]string{
+				konnectortypes.ProviderNamespaceAnnotationKey: "my-ns",
+				konnectortypes.ProviderUIDAnnotationKey:       "my-uid",
+				"existing-key":                                "existing-value",
+			},
 		},
 	}
 
@@ -70,15 +84,11 @@ func TestSetSourceMetadataAnnotations(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			setSourceMetadataAnnotations(tt.obj, tt.sourceNS, tt.sourceUID, tt.nsKey, tt.uidKey)
+			konnectortypes.SetSourceMetadataAnnotations(tt.obj, tt.sourceNS, tt.sourceUID, tt.nsKey, tt.uidKey)
 
 			annotations := tt.obj.GetAnnotations()
-			require.Equal(t, tt.sourceNS, annotations[tt.nsKey])
-			require.Equal(t, tt.sourceUID, annotations[tt.uidKey])
-
-			// verify existing annotations are preserved
-			if tt.name == "preserves existing annotations" {
-				require.Equal(t, "existing-value", annotations["existing-key"])
+			for key, expected := range tt.expectedAnnotations {
+				require.Equal(t, expected, annotations[key], "annotation %s mismatch", key)
 			}
 		})
 	}

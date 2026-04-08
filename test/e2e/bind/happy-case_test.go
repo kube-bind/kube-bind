@@ -680,19 +680,26 @@ func testHappyCase(
 						})
 						require.NoError(t, err)
 
+						var consumerObj *unstructured.Unstructured
 						require.Eventually(t, func() bool {
-							var obj *unstructured.Unstructured
 							var err error
 							if consumerResourceScope == apiextensionsv1.NamespaceScoped {
-								obj, err = consumer.consumerClient.Namespace(consumer.consumerObjectNamespace).Get(ctx, instanceName, metav1.GetOptions{})
+								consumerObj, err = consumer.consumerClient.Namespace(consumer.consumerObjectNamespace).Get(ctx, instanceName, metav1.GetOptions{})
 							} else {
-								obj, err = consumer.consumerClient.Get(ctx, instanceName, metav1.GetOptions{})
+								consumerObj, err = consumer.consumerClient.Get(ctx, instanceName, metav1.GetOptions{})
 							}
 							require.NoError(t, err)
-							value, _, err := unstructured.NestedString(obj.Object, "status", "result")
+							value, _, err := unstructured.NestedString(consumerObj.Object, "status", "result")
 							require.NoError(t, err)
 							return value == fmt.Sprintf("Ready to ride from %s", consumer.name)
 						}, wait.ForeverTestTimeout, time.Millisecond*100, "waiting for the %s instance to be updated downstream for %s", serviceGVR.Resource, consumer.name)
+
+						// Verify provider source metadata annotations are set on the consumer-side object.
+						consumerAnnotations := consumerObj.GetAnnotations()
+						_, hasProviderNS := consumerAnnotations[types.ProviderNamespaceAnnotationKey]
+						require.True(t, hasProviderNS, "provider-namespace annotation must exist on consumer object")
+						providerUID := consumerAnnotations[types.ProviderUIDAnnotationKey]
+						require.NotEmpty(t, providerUID, "provider-uid annotation must exist on consumer object")
 					},
 				},
 

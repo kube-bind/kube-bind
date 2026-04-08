@@ -448,9 +448,10 @@ func testHappyCase(
 						require.NotEqual(t, consumer.providerContractNamespace, "unknown")
 
 						// Verify consumer source metadata annotations are set on the provider-side object.
-						consumerNS := ourInstance.GetAnnotations()[types.ConsumerNamespaceAnnotationKey]
-						require.NotEmpty(t, consumerNS, "consumer-namespace annotation must exist on provider object")
-						consumerUID := ourInstance.GetAnnotations()[types.ConsumerUIDAnnotationKey]
+						annotations := ourInstance.GetAnnotations()
+						_, hasConsumerNS := annotations[types.ConsumerNamespaceAnnotationKey]
+						require.True(t, hasConsumerNS, "consumer-namespace annotation must exist on provider object")
+						consumerUID := annotations[types.ConsumerUIDAnnotationKey]
 						require.NotEmpty(t, consumerUID, "consumer-uid annotation must exist on provider object")
 					},
 				},

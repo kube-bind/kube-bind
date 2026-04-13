@@ -9854,17 +9854,27 @@ var App_default = /* @__PURE__ */ _plugin_vue_export_helper_default(App_vue_vue_
 //#region src/components/BindingResult.vue?vue&type=script&setup=true&lang.ts
 var _hoisted_1$3 = { class: "binding-content" };
 var _hoisted_2$3 = { class: "binding-info" };
-var _hoisted_3$3 = { class: "instructions-section" };
-var _hoisted_4$3 = { class: "command-group" };
-var _hoisted_5$3 = { class: "command-block" };
-var _hoisted_6$3 = { class: "command-group" };
-var _hoisted_7$3 = { class: "command-block" };
-var _hoisted_8$2 = { class: "command-group" };
-var _hoisted_9$2 = { class: "command-block" };
-var _hoisted_10$2 = { class: "alternative-section" };
-var _hoisted_11$2 = { class: "manual-setup" };
-var _hoisted_12$2 = { class: "command-group" };
+var _hoisted_3$3 = { class: "method-tabs" };
+var _hoisted_4$3 = {
+	key: 0,
+	class: "instructions-section"
+};
+var _hoisted_5$3 = { class: "step-group" };
+var _hoisted_6$3 = { class: "command-block" };
+var _hoisted_7$3 = { class: "step-group" };
+var _hoisted_8$2 = { class: "command-block" };
+var _hoisted_9$2 = { class: "step-group" };
+var _hoisted_10$2 = { class: "command-block" };
+var _hoisted_11$2 = {
+	key: 1,
+	class: "instructions-section"
+};
+var _hoisted_12$2 = { class: "step-group" };
 var _hoisted_13$2 = { class: "command-block" };
+var _hoisted_14$2 = { class: "step-group" };
+var _hoisted_15$2 = { class: "command-block" };
+var _hoisted_16$2 = { class: "step-group" };
+var _hoisted_17$2 = { class: "command-block" };
 //#endregion
 //#region src/components/BindingResult.vue
 var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/* @__PURE__ */ defineComponent({
@@ -9878,12 +9888,12 @@ var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/*
 	setup(__props, { emit: __emit }) {
 		const props = __props;
 		const emit = __emit;
-		const kubeconfigSecretName = computed(() => {
-			return `kubeconfig-${props.templateName.toLowerCase().replace(/[^a-z0-9]/g, "")}-${Date.now().toString(36)}`;
-		});
+		const activeMethod = /* @__PURE__ */ ref("bundle");
 		const bindingName = computed(() => {
-			var _props$bindingRespons;
-			return ((_props$bindingRespons = props.bindingResponse.authentication) === null || _props$bindingRespons === void 0 || (_props$bindingRespons = _props$bindingRespons.oauth2CodeGrant) === null || _props$bindingRespons === void 0 ? void 0 : _props$bindingRespons.sessionID) || props.templateName;
+			return props.bindingResponse.bindingName || props.templateName;
+		});
+		const kubeconfigSecretName = computed(() => {
+			return `kubeconfig-${bindingName.value.toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
 		});
 		const createSecretCommand = computed(() => {
 			return `kubectl create secret generic ${kubeconfigSecretName.value} --from-file=kubeconfig=./kubeconfig.yaml -n kube-bind`;
@@ -9912,90 +9922,82 @@ var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/*
 				return _ref.apply(this, arguments);
 			};
 		}();
-		const downloadKubeconfig = () => {
+		const triggerDownload = (content, filename, type = "text/yaml") => {
+			const blob = new Blob([content], { type });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+		};
+		const decodedKubeconfig = computed(() => {
 			try {
-				const decodedKubeconfig = atob(props.bindingResponse.kubeconfig);
-				const blob = new Blob([decodedKubeconfig], { type: "text/yaml" });
-				const url = URL.createObjectURL(blob);
-				const a = document.createElement("a");
-				a.href = url;
-				a.download = "kubeconfig.yaml";
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
-				URL.revokeObjectURL(url);
-			} catch (error) {
-				console.error("Failed to decode kubeconfig:", error);
-				const blob = new Blob([props.bindingResponse.kubeconfig], { type: "text/yaml" });
-				const url = URL.createObjectURL(blob);
-				const a = document.createElement("a");
-				a.href = url;
-				a.download = "kubeconfig.yaml";
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
-				URL.revokeObjectURL(url);
+				return atob(props.bindingResponse.kubeconfig);
+			} catch (_unused) {
+				return props.bindingResponse.kubeconfig;
 			}
+		});
+		const bindingBundleYaml = computed(() => {
+			const kubeconfigBase64 = props.bindingResponse.kubeconfig;
+			const secretName = kubeconfigSecretName.value;
+			return `apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-bind
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${secretName}
+  namespace: kube-bind
+type: Opaque
+data:
+  kubeconfig: ${kubeconfigBase64}
+---
+apiVersion: kube-bind.io/v1alpha2
+kind: APIServiceBindingBundle
+metadata:
+  name: ${bindingName.value}
+spec:
+  kubeconfigSecretRef:
+    name: ${secretName}
+    namespace: kube-bind
+    key: kubeconfig
+`;
+		});
+		const downloadBindingBundle = () => {
+			triggerDownload(bindingBundleYaml.value, "binding-bundle.yaml");
+		};
+		const downloadKonnectorManifests = function() {
+			var _ref2 = _asyncToGenerator(function* () {
+				try {
+					const response = yield fetch("/api/konnector-manifests");
+					if (!response.ok) throw new Error(`HTTP ${response.status}`);
+					triggerDownload(yield response.text(), "konnector.yaml");
+				} catch (error) {
+					console.error("Failed to fetch konnector manifests:", error);
+				}
+			});
+			return function downloadKonnectorManifests() {
+				return _ref2.apply(this, arguments);
+			};
+		}();
+		const downloadKubeconfig = () => {
+			triggerDownload(decodedKubeconfig.value, "kubeconfig.yaml");
 		};
 		const downloadAPIRequests = () => {
 			try {
-				const apiRequestsYaml = props.bindingResponse.requests.map((req) => {
+				triggerDownload(props.bindingResponse.requests.map((req) => {
 					if (typeof req === "string") return req.trim();
-					else return formatObjectAsYaml(req);
-				}).join("\n---\n");
-				const blob = new Blob([apiRequestsYaml], { type: "text/yaml" });
-				const url = URL.createObjectURL(blob);
-				const a = document.createElement("a");
-				a.href = url;
-				a.download = "apiservice-export.yaml";
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
-				URL.revokeObjectURL(url);
+					else return JSON.stringify(req, null, 2);
+				}).join("\n---\n"), "apiservice-export.yaml");
 			} catch (error) {
-				console.error("Failed to format API requests as YAML:", error);
-				const apiRequestsJson = JSON.stringify(props.bindingResponse.requests, null, 2);
-				const blob = new Blob([apiRequestsJson], { type: "application/json" });
-				const url = URL.createObjectURL(blob);
-				const a = document.createElement("a");
-				a.href = url;
-				a.download = "apiservice-export.json";
-				document.body.appendChild(a);
-				a.click();
-				document.body.removeChild(a);
-				URL.revokeObjectURL(url);
+				console.error("Failed to format API requests:", error);
+				triggerDownload(JSON.stringify(props.bindingResponse.requests, null, 2), "apiservice-export.json", "application/json");
 			}
-		};
-		const formatObjectAsYaml = (obj, indent = 0) => {
-			const spaces = " ".repeat(indent);
-			if (obj === null || obj === void 0) return "";
-			if (typeof obj === "string") {
-				if (obj.includes("\n")) return `|\n${spaces}  ${obj.replace(/\n/g, `\n${spaces}  `)}`;
-				if (obj.match(/^(true|false|null|\d+)$/i) || obj.includes(":") || obj.includes("#")) return `"${obj}"`;
-				return obj;
-			}
-			if (typeof obj === "number" || typeof obj === "boolean") return String(obj);
-			if (Array.isArray(obj)) {
-				if (obj.length === 0) return "[]";
-				return obj.map((item) => {
-					if (typeof item === "object" && item !== null && !Array.isArray(item)) return `${spaces}- ${formatObjectAsYaml(item, indent + 2).replace(/^\s*/, "")}`;
-					else return `${spaces}- ${item}`;
-				}).join("\n");
-			}
-			if (typeof obj === "object") return Object.entries(obj).map(([key, value]) => {
-				if (value === null || value === void 0) return `${spaces}${key}:`;
-				if (Array.isArray(value)) {
-					if (value.length === 0) return `${spaces}${key}: []`;
-					return `${spaces}${key}:\n${formatObjectAsYaml(value, indent + 2)}`;
-				}
-				if (typeof value === "object") {
-					const formattedObject = formatObjectAsYaml(value, indent + 2);
-					if (formattedObject.trim() === "") return `${spaces}${key}:`;
-					return `${spaces}${key}:\n${formattedObject}`;
-				}
-				return `${spaces}${key}: ${formatObjectAsYaml(value, 0)}`;
-			}).join("\n");
-			return String(obj);
 		};
 		return (_ctx, _cache) => {
 			return __props.show ? (openBlock(), createElementBlock("div", {
@@ -10004,46 +10006,78 @@ var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/*
 				onClick: closeModal
 			}, [createBaseVNode("div", {
 				class: "binding-modal",
-				onClick: _cache[4] || (_cache[4] = withModifiers(() => {}, ["stop"]))
+				onClick: _cache[8] || (_cache[8] = withModifiers(() => {}, ["stop"]))
 			}, [
-				createBaseVNode("div", { class: "binding-header" }, [_cache[5] || (_cache[5] = createBaseVNode("h3", null, "Template Binding Successful", -1)), createBaseVNode("button", {
+				createBaseVNode("div", { class: "binding-header" }, [_cache[9] || (_cache[9] = createBaseVNode("h3", null, "Template Binding Successful", -1)), createBaseVNode("button", {
 					onClick: closeModal,
 					class: "close-btn"
 				}, "×")]),
 				createBaseVNode("div", _hoisted_1$3, [
 					createBaseVNode("div", _hoisted_2$3, [
-						_cache[9] || (_cache[9] = createBaseVNode("h4", null, "Binding Information", -1)),
-						createBaseVNode("p", null, [_cache[6] || (_cache[6] = createBaseVNode("strong", null, "Template:", -1)), createTextVNode(" " + toDisplayString(__props.templateName), 1)]),
-						createBaseVNode("p", null, [_cache[7] || (_cache[7] = createBaseVNode("strong", null, "Binding Name:", -1)), createTextVNode(" " + toDisplayString(bindingName.value), 1)]),
-						createBaseVNode("p", null, [_cache[8] || (_cache[8] = createBaseVNode("strong", null, "Kubeconfig Secret:", -1)), createTextVNode(" " + toDisplayString(kubeconfigSecretName.value), 1)])
+						_cache[12] || (_cache[12] = createBaseVNode("h4", null, "Binding Information", -1)),
+						createBaseVNode("p", null, [_cache[10] || (_cache[10] = createBaseVNode("strong", null, "Template:", -1)), createTextVNode(" " + toDisplayString(__props.templateName), 1)]),
+						createBaseVNode("p", null, [_cache[11] || (_cache[11] = createBaseVNode("strong", null, "Binding Name:", -1)), createTextVNode(" " + toDisplayString(bindingName.value), 1)])
 					]),
-					createBaseVNode("div", _hoisted_3$3, [
-						_cache[16] || (_cache[16] = createBaseVNode("h4", null, "Setup Instructions", -1)),
-						_cache[17] || (_cache[17] = createBaseVNode("p", { class: "instructions-text" }, " To complete the binding setup, first download the required files below, then execute the following commands in your local kubectl environment: ", -1)),
-						createBaseVNode("div", { class: "download-files-section" }, [_cache[11] || (_cache[11] = createBaseVNode("h5", null, "1. Download required files", -1)), createBaseVNode("div", { class: "download-block" }, [_cache[10] || (_cache[10] = createBaseVNode("p", { class: "download-text" }, "Download and save both files in your current directory:", -1)), createBaseVNode("div", { class: "download-actions" }, [createBaseVNode("button", {
-							onClick: downloadKubeconfig,
-							class: "download-btn"
-						}, "Download kubeconfig.yaml"), createBaseVNode("button", {
-							onClick: downloadAPIRequests,
-							class: "download-btn"
-						}, "Download apiservice-export.yaml")])])]),
-						createBaseVNode("div", _hoisted_4$3, [_cache[13] || (_cache[13] = createBaseVNode("h5", null, "2. Create kube-bind namespace (if it doesn't exist)", -1)), createBaseVNode("div", _hoisted_5$3, [_cache[12] || (_cache[12] = createBaseVNode("code", null, "kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -", -1)), createBaseVNode("button", {
-							onClick: _cache[0] || (_cache[0] = ($event) => copyCommand("kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -")),
-							class: "copy-cmd-btn"
-						}, "Copy")])]),
-						createBaseVNode("div", _hoisted_6$3, [_cache[14] || (_cache[14] = createBaseVNode("h5", null, "3. Create kubeconfig secret", -1)), createBaseVNode("div", _hoisted_7$3, [createBaseVNode("code", null, toDisplayString(createSecretCommand.value), 1), createBaseVNode("button", {
-							onClick: _cache[1] || (_cache[1] = ($event) => copyCommand(createSecretCommand.value)),
-							class: "copy-cmd-btn"
-						}, "Copy")])]),
-						createBaseVNode("div", _hoisted_8$2, [_cache[15] || (_cache[15] = createBaseVNode("h5", null, "4. Bind the API service", -1)), createBaseVNode("div", _hoisted_9$2, [createBaseVNode("code", null, toDisplayString(bindCommand.value), 1), createBaseVNode("button", {
-							onClick: _cache[2] || (_cache[2] = ($event) => copyCommand(bindCommand.value)),
+					createBaseVNode("div", _hoisted_3$3, [createBaseVNode("button", {
+						class: normalizeClass(["method-tab", { active: activeMethod.value === "bundle" }]),
+						onClick: _cache[0] || (_cache[0] = ($event) => activeMethod.value = "bundle")
+					}, " Automated (Bundle) ", 2), createBaseVNode("button", {
+						class: normalizeClass(["method-tab", { active: activeMethod.value === "manual" }]),
+						onClick: _cache[1] || (_cache[1] = ($event) => activeMethod.value = "manual")
+					}, " Manual (CLI) ", 2)]),
+					activeMethod.value === "bundle" ? (openBlock(), createElementBlock("div", _hoisted_4$3, [
+						_cache[21] || (_cache[21] = createBaseVNode("p", { class: "instructions-text" }, " Download and apply these files to your consumer cluster. The APIServiceBindingBundle will automatically discover and bind services from the provider. ", -1)),
+						createBaseVNode("div", _hoisted_5$3, [
+							_cache[14] || (_cache[14] = createBaseVNode("h5", null, "1. Deploy the konnector agent (one-time)", -1)),
+							_cache[15] || (_cache[15] = createBaseVNode("p", { class: "step-description" }, "Skip this step if the konnector is already deployed on your consumer cluster.", -1)),
+							createBaseVNode("div", { class: "download-block" }, [createBaseVNode("div", { class: "download-actions" }, [createBaseVNode("button", {
+								onClick: downloadKonnectorManifests,
+								class: "download-btn primary"
+							}, "Download konnector.yaml")])]),
+							createBaseVNode("div", _hoisted_6$3, [_cache[13] || (_cache[13] = createBaseVNode("code", null, "kubectl apply -f konnector.yaml", -1)), createBaseVNode("button", {
+								onClick: _cache[2] || (_cache[2] = ($event) => copyCommand("kubectl apply -f konnector.yaml")),
+								class: "copy-cmd-btn"
+							}, "Copy")])
+						]),
+						createBaseVNode("div", _hoisted_7$3, [
+							_cache[17] || (_cache[17] = createBaseVNode("h5", null, "2. Apply the binding bundle", -1)),
+							_cache[18] || (_cache[18] = createBaseVNode("p", { class: "step-description" }, "Creates the kubeconfig secret and an APIServiceBindingBundle that auto-discovers and binds all services.", -1)),
+							createBaseVNode("div", { class: "download-block" }, [createBaseVNode("div", { class: "download-actions" }, [createBaseVNode("button", {
+								onClick: downloadBindingBundle,
+								class: "download-btn primary"
+							}, "Download binding-bundle.yaml")])]),
+							createBaseVNode("div", _hoisted_8$2, [_cache[16] || (_cache[16] = createBaseVNode("code", null, "kubectl apply -f binding-bundle.yaml", -1)), createBaseVNode("button", {
+								onClick: _cache[3] || (_cache[3] = ($event) => copyCommand("kubectl apply -f binding-bundle.yaml")),
+								class: "copy-cmd-btn"
+							}, "Copy")])
+						]),
+						createBaseVNode("div", _hoisted_9$2, [_cache[20] || (_cache[20] = createBaseVNode("h5", null, "3. Verify", -1)), createBaseVNode("div", _hoisted_10$2, [_cache[19] || (_cache[19] = createBaseVNode("code", null, "kubectl get apiservicebindingbundles,apiservicebindings", -1)), createBaseVNode("button", {
+							onClick: _cache[4] || (_cache[4] = ($event) => copyCommand("kubectl get apiservicebindingbundles,apiservicebindings")),
 							class: "copy-cmd-btn"
 						}, "Copy")])])
-					]),
-					createBaseVNode("div", _hoisted_10$2, [createBaseVNode("details", null, [_cache[19] || (_cache[19] = createBaseVNode("summary", null, "Alternative: Use stdin piping", -1)), createBaseVNode("div", _hoisted_11$2, [_cache[18] || (_cache[18] = createBaseVNode("h5", null, "For advanced users who prefer piping:", -1)), createBaseVNode("div", _hoisted_12$2, [createBaseVNode("div", _hoisted_13$2, [createBaseVNode("code", null, "cat apiservice-export.yaml | kubectl bind apiservice --remote-kubeconfig-namespace kube-bind --remote-kubeconfig-name " + toDisplayString(kubeconfigSecretName.value) + " -f -", 1), createBaseVNode("button", {
-						onClick: _cache[3] || (_cache[3] = ($event) => copyCommand(`cat apiservice-export.yaml | kubectl bind apiservice --remote-kubeconfig-namespace kube-bind --remote-kubeconfig-name ${kubeconfigSecretName.value} -f -`)),
-						class: "copy-cmd-btn"
-					}, "Copy")])])])])])
+					])) : createCommentVNode("", true),
+					activeMethod.value === "manual" ? (openBlock(), createElementBlock("div", _hoisted_11$2, [
+						_cache[27] || (_cache[27] = createBaseVNode("p", { class: "instructions-text" }, " Download the required files and run the following commands on your consumer cluster. ", -1)),
+						createBaseVNode("div", { class: "step-group" }, [_cache[22] || (_cache[22] = createBaseVNode("h5", null, "1. Download required files", -1)), createBaseVNode("div", { class: "download-block" }, [createBaseVNode("div", { class: "download-actions" }, [createBaseVNode("button", {
+							onClick: downloadKubeconfig,
+							class: "download-btn primary"
+						}, "Download kubeconfig.yaml"), createBaseVNode("button", {
+							onClick: downloadAPIRequests,
+							class: "download-btn primary"
+						}, "Download apiservice-export.yaml")])])]),
+						createBaseVNode("div", _hoisted_12$2, [_cache[24] || (_cache[24] = createBaseVNode("h5", null, "2. Create kube-bind namespace", -1)), createBaseVNode("div", _hoisted_13$2, [_cache[23] || (_cache[23] = createBaseVNode("code", null, "kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -", -1)), createBaseVNode("button", {
+							onClick: _cache[5] || (_cache[5] = ($event) => copyCommand("kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -")),
+							class: "copy-cmd-btn"
+						}, "Copy")])]),
+						createBaseVNode("div", _hoisted_14$2, [_cache[25] || (_cache[25] = createBaseVNode("h5", null, "3. Create kubeconfig secret", -1)), createBaseVNode("div", _hoisted_15$2, [createBaseVNode("code", null, toDisplayString(createSecretCommand.value), 1), createBaseVNode("button", {
+							onClick: _cache[6] || (_cache[6] = ($event) => copyCommand(createSecretCommand.value)),
+							class: "copy-cmd-btn"
+						}, "Copy")])]),
+						createBaseVNode("div", _hoisted_16$2, [_cache[26] || (_cache[26] = createBaseVNode("h5", null, "4. Bind the API service", -1)), createBaseVNode("div", _hoisted_17$2, [createBaseVNode("code", null, toDisplayString(bindCommand.value), 1), createBaseVNode("button", {
+							onClick: _cache[7] || (_cache[7] = ($event) => copyCommand(bindCommand.value)),
+							class: "copy-cmd-btn"
+						}, "Copy")])])
+					])) : createCommentVNode("", true)
 				]),
 				createBaseVNode("div", { class: "binding-footer" }, [createBaseVNode("button", {
 					onClick: closeModal,
@@ -10052,7 +10086,7 @@ var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/*
 			])])) : createCommentVNode("", true);
 		};
 	}
-}), [["__scopeId", "data-v-e150bd4a"]]);
+}), [["__scopeId", "data-v-c11e5fbb"]]);
 //#endregion
 //#region src/components/TemplateBindingModal.vue?vue&type=script&setup=true&lang.ts
 var _hoisted_1$2 = { class: "modal-header" };

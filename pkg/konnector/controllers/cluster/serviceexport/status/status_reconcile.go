@@ -27,12 +27,14 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/pkg/konnector/controllers/cluster/serviceexport/isolation"
+	konnectortypes "github.com/kube-bind/kube-bind/pkg/konnector/types"
 )
 
 type reconciler struct {
 	isolationStrategy isolation.Strategy
 
 	getConsumerObject          func(ns, name string) (*unstructured.Unstructured, error)
+	updateConsumerObject       func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
 	updateConsumerObjectStatus func(ctx context.Context, obj *unstructured.Unstructured) (*unstructured.Unstructured, error)
 
 	deleteProviderObject func(ctx context.Context, ns, name string) error
@@ -75,6 +77,20 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 
 		logger.Error(err, "failed to get downstream object")
 		return err
+	}
+
+	// Set provider source metadata annotations on the consumer object so
+	// the consumer side can trace where the object came from. This requires
+	// a full object update because UpdateStatus does not persist metadata.
+	annotated := downstream.DeepCopy()
+	konnectortypes.SetSourceMetadataAnnotations(annotated, obj.GetNamespace(), string(obj.GetUID()),
+		konnectortypes.ProviderNamespaceAnnotationKey, konnectortypes.ProviderUIDAnnotationKey)
+	if !reflect.DeepEqual(downstream.GetAnnotations(), annotated.GetAnnotations()) {
+		logger.Info("Updating downstream object provider annotations")
+		var err error
+		if downstream, err = r.updateConsumerObject(ctx, annotated); err != nil {
+			return err
+		}
 	}
 
 	// let the isolation perform any changes it desires

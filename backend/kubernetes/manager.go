@@ -22,8 +22,10 @@ import (
 	"strings"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	authzv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,8 +33,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes/scheme"
 	authorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -389,6 +394,301 @@ func (m *Manager) AuthorizeRequest(ctx context.Context, subject string, groups [
 	}
 	logger.Info("User is allowed to bind", "user", subject)
 	return nil
+}
+
+// ConsumerStatus describes the status of a consumer cluster relative to the provider.
+type ConsumerStatus struct {
+	// Connected is true if the consumer has an existing provider namespace.
+	Connected bool `json:"connected"`
+	// Namespace is the provider namespace for this consumer.
+	Namespace string `json:"namespace,omitempty"`
+	// Exports is the list of APIServiceExport names in the consumer's namespace.
+	Exports []string `json:"exports,omitempty"`
+}
+
+// GetConsumerStatus checks if the given identity already has a provider namespace
+// with existing APIServiceExports.
+func (m *Manager) GetConsumerStatus(ctx context.Context, identity, cluster string) (*ConsumerStatus, error) {
+	logger := klog.FromContext(ctx).WithValues("identity", identity)
+
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	c := cl.GetClient()
+
+	// Look up namespace by identity annotation
+	var nss corev1.NamespaceList
+	err = c.List(ctx, &nss, client.MatchingFields{NamespacesByIdentity: identity})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(nss.Items) == 0 {
+		return &ConsumerStatus{Connected: false}, nil
+	}
+
+	ns := nss.Items[0].Name
+	logger.Info("Found existing consumer namespace", "namespace", ns)
+
+	// List APIServiceExports in the consumer namespace
+	var exports kubebindv1alpha2.APIServiceExportList
+	if err := c.List(ctx, &exports, client.InNamespace(ns)); err != nil {
+		return nil, fmt.Errorf("failed to list APIServiceExports: %w", err)
+	}
+
+	exportNames := make([]string, 0, len(exports.Items))
+	for _, e := range exports.Items {
+		exportNames = append(exportNames, e.Name)
+	}
+
+	return &ConsumerStatus{
+		Connected: len(exportNames) > 0,
+		Namespace: ns,
+		Exports:   exportNames,
+	}, nil
+}
+
+// ApplyToConsumerResult contains the result of ApplyToConsumer operation.
+type ApplyToConsumerResult struct {
+	KonnectorDeployed bool   `json:"konnectorDeployed"`
+	BundleCreated     bool   `json:"bundleCreated"`
+	Message           string `json:"message"`
+}
+
+// ApplyToConsumer applies konnector manifests and binding bundle to a consumer cluster
+// using the provided consumer kubeconfig.
+func (m *Manager) ApplyToConsumer(
+	ctx context.Context,
+	consumerKubeconfigData []byte,
+	providerKubeconfigData []byte,
+	bindingName string,
+	konnectorImage string,
+) (*ApplyToConsumerResult, error) {
+	logger := klog.FromContext(ctx).WithValues("bindingName", bindingName)
+
+	// Build a client from the consumer kubeconfig
+	consumerConfig, err := clientcmd.RESTConfigFromKubeConfig(consumerKubeconfigData)
+	if err != nil {
+		return nil, fmt.Errorf("invalid consumer kubeconfig: %w", err)
+	}
+
+	s := scheme.Scheme
+	if err := kubebindv1alpha2.AddToScheme(s); err != nil {
+		return nil, fmt.Errorf("failed to add kube-bind scheme: %w", err)
+	}
+
+	consumerClient, err := client.New(consumerConfig, client.Options{Scheme: s})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create consumer client: %w", err)
+	}
+
+	// 1. Ensure kube-bind namespace
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: "kube-bind"},
+	}
+	if err := consumerClient.Create(ctx, ns); err != nil && !errors.IsAlreadyExists(err) {
+		return nil, fmt.Errorf("failed to create kube-bind namespace: %w", err)
+	}
+
+	// 2. Deploy konnector (idempotent)
+	konnectorDeployed, err := m.ensureKonnector(ctx, consumerClient, konnectorImage)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deploy konnector: %w", err)
+	}
+
+	// 3. Create kubeconfig secret for the provider
+	secretName := fmt.Sprintf("kubeconfig-%s", bindingName)
+	kubeconfigSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: "kube-bind",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"kubeconfig": providerKubeconfigData,
+		},
+	}
+	if err := consumerClient.Create(ctx, kubeconfigSecret); err != nil {
+		if errors.IsAlreadyExists(err) {
+			// Update existing secret
+			existing := &corev1.Secret{}
+			if err := consumerClient.Get(ctx, types.NamespacedName{Name: secretName, Namespace: "kube-bind"}, existing); err != nil {
+				return nil, fmt.Errorf("failed to get existing kubeconfig secret: %w", err)
+			}
+			existing.Data = kubeconfigSecret.Data
+			if err := consumerClient.Update(ctx, existing); err != nil {
+				return nil, fmt.Errorf("failed to update kubeconfig secret: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to create kubeconfig secret: %w", err)
+		}
+	}
+
+	// 4. Create APIServiceBindingBundle
+	bundle := &kubebindv1alpha2.APIServiceBindingBundle{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: bindingName,
+		},
+		Spec: kubebindv1alpha2.APIServiceBindingBundleSpec{
+			KubeconfigSecretRef: kubebindv1alpha2.ClusterSecretKeyRef{
+				LocalSecretKeyRef: kubebindv1alpha2.LocalSecretKeyRef{
+					Name: secretName,
+					Key:  "kubeconfig",
+				},
+				Namespace: "kube-bind",
+			},
+		},
+	}
+	if err := consumerClient.Create(ctx, bundle); err != nil {
+		if errors.IsAlreadyExists(err) {
+			logger.Info("APIServiceBindingBundle already exists, updating")
+			existing := &kubebindv1alpha2.APIServiceBindingBundle{}
+			if err := consumerClient.Get(ctx, types.NamespacedName{Name: bindingName}, existing); err != nil {
+				return nil, fmt.Errorf("failed to get existing bundle: %w", err)
+			}
+			existing.Spec = bundle.Spec
+			if err := consumerClient.Update(ctx, existing); err != nil {
+				return nil, fmt.Errorf("failed to update bundle: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to create APIServiceBindingBundle: %w", err)
+		}
+	}
+
+	logger.Info("Successfully applied binding to consumer cluster")
+	return &ApplyToConsumerResult{
+		KonnectorDeployed: konnectorDeployed,
+		BundleCreated:     true,
+		Message:           "Konnector and binding bundle applied successfully",
+	}, nil
+}
+
+// ensureKonnector deploys the konnector agent to the consumer cluster.
+// Returns true if the konnector was newly deployed, false if it already existed.
+func (m *Manager) ensureKonnector(ctx context.Context, c client.Client, konnectorImage string) (bool, error) {
+	// Check if konnector deployment already exists
+	existing := &appsv1.Deployment{}
+	err := c.Get(ctx, types.NamespacedName{Name: "konnector", Namespace: "kube-bind"}, existing)
+	if err == nil {
+		return false, nil // already deployed
+	}
+	if !errors.IsNotFound(err) {
+		return false, fmt.Errorf("failed to check for existing konnector: %w", err)
+	}
+
+	// ServiceAccount
+	sa := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "konnector",
+			Namespace: "kube-bind",
+		},
+	}
+	if err := c.Create(ctx, sa); err != nil && !errors.IsAlreadyExists(err) {
+		return false, fmt.Errorf("failed to create konnector service account: %w", err)
+	}
+
+	// ClusterRole
+	cr := &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "kube-bind-konnector",
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"*"},
+				Resources: []string{"*"},
+				Verbs:     []string{"*"},
+			},
+		},
+	}
+	if err := c.Create(ctx, cr); err != nil && !errors.IsAlreadyExists(err) {
+		return false, fmt.Errorf("failed to create konnector cluster role: %w", err)
+	}
+
+	// ClusterRoleBinding
+	crb := &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "kube-bind-konnector",
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "kube-bind-konnector",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      "konnector",
+				Namespace: "kube-bind",
+			},
+		},
+	}
+	if err := c.Create(ctx, crb); err != nil && !errors.IsAlreadyExists(err) {
+		return false, fmt.Errorf("failed to create konnector cluster role binding: %w", err)
+	}
+
+	// Deployment
+	replicas := int32(2)
+	httpPort := intstr.FromInt(8090)
+	deploy := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "konnector",
+			Namespace: "kube-bind",
+			Labels:    map[string]string{"app": "konnector"},
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{"app": "konnector"},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{"app": "konnector"},
+				},
+				Spec: corev1.PodSpec{
+					RestartPolicy:      corev1.RestartPolicyAlways,
+					ServiceAccountName: "konnector",
+					Containers: []corev1.Container{
+						{
+							Name:  "konnector",
+							Image: konnectorImage,
+							Env: []corev1.EnvVar{
+								{
+									Name: "POD_NAME",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.name",
+										},
+									},
+								},
+								{
+									Name: "POD_NAMESPACE",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "metadata.namespace",
+										},
+									},
+								},
+							},
+							ReadinessProbe: &corev1.Probe{
+								ProbeHandler: corev1.ProbeHandler{
+									HTTPGet: &corev1.HTTPGetAction{
+										Path: "/healthz",
+										Port: httpPort,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	if err := c.Create(ctx, deploy); err != nil {
+		return false, fmt.Errorf("failed to create konnector deployment: %w", err)
+	}
+
+	return true, nil
 }
 
 func (m *Manager) SeedDefaultCluster(ctx context.Context) error {

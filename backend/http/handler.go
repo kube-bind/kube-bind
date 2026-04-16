@@ -18,6 +18,7 @@ package http
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -167,6 +168,8 @@ func (h *handler) AddRoutes(mux *mux.Router) error {
 	apiRouter.Handle("/collections", auth.RequireAuth(http.HandlerFunc(h.handleCollections))).Methods(http.MethodGet)
 	apiRouter.Handle("/bind", auth.RequireAuth(http.HandlerFunc(h.handleBind))).Methods(http.MethodPost)
 	apiRouter.Handle("/ping", auth.RequireAuth(http.HandlerFunc(h.handlePing))).Methods(http.MethodGet)
+	apiRouter.Handle("/consumer-status", auth.RequireAuth(http.HandlerFunc(h.handleConsumerStatus))).Methods(http.MethodGet)
+	apiRouter.Handle("/apply-binding", auth.RequireAuth(http.HandlerFunc(h.handleApplyBinding))).Methods(http.MethodPost)
 
 	if h.oidcServer != nil {
 		h.oidcServer.AddRoutes(mux)
@@ -555,7 +558,119 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	w.Write(payload) //nolint:errcheck
 }
 
-// listTemplates fetches the list of APIServiceExportTemplates from the backend cluster without checking
+// handleConsumerStatus returns whether the authenticated user already has a consumer
+// namespace with existing APIServiceExports on the provider.
+func (h *handler) handleConsumerStatus(w http.ResponseWriter, r *http.Request) {
+	logger := getLogger(r)
+	params := client.GetQueryParams(r)
+	prepareNoCache(w)
+
+	authCtx := auth.GetAuthContext(r.Context())
+	state := authCtx.SessionState
+	identity := state.Token.Issuer + "/" + state.Token.Subject
+
+	status, err := h.kubeManager.GetConsumerStatus(r.Context(), identity, params.ClusterID)
+	if err != nil {
+		logger.Error(err, "failed to get consumer status")
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to get consumer status", err.Error())
+		return
+	}
+
+	payload, err := json.Marshal(status)
+	if err != nil {
+		logger.Error(err, "failed to marshal consumer status")
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to marshal consumer status", err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(payload) //nolint:errcheck
+}
+
+// applyBindingRequest is the JSON body for the apply-binding endpoint.
+type applyBindingRequest struct {
+	// ConsumerKubeconfig is the base64-encoded kubeconfig for the consumer cluster.
+	ConsumerKubeconfig string `json:"consumerKubeconfig"`
+	// BindingName is the name for the binding (used for secret and bundle naming).
+	BindingName string `json:"bindingName"`
+}
+
+// handleApplyBinding receives a consumer kubeconfig and applies the konnector + binding
+// bundle to the consumer cluster.
+func (h *handler) handleApplyBinding(w http.ResponseWriter, r *http.Request) {
+	logger := getLogger(r)
+	params := client.GetQueryParams(r)
+	prepareNoCache(w)
+
+	authCtx := auth.GetAuthContext(r.Context())
+	state := authCtx.SessionState
+	identity := state.Token.Issuer + "/" + state.Token.Subject
+
+	// Parse request body
+	const maxBodySize = 1 << 20 // 1 MB
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
+	var req applyBindingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Invalid request body", err.Error())
+		return
+	}
+
+	if req.ConsumerKubeconfig == "" {
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Missing consumer kubeconfig", "consumerKubeconfig is required")
+		return
+	}
+	if req.BindingName == "" {
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Missing binding name", "bindingName is required")
+		return
+	}
+
+	// Decode base64 consumer kubeconfig
+	consumerKubeconfigData, err := base64.StdEncoding.DecodeString(req.ConsumerKubeconfig)
+	if err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Invalid consumer kubeconfig encoding", "consumerKubeconfig must be base64 encoded")
+		return
+	}
+
+	// Get the provider kubeconfig for this user's namespace
+	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, identity, params.ClusterID)
+	if err != nil {
+		logger.Error(err, "failed to handle resources for apply-binding")
+		statusCode, code, details := mapErrorToCode(err)
+		writeErrorResponse(w, statusCode, code, "Failed to prepare provider resources", details)
+		return
+	}
+
+	// Resolve konnector image
+	konnectorVersion, err := bindversion.BinaryVersion(componentbaseversion.Get().GitVersion)
+	if err != nil {
+		konnectorVersion = "latest"
+	}
+	konnectorImage := fmt.Sprintf("ghcr.io/kube-bind/konnector:%s", konnectorVersion)
+
+	// Apply to consumer cluster
+	result, err := h.kubeManager.ApplyToConsumer(
+		r.Context(),
+		consumerKubeconfigData,
+		handleResult.Kubeconfig,
+		req.BindingName,
+		konnectorImage,
+	)
+	if err != nil {
+		logger.Error(err, "failed to apply binding to consumer cluster")
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to apply binding to consumer cluster", err.Error())
+		return
+	}
+
+	payload, err := json.Marshal(result)
+	if err != nil {
+		logger.Error(err, "failed to marshal apply result")
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to marshal result", err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(payload) //nolint:errcheck
+}
 // if they are part of a Collection or not.
 func (h *handler) listTemplates(ctx context.Context, cluster string) (*kubebindv1alpha2.APIServiceExportTemplateList, error) {
 	templates, err := h.kubeManager.ListTemplates(ctx, cluster)

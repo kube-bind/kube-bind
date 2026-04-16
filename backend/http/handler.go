@@ -671,6 +671,7 @@ func (h *handler) handleApplyBinding(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(payload) //nolint:errcheck
 }
+
 // if they are part of a Collection or not.
 func (h *handler) listTemplates(ctx context.Context, cluster string) (*kubebindv1alpha2.APIServiceExportTemplateList, error) {
 	templates, err := h.kubeManager.ListTemplates(ctx, cluster)

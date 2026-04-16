@@ -106,6 +106,10 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 			return err
 		}
 
+		// Annotate the provider-side object with the consumer source metadata.
+		konnectortypes.SetSourceMetadataAnnotations(upstream, obj.GetNamespace(), string(obj.GetUID()),
+			konnectortypes.ConsumerNamespaceAnnotationKey, konnectortypes.ConsumerUIDAnnotationKey)
+
 		// let the isolation perform any changes it desires
 		if err := r.isolationStrategy.MutateMetadataAndSpec(upstream, *providerKey); err != nil {
 			return err
@@ -146,6 +150,10 @@ func (r *reconciler) reconcile(ctx context.Context, obj *unstructured.Unstructur
 	if err := r.setClusterNamespaceAnnotation(upstream); err != nil {
 		return err
 	}
+
+	// (Re)set the consumer source metadata annotations.
+	konnectortypes.SetSourceMetadataAnnotations(upstream, obj.GetNamespace(), string(obj.GetUID()),
+		konnectortypes.ConsumerNamespaceAnnotationKey, konnectortypes.ConsumerUIDAnnotationKey)
 
 	// just in case, checking for finalizer
 	if obj, err = r.ensureDownstreamFinalizer(ctx, obj); err != nil {

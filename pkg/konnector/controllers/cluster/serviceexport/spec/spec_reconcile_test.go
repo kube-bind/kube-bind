@@ -77,6 +77,62 @@ func TestInjectClusterNamespace(t *testing.T) {
 	}
 }
 
+func TestSetSourceAnnotations(t *testing.T) {
+	tests := []struct {
+		name                string
+		obj                 *unstructured.Unstructured
+		consumerNamespace   string
+		consumerUID         string
+		expectedAnnotations map[string]string
+	}{
+		{
+			name:              "no existing annotations",
+			obj:               &unstructured.Unstructured{},
+			consumerNamespace: "my-namespace",
+			consumerUID:       "abc-123-def",
+			expectedAnnotations: map[string]string{
+				konnectortypes.ConsumerNamespaceAnnotationKey: "my-namespace",
+				konnectortypes.ConsumerUIDAnnotationKey:       "abc-123-def",
+			},
+		},
+		{
+			name:              "with existing cluster namespace annotation",
+			obj:               newObjectWithClusterNs("kube-bind-zlp9m"),
+			consumerNamespace: "other-namespace",
+			consumerUID:       "xyz-456-ghi",
+			expectedAnnotations: map[string]string{
+				konnectortypes.ConsumerNamespaceAnnotationKey: "other-namespace",
+				konnectortypes.ConsumerUIDAnnotationKey:       "xyz-456-ghi",
+				konnectortypes.ClusterNamespaceAnnotationKey:  "kube-bind-zlp9m",
+			},
+		},
+		{
+			name:              "cluster-scoped object with empty namespace",
+			obj:               &unstructured.Unstructured{},
+			consumerNamespace: "",
+			consumerUID:       "uid-789",
+			expectedAnnotations: map[string]string{
+				konnectortypes.ConsumerNamespaceAnnotationKey: "",
+				konnectortypes.ConsumerUIDAnnotationKey:       "uid-789",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			konnectortypes.SetSourceMetadataAnnotations(tt.obj, tt.consumerNamespace, tt.consumerUID,
+				konnectortypes.ConsumerNamespaceAnnotationKey, konnectortypes.ConsumerUIDAnnotationKey)
+
+			annotations := tt.obj.GetAnnotations()
+			for key, expected := range tt.expectedAnnotations {
+				require.Equal(t, expected, annotations[key], "annotation %s mismatch", key)
+			}
+		})
+	}
+}
+
 func newObjectWithClusterNs(providerNamespace string) *unstructured.Unstructured {
 	obj := &unstructured.Unstructured{}
 	ans := map[string]string{

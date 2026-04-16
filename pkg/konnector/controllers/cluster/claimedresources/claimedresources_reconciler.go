@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/klog/v2"
 
+	konnectortypes "github.com/kube-bind/kube-bind/pkg/konnector/types"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
@@ -117,6 +118,8 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 			logger.Info("Creating missing consumer object", "consumerNamespace", consumerNS, "consumerName", providerObj.GetName())
 
 			candidate := candidateFromOwnerObj(consumerNS, providerObj)
+			konnectortypes.SetSourceMetadataAnnotations(candidate, providerObj.GetNamespace(), string(providerObj.GetUID()),
+				konnectortypes.ProviderNamespaceAnnotationKey, konnectortypes.ProviderUIDAnnotationKey)
 			r.makeProviderOwner(candidate)
 
 			if _, err := r.createConsumerObject(ctx, candidate); err != nil {
@@ -132,6 +135,8 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 		}
 
 		candidate := candidateFromOwnerObj(consumerNS, providerObj)
+		konnectortypes.SetSourceMetadataAnnotations(candidate, providerObj.GetNamespace(), string(providerObj.GetUID()),
+			konnectortypes.ProviderNamespaceAnnotationKey, konnectortypes.ProviderUIDAnnotationKey)
 		current := candidateFromOwnerObj(consumerNS, consumerObj)
 		if !equality.Semantic.DeepEqual(candidate, current) {
 			logger.Info("Updating consumer object data", "consumerNamespace", consumerNS, "consumerName", consumerObj.GetName())
@@ -161,6 +166,8 @@ func (r *readReconciler) reconcile(ctx context.Context, providerNamespace, name 
 		}
 
 		candidate := candidateFromOwnerObj(providerNamespace, ownerCandidate)
+		konnectortypes.SetSourceMetadataAnnotations(candidate, ownerCandidate.GetNamespace(), string(ownerCandidate.GetUID()),
+			konnectortypes.ConsumerNamespaceAnnotationKey, konnectortypes.ConsumerUIDAnnotationKey)
 		r.makeConsumerOwner(candidate)
 
 		if errors.IsNotFound(providerErr) {

@@ -7,6 +7,14 @@ replicaCount: 1
 
 # Backend configuration
 backend:
+  # Container image configuration
+  image:
+    # -- Image repository
+    repository: ghcr.io/kube-bind/backend
+    # -- Image pull policy
+    pullPolicy: IfNotPresent
+    # -- Overrides the image tag whose default is the chart appVersion
+    tag: ""
   # -- Address the backend listens on
   listenAddress: "0.0.0.0:8080"
   # -- Path to a kubeconfig file. Only required if out-of-cluster.
@@ -129,15 +137,6 @@ gatewayApi:
 examples:
   # -- Enable example resources to seed on first start
   enabled: false
-
-# Container image configuration
-image:
-  # -- Image repository
-  repository: ghcr.io/kube-bind/backend
-  # -- Image pull policy
-  pullPolicy: IfNotPresent
-  # -- Overrides the image tag whose default is the chart appVersion
-  tag: ""
 
 # -- Secrets for pulling images from a private repository
 imagePullSecrets: []

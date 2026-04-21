@@ -60,8 +60,8 @@ type DevOptions struct {
 	Logs    *logs.Options
 	Streams genericclioptions.IOStreams
 
-	Image               string
-	Tag                 string
+	BackendImage        string
+	BackendTag          string
 	ProviderClusterName string
 	ConsumerClusterName string
 	WaitForReadyTimeout time.Duration
@@ -102,8 +102,8 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().DurationVar(&o.WaitForReadyTimeout, "wait-for-ready-timeout", 2*time.Minute, "Timeout for waiting for the cluster to be ready")
 	cmd.Flags().StringVar(&o.ChartPath, "chart-path", o.ChartPath, "Helm chart path or OCI registry URL")
 	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", o.ChartVersion, "The version of the Helm chart to use")
-	cmd.Flags().StringVar(&o.Image, "image", "ghcr.io/kube-bind/backend", "The name of kube-bind backend to use in dev mode")
-	cmd.Flags().StringVar(&o.Tag, "tag", "", "The tag of the kube-bind backend image to use in dev mode")
+	cmd.Flags().StringVar(&o.BackendImage, "backend-image", "ghcr.io/kube-bind/backend", "The name of kube-bind backend to use in dev mode")
+	cmd.Flags().StringVar(&o.BackendTag, "backend-tag", "", "The tag of the kube-bind backend image to use in dev mode")
 	cmd.Flags().StringVar(&o.KindNetwork, "kind-network", "kube-bind-dev", "The name of the kind network to use in dev mode")
 }
 
@@ -111,7 +111,7 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 func (o *DevOptions) Complete(args []string) error {
 	// Only fetch the latest version if tag is not set
 	var assetVersion string
-	if o.Tag == "" {
+	if o.BackendTag == "" {
 		version, err := fetchLatestRelease()
 		if err != nil {
 			// Log the error but continue with fallback version
@@ -125,8 +125,8 @@ func (o *DevOptions) Complete(args []string) error {
 		if o.ChartVersion == "" || o.ChartVersion == fallbackAssetVersion {
 			o.ChartVersion = assetVersion
 		}
-		if o.Tag == "" || o.Tag == "v"+fallbackAssetVersion {
-			o.Tag = "v" + assetVersion
+		if o.BackendTag == "" || o.BackendTag == "v"+fallbackAssetVersion {
+			o.BackendTag = "v" + assetVersion
 		}
 	}
 
@@ -391,14 +391,14 @@ func (o *DevOptions) installHelmChart(_ context.Context, restConfig *rest.Config
 	actionConfig.RegistryClient = registryClient
 
 	values := map[string]any{
-		"image": map[string]any{
-			"repository": o.Image,
-			"tag":        o.Tag,
-		},
 		"examples": map[string]any{
 			"enabled": true,
 		},
 		"backend": map[string]any{
+			"image": map[string]any{
+				"repository": o.BackendImage,
+				"tag":        o.BackendTag,
+			},
 			"listenAddress":      "0.0.0.0:8080",
 			"namespacePrefix":    "kube-bind-",
 			"externalAddress":    "https://kube-bind.dev.local:6443",

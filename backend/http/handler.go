@@ -30,12 +30,15 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	kjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/backend/auth"
 	"github.com/kube-bind/kube-bind/backend/client"
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
+	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/backend/oidc"
 	"github.com/kube-bind/kube-bind/backend/session"
 	"github.com/kube-bind/kube-bind/backend/spaserver"
@@ -150,6 +153,9 @@ func (h *handler) AddRoutes(mux *mux.Router) error {
 	// Public API routes (no authentication required)
 	mux.HandleFunc("/api/healthz", h.handleHealthz).Methods(http.MethodGet)
 	mux.HandleFunc("/api/bindable-resources", h.handleBindableResources).Methods(http.MethodGet)
+	// Intentionally unauthenticated: serves static, deterministic deployment YAML
+	// (konnector image tag is the only variable, derived from the server's own version).
+	// No secrets or cluster-specific data are included.
 	mux.HandleFunc("/api/konnector-manifests", h.handleKonnectorManifests).Methods(http.MethodGet)
 
 	// Generic authentication routes (support both UI and CLI)
@@ -203,6 +209,8 @@ func (h *handler) handlePing(w http.ResponseWriter, r *http.Request) {
 
 // handleKonnectorManifests returns the pre-rendered konnector YAML manifests
 // that a consumer cluster needs to apply to deploy the konnector agent.
+// The manifests are generated from the same Go structs used by the one-click
+// apply flow (ensureKonnector) to avoid definition drift.
 func (h *handler) handleKonnectorManifests(w http.ResponseWriter, r *http.Request) {
 	prepareNoCache(w)
 
@@ -212,79 +220,34 @@ func (h *handler) handleKonnectorManifests(w http.ResponseWriter, r *http.Reques
 	}
 	konnectorImage := fmt.Sprintf("ghcr.io/kube-bind/konnector:%s", konnectorVersion)
 
-	manifests := fmt.Sprintf(`apiVersion: v1
-kind: Namespace
-metadata:
-  name: kube-bind
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: konnector
-  namespace: kube-bind
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: kube-bind-konnector
-rules:
-- apiGroups: ["*"]
-  resources: ["*"]
-  verbs: ["*"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kube-bind-konnector
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kube-bind-konnector
-subjects:
-- kind: ServiceAccount
-  name: konnector
-  namespace: kube-bind
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: konnector
-  namespace: kube-bind
-  labels:
-    app: konnector
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: konnector
-  template:
-    metadata:
-      labels:
-        app: konnector
-    spec:
-      restartPolicy: Always
-      serviceAccountName: konnector
-      containers:
-      - name: konnector
-        image: %s
-        env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        readinessProbe:
-          httpGet:
-            path: /healthz
-            port: 8090
-`, konnectorImage)
+	manifests := kuberesources.NewKonnectorManifests(konnectorImage)
+
+	// Serialize each object to YAML and join with document separators
+	s := runtime.NewScheme()
+	kuberesources.AddKonnectorSchemes(s)
+	encoder := kjson.NewSerializerWithOptions(
+		kjson.DefaultMetaFactory,
+		s,
+		s,
+		kjson.SerializerOptions{Yaml: true, Pretty: true, Strict: false},
+	)
+	codec := serializer.NewCodecFactory(s).EncoderForVersion(encoder, nil)
+
+	var buf strings.Builder
+	objects := manifests.Objects()
+	for i, obj := range objects {
+		if i > 0 {
+			buf.WriteString("---\n")
+		}
+		if err := codec.Encode(obj, &buf); err != nil {
+			writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to serialize konnector manifests", err.Error())
+			return
+		}
+	}
 
 	w.Header().Set("Content-Type", "text/yaml")
 	w.Header().Set("Content-Disposition", "attachment; filename=konnector.yaml")
-	w.Write([]byte(manifests)) //nolint:errcheck
+	w.Write([]byte(buf.String())) //nolint:errcheck
 }
 
 func (h *handler) handleLogout(w http.ResponseWriter, r *http.Request) {

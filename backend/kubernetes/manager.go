@@ -25,7 +25,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	authzv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	authorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
@@ -569,7 +567,7 @@ func (m *Manager) ApplyToConsumer(
 func (m *Manager) ensureKonnector(ctx context.Context, c client.Client, konnectorImage string) (bool, error) {
 	// Check if konnector deployment already exists
 	existing := &appsv1.Deployment{}
-	err := c.Get(ctx, types.NamespacedName{Name: "konnector", Namespace: "kube-bind"}, existing)
+	err := c.Get(ctx, types.NamespacedName{Name: kuberesources.KonnectorDeploymentName, Namespace: kuberesources.KonnectorNamespace}, existing)
 	if err == nil {
 		return false, nil // already deployed
 	}
@@ -577,114 +575,18 @@ func (m *Manager) ensureKonnector(ctx context.Context, c client.Client, konnecto
 		return false, fmt.Errorf("failed to check for existing konnector: %w", err)
 	}
 
-	// ServiceAccount
-	sa := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "konnector",
-			Namespace: "kube-bind",
-		},
-	}
-	if err := c.Create(ctx, sa); err != nil && !errors.IsAlreadyExists(err) {
+	manifests := kuberesources.NewKonnectorManifests(konnectorImage)
+
+	if err := c.Create(ctx, manifests.ServiceAccount); err != nil && !errors.IsAlreadyExists(err) {
 		return false, fmt.Errorf("failed to create konnector service account: %w", err)
 	}
-
-	// ClusterRole
-	cr := &rbacv1.ClusterRole{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "kube-bind-konnector",
-		},
-		Rules: []rbacv1.PolicyRule{
-			{
-				APIGroups: []string{"*"},
-				Resources: []string{"*"},
-				Verbs:     []string{"*"},
-			},
-		},
-	}
-	if err := c.Create(ctx, cr); err != nil && !errors.IsAlreadyExists(err) {
+	if err := c.Create(ctx, manifests.ClusterRole); err != nil && !errors.IsAlreadyExists(err) {
 		return false, fmt.Errorf("failed to create konnector cluster role: %w", err)
 	}
-
-	// ClusterRoleBinding
-	crb := &rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "kube-bind-konnector",
-		},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     "kube-bind-konnector",
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      "konnector",
-				Namespace: "kube-bind",
-			},
-		},
-	}
-	if err := c.Create(ctx, crb); err != nil && !errors.IsAlreadyExists(err) {
+	if err := c.Create(ctx, manifests.ClusterRoleBinding); err != nil && !errors.IsAlreadyExists(err) {
 		return false, fmt.Errorf("failed to create konnector cluster role binding: %w", err)
 	}
-
-	// Deployment
-	replicas := int32(2)
-	httpPort := intstr.FromInt(8090)
-	deploy := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "konnector",
-			Namespace: "kube-bind",
-			Labels:    map[string]string{"app": "konnector"},
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: &replicas,
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": "konnector"},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"app": "konnector"},
-				},
-				Spec: corev1.PodSpec{
-					RestartPolicy:      corev1.RestartPolicyAlways,
-					ServiceAccountName: "konnector",
-					Containers: []corev1.Container{
-						{
-							Name:  "konnector",
-							Image: konnectorImage,
-							Env: []corev1.EnvVar{
-								{
-									Name: "POD_NAME",
-									ValueFrom: &corev1.EnvVarSource{
-										FieldRef: &corev1.ObjectFieldSelector{
-											FieldPath: "metadata.name",
-										},
-									},
-								},
-								{
-									Name: "POD_NAMESPACE",
-									ValueFrom: &corev1.EnvVarSource{
-										FieldRef: &corev1.ObjectFieldSelector{
-											FieldPath: "metadata.namespace",
-										},
-									},
-								},
-							},
-							ReadinessProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path: "/healthz",
-										Port: httpPort,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	if err := c.Create(ctx, deploy); err != nil {
+	if err := c.Create(ctx, manifests.Deployment); err != nil {
 		return false, fmt.Errorf("failed to create konnector deployment: %w", err)
 	}
 

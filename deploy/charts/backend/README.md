@@ -34,6 +34,9 @@ See [values.yaml](values.yaml) for the full list of configurable parameters.
 | backend.externalServerName | string | `""` | External server name for TLS SNI |
 | backend.extraArgs | list | `[]` | Extra command-line arguments to pass to the backend |
 | backend.frontendDisabled | bool | `false` | Disable the frontend UI |
+| backend.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
+| backend.image.repository | string | `"ghcr.io/kube-bind/backend"` | Image repository |
+| backend.image.tag | string | `""` | Overrides the image tag whose default is the chart appVersion |
 | backend.kubeconfig | string | `""` | Path to a kubeconfig file. Only required if out-of-cluster. |
 | backend.listenAddress | string | `"0.0.0.0:8080"` | Address the backend listens on |
 | backend.loggingLevel | int | `2` | Logging verbosity level |
@@ -71,9 +74,6 @@ See [values.yaml](values.yaml) for the full list of configurable parameters.
 | gatewayApi.route.path | string | `"/"` | Path match for the HTTPRoute |
 | gatewayApi.route.pathType | string | `"PathPrefix"` | Path match type for the HTTPRoute |
 | hostAliases | list | `[]` | Host aliases for /etc/hosts injection into pods |
-| image.pullPolicy | string | `"IfNotPresent"` | Image pull policy |
-| image.repository | string | `"ghcr.io/kube-bind/backend"` | Image repository |
-| image.tag | string | `""` | Overrides the image tag whose default is the chart appVersion |
 | imagePullSecrets | list | `[]` | Secrets for pulling images from a private repository |
 | initContainers | list | `[]` | Additional init containers |
 | livenessProbe | object | `{"httpGet":{"path":"/healthz","port":"http"}}` | Liveness probe configuration |

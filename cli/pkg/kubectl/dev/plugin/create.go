@@ -88,7 +88,6 @@ func NewDevOptions(streams genericclioptions.IOStreams) *DevOptions {
 		ProviderClusterName: "kind-provider",
 		ConsumerClusterName: "kind-consumer",
 		ChartPath:           "oci://ghcr.io/kube-bind/charts/backend",
-		ChartVersion:        fallbackAssetVersion,
 	}
 }
 
@@ -101,7 +100,7 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.ConsumerClusterName, "consumer-cluster-name", "kind-consumer", "Name of the consumer cluster in dev mode")
 	cmd.Flags().DurationVar(&o.WaitForReadyTimeout, "wait-for-ready-timeout", 2*time.Minute, "Timeout for waiting for the cluster to be ready")
 	cmd.Flags().StringVar(&o.ChartPath, "chart-path", o.ChartPath, "Helm chart path or OCI registry URL")
-	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", o.ChartVersion, "The version of the Helm chart to use")
+	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", "", "The version of the Helm chart to use")
 	cmd.Flags().StringVar(&o.BackendImage, "backend-image", "ghcr.io/kube-bind/backend", "The name of kube-bind backend to use in dev mode")
 	cmd.Flags().StringVar(&o.BackendTag, "backend-tag", "", "The tag of the kube-bind backend image to use in dev mode")
 	cmd.Flags().StringVar(&o.KindNetwork, "kind-network", "kube-bind-dev", "The name of the kind network to use in dev mode")
@@ -117,7 +116,7 @@ func (o *DevOptions) Complete(args []string) error {
 		assetVersion = version
 	}
 
-	if o.ChartVersion == "" || o.ChartVersion == fallbackAssetVersion {
+	if o.ChartVersion == "" {
 		o.ChartVersion = assetVersion
 	}
 
@@ -386,6 +385,11 @@ func (o *DevOptions) installHelmChart(_ context.Context, restConfig *rest.Config
 	actionConfig.RegistryClient = registryClient
 
 	values := map[string]any{
+		"image": map[string]any{
+			"repository": o.BackendImage,
+			"tag":        o.BackendTag,
+		},
+
 		"examples": map[string]any{
 			"enabled": true,
 		},

@@ -9696,27 +9696,27 @@ var AuthService = class {
 var authService = new AuthService();
 //#endregion
 //#region src/App.vue?vue&type=script&setup=true&lang.ts
-var _hoisted_1$4 = { id: "app" };
-var _hoisted_2$4 = { class: "header" };
-var _hoisted_3$4 = { class: "header-content" };
-var _hoisted_4$4 = {
+var _hoisted_1$5 = { id: "app" };
+var _hoisted_2$5 = { class: "header" };
+var _hoisted_3$5 = { class: "header-content" };
+var _hoisted_4$5 = {
 	key: 0,
 	class: "user-section"
 };
-var _hoisted_5$4 = { class: "main" };
-var _hoisted_6$4 = {
+var _hoisted_5$5 = { class: "main" };
+var _hoisted_6$5 = {
 	key: 0,
 	class: "auth-placeholder"
 };
-var _hoisted_7$4 = {
+var _hoisted_7$5 = {
 	key: 0,
 	class: "auth-error"
 };
-var _hoisted_8$3 = { class: "error-content" };
-var _hoisted_9$3 = { key: 1 };
-var _hoisted_10$3 = ["disabled"];
-var _hoisted_11$3 = { key: 0 };
-var _hoisted_12$3 = { key: 1 };
+var _hoisted_8$4 = { class: "error-content" };
+var _hoisted_9$4 = { key: 1 };
+var _hoisted_10$4 = ["disabled"];
+var _hoisted_11$4 = { key: 0 };
+var _hoisted_12$4 = { key: 1 };
 var App_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComponent({
 	__name: "App",
 	setup(__props) {
@@ -9794,7 +9794,7 @@ var App_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComp
 		});
 		return (_ctx, _cache) => {
 			const _component_router_view = resolveComponent("router-view");
-			return openBlock(), createElementBlock("div", _hoisted_1$4, [createBaseVNode("header", _hoisted_2$4, [createBaseVNode("div", _hoisted_3$4, [_cache[2] || (_cache[2] = createStaticVNode("<div class=\"brand\" data-v-0b535f4a><div class=\"logo\" data-v-0b535f4a><svg width=\"32\" height=\"32\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" data-v-0b535f4a><path d=\"M12 2L2 7L12 12L22 7L12 2Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" data-v-0b535f4a></path><path d=\"M2 17L12 22L22 17\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" data-v-0b535f4a></path><path d=\"M2 12L12 17L22 12\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" data-v-0b535f4a></path></svg></div><h1 data-v-0b535f4a>Kube Bind</h1></div>", 1)), authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_4$4, [_cache[1] || (_cache[1] = createBaseVNode("div", { class: "user-info" }, [createBaseVNode("div", { class: "status-indicator" }), createBaseVNode("span", { class: "welcome-text" }, "Connected")], -1)), createBaseVNode("button", {
+			return openBlock(), createElementBlock("div", _hoisted_1$5, [createBaseVNode("header", _hoisted_2$5, [createBaseVNode("div", _hoisted_3$5, [_cache[2] || (_cache[2] = createStaticVNode("<div class=\"brand\" data-v-0b535f4a><div class=\"logo\" data-v-0b535f4a><svg width=\"32\" height=\"32\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" data-v-0b535f4a><path d=\"M12 2L2 7L12 12L22 7L12 2Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" data-v-0b535f4a></path><path d=\"M2 17L12 22L22 17\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" data-v-0b535f4a></path><path d=\"M2 12L12 17L22 12\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" data-v-0b535f4a></path></svg></div><h1 data-v-0b535f4a>Kube Bind</h1></div>", 1)), authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_4$5, [_cache[1] || (_cache[1] = createBaseVNode("div", { class: "user-info" }, [createBaseVNode("div", { class: "status-indicator" }), createBaseVNode("span", { class: "welcome-text" }, "Connected")], -1)), createBaseVNode("button", {
 				onClick: logout,
 				class: "logout-btn"
 			}, [..._cache[0] || (_cache[0] = [createBaseVNode("svg", {
@@ -9825,14 +9825,14 @@ var App_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComp
 					"stroke-linecap": "round",
 					"stroke-linejoin": "round"
 				})
-			], -1), createTextVNode(" Sign out ", -1)])])])) : createCommentVNode("", true)])]), createBaseVNode("main", _hoisted_5$4, [!authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_6$4, [
+			], -1), createTextVNode(" Sign out ", -1)])])])) : createCommentVNode("", true)])]), createBaseVNode("main", _hoisted_5$5, [!authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_6$5, [
 				_cache[5] || (_cache[5] = createBaseVNode("h2", null, "Authentication Required", -1)),
-				authStatus.value.error ? (openBlock(), createElementBlock("div", _hoisted_7$4, [_cache[4] || (_cache[4] = createBaseVNode("div", { class: "error-icon" }, "⚠️", -1)), createBaseVNode("div", _hoisted_8$3, [_cache[3] || (_cache[3] = createBaseVNode("h3", null, "Authentication Error", -1)), createBaseVNode("p", null, toDisplayString(authStatus.value.error), 1)])])) : (openBlock(), createElementBlock("p", _hoisted_9$3, "Please authenticate to access resources.")),
+				authStatus.value.error ? (openBlock(), createElementBlock("div", _hoisted_7$5, [_cache[4] || (_cache[4] = createBaseVNode("div", { class: "error-icon" }, "⚠️", -1)), createBaseVNode("div", _hoisted_8$4, [_cache[3] || (_cache[3] = createBaseVNode("h3", null, "Authentication Error", -1)), createBaseVNode("p", null, toDisplayString(authStatus.value.error), 1)])])) : (openBlock(), createElementBlock("p", _hoisted_9$4, "Please authenticate to access resources.")),
 				createBaseVNode("button", {
 					onClick: authenticate,
 					class: "auth-btn",
 					disabled: authStatus.value.loading
-				}, [authStatus.value.loading ? (openBlock(), createElementBlock("span", _hoisted_11$3, "Authenticating...")) : (openBlock(), createElementBlock("span", _hoisted_12$3, toDisplayString(authStatus.value.error ? "Try Again" : "Authenticate"), 1))], 8, _hoisted_10$3)
+				}, [authStatus.value.loading ? (openBlock(), createElementBlock("span", _hoisted_11$4, "Authenticating...")) : (openBlock(), createElementBlock("span", _hoisted_12$4, toDisplayString(authStatus.value.error ? "Try Again" : "Authenticate"), 1))], 8, _hoisted_10$4)
 			])) : (openBlock(), createBlock(_component_router_view, {
 				key: 1,
 				"auth-status": authStatus.value
@@ -9852,77 +9852,54 @@ var _plugin_vue_export_helper_default = (sfc, props) => {
 var App_default = /* @__PURE__ */ _plugin_vue_export_helper_default(App_vue_vue_type_script_setup_true_lang_default, [["__scopeId", "data-v-0b535f4a"]]);
 //#endregion
 //#region src/components/BindingResult.vue?vue&type=script&setup=true&lang.ts
-var _hoisted_1$3 = { class: "binding-content" };
-var _hoisted_2$3 = { class: "binding-info" };
-var _hoisted_3$3 = { class: "method-tabs" };
-var _hoisted_4$3 = {
+var _hoisted_1$4 = { class: "binding-header" };
+var _hoisted_2$4 = { class: "binding-content" };
+var _hoisted_3$4 = { class: "method-tabs" };
+var _hoisted_4$4 = {
 	key: 0,
 	class: "instructions-section"
 };
-var _hoisted_5$3 = { class: "step-group" };
-var _hoisted_6$3 = { class: "upload-block" };
-var _hoisted_7$3 = ["disabled"];
-var _hoisted_8$2 = {
+var _hoisted_5$4 = { class: "step-group" };
+var _hoisted_6$4 = { class: "upload-block" };
+var _hoisted_7$4 = ["disabled"];
+var _hoisted_8$3 = {
 	key: 0,
 	class: "file-info"
 };
-var _hoisted_9$2 = { class: "step-group" };
-var _hoisted_10$2 = ["disabled"];
-var _hoisted_11$2 = {
+var _hoisted_9$3 = { class: "step-group" };
+var _hoisted_10$3 = ["disabled"];
+var _hoisted_11$3 = {
 	key: 0,
 	class: "spinner"
 };
-var _hoisted_12$2 = {
+var _hoisted_12$3 = {
 	key: 0,
 	class: "status-message success"
 };
-var _hoisted_13$2 = {
+var _hoisted_13$3 = {
 	key: 1,
 	class: "status-message error"
 };
-var _hoisted_14$2 = {
+var _hoisted_14$3 = {
 	key: 1,
 	class: "instructions-section"
 };
-var _hoisted_15$2 = {
-	key: 0,
-	class: "status-check"
-};
-var _hoisted_16$2 = {
-	key: 1,
-	class: "connected-info"
-};
-var _hoisted_17$2 = { class: "instructions-text" };
-var _hoisted_18$2 = {
-	key: 0,
-	class: "exports-list"
-};
+var _hoisted_15$3 = { class: "step-group" };
+var _hoisted_16$3 = { class: "command-block" };
+var _hoisted_17$3 = { class: "step-group" };
+var _hoisted_18$2 = { class: "command-block" };
 var _hoisted_19$2 = { class: "step-group" };
 var _hoisted_20$2 = { class: "command-block" };
 var _hoisted_21$2 = {
 	key: 2,
-	class: "not-connected-info"
-};
-var _hoisted_22$2 = {
-	key: 2,
 	class: "instructions-section"
 };
-var _hoisted_23$2 = { class: "step-group" };
-var _hoisted_24$2 = { class: "command-block" };
-var _hoisted_25$2 = { class: "step-group" };
-var _hoisted_26$2 = { class: "command-block" };
-var _hoisted_27$2 = { class: "step-group" };
-var _hoisted_28$2 = { class: "command-block" };
-var _hoisted_29$2 = {
-	key: 3,
-	class: "instructions-section"
-};
-var _hoisted_30$2 = { class: "step-group" };
-var _hoisted_31$2 = { class: "command-block" };
-var _hoisted_32$2 = { class: "step-group" };
-var _hoisted_33$2 = { class: "command-block" };
-var _hoisted_34$2 = { class: "step-group" };
-var _hoisted_35$2 = { class: "command-block" };
+var _hoisted_22$2 = { class: "step-group" };
+var _hoisted_23$2 = { class: "command-block" };
+var _hoisted_24$2 = { class: "step-group" };
+var _hoisted_25$2 = { class: "command-block" };
+var _hoisted_26$2 = { class: "step-group" };
+var _hoisted_27$2 = { class: "command-block" };
 //#endregion
 //#region src/components/BindingResult.vue
 var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/* @__PURE__ */ defineComponent({
@@ -9942,8 +9919,6 @@ var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/*
 		const applyStatus = /* @__PURE__ */ ref("idle");
 		const applyMessage = /* @__PURE__ */ ref("");
 		const kubeconfigFileInput = /* @__PURE__ */ ref(null);
-		const consumerStatus = /* @__PURE__ */ ref(null);
-		const consumerStatusLoading = /* @__PURE__ */ ref(false);
 		const bindingName = computed(() => {
 			return props.bindingResponse.bindingName || props.templateName;
 		});
@@ -9956,35 +9931,6 @@ var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/*
 		const bindCommand = computed(() => {
 			return `kubectl bind apiservice --remote-kubeconfig-namespace kube-bind --remote-kubeconfig-name ${kubeconfigSecretName.value} -f apiservice-export.yaml`;
 		});
-		watch(activeMethod, function() {
-			var _ref = _asyncToGenerator(function* (method) {
-				if (method === "connected" && !consumerStatus.value) yield checkConsumerStatus();
-			});
-			return function(_x) {
-				return _ref.apply(this, arguments);
-			};
-		}());
-		const checkConsumerStatus = function() {
-			var _ref2 = _asyncToGenerator(function* () {
-				consumerStatusLoading.value = true;
-				try {
-					const response = yield fetch("/api/consumer-status");
-					if (!response.ok) throw new Error(`HTTP ${response.status}`);
-					consumerStatus.value = yield response.json();
-				} catch (error) {
-					console.error("Failed to check consumer status:", error);
-					consumerStatus.value = {
-						connected: false,
-						exports: []
-					};
-				} finally {
-					consumerStatusLoading.value = false;
-				}
-			});
-			return function checkConsumerStatus() {
-				return _ref2.apply(this, arguments);
-			};
-		}();
 		const handleKubeconfigUpload = (event) => {
 			var _target$files;
 			const file = (_target$files = event.target.files) === null || _target$files === void 0 ? void 0 : _target$files[0];
@@ -10001,7 +9947,7 @@ var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/*
 			reader.readAsText(file);
 		};
 		const applyToConsumer = function() {
-			var _ref3 = _asyncToGenerator(function* () {
+			var _ref = _asyncToGenerator(function* () {
 				if (!kubeconfigData.value) return;
 				applyStatus.value = "loading";
 				applyMessage.value = "";
@@ -10028,14 +9974,14 @@ var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/*
 				}
 			});
 			return function applyToConsumer() {
-				return _ref3.apply(this, arguments);
+				return _ref.apply(this, arguments);
 			};
 		}();
 		const closeModal = () => {
 			emit("close");
 		};
 		const copyCommand = function() {
-			var _ref4 = _asyncToGenerator(function* (command) {
+			var _ref2 = _asyncToGenerator(function* (command) {
 				try {
 					yield navigator.clipboard.writeText(command);
 				} catch (err) {
@@ -10048,8 +9994,8 @@ var BindingResult_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/*
 					document.body.removeChild(textarea);
 				}
 			});
-			return function copyCommand(_x2) {
-				return _ref4.apply(this, arguments);
+			return function copyCommand(_x) {
+				return _ref2.apply(this, arguments);
 			};
 		}();
 		const triggerDownload = (content, filename, type = "text/yaml") => {
@@ -10102,7 +10048,7 @@ spec:
 			triggerDownload(bindingBundleYaml.value, "binding-bundle.yaml");
 		};
 		const downloadKonnectorManifests = function() {
-			var _ref5 = _asyncToGenerator(function* () {
+			var _ref3 = _asyncToGenerator(function* () {
 				try {
 					const response = yield fetch("/api/konnector-manifests");
 					if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -10112,7 +10058,7 @@ spec:
 				}
 			});
 			return function downloadKonnectorManifests() {
-				return _ref5.apply(this, arguments);
+				return _ref3.apply(this, arguments);
 			};
 		}();
 		const downloadKubeconfig = () => {
@@ -10130,55 +10076,45 @@ spec:
 			}
 		};
 		return (_ctx, _cache) => {
-			var _consumerStatus$value;
 			return __props.show ? (openBlock(), createElementBlock("div", {
 				key: 0,
 				class: "binding-modal-overlay",
 				onClick: closeModal
 			}, [createBaseVNode("div", {
 				class: "binding-modal",
-				onClick: _cache[11] || (_cache[11] = withModifiers(() => {}, ["stop"]))
+				onClick: _cache[9] || (_cache[9] = withModifiers(() => {}, ["stop"]))
 			}, [
-				createBaseVNode("div", { class: "binding-header" }, [_cache[12] || (_cache[12] = createBaseVNode("h3", null, "Template Binding Successful", -1)), createBaseVNode("button", {
+				createBaseVNode("div", _hoisted_1$4, [createBaseVNode("h3", null, "Setup Binding: " + toDisplayString(__props.templateName), 1), createBaseVNode("button", {
 					onClick: closeModal,
 					class: "close-btn"
 				}, "×")]),
-				createBaseVNode("div", _hoisted_1$3, [
-					createBaseVNode("div", _hoisted_2$3, [
-						_cache[15] || (_cache[15] = createBaseVNode("h4", null, "Binding Information", -1)),
-						createBaseVNode("p", null, [_cache[13] || (_cache[13] = createBaseVNode("strong", null, "Template:", -1)), createTextVNode(" " + toDisplayString(__props.templateName), 1)]),
-						createBaseVNode("p", null, [_cache[14] || (_cache[14] = createBaseVNode("strong", null, "Binding Name:", -1)), createTextVNode(" " + toDisplayString(bindingName.value), 1)])
-					]),
-					createBaseVNode("div", _hoisted_3$3, [
+				createBaseVNode("div", _hoisted_2$4, [
+					createBaseVNode("div", _hoisted_3$4, [
 						createBaseVNode("button", {
 							class: normalizeClass(["method-tab", { active: activeMethod.value === "oneclick" }]),
 							onClick: _cache[0] || (_cache[0] = ($event) => activeMethod.value = "oneclick")
-						}, " ⚡ One-Click ", 2),
-						createBaseVNode("button", {
-							class: normalizeClass(["method-tab", { active: activeMethod.value === "connected" }]),
-							onClick: _cache[1] || (_cache[1] = ($event) => activeMethod.value = "connected")
-						}, " 🔗 Already Connected ", 2),
+						}, " Provide Kubeconfig ", 2),
 						createBaseVNode("button", {
 							class: normalizeClass(["method-tab", { active: activeMethod.value === "bundle" }]),
-							onClick: _cache[2] || (_cache[2] = ($event) => activeMethod.value = "bundle")
-						}, " 📦 Bundle ", 2),
+							onClick: _cache[1] || (_cache[1] = ($event) => activeMethod.value = "bundle")
+						}, " APIServiceBindingBundle ", 2),
 						createBaseVNode("button", {
 							class: normalizeClass(["method-tab", { active: activeMethod.value === "manual" }]),
-							onClick: _cache[3] || (_cache[3] = ($event) => activeMethod.value = "manual")
-						}, " 🔧 Manual (CLI) ", 2)
+							onClick: _cache[2] || (_cache[2] = ($event) => activeMethod.value = "manual")
+						}, " Manual (CLI) ", 2)
 					]),
-					activeMethod.value === "oneclick" ? (openBlock(), createElementBlock("div", _hoisted_4$3, [
-						_cache[18] || (_cache[18] = createBaseVNode("p", { class: "instructions-text" }, " Upload your consumer cluster kubeconfig and we'll automatically deploy the konnector agent and configure the binding bundle for you. No CLI required. ", -1)),
-						_cache[19] || (_cache[19] = createBaseVNode("div", { class: "security-warning" }, [
+					activeMethod.value === "oneclick" ? (openBlock(), createElementBlock("div", _hoisted_4$4, [
+						_cache[12] || (_cache[12] = createBaseVNode("p", { class: "instructions-text" }, " Upload your consumer cluster kubeconfig and we'll automatically deploy the konnector agent and configure the binding bundle for you. No CLI required. ", -1)),
+						_cache[13] || (_cache[13] = createBaseVNode("div", { class: "security-warning" }, [
 							createBaseVNode("strong", null, "⚠️ Security Note:"),
 							createTextVNode(" Your kubeconfig will be used transiently to apply resources to your consumer cluster and will "),
 							createBaseVNode("strong", null, "not"),
 							createTextVNode(" be stored. The provider backend needs cluster-admin level access to deploy the konnector and create binding resources. ")
 						], -1)),
-						createBaseVNode("div", _hoisted_5$3, [
-							_cache[16] || (_cache[16] = createBaseVNode("h5", null, "Upload Consumer Kubeconfig", -1)),
-							_cache[17] || (_cache[17] = createBaseVNode("p", { class: "step-description" }, "Select the kubeconfig file for your consumer cluster.", -1)),
-							createBaseVNode("div", _hoisted_6$3, [createBaseVNode("input", {
+						createBaseVNode("div", _hoisted_5$4, [
+							_cache[10] || (_cache[10] = createBaseVNode("h5", null, "Upload Consumer Kubeconfig", -1)),
+							_cache[11] || (_cache[11] = createBaseVNode("p", { class: "step-description" }, "Select the kubeconfig file for your consumer cluster.", -1)),
+							createBaseVNode("div", _hoisted_6$4, [createBaseVNode("input", {
 								type: "file",
 								ref_key: "kubeconfigFileInput",
 								ref: kubeconfigFileInput,
@@ -10186,89 +10122,66 @@ spec:
 								onChange: handleKubeconfigUpload,
 								class: "file-input",
 								disabled: applyStatus.value === "loading"
-							}, null, 40, _hoisted_7$3), kubeconfigFileName.value ? (openBlock(), createElementBlock("div", _hoisted_8$2, " 📄 " + toDisplayString(kubeconfigFileName.value), 1)) : createCommentVNode("", true)])
+							}, null, 40, _hoisted_7$4), kubeconfigFileName.value ? (openBlock(), createElementBlock("div", _hoisted_8$3, " 📄 " + toDisplayString(kubeconfigFileName.value), 1)) : createCommentVNode("", true)])
 						]),
-						createBaseVNode("div", _hoisted_9$2, [createBaseVNode("button", {
+						createBaseVNode("div", _hoisted_9$3, [createBaseVNode("button", {
 							onClick: applyToConsumer,
 							class: "apply-btn",
 							disabled: !kubeconfigData.value || applyStatus.value === "loading"
-						}, [applyStatus.value === "loading" ? (openBlock(), createElementBlock("span", _hoisted_11$2)) : createCommentVNode("", true), createTextVNode(" " + toDisplayString(applyStatus.value === "loading" ? "Applying..." : "Apply to Consumer Cluster"), 1)], 8, _hoisted_10$2)]),
-						applyStatus.value === "success" ? (openBlock(), createElementBlock("div", _hoisted_12$2, " ✅ " + toDisplayString(applyMessage.value), 1)) : createCommentVNode("", true),
-						applyStatus.value === "error" ? (openBlock(), createElementBlock("div", _hoisted_13$2, " ❌ " + toDisplayString(applyMessage.value), 1)) : createCommentVNode("", true)
+						}, [applyStatus.value === "loading" ? (openBlock(), createElementBlock("span", _hoisted_11$3)) : createCommentVNode("", true), createTextVNode(" " + toDisplayString(applyStatus.value === "loading" ? "Applying..." : "Apply to Consumer Cluster"), 1)], 8, _hoisted_10$3)]),
+						applyStatus.value === "success" ? (openBlock(), createElementBlock("div", _hoisted_12$3, " ✅ " + toDisplayString(applyMessage.value), 1)) : createCommentVNode("", true),
+						applyStatus.value === "error" ? (openBlock(), createElementBlock("div", _hoisted_13$3, " ❌ " + toDisplayString(applyMessage.value), 1)) : createCommentVNode("", true)
 					])) : createCommentVNode("", true),
-					activeMethod.value === "connected" ? (openBlock(), createElementBlock("div", _hoisted_14$2, [consumerStatusLoading.value ? (openBlock(), createElementBlock("div", _hoisted_15$2, [..._cache[20] || (_cache[20] = [createBaseVNode("span", { class: "spinner" }, null, -1), createTextVNode(" Checking consumer connection status... ", -1)])])) : ((_consumerStatus$value = consumerStatus.value) === null || _consumerStatus$value === void 0 ? void 0 : _consumerStatus$value.connected) ? (openBlock(), createElementBlock("div", _hoisted_16$2, [
-						_cache[26] || (_cache[26] = createBaseVNode("div", { class: "connected-badge" }, "✅ Consumer Cluster Connected", -1)),
-						createBaseVNode("p", _hoisted_17$2, [
-							_cache[21] || (_cache[21] = createTextVNode(" Your consumer cluster already has a konnector agent with an active binding bundle. The new service ", -1)),
-							createBaseVNode("strong", null, toDisplayString(__props.templateName), 1),
-							_cache[22] || (_cache[22] = createTextVNode(" has been registered on the provider and will be automatically discovered by your konnector within ~15 seconds. ", -1))
-						]),
-						consumerStatus.value.exports.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_18$2, [_cache[23] || (_cache[23] = createBaseVNode("h5", null, "Active Service Exports", -1)), createBaseVNode("ul", null, [(openBlock(true), createElementBlock(Fragment, null, renderList(consumerStatus.value.exports, (exp) => {
-							return openBlock(), createElementBlock("li", { key: exp }, toDisplayString(exp), 1);
-						}), 128))])])) : createCommentVNode("", true),
-						createBaseVNode("div", _hoisted_19$2, [_cache[25] || (_cache[25] = createBaseVNode("h5", null, "Verify on your consumer cluster", -1)), createBaseVNode("div", _hoisted_20$2, [_cache[24] || (_cache[24] = createBaseVNode("code", null, "kubectl get apiservicebindingbundles,apiservicebindings", -1)), createBaseVNode("button", {
-							onClick: _cache[4] || (_cache[4] = ($event) => copyCommand("kubectl get apiservicebindingbundles,apiservicebindings")),
-							class: "copy-cmd-btn"
-						}, "Copy")])])
-					])) : (openBlock(), createElementBlock("div", _hoisted_21$2, [..._cache[27] || (_cache[27] = [
-						createBaseVNode("div", { class: "not-connected-badge" }, "ℹ️ No Connected Consumer Found", -1),
-						createBaseVNode("p", { class: "instructions-text" }, " No existing consumer cluster was found for your identity. Use one of the other methods to set up the initial connection: ", -1),
-						createBaseVNode("ul", { class: "method-suggestions" }, [
-							createBaseVNode("li", null, [createBaseVNode("strong", null, "One-Click"), createTextVNode(" — Upload your consumer kubeconfig for automatic setup")]),
-							createBaseVNode("li", null, [createBaseVNode("strong", null, "Bundle"), createTextVNode(" — Download and apply manifests manually")]),
-							createBaseVNode("li", null, [createBaseVNode("strong", null, "Manual (CLI)"), createTextVNode(" — Use kubectl bind apiservice")])
-						], -1)
-					])]))])) : createCommentVNode("", true),
-					activeMethod.value === "bundle" ? (openBlock(), createElementBlock("div", _hoisted_22$2, [
-						_cache[36] || (_cache[36] = createBaseVNode("p", { class: "instructions-text" }, " Download and apply these files to your consumer cluster. The APIServiceBindingBundle will automatically discover and bind services from the provider. ", -1)),
-						createBaseVNode("div", _hoisted_23$2, [
-							_cache[29] || (_cache[29] = createBaseVNode("h5", null, "1. Deploy the konnector agent (one-time)", -1)),
-							_cache[30] || (_cache[30] = createBaseVNode("p", { class: "step-description" }, "Skip this step if the konnector is already deployed on your consumer cluster.", -1)),
+					activeMethod.value === "bundle" ? (openBlock(), createElementBlock("div", _hoisted_14$3, [
+						_cache[22] || (_cache[22] = createBaseVNode("p", { class: "instructions-text" }, " Download and apply these files to your consumer cluster. The APIServiceBindingBundle will automatically discover and bind services from the provider. ", -1)),
+						createBaseVNode("div", _hoisted_15$3, [
+							_cache[15] || (_cache[15] = createBaseVNode("h5", null, "1. Deploy the konnector agent (one-time)", -1)),
+							_cache[16] || (_cache[16] = createBaseVNode("p", { class: "step-description" }, "Skip this step if the konnector is already deployed on your consumer cluster.", -1)),
 							createBaseVNode("div", { class: "download-block" }, [createBaseVNode("div", { class: "download-actions" }, [createBaseVNode("button", {
 								onClick: downloadKonnectorManifests,
 								class: "download-btn primary"
 							}, "Download konnector.yaml")])]),
-							createBaseVNode("div", _hoisted_24$2, [_cache[28] || (_cache[28] = createBaseVNode("code", null, "kubectl apply -f konnector.yaml", -1)), createBaseVNode("button", {
-								onClick: _cache[5] || (_cache[5] = ($event) => copyCommand("kubectl apply -f konnector.yaml")),
+							createBaseVNode("div", _hoisted_16$3, [_cache[14] || (_cache[14] = createBaseVNode("code", null, "kubectl apply -f konnector.yaml", -1)), createBaseVNode("button", {
+								onClick: _cache[3] || (_cache[3] = ($event) => copyCommand("kubectl apply -f konnector.yaml")),
 								class: "copy-cmd-btn"
 							}, "Copy")])
 						]),
-						createBaseVNode("div", _hoisted_25$2, [
-							_cache[32] || (_cache[32] = createBaseVNode("h5", null, "2. Apply the binding bundle", -1)),
-							_cache[33] || (_cache[33] = createBaseVNode("p", { class: "step-description" }, "Creates the kubeconfig secret and an APIServiceBindingBundle that auto-discovers and binds all services.", -1)),
+						createBaseVNode("div", _hoisted_17$3, [
+							_cache[18] || (_cache[18] = createBaseVNode("h5", null, "2. Apply the binding bundle", -1)),
+							_cache[19] || (_cache[19] = createBaseVNode("p", { class: "step-description" }, "Creates the kubeconfig secret and an APIServiceBindingBundle that auto-discovers and binds all services.", -1)),
 							createBaseVNode("div", { class: "download-block" }, [createBaseVNode("div", { class: "download-actions" }, [createBaseVNode("button", {
 								onClick: downloadBindingBundle,
 								class: "download-btn primary"
 							}, "Download binding-bundle.yaml")])]),
-							createBaseVNode("div", _hoisted_26$2, [_cache[31] || (_cache[31] = createBaseVNode("code", null, "kubectl apply -f binding-bundle.yaml", -1)), createBaseVNode("button", {
-								onClick: _cache[6] || (_cache[6] = ($event) => copyCommand("kubectl apply -f binding-bundle.yaml")),
+							createBaseVNode("div", _hoisted_18$2, [_cache[17] || (_cache[17] = createBaseVNode("code", null, "kubectl apply -f binding-bundle.yaml", -1)), createBaseVNode("button", {
+								onClick: _cache[4] || (_cache[4] = ($event) => copyCommand("kubectl apply -f binding-bundle.yaml")),
 								class: "copy-cmd-btn"
 							}, "Copy")])
 						]),
-						createBaseVNode("div", _hoisted_27$2, [_cache[35] || (_cache[35] = createBaseVNode("h5", null, "3. Verify", -1)), createBaseVNode("div", _hoisted_28$2, [_cache[34] || (_cache[34] = createBaseVNode("code", null, "kubectl get apiservicebindingbundles,apiservicebindings", -1)), createBaseVNode("button", {
-							onClick: _cache[7] || (_cache[7] = ($event) => copyCommand("kubectl get apiservicebindingbundles,apiservicebindings")),
+						createBaseVNode("div", _hoisted_19$2, [_cache[21] || (_cache[21] = createBaseVNode("h5", null, "3. Verify", -1)), createBaseVNode("div", _hoisted_20$2, [_cache[20] || (_cache[20] = createBaseVNode("code", null, "kubectl get apiservicebindingbundles,apiservicebindings", -1)), createBaseVNode("button", {
+							onClick: _cache[5] || (_cache[5] = ($event) => copyCommand("kubectl get apiservicebindingbundles,apiservicebindings")),
 							class: "copy-cmd-btn"
 						}, "Copy")])])
 					])) : createCommentVNode("", true),
-					activeMethod.value === "manual" ? (openBlock(), createElementBlock("div", _hoisted_29$2, [
-						_cache[42] || (_cache[42] = createBaseVNode("p", { class: "instructions-text" }, " Download the required files and run the following commands on your consumer cluster. ", -1)),
-						createBaseVNode("div", { class: "step-group" }, [_cache[37] || (_cache[37] = createBaseVNode("h5", null, "1. Download required files", -1)), createBaseVNode("div", { class: "download-block" }, [createBaseVNode("div", { class: "download-actions" }, [createBaseVNode("button", {
+					activeMethod.value === "manual" ? (openBlock(), createElementBlock("div", _hoisted_21$2, [
+						_cache[28] || (_cache[28] = createBaseVNode("p", { class: "instructions-text" }, " Download the required files and run the following commands on your consumer cluster. ", -1)),
+						createBaseVNode("div", { class: "step-group" }, [_cache[23] || (_cache[23] = createBaseVNode("h5", null, "1. Download required files", -1)), createBaseVNode("div", { class: "download-block" }, [createBaseVNode("div", { class: "download-actions" }, [createBaseVNode("button", {
 							onClick: downloadKubeconfig,
 							class: "download-btn primary"
 						}, "Download kubeconfig.yaml"), createBaseVNode("button", {
 							onClick: downloadAPIRequests,
 							class: "download-btn primary"
 						}, "Download apiservice-export.yaml")])])]),
-						createBaseVNode("div", _hoisted_30$2, [_cache[39] || (_cache[39] = createBaseVNode("h5", null, "2. Create kube-bind namespace", -1)), createBaseVNode("div", _hoisted_31$2, [_cache[38] || (_cache[38] = createBaseVNode("code", null, "kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -", -1)), createBaseVNode("button", {
-							onClick: _cache[8] || (_cache[8] = ($event) => copyCommand("kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -")),
+						createBaseVNode("div", _hoisted_22$2, [_cache[25] || (_cache[25] = createBaseVNode("h5", null, "2. Create kube-bind namespace", -1)), createBaseVNode("div", _hoisted_23$2, [_cache[24] || (_cache[24] = createBaseVNode("code", null, "kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -", -1)), createBaseVNode("button", {
+							onClick: _cache[6] || (_cache[6] = ($event) => copyCommand("kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -")),
 							class: "copy-cmd-btn"
 						}, "Copy")])]),
-						createBaseVNode("div", _hoisted_32$2, [_cache[40] || (_cache[40] = createBaseVNode("h5", null, "3. Create kubeconfig secret", -1)), createBaseVNode("div", _hoisted_33$2, [createBaseVNode("code", null, toDisplayString(createSecretCommand.value), 1), createBaseVNode("button", {
-							onClick: _cache[9] || (_cache[9] = ($event) => copyCommand(createSecretCommand.value)),
+						createBaseVNode("div", _hoisted_24$2, [_cache[26] || (_cache[26] = createBaseVNode("h5", null, "3. Create kubeconfig secret", -1)), createBaseVNode("div", _hoisted_25$2, [createBaseVNode("code", null, toDisplayString(createSecretCommand.value), 1), createBaseVNode("button", {
+							onClick: _cache[7] || (_cache[7] = ($event) => copyCommand(createSecretCommand.value)),
 							class: "copy-cmd-btn"
 						}, "Copy")])]),
-						createBaseVNode("div", _hoisted_34$2, [_cache[41] || (_cache[41] = createBaseVNode("h5", null, "4. Bind the API service", -1)), createBaseVNode("div", _hoisted_35$2, [createBaseVNode("code", null, toDisplayString(bindCommand.value), 1), createBaseVNode("button", {
-							onClick: _cache[10] || (_cache[10] = ($event) => copyCommand(bindCommand.value)),
+						createBaseVNode("div", _hoisted_26$2, [_cache[27] || (_cache[27] = createBaseVNode("h5", null, "4. Bind the API service", -1)), createBaseVNode("div", _hoisted_27$2, [createBaseVNode("code", null, toDisplayString(bindCommand.value), 1), createBaseVNode("button", {
+							onClick: _cache[8] || (_cache[8] = ($event) => copyCommand(bindCommand.value)),
 							class: "copy-cmd-btn"
 						}, "Copy")])])
 					])) : createCommentVNode("", true)
@@ -10280,44 +10193,44 @@ spec:
 			])])) : createCommentVNode("", true);
 		};
 	}
-}), [["__scopeId", "data-v-f0a97acb"]]);
+}), [["__scopeId", "data-v-21112df8"]]);
 //#endregion
 //#region src/components/TemplateBindingModal.vue?vue&type=script&setup=true&lang.ts
-var _hoisted_1$2 = { class: "modal-header" };
-var _hoisted_2$2 = { class: "modal-content" };
-var _hoisted_3$2 = { class: "binding-name-section" };
-var _hoisted_4$2 = {
+var _hoisted_1$3 = { class: "modal-header" };
+var _hoisted_2$3 = { class: "modal-content" };
+var _hoisted_3$3 = { class: "binding-name-section" };
+var _hoisted_4$3 = {
 	key: 0,
 	class: "form-help"
 };
-var _hoisted_5$2 = {
+var _hoisted_5$3 = {
 	key: 1,
 	class: "form-error"
 };
-var _hoisted_6$2 = { class: "template-details" };
-var _hoisted_7$2 = {
+var _hoisted_6$3 = { class: "template-details" };
+var _hoisted_7$3 = {
 	key: 0,
 	class: "detail-section"
 };
-var _hoisted_8$1 = { class: "description" };
-var _hoisted_9$1 = {
+var _hoisted_8$2 = { class: "description" };
+var _hoisted_9$2 = {
 	key: 1,
 	class: "detail-section"
 };
-var _hoisted_10$1 = { class: "resource-list" };
-var _hoisted_11$1 = { class: "resource-name" };
-var _hoisted_12$1 = { class: "resource-group" };
-var _hoisted_13$1 = {
+var _hoisted_10$2 = { class: "resource-list" };
+var _hoisted_11$2 = { class: "resource-name" };
+var _hoisted_12$2 = { class: "resource-group" };
+var _hoisted_13$2 = {
 	key: 0,
 	class: "resource-versions"
 };
-var _hoisted_14$1 = {
+var _hoisted_14$2 = {
 	key: 2,
 	class: "detail-section"
 };
-var _hoisted_15$1 = { class: "permission-list" };
-var _hoisted_16$1 = { class: "permission-name" };
-var _hoisted_17$1 = { class: "permission-group" };
+var _hoisted_15$2 = { class: "permission-list" };
+var _hoisted_16$2 = { class: "permission-name" };
+var _hoisted_17$2 = { class: "permission-group" };
 var _hoisted_18$1 = {
 	key: 0,
 	class: "permission-selector"
@@ -10449,11 +10362,11 @@ var TemplateBindingModal_default = /* @__PURE__ */ _plugin_vue_export_helper_def
 				class: "modal",
 				onClick: _cache[1] || (_cache[1] = withModifiers(() => {}, ["stop"]))
 			}, [
-				createBaseVNode("div", _hoisted_1$2, [createBaseVNode("h3", null, "Bind Template: " + toDisplayString(__props.template.metadata.name), 1), createBaseVNode("button", {
+				createBaseVNode("div", _hoisted_1$3, [createBaseVNode("h3", null, "Bind Template: " + toDisplayString(__props.template.metadata.name), 1), createBaseVNode("button", {
 					onClick: closeModal,
 					class: "close-btn"
 				}, "×")]),
-				createBaseVNode("div", _hoisted_2$2, [createBaseVNode("div", _hoisted_3$2, [
+				createBaseVNode("div", _hoisted_2$3, [createBaseVNode("div", _hoisted_3$3, [
 					_cache[2] || (_cache[2] = createBaseVNode("label", {
 						for: "bindingName",
 						class: "form-label"
@@ -10466,27 +10379,27 @@ var TemplateBindingModal_default = /* @__PURE__ */ _plugin_vue_export_helper_def
 						placeholder: "Enter a unique name for this binding",
 						onKeyup: withKeys(handleBind, ["enter"])
 					}, null, 34), [[vModelText, bindingName.value]]),
-					isValidBindingName.value ? (openBlock(), createElementBlock("p", _hoisted_4$2, "This name will be used to identify your binding in the CLI.")) : (openBlock(), createElementBlock("p", _hoisted_5$2, "Name must be lowercase letters, numbers, and hyphens only. Must start and end with alphanumeric characters."))
-				]), createBaseVNode("div", _hoisted_6$2, [
+					isValidBindingName.value ? (openBlock(), createElementBlock("p", _hoisted_4$3, "This name will be used to identify your binding in the CLI.")) : (openBlock(), createElementBlock("p", _hoisted_5$3, "Name must be lowercase letters, numbers, and hyphens only. Must start and end with alphanumeric characters."))
+				]), createBaseVNode("div", _hoisted_6$3, [
 					_cache[10] || (_cache[10] = createBaseVNode("h4", null, "Template Details", -1)),
-					__props.template.spec.description ? (openBlock(), createElementBlock("div", _hoisted_7$2, [_cache[3] || (_cache[3] = createBaseVNode("h5", null, "Description", -1)), createBaseVNode("p", _hoisted_8$1, toDisplayString(__props.template.spec.description), 1)])) : createCommentVNode("", true),
-					__props.template.spec.resources && __props.template.spec.resources.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_9$1, [createBaseVNode("h5", null, "Resources (" + toDisplayString(__props.template.spec.resources.length) + ")", 1), createBaseVNode("div", _hoisted_10$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(__props.template.spec.resources, (resource) => {
+					__props.template.spec.description ? (openBlock(), createElementBlock("div", _hoisted_7$3, [_cache[3] || (_cache[3] = createBaseVNode("h5", null, "Description", -1)), createBaseVNode("p", _hoisted_8$2, toDisplayString(__props.template.spec.description), 1)])) : createCommentVNode("", true),
+					__props.template.spec.resources && __props.template.spec.resources.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_9$2, [createBaseVNode("h5", null, "Resources (" + toDisplayString(__props.template.spec.resources.length) + ")", 1), createBaseVNode("div", _hoisted_10$2, [(openBlock(true), createElementBlock(Fragment, null, renderList(__props.template.spec.resources, (resource) => {
 						return openBlock(), createElementBlock("div", {
 							key: `${resource.group}/${resource.resource}`,
 							class: "resource-item"
 						}, [
-							createBaseVNode("span", _hoisted_11$1, toDisplayString(resource.resource), 1),
-							createBaseVNode("span", _hoisted_12$1, toDisplayString(resource.group || "core"), 1),
-							resource.versions ? (openBlock(), createElementBlock("span", _hoisted_13$1, toDisplayString(resource.versions.join(", v")), 1)) : createCommentVNode("", true)
+							createBaseVNode("span", _hoisted_11$2, toDisplayString(resource.resource), 1),
+							createBaseVNode("span", _hoisted_12$2, toDisplayString(resource.group || "core"), 1),
+							resource.versions ? (openBlock(), createElementBlock("span", _hoisted_13$2, toDisplayString(resource.versions.join(", v")), 1)) : createCommentVNode("", true)
 						]);
 					}), 128))])])) : createCommentVNode("", true),
-					__props.template.spec.permissionClaims && __props.template.spec.permissionClaims.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_14$1, [createBaseVNode("h5", null, "Permission Claims (" + toDisplayString(__props.template.spec.permissionClaims.length) + ")", 1), createBaseVNode("div", _hoisted_15$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(__props.template.spec.permissionClaims, (claim) => {
+					__props.template.spec.permissionClaims && __props.template.spec.permissionClaims.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_14$2, [createBaseVNode("h5", null, "Permission Claims (" + toDisplayString(__props.template.spec.permissionClaims.length) + ")", 1), createBaseVNode("div", _hoisted_15$2, [(openBlock(true), createElementBlock(Fragment, null, renderList(__props.template.spec.permissionClaims, (claim) => {
 						return openBlock(), createElementBlock("div", {
 							key: `${claim.group}/${claim.resource}`,
 							class: "permission-item"
 						}, [
-							createBaseVNode("span", _hoisted_16$1, toDisplayString(claim.resource), 1),
-							createBaseVNode("span", _hoisted_17$1, toDisplayString(claim.group || "core"), 1),
+							createBaseVNode("span", _hoisted_16$2, toDisplayString(claim.resource), 1),
+							createBaseVNode("span", _hoisted_17$2, toDisplayString(claim.group || "core"), 1),
 							claim.selector ? (openBlock(), createElementBlock("div", _hoisted_18$1, [
 								claim.selector.labelSelector ? (openBlock(), createElementBlock("div", _hoisted_19$1, [_cache[5] || (_cache[5] = createBaseVNode("strong", { class: "selector-title" }, "Label Selector:", -1)), createBaseVNode("div", _hoisted_20$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(getLabelSelectorLabels(claim.selector.labelSelector), (value, key) => {
 									return openBlock(), createElementBlock("div", {
@@ -10532,6 +10445,126 @@ var TemplateBindingModal_default = /* @__PURE__ */ _plugin_vue_export_helper_def
 		};
 	}
 }), [["__scopeId", "data-v-4218c1a0"]]);
+//#endregion
+//#region src/components/TemplateDetails.vue?vue&type=script&setup=true&lang.ts
+var _hoisted_1$2 = { class: "modal-container" };
+var _hoisted_2$2 = { class: "modal-header" };
+var _hoisted_3$2 = { class: "modal-body" };
+var _hoisted_4$2 = { class: "detail-section" };
+var _hoisted_5$2 = {
+	key: 0,
+	class: "tag-list"
+};
+var _hoisted_6$2 = {
+	key: 1,
+	class: "empty-note"
+};
+var _hoisted_7$2 = {
+	key: 0,
+	class: "detail-section"
+};
+var _hoisted_8$1 = { class: "tag-list" };
+var _hoisted_9$1 = {
+	key: 1,
+	class: "detail-section"
+};
+var _hoisted_10$1 = { class: "detail-section exports-section" };
+var _hoisted_11$1 = {
+	key: 0,
+	class: "status-loading"
+};
+var _hoisted_12$1 = {
+	key: 1,
+	class: "exports-list"
+};
+var _hoisted_13$1 = { class: "connection-info" };
+var _hoisted_14$1 = { class: "ns-label" };
+var _hoisted_15$1 = { class: "tag-list" };
+var _hoisted_16$1 = {
+	key: 2,
+	class: "empty-note"
+};
+var _hoisted_17$1 = { class: "modal-footer" };
+//#endregion
+//#region src/components/TemplateDetails.vue
+var TemplateDetails_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/* @__PURE__ */ defineComponent({
+	__name: "TemplateDetails",
+	props: {
+		show: { type: Boolean },
+		template: {}
+	},
+	emits: ["close", "bind"],
+	setup(__props) {
+		const props = __props;
+		const status = /* @__PURE__ */ ref(null);
+		const statusLoading = /* @__PURE__ */ ref(false);
+		const fetchStatus = function() {
+			var _ref = _asyncToGenerator(function* () {
+				statusLoading.value = true;
+				try {
+					const response = yield fetch("/api/consumer-status");
+					if (!response.ok) throw new Error(`HTTP ${response.status}`);
+					status.value = yield response.json();
+				} catch (err) {
+					console.error("Failed to check consumer status:", err);
+					status.value = null;
+				} finally {
+					statusLoading.value = false;
+				}
+			});
+			return function fetchStatus() {
+				return _ref.apply(this, arguments);
+			};
+		}();
+		watch(() => props.show, (visible) => {
+			if (visible) {
+				status.value = null;
+				fetchStatus();
+			}
+		});
+		return (_ctx, _cache) => {
+			var _props$template$spec$, _props$template$spec$2, _status$value;
+			return __props.show ? (openBlock(), createElementBlock("div", {
+				key: 0,
+				class: "modal-overlay",
+				onClick: _cache[3] || (_cache[3] = withModifiers(($event) => _ctx.$emit("close"), ["self"]))
+			}, [createBaseVNode("div", _hoisted_1$2, [
+				createBaseVNode("div", _hoisted_2$2, [createBaseVNode("h3", null, toDisplayString(__props.template.metadata.name), 1), createBaseVNode("button", {
+					class: "close-btn",
+					onClick: _cache[0] || (_cache[0] = ($event) => _ctx.$emit("close"))
+				}, "×")]),
+				createBaseVNode("div", _hoisted_3$2, [
+					createBaseVNode("section", _hoisted_4$2, [_cache[4] || (_cache[4] = createBaseVNode("h4", null, "Resources", -1)), ((_props$template$spec$ = __props.template.spec.resources) === null || _props$template$spec$ === void 0 ? void 0 : _props$template$spec$.length) ? (openBlock(), createElementBlock("div", _hoisted_5$2, [(openBlock(true), createElementBlock(Fragment, null, renderList(__props.template.spec.resources, (r) => {
+						return openBlock(), createElementBlock("span", {
+							key: r.resource,
+							class: "tag"
+						}, toDisplayString(r.group ? `${r.resource}.${r.group}` : r.resource), 1);
+					}), 128))])) : (openBlock(), createElementBlock("p", _hoisted_6$2, "No resources defined."))]),
+					((_props$template$spec$2 = __props.template.spec.permissionClaims) === null || _props$template$spec$2 === void 0 ? void 0 : _props$template$spec$2.length) ? (openBlock(), createElementBlock("section", _hoisted_7$2, [_cache[5] || (_cache[5] = createBaseVNode("h4", null, "Permission Claims", -1)), createBaseVNode("div", _hoisted_8$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(__props.template.spec.permissionClaims, (claim, i) => {
+						return openBlock(), createElementBlock("span", {
+							key: i,
+							class: "tag permission-tag"
+						}, toDisplayString(claim.group ? `${claim.resource}.${claim.group}` : claim.resource), 1);
+					}), 128))])])) : createCommentVNode("", true),
+					__props.template.spec.description ? (openBlock(), createElementBlock("section", _hoisted_9$1, [_cache[6] || (_cache[6] = createBaseVNode("h4", null, "Description", -1)), createBaseVNode("p", null, toDisplayString(__props.template.spec.description), 1)])) : createCommentVNode("", true),
+					createBaseVNode("section", _hoisted_10$1, [_cache[10] || (_cache[10] = createBaseVNode("h4", null, "Active Service Exports", -1)), statusLoading.value ? (openBlock(), createElementBlock("div", _hoisted_11$1, [..._cache[7] || (_cache[7] = [createBaseVNode("span", { class: "spinner" }, null, -1), createTextVNode(" Checking connection… ", -1)])])) : ((_status$value = status.value) === null || _status$value === void 0 ? void 0 : _status$value.connected) && status.value.exports.length > 0 ? (openBlock(), createElementBlock("div", _hoisted_12$1, [createBaseVNode("div", _hoisted_13$1, [_cache[9] || (_cache[9] = createBaseVNode("span", { class: "connected-badge" }, "Connected", -1)), createBaseVNode("span", _hoisted_14$1, [_cache[8] || (_cache[8] = createTextVNode("Namespace: ", -1)), createBaseVNode("strong", null, toDisplayString(status.value.namespace), 1)])]), createBaseVNode("div", _hoisted_15$1, [(openBlock(true), createElementBlock(Fragment, null, renderList(status.value.exports, (name) => {
+						return openBlock(), createElementBlock("span", {
+							key: name,
+							class: "tag export-tag"
+						}, toDisplayString(name), 1);
+					}), 128))])])) : (openBlock(), createElementBlock("div", _hoisted_16$1, " No active exports. Bind this template to create service exports on the provider. "))])
+				]),
+				createBaseVNode("div", _hoisted_17$1, [createBaseVNode("button", {
+					class: "secondary-btn",
+					onClick: _cache[1] || (_cache[1] = ($event) => _ctx.$emit("close"))
+				}, "Close"), createBaseVNode("button", {
+					class: "primary-btn",
+					onClick: _cache[2] || (_cache[2] = ($event) => _ctx.$emit("bind", __props.template))
+				}, "Bind")])
+			])])) : createCommentVNode("", true);
+		};
+	}
+}), [["__scopeId", "data-v-4c7f1934"]]);
 //#endregion
 //#region src/components/AlertModal.vue?vue&type=script&setup=true&lang.ts
 var _hoisted_1$1 = { class: "modal-content" };
@@ -10728,6 +10761,8 @@ var Resources_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/* @__
 		const alertType = /* @__PURE__ */ ref("error");
 		const alertPreserveWhitespace = /* @__PURE__ */ ref(false);
 		const isCliFlow = computed(() => authService.isCliFlow());
+		const showDetails = /* @__PURE__ */ ref(false);
+		const detailsTemplate = /* @__PURE__ */ ref(null);
 		const showBindingModal = /* @__PURE__ */ ref(false);
 		const selectedTemplate = /* @__PURE__ */ ref(null);
 		const cluster = computed(() => route.query.cluster_id || "");
@@ -10787,6 +10822,15 @@ var Resources_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/* @__
 			selectedTemplate.value = null;
 		};
 		const showTemplateDetails = (template) => {
+			detailsTemplate.value = template;
+			showDetails.value = true;
+		};
+		const closeDetails = () => {
+			showDetails.value = false;
+			detailsTemplate.value = null;
+		};
+		const onDetailsBind = (template) => {
+			closeDetails();
 			openBindingModal(template);
 		};
 		const handleBind = function() {
@@ -10924,8 +10968,15 @@ var Resources_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/* @__
 						}, toDisplayString(templateName), 1);
 					}), 128)), collection.spec.templates.length > 4 ? (openBlock(), createElementBlock("span", _hoisted_36, " +" + toDisplayString(collection.spec.templates.length - 4) + " more ", 1)) : createCommentVNode("", true)])])) : createCommentVNode("", true)])]);
 				}), 128))])])) : createCommentVNode("", true)])),
-				selectedTemplate.value ? (openBlock(), createBlock(TemplateBindingModal_default, {
+				detailsTemplate.value ? (openBlock(), createBlock(TemplateDetails_default, {
 					key: 3,
+					show: showDetails.value,
+					template: detailsTemplate.value,
+					onClose: closeDetails,
+					onBind: onDetailsBind
+				}, null, 8, ["show", "template"])) : createCommentVNode("", true),
+				selectedTemplate.value ? (openBlock(), createBlock(TemplateBindingModal_default, {
+					key: 4,
 					show: showBindingModal.value,
 					template: selectedTemplate.value,
 					"is-cli-flow": isCliFlow.value,
@@ -10937,7 +10988,7 @@ var Resources_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/* @__
 					"is-cli-flow"
 				])) : createCommentVNode("", true),
 				bindingResponse.value ? (openBlock(), createBlock(BindingResult_default, {
-					key: 4,
+					key: 5,
 					show: showBindingResult.value,
 					"template-name": selectedTemplateName.value,
 					"binding-response": bindingResponse.value,
@@ -10964,7 +11015,7 @@ var Resources_default = /* @__PURE__ */ _plugin_vue_export_helper_default(/* @__
 			]);
 		};
 	}
-}), [["__scopeId", "data-v-2bef16ba"]]);
+}), [["__scopeId", "data-v-1cd8a497"]]);
 //#endregion
 //#region src/main.ts
 var routes = [{

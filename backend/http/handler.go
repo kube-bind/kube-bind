@@ -220,7 +220,7 @@ func (h *handler) handleKonnectorManifests(w http.ResponseWriter, r *http.Reques
 	}
 	konnectorImage := fmt.Sprintf("ghcr.io/kube-bind/konnector:%s", konnectorVersion)
 
-	manifests := kuberesources.NewKonnectorManifests(konnectorImage)
+	manifests := kuberesources.NewKonnectorManifests(konnectorImage, nil)
 
 	// Serialize each object to YAML and join with document separators
 	s := runtime.NewScheme()

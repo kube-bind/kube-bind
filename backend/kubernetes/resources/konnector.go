@@ -46,7 +46,7 @@ type KonnectorManifests struct {
 
 // NewKonnectorManifests returns the full set of Kubernetes objects needed to deploy
 // the konnector agent to a consumer cluster.
-func NewKonnectorManifests(konnectorImage string) *KonnectorManifests {
+func NewKonnectorManifests(konnectorImage string, hostAliases []corev1.HostAlias) *KonnectorManifests {
 	replicas := int32(KonnectorReplicas)
 	httpPort := intstr.FromInt(KonnectorHealthzPort)
 
@@ -111,6 +111,7 @@ func NewKonnectorManifests(konnectorImage string) *KonnectorManifests {
 					Spec: corev1.PodSpec{
 						RestartPolicy:      corev1.RestartPolicyAlways,
 						ServiceAccountName: KonnectorServiceAccountName,
+						HostAliases:        hostAliases,
 						Containers: []corev1.Container{
 							{
 								Name:  "konnector",

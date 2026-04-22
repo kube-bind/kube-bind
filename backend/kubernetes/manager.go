@@ -19,6 +19,8 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
 	"strings"
 	"time"
 
@@ -475,6 +477,9 @@ func (m *Manager) ApplyToConsumer(
 	if err := kubebindv1alpha2.AddToScheme(s); err != nil {
 		return nil, fmt.Errorf("failed to add kube-bind scheme: %w", err)
 	}
+	if err := apiextensionsv1.AddToScheme(s); err != nil {
+		return nil, fmt.Errorf("failed to add apiextensions scheme: %w", err)
+	}
 
 	consumerClient, err := client.New(consumerConfig, client.Options{Scheme: s})
 	if err != nil {
@@ -489,13 +494,26 @@ func (m *Manager) ApplyToConsumer(
 		return nil, fmt.Errorf("failed to create kube-bind namespace: %w", err)
 	}
 
-	// 2. Deploy konnector (idempotent)
-	konnectorDeployed, err := m.ensureKonnector(ctx, consumerClient, konnectorImage)
+	// 2. Resolve host aliases from the provider kubeconfig so the konnector
+	// can reach the provider API server (needed in Kind/Docker environments
+	// where the hostname resolves to localhost on the host but not in pods).
+	hostAliases := m.resolveProviderHostAliases(ctx, providerKubeconfigData)
+
+	// 3. Deploy konnector (idempotent)
+	konnectorDeployed, err := m.ensureKonnector(ctx, consumerClient, konnectorImage, hostAliases)
 	if err != nil {
 		return nil, fmt.Errorf("failed to deploy konnector: %w", err)
 	}
 
-	// 3. Create kubeconfig secret for the provider
+	// 3b. If konnector was newly deployed, wait for it to bootstrap CRDs
+	if konnectorDeployed {
+		logger.Info("Waiting for konnector to bootstrap CRDs on consumer cluster")
+		if err := m.waitForCRD(ctx, consumerClient, "apiservicebindingbundles.kube-bind.io"); err != nil {
+			return nil, fmt.Errorf("timed out waiting for konnector CRDs: %w", err)
+		}
+	}
+
+	// 4. Create kubeconfig secret for the provider
 	secretName := fmt.Sprintf("kubeconfig-%s", bindingName)
 	kubeconfigSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -523,7 +541,7 @@ func (m *Manager) ApplyToConsumer(
 		}
 	}
 
-	// 4. Create APIServiceBindingBundle
+	// 5. Create APIServiceBindingBundle
 	bundle := &kubebindv1alpha2.APIServiceBindingBundle{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: bindingName,
@@ -562,9 +580,61 @@ func (m *Manager) ApplyToConsumer(
 	}, nil
 }
 
+// resolveProviderHostAliases extracts the provider API server hostname from the
+// kubeconfig and resolves it to IP addresses. This allows the konnector pods on
+// the consumer cluster to reach the provider even when the hostname only resolves
+// correctly from the backend pod's network (e.g., Kind/Docker environments).
+func (m *Manager) resolveProviderHostAliases(_ context.Context, providerKubeconfigData []byte) []corev1.HostAlias {
+	config, err := clientcmd.RESTConfigFromKubeConfig(providerKubeconfigData)
+	if err != nil {
+		return nil
+	}
+
+	u, err := url.Parse(config.Host)
+	if err != nil {
+		return nil
+	}
+
+	hostname := u.Hostname()
+	if hostname == "" {
+		return nil
+	}
+
+	// Skip if the host is already an IP address
+	if net.ParseIP(hostname) != nil {
+		return nil
+	}
+
+	// Resolve the hostname from the backend pod's perspective
+	ips, err := net.LookupHost(hostname)
+	if err != nil || len(ips) == 0 {
+		return nil
+	}
+
+	// Filter out loopback addresses — they won't work in consumer pods
+	var validIPs []string
+	for _, ip := range ips {
+		parsed := net.ParseIP(ip)
+		if parsed != nil && !parsed.IsLoopback() {
+			validIPs = append(validIPs, ip)
+		}
+	}
+
+	if len(validIPs) == 0 {
+		return nil
+	}
+
+	return []corev1.HostAlias{
+		{
+			IP:        validIPs[0],
+			Hostnames: []string{hostname},
+		},
+	}
+}
+
 // ensureKonnector deploys the konnector agent to the consumer cluster.
 // Returns true if the konnector was newly deployed, false if it already existed.
-func (m *Manager) ensureKonnector(ctx context.Context, c client.Client, konnectorImage string) (bool, error) {
+func (m *Manager) ensureKonnector(ctx context.Context, c client.Client, konnectorImage string, hostAliases []corev1.HostAlias) (bool, error) {
 	// Check if konnector deployment already exists
 	existing := &appsv1.Deployment{}
 	err := c.Get(ctx, types.NamespacedName{Name: kuberesources.KonnectorDeploymentName, Namespace: kuberesources.KonnectorNamespace}, existing)
@@ -575,7 +645,7 @@ func (m *Manager) ensureKonnector(ctx context.Context, c client.Client, konnecto
 		return false, fmt.Errorf("failed to check for existing konnector: %w", err)
 	}
 
-	manifests := kuberesources.NewKonnectorManifests(konnectorImage)
+	manifests := kuberesources.NewKonnectorManifests(konnectorImage, hostAliases)
 
 	if err := c.Create(ctx, manifests.ServiceAccount); err != nil && !errors.IsAlreadyExists(err) {
 		return false, fmt.Errorf("failed to create konnector service account: %w", err)
@@ -591,6 +661,27 @@ func (m *Manager) ensureKonnector(ctx context.Context, c client.Client, konnecto
 	}
 
 	return true, nil
+}
+
+// waitForCRD polls until a CRD is registered on the target cluster.
+func (m *Manager) waitForCRD(ctx context.Context, c client.Client, crdName string) error {
+	return wait.PollUntilContextTimeout(ctx, 2*time.Second, 120*time.Second, true, func(ctx context.Context) (bool, error) {
+		crd := &apiextensionsv1.CustomResourceDefinition{}
+		err := c.Get(ctx, types.NamespacedName{Name: crdName}, crd)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil // keep polling
+			}
+			return false, nil // transient error, keep polling
+		}
+		// Check if the CRD is established
+		for _, cond := range crd.Status.Conditions {
+			if cond.Type == apiextensionsv1.Established && cond.Status == apiextensionsv1.ConditionTrue {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
 }
 
 func (m *Manager) SeedDefaultCluster(ctx context.Context) error {

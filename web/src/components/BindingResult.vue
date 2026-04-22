@@ -2,42 +2,30 @@
   <div v-if="show" class="binding-modal-overlay" @click="closeModal">
     <div class="binding-modal" @click.stop>
       <div class="binding-header">
-        <h3>Template Binding Successful</h3>
+        <h3>Setup Binding: {{ templateName }}</h3>
         <button @click="closeModal" class="close-btn">&times;</button>
       </div>
 
       <div class="binding-content">
-        <div class="binding-info">
-          <h4>Binding Information</h4>
-          <p><strong>Template:</strong> {{ templateName }}</p>
-          <p><strong>Binding Name:</strong> {{ bindingName }}</p>
-        </div>
-
         <!-- Method selector tabs -->
         <div class="method-tabs">
           <button
             :class="['method-tab', { active: activeMethod === 'oneclick' }]"
             @click="activeMethod = 'oneclick'"
           >
-            ⚡ One-Click
-          </button>
-          <button
-            :class="['method-tab', { active: activeMethod === 'connected' }]"
-            @click="activeMethod = 'connected'"
-          >
-            🔗 Already Connected
+            Provide Kubeconfig
           </button>
           <button
             :class="['method-tab', { active: activeMethod === 'bundle' }]"
             @click="activeMethod = 'bundle'"
           >
-            📦 Bundle
+            APIServiceBindingBundle
           </button>
           <button
             :class="['method-tab', { active: activeMethod === 'manual' }]"
             @click="activeMethod = 'manual'"
           >
-            🔧 Manual (CLI)
+            Manual (CLI)
           </button>
         </div>
 
@@ -88,48 +76,6 @@
           </div>
           <div v-if="applyStatus === 'error'" class="status-message error">
             ❌ {{ applyMessage }}
-          </div>
-        </div>
-
-        <!-- Method: Already Connected -->
-        <div v-if="activeMethod === 'connected'" class="instructions-section">
-          <div v-if="consumerStatusLoading" class="status-check">
-            <span class="spinner"></span> Checking consumer connection status...
-          </div>
-
-          <div v-else-if="consumerStatus?.connected" class="connected-info">
-            <div class="connected-badge">✅ Consumer Cluster Connected</div>
-            <p class="instructions-text">
-              Your consumer cluster already has a konnector agent with an active binding bundle.
-              The new service <strong>{{ templateName }}</strong> has been registered on the provider
-              and will be automatically discovered by your konnector within ~15 seconds.
-            </p>
-            <div v-if="consumerStatus.exports.length > 0" class="exports-list">
-              <h5>Active Service Exports</h5>
-              <ul>
-                <li v-for="exp in consumerStatus.exports" :key="exp">{{ exp }}</li>
-              </ul>
-            </div>
-            <div class="step-group">
-              <h5>Verify on your consumer cluster</h5>
-              <div class="command-block">
-                <code>kubectl get apiservicebindingbundles,apiservicebindings</code>
-                <button @click="copyCommand('kubectl get apiservicebindingbundles,apiservicebindings')" class="copy-cmd-btn">Copy</button>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="not-connected-info">
-            <div class="not-connected-badge">ℹ️ No Connected Consumer Found</div>
-            <p class="instructions-text">
-              No existing consumer cluster was found for your identity. Use one of the other methods
-              to set up the initial connection:
-            </p>
-            <ul class="method-suggestions">
-              <li><strong>One-Click</strong> — Upload your consumer kubeconfig for automatic setup</li>
-              <li><strong>Bundle</strong> — Download and apply manifests manually</li>
-              <li><strong>Manual (CLI)</strong> — Use kubectl bind apiservice</li>
-            </ul>
           </div>
         </div>
 
@@ -227,14 +173,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import type { BindingResponse } from '../types/binding'
-
-interface ConsumerStatusResponse {
-  connected: boolean
-  namespace?: string
-  exports: string[]
-}
 
 interface ApplyResult {
   konnectorDeployed: boolean
@@ -253,7 +193,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const activeMethod = ref<'oneclick' | 'connected' | 'bundle' | 'manual'>('oneclick')
+const activeMethod = ref<'oneclick' | 'bundle' | 'manual'>('oneclick')
 
 // One-Click state
 const kubeconfigData = ref<string | null>(null)
@@ -261,10 +201,6 @@ const kubeconfigFileName = ref<string>('')
 const applyStatus = ref<'idle' | 'loading' | 'success' | 'error'>('idle')
 const applyMessage = ref('')
 const kubeconfigFileInput = ref<HTMLInputElement | null>(null)
-
-// Already Connected state
-const consumerStatus = ref<ConsumerStatusResponse | null>(null)
-const consumerStatusLoading = ref(false)
 
 const bindingName = computed(() => {
   return props.bindingResponse.bindingName || props.templateName
@@ -283,29 +219,6 @@ const createSecretCommand = computed(() => {
 const bindCommand = computed(() => {
   return `kubectl bind apiservice --remote-kubeconfig-namespace kube-bind --remote-kubeconfig-name ${kubeconfigSecretName.value} -f apiservice-export.yaml`
 })
-
-// Check consumer status when "Already Connected" tab is selected
-watch(activeMethod, async (method) => {
-  if (method === 'connected' && !consumerStatus.value) {
-    await checkConsumerStatus()
-  }
-})
-
-const checkConsumerStatus = async () => {
-  consumerStatusLoading.value = true
-  try {
-    const response = await fetch('/api/consumer-status')
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
-    consumerStatus.value = await response.json()
-  } catch (error) {
-    console.error('Failed to check consumer status:', error)
-    consumerStatus.value = { connected: false, exports: [] }
-  } finally {
-    consumerStatusLoading.value = false
-  }
-}
 
 // One-Click: handle kubeconfig file upload
 const handleKubeconfigUpload = (event: Event) => {
@@ -503,7 +416,7 @@ const downloadAPIRequests = () => {
   align-items: center;
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
 }
 

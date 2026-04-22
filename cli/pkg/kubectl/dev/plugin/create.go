@@ -71,7 +71,7 @@ type DevOptions struct {
 }
 
 // fallbackAssetVersion is used when unable to fetch the latest version
-const fallbackAssetVersion = "0.6.0"
+const fallbackAssetVersion = "0.7.1"
 
 // gitHubRelease represents a GitHub release response
 type gitHubRelease struct {
@@ -109,25 +109,20 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 
 // Complete completes the options
 func (o *DevOptions) Complete(args []string) error {
-	// Only fetch the latest version if tag is not set
-	var assetVersion string
-	if o.BackendTag == "" {
-		version, err := fetchLatestRelease()
-		if err != nil {
-			// Log the error but continue with fallback version
-			fmt.Fprintf(o.Streams.ErrOut, "Warning: Failed to fetch latest release version: %v. Using fallback version %s\n", err, fallbackAssetVersion)
-			assetVersion = fallbackAssetVersion
-		} else {
-			assetVersion = version
-		}
+	assetVersion := fallbackAssetVersion
+	version, err := fetchLatestRelease()
+	if err != nil {
+		fmt.Fprintf(o.Streams.ErrOut, "Warning: Failed to fetch latest release version: %v. Using fallback version %s\n", err, fallbackAssetVersion)
+	} else {
+		assetVersion = version
+	}
 
-		// Update options with the resolved version
-		if o.ChartVersion == "" || o.ChartVersion == fallbackAssetVersion {
-			o.ChartVersion = assetVersion
-		}
-		if o.BackendTag == "" || o.BackendTag == "v"+fallbackAssetVersion {
-			o.BackendTag = "v" + assetVersion
-		}
+	if o.ChartVersion == "" || o.ChartVersion == fallbackAssetVersion {
+		o.ChartVersion = assetVersion
+	}
+
+	if o.BackendTag == "" {
+		o.BackendTag = "v" + assetVersion
 	}
 
 	return nil

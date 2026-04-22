@@ -584,7 +584,7 @@ func (m *Manager) ApplyToConsumer(
 // kubeconfig and resolves it to IP addresses. This allows the konnector pods on
 // the consumer cluster to reach the provider even when the hostname only resolves
 // correctly from the backend pod's network (e.g., Kind/Docker environments).
-func (m *Manager) resolveProviderHostAliases(_ context.Context, providerKubeconfigData []byte) []corev1.HostAlias {
+func (m *Manager) resolveProviderHostAliases(ctx context.Context, providerKubeconfigData []byte) []corev1.HostAlias {
 	config, err := clientcmd.RESTConfigFromKubeConfig(providerKubeconfigData)
 	if err != nil {
 		return nil
@@ -600,18 +600,15 @@ func (m *Manager) resolveProviderHostAliases(_ context.Context, providerKubeconf
 		return nil
 	}
 
-	// Skip if the host is already an IP address
 	if net.ParseIP(hostname) != nil {
 		return nil
 	}
 
-	// Resolve the hostname from the backend pod's perspective
-	ips, err := net.LookupHost(hostname)
+	ips, err := net.DefaultResolver.LookupHost(ctx, hostname)
 	if err != nil || len(ips) == 0 {
 		return nil
 	}
 
-	// Filter out loopback addresses — they won't work in consumer pods
 	var validIPs []string
 	for _, ip := range ips {
 		parsed := net.ParseIP(ip)
@@ -663,7 +660,6 @@ func (m *Manager) ensureKonnector(ctx context.Context, c client.Client, konnecto
 	return true, nil
 }
 
-// waitForCRD polls until a CRD is registered on the target cluster.
 func (m *Manager) waitForCRD(ctx context.Context, c client.Client, crdName string) error {
 	return wait.PollUntilContextTimeout(ctx, 2*time.Second, 120*time.Second, true, func(ctx context.Context) (bool, error) {
 		crd := &apiextensionsv1.CustomResourceDefinition{}

@@ -71,7 +71,7 @@ type DevOptions struct {
 }
 
 // fallbackAssetVersion is used when unable to fetch the latest version
-const fallbackAssetVersion = "0.6.0"
+const fallbackAssetVersion = "0.7.1"
 
 // gitHubRelease represents a GitHub release response
 type gitHubRelease struct {
@@ -88,7 +88,6 @@ func NewDevOptions(streams genericclioptions.IOStreams) *DevOptions {
 		ProviderClusterName: "kind-provider",
 		ConsumerClusterName: "kind-consumer",
 		ChartPath:           "oci://ghcr.io/kube-bind/charts/backend",
-		ChartVersion:        fallbackAssetVersion,
 	}
 }
 
@@ -101,7 +100,7 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVar(&o.ConsumerClusterName, "consumer-cluster-name", "kind-consumer", "Name of the consumer cluster in dev mode")
 	cmd.Flags().DurationVar(&o.WaitForReadyTimeout, "wait-for-ready-timeout", 2*time.Minute, "Timeout for waiting for the cluster to be ready")
 	cmd.Flags().StringVar(&o.ChartPath, "chart-path", o.ChartPath, "Helm chart path or OCI registry URL")
-	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", o.ChartVersion, "The version of the Helm chart to use")
+	cmd.Flags().StringVar(&o.ChartVersion, "chart-version", "", "The version of the Helm chart to use")
 	cmd.Flags().StringVar(&o.BackendImage, "backend-image", "ghcr.io/kube-bind/backend", "The name of kube-bind backend to use in dev mode")
 	cmd.Flags().StringVar(&o.BackendTag, "backend-tag", "", "The tag of the kube-bind backend image to use in dev mode")
 	cmd.Flags().StringVar(&o.KindNetwork, "kind-network", "kube-bind-dev", "The name of the kind network to use in dev mode")
@@ -109,25 +108,20 @@ func (o *DevOptions) AddCmdFlags(cmd *cobra.Command) {
 
 // Complete completes the options
 func (o *DevOptions) Complete(args []string) error {
-	// Only fetch the latest version if tag is not set
-	var assetVersion string
-	if o.BackendTag == "" {
-		version, err := fetchLatestRelease()
-		if err != nil {
-			// Log the error but continue with fallback version
-			fmt.Fprintf(o.Streams.ErrOut, "Warning: Failed to fetch latest release version: %v. Using fallback version %s\n", err, fallbackAssetVersion)
-			assetVersion = fallbackAssetVersion
-		} else {
-			assetVersion = version
-		}
+	assetVersion := fallbackAssetVersion
+	version, err := fetchLatestRelease()
+	if err != nil {
+		fmt.Fprintf(o.Streams.ErrOut, "Warning: Failed to fetch latest release version: %v. Using fallback version %s\n", err, fallbackAssetVersion)
+	} else {
+		assetVersion = version
+	}
 
-		// Update options with the resolved version
-		if o.ChartVersion == "" || o.ChartVersion == fallbackAssetVersion {
-			o.ChartVersion = assetVersion
-		}
-		if o.BackendTag == "" || o.BackendTag == "v"+fallbackAssetVersion {
-			o.BackendTag = "v" + assetVersion
-		}
+	if o.ChartVersion == "" {
+		o.ChartVersion = assetVersion
+	}
+
+	if o.BackendTag == "" {
+		o.BackendTag = "v" + assetVersion
 	}
 
 	return nil
@@ -391,6 +385,11 @@ func (o *DevOptions) installHelmChart(_ context.Context, restConfig *rest.Config
 	actionConfig.RegistryClient = registryClient
 
 	values := map[string]any{
+		"image": map[string]any{
+			"repository": o.BackendImage,
+			"tag":        o.BackendTag,
+		},
+
 		"examples": map[string]any{
 			"enabled": true,
 		},

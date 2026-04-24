@@ -62,7 +62,7 @@ func New(cfg *rest.Config, endpointSliceName string, options provider.Options) (
 }
 
 // Get returns the cluster with the given name as a cluster.Cluster.
-func (p *Provider) Get(ctx context.Context, clusterName string) (cluster.Cluster, error) {
+func (p *Provider) Get(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error) {
 	return p.Provider.Get(ctx, clusterName)
 }
 
@@ -82,12 +82,12 @@ type awareWrapper struct {
 	multicluster.Aware
 }
 
-func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.Cluster) error {
-	ctx, cancel := context.WithCancel(ctx) //nolint:govet // cancel is called in the error case only.
+func (a *awareWrapper) Engage(ctx context.Context, name multicluster.ClusterName, cluster cluster.Cluster) error {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 
 	err := a.Aware.Engage(ctx, name, cluster)
 	if err != nil {
-		cancel()
 		return err
 	}
 
@@ -108,7 +108,6 @@ func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.
 		}
 
 		if !apierrors.IsForbidden(err) {
-			cancel()
 			return err
 		}
 
@@ -117,17 +116,15 @@ func (a *awareWrapper) Engage(ctx context.Context, name string, cluster cluster.
 			select {
 			case <-time.After(backoff):
 			case <-ctx.Done():
-				cancel()
 				return ctx.Err()
 			}
 		}
 	}
 
 	if err != nil && !apierrors.IsAlreadyExists(err) {
-		cancel()
 		return err
 	}
-	return nil //nolint:govet // cancel is called in the error case only.
+	return nil
 }
 
 // NewKCPExternalAddressGenerator returns an ExternalAddressGeneratorFunc

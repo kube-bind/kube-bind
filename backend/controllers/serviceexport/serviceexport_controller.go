@@ -28,11 +28,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
+	crhandler "sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mchandler "sigs.k8s.io/multicluster-runtime/pkg/handler"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kube-bind/kube-bind/pkg/indexers"
@@ -144,8 +146,8 @@ func (r *APIServiceExportReconciler) Reconcile(ctx context.Context, req mcreconc
 }
 
 // getAPIResourceSchemaMapper returns a mapper function that uses the manager to find related APIServiceExports.
-func getBoundSchemaMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
-	return handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []mcreconcile.Request {
+func getBoundSchemaMapper(clusterName multicluster.ClusterName, cl cluster.Cluster) crhandler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return mchandler.TypedEnqueueRequestsFromMapFuncWithClusterPreservation(func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		boundSchema := obj.(*kubebindv1alpha2.BoundSchema)
 		boundSchemaKey := boundSchema.Spec.Names.Plural + "." + boundSchema.Spec.Group
 		c := cl.GetClient()

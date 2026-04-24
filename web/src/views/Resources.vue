@@ -123,6 +123,15 @@
       </div>
     </div>
 
+    <!-- Template Details Modal -->
+    <TemplateDetails
+      v-if="detailsTemplate"
+      :show="showDetails"
+      :template="detailsTemplate"
+      @close="closeDetails"
+      @bind="onDetailsBind"
+    />
+
     <!-- Template Binding Modal -->
     <TemplateBindingModal
       v-if="selectedTemplate"
@@ -162,6 +171,7 @@ import type { BindableResourcesRequest, BindingResponse } from '../types/binding
 import { StructuredError } from '../services/http'
 import BindingResult from '../components/BindingResult.vue'
 import TemplateBindingModal from '../components/TemplateBindingModal.vue'
+import TemplateDetails from '../components/TemplateDetails.vue'
 import AlertModal from '../components/AlertModal.vue'
 import { authService } from '../services/auth'
 
@@ -231,6 +241,10 @@ const alertMessage = ref('')
 const alertType = ref<'error' | 'warning' | 'info' | 'success'>('error')
 const alertPreserveWhitespace = ref(false)
 const isCliFlow = computed(() => authService.isCliFlow())
+
+// Consumer connection status (shown in TemplateDetails modal)
+const showDetails = ref(false)
+const detailsTemplate = ref<Template | null>(null)
 
 const showBindingModal = ref(false)
 const selectedTemplate = ref<Template | null>(null)
@@ -312,7 +326,17 @@ const closeBindingModal = () => {
 }
 
 const showTemplateDetails = (template: Template) => {
-  // For now, just open the binding modal - could be extended to show details-only modal
+  detailsTemplate.value = template
+  showDetails.value = true
+}
+
+const closeDetails = () => {
+  showDetails.value = false
+  detailsTemplate.value = null
+}
+
+const onDetailsBind = (template: Template) => {
+  closeDetails()
   openBindingModal(template)
 }
 

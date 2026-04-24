@@ -55,6 +55,21 @@ type BindingResourceResponse struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MinItems=1
 	Requests []runtime.RawExtension `json:"requests"`
+
+	// providerNamespace is the namespace on the service provider cluster where the
+	// binding resources (APIServiceExport, BoundSchema, etc.) are created and managed.
+	// This is set when the binding is created via the UI flow.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	ProviderNamespace string `json:"providerNamespace,omitempty"`
+
+	// bindingName is the confirmed name for this binding, as created on the service
+	// provider cluster.
+	//
+	// +optional
+	// +kubebuilder:validation:Optional
+	BindingName string `json:"bindingName,omitempty"`
 }
 
 // BindingResponseAuthentication is the authentication data specific to the

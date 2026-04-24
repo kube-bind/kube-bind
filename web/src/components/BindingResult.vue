@@ -2,52 +2,160 @@
   <div v-if="show" class="binding-modal-overlay" @click="closeModal">
     <div class="binding-modal" @click.stop>
       <div class="binding-header">
-        <h3>Template Binding Successful</h3>
+        <h3>Setup Binding: {{ templateName }}</h3>
         <button @click="closeModal" class="close-btn">&times;</button>
       </div>
-      
+
       <div class="binding-content">
-        <div class="binding-info">
-          <h4>Binding Information</h4>
-          <p><strong>Template:</strong> {{ templateName }}</p>
-          <p><strong>Binding Name:</strong> {{ bindingName }}</p>
-          <p><strong>Kubeconfig Secret:</strong> {{ kubeconfigSecretName }}</p>
+        <!-- Method selector tabs -->
+        <div class="method-tabs">
+          <button
+            :class="['method-tab', { active: activeMethod === 'oneclick' }]"
+            @click="activeMethod = 'oneclick'"
+          >
+            Provide Kubeconfig
+          </button>
+          <button
+            :class="['method-tab', { active: activeMethod === 'bundle' }]"
+            @click="activeMethod = 'bundle'"
+          >
+            APIServiceBindingBundle
+          </button>
+          <button
+            :class="['method-tab', { active: activeMethod === 'manual' }]"
+            @click="activeMethod = 'manual'"
+          >
+            Manual (CLI)
+          </button>
         </div>
-        
-        <div class="instructions-section">
-          <h4>Setup Instructions</h4>
+
+        <!-- Method: One-Click (Upload Kubeconfig) -->
+        <div v-if="activeMethod === 'oneclick'" class="instructions-section">
           <p class="instructions-text">
-            To complete the binding setup, first download the required files below, then execute the following commands in your local kubectl environment:
+            Upload your consumer cluster kubeconfig and we'll automatically deploy the konnector agent
+            and configure the binding bundle for you. No CLI required.
           </p>
-          
-          <div class="download-files-section">
-            <h5>1. Download required files</h5>
-            <div class="download-block">
-              <p class="download-text">Download and save both files in your current directory:</p>
-              <div class="download-actions">
-                <button @click="downloadKubeconfig" class="download-btn">Download kubeconfig.yaml</button>
-                <button @click="downloadAPIRequests" class="download-btn">Download apiservice-export.yaml</button>
+
+          <div class="security-warning">
+            <strong>⚠️ Security Note:</strong> Your kubeconfig will be used transiently to apply resources
+            to your consumer cluster and will <strong>not</strong> be stored. The provider backend needs
+            cluster-admin level access to deploy the konnector and create binding resources.
+          </div>
+
+          <div class="step-group">
+            <h5>Upload Consumer Kubeconfig</h5>
+            <p class="step-description">Select the kubeconfig file for your consumer cluster.</p>
+            <div class="upload-block">
+              <input
+                type="file"
+                ref="kubeconfigFileInput"
+                accept=".yaml,.yml,.conf,.kubeconfig"
+                @change="handleKubeconfigUpload"
+                class="file-input"
+                :disabled="applyStatus === 'loading'"
+              />
+              <div v-if="kubeconfigFileName" class="file-info">
+                📄 {{ kubeconfigFileName }}
               </div>
             </div>
           </div>
-          
-          <div class="command-group">
-            <h5>2. Create kube-bind namespace (if it doesn't exist)</h5>
+
+          <div class="step-group">
+            <button
+              @click="applyToConsumer"
+              class="apply-btn"
+              :disabled="!kubeconfigData || applyStatus === 'loading'"
+            >
+              <span v-if="applyStatus === 'loading'" class="spinner"></span>
+              {{ applyStatus === 'loading' ? 'Applying...' : 'Apply to Consumer Cluster' }}
+            </button>
+          </div>
+
+          <div v-if="applyStatus === 'success'" class="status-message success">
+            ✅ {{ applyMessage }}
+          </div>
+          <div v-if="applyStatus === 'error'" class="status-message error">
+            ❌ {{ applyMessage }}
+          </div>
+        </div>
+
+        <!-- Method: Automated via APIServiceBindingBundle -->
+        <div v-if="activeMethod === 'bundle'" class="instructions-section">
+          <p class="instructions-text">
+            Download and apply these files to your consumer cluster.
+            The APIServiceBindingBundle will automatically discover and bind services from the provider.
+          </p>
+
+          <div class="step-group">
+            <h5>1. Deploy the konnector agent (one-time)</h5>
+            <p class="step-description">Skip this step if the konnector is already deployed on your consumer cluster.</p>
+            <div class="download-block">
+              <div class="download-actions">
+                <button @click="downloadKonnectorManifests" class="download-btn primary">Download konnector.yaml</button>
+              </div>
+            </div>
+            <div class="command-block">
+              <code>kubectl apply -f konnector.yaml</code>
+              <button @click="copyCommand('kubectl apply -f konnector.yaml')" class="copy-cmd-btn">Copy</button>
+            </div>
+          </div>
+
+          <div class="step-group">
+            <h5>2. Apply the binding bundle</h5>
+            <p class="step-description">Creates the kubeconfig secret and an APIServiceBindingBundle that auto-discovers and binds all services.</p>
+            <div class="download-block">
+              <div class="download-actions">
+                <button @click="downloadBindingBundle" class="download-btn primary">Download binding-bundle.yaml</button>
+              </div>
+            </div>
+            <div class="command-block">
+              <code>kubectl apply -f binding-bundle.yaml</code>
+              <button @click="copyCommand('kubectl apply -f binding-bundle.yaml')" class="copy-cmd-btn">Copy</button>
+            </div>
+          </div>
+
+          <div class="step-group">
+            <h5>3. Verify</h5>
+            <div class="command-block">
+              <code>kubectl get apiservicebindingbundles,apiservicebindings</code>
+              <button @click="copyCommand('kubectl get apiservicebindingbundles,apiservicebindings')" class="copy-cmd-btn">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Method: Manual via kubectl bind apiservice -->
+        <div v-if="activeMethod === 'manual'" class="instructions-section">
+          <p class="instructions-text">
+            Download the required files and run the following commands on your consumer cluster.
+          </p>
+
+          <div class="step-group">
+            <h5>1. Download required files</h5>
+            <div class="download-block">
+              <div class="download-actions">
+                <button @click="downloadKubeconfig" class="download-btn primary">Download kubeconfig.yaml</button>
+                <button @click="downloadAPIRequests" class="download-btn primary">Download apiservice-export.yaml</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-group">
+            <h5>2. Create kube-bind namespace</h5>
             <div class="command-block">
               <code>kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -</code>
               <button @click="copyCommand('kubectl create namespace kube-bind --dry-run=client -o yaml | kubectl apply -f -')" class="copy-cmd-btn">Copy</button>
             </div>
           </div>
-          
-          <div class="command-group">
+
+          <div class="step-group">
             <h5>3. Create kubeconfig secret</h5>
             <div class="command-block">
               <code>{{ createSecretCommand }}</code>
               <button @click="copyCommand(createSecretCommand)" class="copy-cmd-btn">Copy</button>
             </div>
           </div>
-          
-          <div class="command-group">
+
+          <div class="step-group">
             <h5>4. Bind the API service</h5>
             <div class="command-block">
               <code>{{ bindCommand }}</code>
@@ -55,23 +163,8 @@
             </div>
           </div>
         </div>
-        
-        <div class="alternative-section">
-          <details>
-            <summary>Alternative: Use stdin piping</summary>
-            <div class="manual-setup">
-              <h5>For advanced users who prefer piping:</h5>
-              <div class="command-group">
-                <div class="command-block">
-                  <code>cat apiservice-export.yaml | kubectl bind apiservice --remote-kubeconfig-namespace kube-bind --remote-kubeconfig-name {{ kubeconfigSecretName }} -f -</code>
-                  <button @click="copyCommand(`cat apiservice-export.yaml | kubectl bind apiservice --remote-kubeconfig-namespace kube-bind --remote-kubeconfig-name ${kubeconfigSecretName} -f -`)" class="copy-cmd-btn">Copy</button>
-                </div>
-              </div>
-            </div>
-          </details>
-        </div>
       </div>
-      
+
       <div class="binding-footer">
         <button @click="closeModal" class="ok-btn">Close</button>
       </div>
@@ -82,6 +175,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { BindingResponse } from '../types/binding'
+
+interface ApplyResult {
+  konnectorDeployed: boolean
+  bundleCreated: boolean
+  message: string
+}
 
 interface Props {
   show: boolean
@@ -94,17 +193,25 @@ const emit = defineEmits<{
   close: []
 }>()
 
-// Generate a secret name based on template and timestamp for consistency
-const kubeconfigSecretName = computed(() => {
-  return `kubeconfig-${props.templateName.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Date.now().toString(36)}`
-})
+const activeMethod = ref<'oneclick' | 'bundle' | 'manual'>('oneclick')
+
+// One-Click state
+const kubeconfigData = ref<string | null>(null)
+const kubeconfigFileName = ref<string>('')
+const applyStatus = ref<'idle' | 'loading' | 'success' | 'error'>('idle')
+const applyMessage = ref('')
+const kubeconfigFileInput = ref<HTMLInputElement | null>(null)
 
 const bindingName = computed(() => {
-  // Extract binding name from authentication or use template name
-  return props.bindingResponse.authentication?.oauth2CodeGrant?.sessionID || props.templateName
+  return props.bindingResponse.bindingName || props.templateName
 })
 
-// Generate the kubectl commands
+const kubeconfigSecretName = computed(() => {
+  const safeName = bindingName.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')
+  return `kubeconfig-${safeName}`
+})
+
+// Manual method commands
 const createSecretCommand = computed(() => {
   return `kubectl create secret generic ${kubeconfigSecretName.value} --from-file=kubeconfig=./kubeconfig.yaml -n kube-bind`
 })
@@ -112,6 +219,59 @@ const createSecretCommand = computed(() => {
 const bindCommand = computed(() => {
   return `kubectl bind apiservice --remote-kubeconfig-namespace kube-bind --remote-kubeconfig-name ${kubeconfigSecretName.value} -f apiservice-export.yaml`
 })
+
+// One-Click: handle kubeconfig file upload
+const handleKubeconfigUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  kubeconfigFileName.value = file.name
+  applyStatus.value = 'idle'
+  applyMessage.value = ''
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const content = e.target?.result as string
+    // Base64 encode the kubeconfig content
+    kubeconfigData.value = btoa(content)
+  }
+  reader.readAsText(file)
+}
+
+// One-Click: apply binding to consumer cluster
+const applyToConsumer = async () => {
+  if (!kubeconfigData.value) return
+
+  applyStatus.value = 'loading'
+  applyMessage.value = ''
+
+  try {
+    const response = await fetch('/api/apply-binding', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        consumerKubeconfig: kubeconfigData.value,
+        bindingName: bindingName.value,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null)
+      throw new Error(errorData?.message || `HTTP ${response.status}`)
+    }
+
+    const result: ApplyResult = await response.json()
+    applyStatus.value = 'success'
+    applyMessage.value = result.message
+    if (result.konnectorDeployed) {
+      applyMessage.value += ' (konnector was newly deployed)'
+    }
+  } catch (error: any) {
+    applyStatus.value = 'error'
+    applyMessage.value = error.message || 'Failed to apply binding'
+  }
+}
 
 const closeModal = () => {
   emit('close')
@@ -122,7 +282,6 @@ const copyCommand = async (command: string) => {
     await navigator.clipboard.writeText(command)
   } catch (err) {
     console.error('Failed to copy command:', err)
-    // Fallback for older browsers
     const textarea = document.createElement('textarea')
     textarea.value = command
     document.body.appendChild(textarea)
@@ -132,141 +291,97 @@ const copyCommand = async (command: string) => {
   }
 }
 
-const downloadKubeconfig = () => {
+const triggerDownload = (content: string, filename: string, type = 'text/yaml') => {
+  const blob = new Blob([content], { type })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+// Decode kubeconfig from base64
+const decodedKubeconfig = computed(() => {
   try {
-    // Decode base64 kubeconfig
-    const decodedKubeconfig = atob(props.bindingResponse.kubeconfig)
-    const blob = new Blob([decodedKubeconfig], { type: 'text/yaml' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'kubeconfig.yaml'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  } catch (error) {
-    console.error('Failed to decode kubeconfig:', error)
-    // Fallback: try downloading without decoding in case it's not base64
-    const blob = new Blob([props.bindingResponse.kubeconfig], { type: 'text/yaml' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'kubeconfig.yaml'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    return atob(props.bindingResponse.kubeconfig)
+  } catch {
+    return props.bindingResponse.kubeconfig
   }
+})
+
+// Bundle method: binding-bundle.yaml
+const bindingBundleYaml = computed(() => {
+  const kubeconfigBase64 = props.bindingResponse.kubeconfig
+  const secretName = kubeconfigSecretName.value
+  const bundleName = bindingName.value
+
+  return `apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-bind
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${secretName}
+  namespace: kube-bind
+type: Opaque
+data:
+  kubeconfig: ${kubeconfigBase64}
+---
+apiVersion: kube-bind.io/v1alpha2
+kind: APIServiceBindingBundle
+metadata:
+  name: ${bundleName}
+spec:
+  kubeconfigSecretRef:
+    name: ${secretName}
+    namespace: kube-bind
+    key: kubeconfig
+`
+})
+
+const downloadBindingBundle = () => {
+  triggerDownload(bindingBundleYaml.value, 'binding-bundle.yaml')
+}
+
+const downloadKonnectorManifests = async () => {
+  try {
+    const response = await fetch('/api/konnector-manifests')
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+    const yaml = await response.text()
+    triggerDownload(yaml, 'konnector.yaml')
+  } catch (error) {
+    console.error('Failed to fetch konnector manifests:', error)
+  }
+}
+
+// Manual method: individual file downloads
+const downloadKubeconfig = () => {
+  triggerDownload(decodedKubeconfig.value, 'kubeconfig.yaml')
 }
 
 const downloadAPIRequests = () => {
   try {
-    // Convert API requests to proper YAML format
     const apiRequestsYaml = props.bindingResponse.requests.map(req => {
       if (typeof req === 'string') {
-        // If it's already a string, assume it's YAML
         return req.trim()
       } else {
-        // Convert object to YAML-like format
-        // Note: For proper YAML, you'd want to use a YAML library like js-yaml
-        // For now, we'll format it as readable YAML-like structure
-        return formatObjectAsYaml(req)
+        return JSON.stringify(req, null, 2)
       }
     }).join('\n---\n')
-    
-    const blob = new Blob([apiRequestsYaml], { type: 'text/yaml' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'apiservice-export.yaml'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  } catch (error) {
-    console.error('Failed to format API requests as YAML:', error)
-    // Fallback: download as JSON
-    const apiRequestsJson = JSON.stringify(props.bindingResponse.requests, null, 2)
-    const blob = new Blob([apiRequestsJson], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'apiservice-export.json'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
-}
 
-// Helper function to format objects as proper YAML structure
-const formatObjectAsYaml = (obj: any, indent: number = 0): string => {
-  const spaces = ' '.repeat(indent)
-  
-  if (obj === null || obj === undefined) {
-    return ''
+    triggerDownload(apiRequestsYaml, 'apiservice-export.yaml')
+  } catch (error) {
+    console.error('Failed to format API requests:', error)
+    const json = JSON.stringify(props.bindingResponse.requests, null, 2)
+    triggerDownload(json, 'apiservice-export.json', 'application/json')
   }
-  
-  if (typeof obj === 'string') {
-    // Handle multiline strings
-    if (obj.includes('\n')) {
-      return `|\n${spaces}  ${obj.replace(/\n/g, `\n${spaces}  `)}`
-    }
-    // Quote strings that might be ambiguous in YAML
-    if (obj.match(/^(true|false|null|\d+)$/i) || obj.includes(':') || obj.includes('#')) {
-      return `"${obj}"`
-    }
-    return obj
-  }
-  
-  if (typeof obj === 'number' || typeof obj === 'boolean') {
-    return String(obj)
-  }
-  
-  if (Array.isArray(obj)) {
-    if (obj.length === 0) return '[]'
-    return obj.map(item => {
-      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
-        // For object items in arrays, format them with proper indentation
-        const formattedItem = formatObjectAsYaml(item, indent + 2)
-        return `${spaces}- ${formattedItem.replace(/^\s*/, '')}`
-      } else {
-        // For simple items (strings, numbers, booleans)
-        return `${spaces}- ${item}`
-      }
-    }).join('\n')
-  }
-  
-  if (typeof obj === 'object') {
-    return Object.entries(obj).map(([key, value]) => {
-      if (value === null || value === undefined) {
-        return `${spaces}${key}:`
-      }
-      
-      if (Array.isArray(value)) {
-        if (value.length === 0) {
-          return `${spaces}${key}: []`
-        }
-        const formattedArray = formatObjectAsYaml(value, indent + 2)
-        return `${spaces}${key}:\n${formattedArray}`
-      }
-      
-      if (typeof value === 'object') {
-        const formattedObject = formatObjectAsYaml(value, indent + 2)
-        if (formattedObject.trim() === '') {
-          return `${spaces}${key}:`
-        }
-        return `${spaces}${key}:\n${formattedObject}`
-      }
-      
-      // Simple values
-      const formattedValue = formatObjectAsYaml(value, 0)
-      return `${spaces}${key}: ${formattedValue}`
-    }).join('\n')
-  }
-  
-  return String(obj)
 }
 </script>
 
@@ -301,7 +416,7 @@ const formatObjectAsYaml = (obj: any, indent: number = 0): string => {
   align-items: center;
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
 }
 
@@ -338,7 +453,7 @@ const formatObjectAsYaml = (obj: any, indent: number = 0): string => {
 }
 
 .binding-info {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -356,15 +471,39 @@ const formatObjectAsYaml = (obj: any, indent: number = 0): string => {
   font-size: 0.9rem;
 }
 
-.instructions-section {
-  margin-bottom: 2rem;
+.method-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  flex-wrap: wrap;
 }
 
-.instructions-section h4 {
+.method-tab {
+  padding: 0.75rem 1.25rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6b7280;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.method-tab:hover {
+  color: #374151;
+}
+
+.method-tab.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+}
+
+.instructions-section {
   margin-bottom: 1rem;
-  color: #111827;
-  font-size: 1.125rem;
-  font-weight: 600;
 }
 
 .instructions-text {
@@ -373,19 +512,21 @@ const formatObjectAsYaml = (obj: any, indent: number = 0): string => {
   line-height: 1.6;
 }
 
-.command-group {
-  margin-bottom: 1.5rem;
+.step-group {
+  margin-bottom: 2rem;
 }
 
-.download-files-section {
-  margin-bottom: 1.5rem;
-}
-
-.download-files-section h5 {
-  margin-bottom: 0.75rem;
+.step-group h5 {
+  margin-bottom: 0.5rem;
   color: #374151;
   font-size: 1rem;
   font-weight: 600;
+}
+
+.step-description {
+  margin-bottom: 0.75rem;
+  color: #6b7280;
+  font-size: 0.875rem;
 }
 
 .download-block {
@@ -393,31 +534,36 @@ const formatObjectAsYaml = (obj: any, indent: number = 0): string => {
   border: 1px solid #bfdbfe;
   border-radius: 8px;
   padding: 1rem;
-}
-
-.download-text {
-  margin-bottom: 1rem;
-  color: #374151;
-  font-size: 0.875rem;
-}
-
-.download-text code {
-  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
-  background: #e5e7eb;
-  padding: 0.125rem 0.375rem;
-  border-radius: 4px;
-  font-size: 0.8125rem;
-}
-
-.command-group {
-  margin-bottom: 1.5rem;
-}
-
-.command-group h5 {
   margin-bottom: 0.75rem;
-  color: #374151;
-  font-size: 1rem;
-  font-weight: 600;
+}
+
+.download-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.download-btn {
+  padding: 0.75rem 1.5rem;
+  background: #6b7280;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.download-btn:hover {
+  background: #4b5563;
+}
+
+.download-btn.primary {
+  background: #3b82f6;
+}
+
+.download-btn.primary:hover {
+  background: #2563eb;
 }
 
 .command-block {
@@ -456,52 +602,162 @@ const formatObjectAsYaml = (obj: any, indent: number = 0): string => {
   background: #2563eb;
 }
 
-.alternative-section {
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+/* One-Click tab styles */
+.security-warning {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  color: #92400e;
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 
-.alternative-section details {
-  cursor: pointer;
+.upload-block {
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
 }
 
-.alternative-section summary {
-  font-weight: 600;
-  color: #6b7280;
-  padding: 0.5rem 0;
-  outline: none;
+.file-input {
+  margin-bottom: 0.5rem;
 }
 
-.manual-setup {
-  padding: 1rem 0;
+.file-info {
+  margin-top: 0.5rem;
+  color: #059669;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
-.manual-setup h5 {
-  margin-bottom: 1rem;
-  color: #374151;
-  font-weight: 600;
-}
-
-.download-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-.download-btn {
-  padding: 0.75rem 1.5rem;
-  background: #6b7280;
+.apply-btn {
+  padding: 0.875rem 2rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.download-btn:hover {
-  background: #4b5563;
+.apply-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+}
+
+.apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.status-message {
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+}
+
+.status-message.success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.status-message.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
+/* Already Connected tab styles */
+.status-check {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.status-check .spinner {
+  border-color: rgba(59, 130, 246, 0.3);
+  border-top-color: #3b82f6;
+}
+
+.connected-badge {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.not-connected-badge {
+  background: #f0f9ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.exports-list {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.exports-list h5 {
+  margin: 0 0 0.5rem 0;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.exports-list ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.exports-list li {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-family: 'SF Mono', 'Monaco', monospace;
+  padding: 0.25rem 0;
+}
+
+.method-suggestions {
+  padding-left: 1.5rem;
+  color: #6b7280;
+  line-height: 2;
 }
 
 .binding-footer {

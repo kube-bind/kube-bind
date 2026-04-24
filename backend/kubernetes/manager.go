@@ -19,8 +19,12 @@ package kubernetes
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
 	"strings"
+	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	authzv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -30,7 +34,10 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes/scheme"
 	authorizationv1 "k8s.io/client-go/kubernetes/typed/authorization/v1"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -173,6 +180,80 @@ func (m *Manager) HandleResources(
 	}, nil
 }
 
+// CreateAPIServiceExportRequest creates an APIServiceExportRequest in the given namespace
+// on the provider cluster and waits for it to be reconciled (Succeeded or Failed).
+func (m *Manager) CreateAPIServiceExportRequest(
+	ctx context.Context,
+	cluster, namespace, name string,
+	spec kubebindv1alpha2.APIServiceExportRequestSpec,
+) (*kubebindv1alpha2.APIServiceExportRequest, error) {
+	logger := klog.FromContext(ctx).WithValues("namespace", namespace, "name", name)
+
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get cluster client: %w", err)
+	}
+	c := cl.GetClient()
+
+	exportRequest := &kubebindv1alpha2.APIServiceExportRequest{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: spec,
+	}
+
+	// Create the APIServiceExportRequest, handling name conflicts
+	if err := c.Create(ctx, exportRequest); err != nil {
+		if !errors.IsAlreadyExists(err) {
+			return nil, fmt.Errorf("failed to create APIServiceExportRequest: %w", err)
+		}
+		// Name conflict: use generateName
+		exportRequest.Name = ""
+		exportRequest.GenerateName = name + "-"
+		if err := c.Create(ctx, exportRequest); err != nil {
+			return nil, fmt.Errorf("failed to create APIServiceExportRequest with generated name: %w", err)
+		}
+	}
+
+	createdName := exportRequest.Name
+	logger = logger.WithValues("createdName", createdName)
+	logger.Info("Created APIServiceExportRequest, waiting for reconciliation")
+
+	// Poll until reconciled. The client reads from cache, so the object may not
+	// be visible immediately after creation. Tolerate NotFound for an initial
+	// grace period before treating it as a real deletion.
+	var result *kubebindv1alpha2.APIServiceExportRequest
+	seenOnce := false
+	if err := wait.PollUntilContextTimeout(ctx, 1*time.Second, 60*time.Second, false, func(ctx context.Context) (bool, error) {
+		req := &kubebindv1alpha2.APIServiceExportRequest{}
+		if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: createdName}, req); err != nil {
+			if errors.IsNotFound(err) {
+				if seenOnce {
+					return false, fmt.Errorf("APIServiceExportRequest %s was deleted", createdName)
+				}
+				// Cache hasn't synced yet — keep polling.
+				return false, nil
+			}
+			return false, err
+		}
+		seenOnce = true
+		if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhaseSucceeded {
+			result = req
+			return true, nil
+		}
+		if req.Status.Phase == kubebindv1alpha2.APIServiceExportRequestPhaseFailed {
+			return false, fmt.Errorf("APIServiceExportRequest failed: %s", req.Status.TerminalMessage)
+		}
+		return false, nil
+	}); err != nil {
+		return nil, fmt.Errorf("waiting for APIServiceExportRequest: %w", err)
+	}
+
+	logger.Info("APIServiceExportRequest reconciled successfully")
+	return result, nil
+}
+
 func (m *Manager) ListCustomResourceDefinitions(ctx context.Context, cluster string, selector labels.Selector) (*apiextensionsv1.CustomResourceDefinitionList, error) {
 	cl, err := m.manager.GetCluster(ctx, cluster)
 	if err != nil {
@@ -313,6 +394,290 @@ func (m *Manager) AuthorizeRequest(ctx context.Context, subject string, groups [
 	}
 	logger.Info("User is allowed to bind", "user", subject)
 	return nil
+}
+
+// ConsumerStatus describes the status of a consumer cluster relative to the provider.
+type ConsumerStatus struct {
+	// Connected is true if the consumer has an existing provider namespace.
+	Connected bool `json:"connected"`
+	// Namespace is the provider namespace for this consumer.
+	Namespace string `json:"namespace,omitempty"`
+	// Exports is the list of APIServiceExport names in the consumer's namespace.
+	Exports []string `json:"exports,omitempty"`
+}
+
+// GetConsumerStatus checks if the given identity already has a provider namespace
+// with existing APIServiceExports.
+func (m *Manager) GetConsumerStatus(ctx context.Context, identity, cluster string) (*ConsumerStatus, error) {
+	logger := klog.FromContext(ctx).WithValues("identity", identity)
+
+	cl, err := m.manager.GetCluster(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+	c := cl.GetClient()
+
+	// Look up namespace by identity annotation
+	var nss corev1.NamespaceList
+	err = c.List(ctx, &nss, client.MatchingFields{NamespacesByIdentity: identity})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(nss.Items) == 0 {
+		return &ConsumerStatus{Connected: false}, nil
+	}
+
+	ns := nss.Items[0].Name
+	logger.Info("Found existing consumer namespace", "namespace", ns)
+
+	// List APIServiceExports in the consumer namespace
+	var exports kubebindv1alpha2.APIServiceExportList
+	if err := c.List(ctx, &exports, client.InNamespace(ns)); err != nil {
+		return nil, fmt.Errorf("failed to list APIServiceExports: %w", err)
+	}
+
+	exportNames := make([]string, 0, len(exports.Items))
+	for _, e := range exports.Items {
+		exportNames = append(exportNames, e.Name)
+	}
+
+	return &ConsumerStatus{
+		Connected: len(exportNames) > 0,
+		Namespace: ns,
+		Exports:   exportNames,
+	}, nil
+}
+
+// ApplyToConsumerResult contains the result of ApplyToConsumer operation.
+type ApplyToConsumerResult struct {
+	KonnectorDeployed bool   `json:"konnectorDeployed"`
+	BundleCreated     bool   `json:"bundleCreated"`
+	Message           string `json:"message"`
+}
+
+// ApplyToConsumer applies konnector manifests and binding bundle to a consumer cluster
+// using the provided consumer kubeconfig.
+func (m *Manager) ApplyToConsumer(
+	ctx context.Context,
+	consumerKubeconfigData []byte,
+	providerKubeconfigData []byte,
+	bindingName string,
+	konnectorImage string,
+) (*ApplyToConsumerResult, error) {
+	logger := klog.FromContext(ctx).WithValues("bindingName", bindingName)
+
+	// Build a client from the consumer kubeconfig
+	consumerConfig, err := clientcmd.RESTConfigFromKubeConfig(consumerKubeconfigData)
+	if err != nil {
+		return nil, fmt.Errorf("invalid consumer kubeconfig: %w", err)
+	}
+
+	s := scheme.Scheme
+	if err := kubebindv1alpha2.AddToScheme(s); err != nil {
+		return nil, fmt.Errorf("failed to add kube-bind scheme: %w", err)
+	}
+	if err := apiextensionsv1.AddToScheme(s); err != nil {
+		return nil, fmt.Errorf("failed to add apiextensions scheme: %w", err)
+	}
+
+	consumerClient, err := client.New(consumerConfig, client.Options{Scheme: s})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create consumer client: %w", err)
+	}
+
+	// 1. Ensure kube-bind namespace
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: "kube-bind"},
+	}
+	if err := consumerClient.Create(ctx, ns); err != nil && !errors.IsAlreadyExists(err) {
+		return nil, fmt.Errorf("failed to create kube-bind namespace: %w", err)
+	}
+
+	// 2. Resolve host aliases from the provider kubeconfig so the konnector
+	// can reach the provider API server (needed in Kind/Docker environments
+	// where the hostname resolves to localhost on the host but not in pods).
+	hostAliases := m.resolveProviderHostAliases(ctx, providerKubeconfigData)
+
+	// 3. Deploy konnector (idempotent)
+	konnectorDeployed, err := m.ensureKonnector(ctx, consumerClient, konnectorImage, hostAliases)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deploy konnector: %w", err)
+	}
+
+	// 3b. If konnector was newly deployed, wait for it to bootstrap CRDs
+	if konnectorDeployed {
+		logger.Info("Waiting for konnector to bootstrap CRDs on consumer cluster")
+		if err := m.waitForCRD(ctx, consumerClient, "apiservicebindingbundles.kube-bind.io"); err != nil {
+			return nil, fmt.Errorf("timed out waiting for konnector CRDs: %w", err)
+		}
+	}
+
+	// 4. Create kubeconfig secret for the provider
+	secretName := fmt.Sprintf("kubeconfig-%s", bindingName)
+	kubeconfigSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: "kube-bind",
+		},
+		Type: corev1.SecretTypeOpaque,
+		Data: map[string][]byte{
+			"kubeconfig": providerKubeconfigData,
+		},
+	}
+	if err := consumerClient.Create(ctx, kubeconfigSecret); err != nil {
+		if errors.IsAlreadyExists(err) {
+			// Update existing secret
+			existing := &corev1.Secret{}
+			if err := consumerClient.Get(ctx, types.NamespacedName{Name: secretName, Namespace: "kube-bind"}, existing); err != nil {
+				return nil, fmt.Errorf("failed to get existing kubeconfig secret: %w", err)
+			}
+			existing.Data = kubeconfigSecret.Data
+			if err := consumerClient.Update(ctx, existing); err != nil {
+				return nil, fmt.Errorf("failed to update kubeconfig secret: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to create kubeconfig secret: %w", err)
+		}
+	}
+
+	// 5. Create APIServiceBindingBundle
+	bundle := &kubebindv1alpha2.APIServiceBindingBundle{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: bindingName,
+		},
+		Spec: kubebindv1alpha2.APIServiceBindingBundleSpec{
+			KubeconfigSecretRef: kubebindv1alpha2.ClusterSecretKeyRef{
+				LocalSecretKeyRef: kubebindv1alpha2.LocalSecretKeyRef{
+					Name: secretName,
+					Key:  "kubeconfig",
+				},
+				Namespace: "kube-bind",
+			},
+		},
+	}
+	if err := consumerClient.Create(ctx, bundle); err != nil {
+		if errors.IsAlreadyExists(err) {
+			logger.Info("APIServiceBindingBundle already exists, updating")
+			existing := &kubebindv1alpha2.APIServiceBindingBundle{}
+			if err := consumerClient.Get(ctx, types.NamespacedName{Name: bindingName}, existing); err != nil {
+				return nil, fmt.Errorf("failed to get existing bundle: %w", err)
+			}
+			existing.Spec = bundle.Spec
+			if err := consumerClient.Update(ctx, existing); err != nil {
+				return nil, fmt.Errorf("failed to update bundle: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to create APIServiceBindingBundle: %w", err)
+		}
+	}
+
+	logger.Info("Successfully applied binding to consumer cluster")
+	return &ApplyToConsumerResult{
+		KonnectorDeployed: konnectorDeployed,
+		BundleCreated:     true,
+		Message:           "Konnector and binding bundle applied successfully",
+	}, nil
+}
+
+// resolveProviderHostAliases extracts the provider API server hostname from the
+// kubeconfig and resolves it to IP addresses. This allows the konnector pods on
+// the consumer cluster to reach the provider even when the hostname only resolves
+// correctly from the backend pod's network (e.g., Kind/Docker environments).
+func (m *Manager) resolveProviderHostAliases(ctx context.Context, providerKubeconfigData []byte) []corev1.HostAlias {
+	config, err := clientcmd.RESTConfigFromKubeConfig(providerKubeconfigData)
+	if err != nil {
+		return nil
+	}
+
+	u, err := url.Parse(config.Host)
+	if err != nil {
+		return nil
+	}
+
+	hostname := u.Hostname()
+	if hostname == "" {
+		return nil
+	}
+
+	if net.ParseIP(hostname) != nil {
+		return nil
+	}
+
+	ips, err := net.DefaultResolver.LookupHost(ctx, hostname)
+	if err != nil || len(ips) == 0 {
+		return nil
+	}
+
+	var validIPs []string
+	for _, ip := range ips {
+		parsed := net.ParseIP(ip)
+		if parsed != nil && !parsed.IsLoopback() {
+			validIPs = append(validIPs, ip)
+		}
+	}
+
+	if len(validIPs) == 0 {
+		return nil
+	}
+
+	return []corev1.HostAlias{
+		{
+			IP:        validIPs[0],
+			Hostnames: []string{hostname},
+		},
+	}
+}
+
+// ensureKonnector deploys the konnector agent to the consumer cluster.
+// Returns true if the konnector was newly deployed, false if it already existed.
+func (m *Manager) ensureKonnector(ctx context.Context, c client.Client, konnectorImage string, hostAliases []corev1.HostAlias) (bool, error) {
+	// Check if konnector deployment already exists
+	existing := &appsv1.Deployment{}
+	err := c.Get(ctx, types.NamespacedName{Name: kuberesources.KonnectorDeploymentName, Namespace: kuberesources.KonnectorNamespace}, existing)
+	if err == nil {
+		return false, nil // already deployed
+	}
+	if !errors.IsNotFound(err) {
+		return false, fmt.Errorf("failed to check for existing konnector: %w", err)
+	}
+
+	manifests := kuberesources.NewKonnectorManifests(konnectorImage, hostAliases)
+
+	if err := c.Create(ctx, manifests.ServiceAccount); err != nil && !errors.IsAlreadyExists(err) {
+		return false, fmt.Errorf("failed to create konnector service account: %w", err)
+	}
+	if err := c.Create(ctx, manifests.ClusterRole); err != nil && !errors.IsAlreadyExists(err) {
+		return false, fmt.Errorf("failed to create konnector cluster role: %w", err)
+	}
+	if err := c.Create(ctx, manifests.ClusterRoleBinding); err != nil && !errors.IsAlreadyExists(err) {
+		return false, fmt.Errorf("failed to create konnector cluster role binding: %w", err)
+	}
+	if err := c.Create(ctx, manifests.Deployment); err != nil {
+		return false, fmt.Errorf("failed to create konnector deployment: %w", err)
+	}
+
+	return true, nil
+}
+
+func (m *Manager) waitForCRD(ctx context.Context, c client.Client, crdName string) error {
+	return wait.PollUntilContextTimeout(ctx, 2*time.Second, 120*time.Second, true, func(ctx context.Context) (bool, error) {
+		crd := &apiextensionsv1.CustomResourceDefinition{}
+		err := c.Get(ctx, types.NamespacedName{Name: crdName}, crd)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil // keep polling
+			}
+			return false, nil // transient error, keep polling
+		}
+		// Check if the CRD is established
+		for _, cond := range crd.Status.Conditions {
+			if cond.Type == apiextensionsv1.Established && cond.Status == apiextensionsv1.ConditionTrue {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
 }
 
 func (m *Manager) SeedDefaultCluster(ctx context.Context) error {

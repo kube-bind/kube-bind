@@ -44,6 +44,8 @@ export interface BindingResponse {
   authentication: BindingResponseAuthentication
   kubeconfig: string
   requests: any[]
+  providerNamespace?: string
+  bindingName?: string
 }
 
 export interface BindingResult {

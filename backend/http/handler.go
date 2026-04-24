@@ -18,6 +18,7 @@ package http
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,12 +30,15 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	kjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	componentbaseversion "k8s.io/component-base/version"
 	"k8s.io/klog/v2"
 
 	"github.com/kube-bind/kube-bind/backend/auth"
 	"github.com/kube-bind/kube-bind/backend/client"
 	"github.com/kube-bind/kube-bind/backend/kubernetes"
+	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	"github.com/kube-bind/kube-bind/backend/oidc"
 	"github.com/kube-bind/kube-bind/backend/session"
 	"github.com/kube-bind/kube-bind/backend/spaserver"
@@ -149,6 +153,10 @@ func (h *handler) AddRoutes(mux *mux.Router) error {
 	// Public API routes (no authentication required)
 	mux.HandleFunc("/api/healthz", h.handleHealthz).Methods(http.MethodGet)
 	mux.HandleFunc("/api/bindable-resources", h.handleBindableResources).Methods(http.MethodGet)
+	// Intentionally unauthenticated: serves static, deterministic deployment YAML
+	// (konnector image tag is the only variable, derived from the server's own version).
+	// No secrets or cluster-specific data are included.
+	mux.HandleFunc("/api/konnector-manifests", h.handleKonnectorManifests).Methods(http.MethodGet)
 
 	// Generic authentication routes (support both UI and CLI)
 	mux.HandleFunc("/api/authorize", h.authHandler.HandleAuthorize).Methods(http.MethodGet, http.MethodPost)
@@ -166,6 +174,8 @@ func (h *handler) AddRoutes(mux *mux.Router) error {
 	apiRouter.Handle("/collections", auth.RequireAuth(http.HandlerFunc(h.handleCollections))).Methods(http.MethodGet)
 	apiRouter.Handle("/bind", auth.RequireAuth(http.HandlerFunc(h.handleBind))).Methods(http.MethodPost)
 	apiRouter.Handle("/ping", auth.RequireAuth(http.HandlerFunc(h.handlePing))).Methods(http.MethodGet)
+	apiRouter.Handle("/consumer-status", auth.RequireAuth(http.HandlerFunc(h.handleConsumerStatus))).Methods(http.MethodGet)
+	apiRouter.Handle("/apply-binding", auth.RequireAuth(http.HandlerFunc(h.handleApplyBinding))).Methods(http.MethodPost)
 
 	if h.oidcServer != nil {
 		h.oidcServer.AddRoutes(mux)
@@ -195,6 +205,49 @@ func (h *handler) handlePing(w http.ResponseWriter, r *http.Request) {
 	prepareNoCache(w)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("pong")) //nolint:errcheck
+}
+
+// handleKonnectorManifests returns the pre-rendered konnector YAML manifests
+// that a consumer cluster needs to apply to deploy the konnector agent.
+// The manifests are generated from the same Go structs used by the one-click
+// apply flow (ensureKonnector) to avoid definition drift.
+func (h *handler) handleKonnectorManifests(w http.ResponseWriter, r *http.Request) {
+	prepareNoCache(w)
+
+	konnectorVersion, err := bindversion.BinaryVersion(componentbaseversion.Get().GitVersion)
+	if err != nil {
+		konnectorVersion = "latest"
+	}
+	konnectorImage := fmt.Sprintf("ghcr.io/kube-bind/konnector:%s", konnectorVersion)
+
+	manifests := kuberesources.NewKonnectorManifests(konnectorImage, nil)
+
+	// Serialize each object to YAML and join with document separators
+	s := runtime.NewScheme()
+	kuberesources.AddKonnectorSchemes(s)
+	encoder := kjson.NewSerializerWithOptions(
+		kjson.DefaultMetaFactory,
+		s,
+		s,
+		kjson.SerializerOptions{Yaml: true, Pretty: true, Strict: false},
+	)
+	codec := serializer.NewCodecFactory(s).EncoderForVersion(encoder, nil)
+
+	var buf strings.Builder
+	objects := manifests.Objects()
+	for i, obj := range objects {
+		if i > 0 {
+			buf.WriteString("---\n")
+		}
+		if err := codec.Encode(obj, &buf); err != nil {
+			writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to serialize konnector manifests", err.Error())
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "text/yaml")
+	w.Header().Set("Content-Disposition", "attachment; filename=konnector.yaml")
+	w.Write([]byte(buf.String())) //nolint:errcheck
 }
 
 func (h *handler) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -368,7 +421,8 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Resolve the UI sentinel to a real identity derived from the authenticated session.
-	if identity == auth.UIIdentity {
+	isUIFlow := identity == auth.UIIdentity
+	if isUIFlow {
 		identity = state.Token.Issuer + "/" + state.Token.Subject
 		logger.Info("Resolved ui-identity from session", "identity", identity)
 	}
@@ -411,6 +465,26 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	// For UI-only flow, create the APIServiceExportRequest on the provider cluster
+	// and wait for reconciliation. In CLI flow the konnector handles this instead.
+	var exportRequestName string
+	if isUIFlow {
+		exportRequest, err := h.kubeManager.CreateAPIServiceExportRequest(
+			r.Context(),
+			params.ClusterID,
+			handleResult.Namespace,
+			bindRequest.Name,
+			request.Spec,
+		)
+		if err != nil {
+			logger.Error(err, "failed to create APIServiceExportRequest")
+			statusCode, code, details := mapErrorToCode(err)
+			writeErrorResponse(w, statusCode, code, "Failed to create API service export request", details)
+			return
+		}
+		exportRequestName = exportRequest.Name
+	}
+
 	// callback response
 	requestBytes, err := json.Marshal(&request)
 	if err != nil {
@@ -430,8 +504,10 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 				ID:        state.Token.Issuer + "/" + state.Token.Subject,
 			},
 		},
-		Kubeconfig: handleResult.Kubeconfig,
-		Requests:   []runtime.RawExtension{{Raw: requestBytes}},
+		Kubeconfig:        handleResult.Kubeconfig,
+		Requests:          []runtime.RawExtension{{Raw: requestBytes}},
+		ProviderNamespace: handleResult.Namespace,
+		BindingName:       exportRequestName,
 	}
 
 	payload, err := json.Marshal(&response)
@@ -445,7 +521,120 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 	w.Write(payload) //nolint:errcheck
 }
 
-// listTemplates fetches the list of APIServiceExportTemplates from the backend cluster without checking
+// handleConsumerStatus returns whether the authenticated user already has a consumer
+// namespace with existing APIServiceExports on the provider.
+func (h *handler) handleConsumerStatus(w http.ResponseWriter, r *http.Request) {
+	logger := getLogger(r)
+	params := client.GetQueryParams(r)
+	prepareNoCache(w)
+
+	authCtx := auth.GetAuthContext(r.Context())
+	state := authCtx.SessionState
+	identity := state.Token.Issuer + "/" + state.Token.Subject
+
+	status, err := h.kubeManager.GetConsumerStatus(r.Context(), identity, params.ClusterID)
+	if err != nil {
+		logger.Error(err, "failed to get consumer status")
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to get consumer status", err.Error())
+		return
+	}
+
+	payload, err := json.Marshal(status)
+	if err != nil {
+		logger.Error(err, "failed to marshal consumer status")
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to marshal consumer status", err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(payload) //nolint:errcheck
+}
+
+// applyBindingRequest is the JSON body for the apply-binding endpoint.
+type applyBindingRequest struct {
+	// ConsumerKubeconfig is the base64-encoded kubeconfig for the consumer cluster.
+	ConsumerKubeconfig string `json:"consumerKubeconfig"`
+	// BindingName is the name for the binding (used for secret and bundle naming).
+	BindingName string `json:"bindingName"`
+}
+
+// handleApplyBinding receives a consumer kubeconfig and applies the konnector + binding
+// bundle to the consumer cluster.
+func (h *handler) handleApplyBinding(w http.ResponseWriter, r *http.Request) {
+	logger := getLogger(r)
+	params := client.GetQueryParams(r)
+	prepareNoCache(w)
+
+	authCtx := auth.GetAuthContext(r.Context())
+	state := authCtx.SessionState
+	identity := state.Token.Issuer + "/" + state.Token.Subject
+
+	// Parse request body
+	const maxBodySize = 1 << 20 // 1 MB
+	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
+	var req applyBindingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Invalid request body", err.Error())
+		return
+	}
+
+	if req.ConsumerKubeconfig == "" {
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Missing consumer kubeconfig", "consumerKubeconfig is required")
+		return
+	}
+	if req.BindingName == "" {
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Missing binding name", "bindingName is required")
+		return
+	}
+
+	// Decode base64 consumer kubeconfig
+	consumerKubeconfigData, err := base64.StdEncoding.DecodeString(req.ConsumerKubeconfig)
+	if err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, kubebindv1alpha2.ErrorCodeBadRequest, "Invalid consumer kubeconfig encoding", "consumerKubeconfig must be base64 encoded")
+		return
+	}
+
+	// Get the provider kubeconfig for this user's namespace
+	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, identity, params.ClusterID)
+	if err != nil {
+		logger.Error(err, "failed to handle resources for apply-binding")
+		statusCode, code, details := mapErrorToCode(err)
+		writeErrorResponse(w, statusCode, code, "Failed to prepare provider resources", details)
+		return
+	}
+
+	// Resolve konnector image
+	konnectorVersion, err := bindversion.BinaryVersion(componentbaseversion.Get().GitVersion)
+	if err != nil {
+		konnectorVersion = "latest"
+	}
+	konnectorImage := fmt.Sprintf("ghcr.io/kube-bind/konnector:%s", konnectorVersion)
+
+	// Apply to consumer cluster
+	result, err := h.kubeManager.ApplyToConsumer(
+		r.Context(),
+		consumerKubeconfigData,
+		handleResult.Kubeconfig,
+		req.BindingName,
+		konnectorImage,
+	)
+	if err != nil {
+		logger.Error(err, "failed to apply binding to consumer cluster")
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to apply binding to consumer cluster", err.Error())
+		return
+	}
+
+	payload, err := json.Marshal(result)
+	if err != nil {
+		logger.Error(err, "failed to marshal apply result")
+		writeErrorResponse(w, http.StatusInternalServerError, kubebindv1alpha2.ErrorCodeInternalError, "Failed to marshal result", err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(payload) //nolint:errcheck
+}
+
 // if they are part of a Collection or not.
 func (h *handler) listTemplates(ctx context.Context, cluster string) (*kubebindv1alpha2.APIServiceExportTemplateList, error) {
 	templates, err := h.kubeManager.ListTemplates(ctx, cluster)

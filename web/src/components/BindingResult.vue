@@ -61,6 +61,22 @@
           </div>
 
           <div class="step-group">
+            <h5>Host Aliases <span class="optional-label">(optional)</span></h5>
+            <p class="step-description">
+              Add host alias entries for the konnector pods if the provider hostname
+              doesn't resolve correctly from the consumer cluster (e.g., in Kind/Docker environments).
+            </p>
+            <input
+              v-model="hostAliasInput"
+              type="text"
+              class="text-input"
+              placeholder="e.g. 172.19.0.2:kube-bind.dev.local"
+              :disabled="applyStatus === 'loading'"
+            />
+            <p class="step-hint">Format: IP:hostname1,hostname2</p>
+          </div>
+
+          <div class="step-group">
             <button
               @click="applyToConsumer"
               class="apply-btn"
@@ -201,6 +217,7 @@ const kubeconfigFileName = ref<string>('')
 const applyStatus = ref<'idle' | 'loading' | 'success' | 'error'>('idle')
 const applyMessage = ref('')
 const kubeconfigFileInput = ref<HTMLInputElement | null>(null)
+const hostAliasInput = ref('')
 
 const bindingName = computed(() => {
   return props.bindingResponse.bindingName || props.templateName
@@ -253,6 +270,7 @@ const applyToConsumer = async () => {
       body: JSON.stringify({
         consumerKubeconfig: kubeconfigData.value,
         bindingName: bindingName.value,
+        hostAliases: hostAliasInput.value.trim() ? [hostAliasInput.value.trim()] : undefined,
       }),
     })
 
@@ -631,6 +649,34 @@ const downloadAPIRequests = () => {
   color: #059669;
   font-size: 0.875rem;
   font-weight: 500;
+}
+
+.text-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: 'SF Mono', Monaco, monospace;
+  box-sizing: border-box;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.optional-label {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.step-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: #9ca3af;
 }
 
 .apply-btn {

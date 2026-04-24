@@ -57,6 +57,10 @@ type Manager struct {
 
 	manager      mcmanager.Manager
 	embeddedOIDC bool
+
+	// konnectorHostAliases are default host aliases injected into konnector
+	// pods deployed via the UI flow (configured via --konnector-host-alias flag).
+	konnectorHostAliases []corev1.HostAlias
 }
 
 func NewKubernetesManager(
@@ -68,6 +72,7 @@ func NewKubernetesManager(
 	externalTLSServerName string,
 	manager mcmanager.Manager,
 	embeddedOIDC bool,
+	konnectorHostAliases []corev1.HostAlias,
 ) (*Manager, error) {
 	m := &Manager{
 		namespacePrefix:    namespacePrefix,
@@ -78,8 +83,9 @@ func NewKubernetesManager(
 		externalCA:               externalCA,
 		externalTLSServerName:    externalTLSServerName,
 
-		manager:      manager,
-		embeddedOIDC: embeddedOIDC,
+		manager:              manager,
+		embeddedOIDC:         embeddedOIDC,
+		konnectorHostAliases: konnectorHostAliases,
 	}
 
 	if err := m.manager.GetFieldIndexer().IndexField(ctx, &corev1.Namespace{}, NamespacesByIdentity,
@@ -464,6 +470,7 @@ func (m *Manager) ApplyToConsumer(
 	providerKubeconfigData []byte,
 	bindingName string,
 	konnectorImage string,
+	overrideHostAliases []corev1.HostAlias,
 ) (*ApplyToConsumerResult, error) {
 	logger := klog.FromContext(ctx).WithValues("bindingName", bindingName)
 
@@ -494,10 +501,17 @@ func (m *Manager) ApplyToConsumer(
 		return nil, fmt.Errorf("failed to create kube-bind namespace: %w", err)
 	}
 
-	// 2. Resolve host aliases from the provider kubeconfig so the konnector
-	// can reach the provider API server (needed in Kind/Docker environments
-	// where the hostname resolves to localhost on the host but not in pods).
-	hostAliases := m.resolveProviderHostAliases(ctx, providerKubeconfigData)
+	// 2. Build host aliases: start with request overrides (if any), fall back to
+	// configured defaults, then merge any auto-resolved aliases from the provider kubeconfig.
+	var hostAliases []corev1.HostAlias
+	if len(overrideHostAliases) > 0 {
+		hostAliases = append(hostAliases, overrideHostAliases...)
+	} else {
+		hostAliases = append(hostAliases, m.konnectorHostAliases...)
+	}
+	if resolved := m.resolveProviderHostAliases(ctx, providerKubeconfigData); len(resolved) > 0 {
+		hostAliases = mergeHostAliases(hostAliases, resolved)
+	}
 
 	// 3. Deploy konnector (idempotent)
 	konnectorDeployed, err := m.ensureKonnector(ctx, consumerClient, konnectorImage, hostAliases)
@@ -632,17 +646,23 @@ func (m *Manager) resolveProviderHostAliases(ctx context.Context, providerKubeco
 // ensureKonnector deploys the konnector agent to the consumer cluster.
 // Returns true if the konnector was newly deployed, false if it already existed.
 func (m *Manager) ensureKonnector(ctx context.Context, c client.Client, konnectorImage string, hostAliases []corev1.HostAlias) (bool, error) {
+	manifests := kuberesources.NewKonnectorManifests(konnectorImage, hostAliases)
+
 	// Check if konnector deployment already exists
 	existing := &appsv1.Deployment{}
 	err := c.Get(ctx, types.NamespacedName{Name: kuberesources.KonnectorDeploymentName, Namespace: kuberesources.KonnectorNamespace}, existing)
 	if err == nil {
-		return false, nil // already deployed
+		// Update the deployment if host aliases changed
+		existing.Spec.Template.Spec.HostAliases = hostAliases
+		existing.Spec.Template.Spec.Containers[0].Image = konnectorImage
+		if err := c.Update(ctx, existing); err != nil {
+			return false, fmt.Errorf("failed to update konnector deployment: %w", err)
+		}
+		return false, nil
 	}
 	if !errors.IsNotFound(err) {
 		return false, fmt.Errorf("failed to check for existing konnector: %w", err)
 	}
-
-	manifests := kuberesources.NewKonnectorManifests(konnectorImage, hostAliases)
 
 	if err := c.Create(ctx, manifests.ServiceAccount); err != nil && !errors.IsAlreadyExists(err) {
 		return false, fmt.Errorf("failed to create konnector service account: %w", err)
@@ -696,4 +716,25 @@ func (m *Manager) SeedDefaultCluster(ctx context.Context) error {
 	}
 	logger.Info("Default Cluster resource ensured")
 	return nil
+}
+
+// GetKonnectorHostAliases returns the configured default host aliases for konnector pods.
+func (m *Manager) GetKonnectorHostAliases() []corev1.HostAlias {
+	return m.konnectorHostAliases
+}
+
+// mergeHostAliases merges additional host aliases into existing ones,
+// skipping entries whose IP is already present.
+func mergeHostAliases(existing, additional []corev1.HostAlias) []corev1.HostAlias {
+	seen := make(map[string]bool, len(existing))
+	for _, ha := range existing {
+		seen[ha.IP] = true
+	}
+	for _, ha := range additional {
+		if !seen[ha.IP] {
+			existing = append(existing, ha)
+			seen[ha.IP] = true
+		}
+	}
+	return existing
 }

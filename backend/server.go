@@ -22,8 +22,10 @@ import (
 	"fmt"
 	"net"
 	nethttp "net/http"
+	"strings"
 	"sync"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -79,6 +81,18 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		Config: c,
 	}
 
+	// Parse konnector host aliases from flag
+	var konnectorHostAliases []corev1.HostAlias
+	for _, entry := range c.Options.KonnectorHostAlias {
+		parts := strings.SplitN(entry, ":", 2)
+		if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+			konnectorHostAliases = append(konnectorHostAliases, corev1.HostAlias{
+				IP:        parts[0],
+				Hostnames: strings.Split(parts[1], ","),
+			})
+		}
+	}
+
 	var err error
 	s.Kubernetes, err = kube.NewKubernetesManager(
 		ctx,
@@ -90,6 +104,7 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 		c.Options.TLSExternalServerName,
 		s.Config.Manager,
 		c.Options.OIDC.Type == string(kubebindv1alpha2.OIDCProviderTypeEmbedded),
+		konnectorHostAliases,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("error setting up Kubernetes Manager: %w", err)

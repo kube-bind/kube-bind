@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -220,7 +221,7 @@ func (h *handler) handleKonnectorManifests(w http.ResponseWriter, r *http.Reques
 	}
 	konnectorImage := fmt.Sprintf("ghcr.io/kube-bind/konnector:%s", konnectorVersion)
 
-	manifests := kuberesources.NewKonnectorManifests(konnectorImage, nil)
+	manifests := kuberesources.NewKonnectorManifests(konnectorImage, h.kubeManager.GetKonnectorHostAliases())
 
 	// Serialize each object to YAML and join with document separators
 	s := runtime.NewScheme()
@@ -556,6 +557,9 @@ type applyBindingRequest struct {
 	ConsumerKubeconfig string `json:"consumerKubeconfig"`
 	// BindingName is the name for the binding (used for secret and bundle naming).
 	BindingName string `json:"bindingName"`
+	// HostAliases is an optional list of host alias entries for konnector pods,
+	// in the format "IP:hostname1,hostname2". Overrides the server-configured defaults.
+	HostAliases []string `json:"hostAliases,omitempty"`
 }
 
 // handleApplyBinding receives a consumer kubeconfig and applies the konnector + binding
@@ -610,6 +614,18 @@ func (h *handler) handleApplyBinding(w http.ResponseWriter, r *http.Request) {
 	}
 	konnectorImage := fmt.Sprintf("ghcr.io/kube-bind/konnector:%s", konnectorVersion)
 
+	// Parse optional host alias overrides from request
+	var overrideHostAliases []corev1.HostAlias
+	for _, entry := range req.HostAliases {
+		parts := strings.SplitN(entry, ":", 2)
+		if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
+			overrideHostAliases = append(overrideHostAliases, corev1.HostAlias{
+				IP:        parts[0],
+				Hostnames: strings.Split(parts[1], ","),
+			})
+		}
+	}
+
 	// Apply to consumer cluster
 	result, err := h.kubeManager.ApplyToConsumer(
 		r.Context(),
@@ -617,6 +633,7 @@ func (h *handler) handleApplyBinding(w http.ResponseWriter, r *http.Request) {
 		handleResult.Kubeconfig,
 		req.BindingName,
 		konnectorImage,
+		overrideHostAliases,
 	)
 	if err != nil {
 		logger.Error(err, "failed to apply binding to consumer cluster")

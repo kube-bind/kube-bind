@@ -79,6 +79,10 @@ type ExtraOptions struct {
 	// SchemaSyncInterval is how often the serviceexportrequest controller re-reconciles
 	// to detect source schema changes when SchemaUpdatePolicy is Always.
 	SchemaSyncInterval time.Duration
+
+	// KonnectorHostAlias is a list of host alias entries for konnector pods
+	// deployed via the UI flow, in the format IP:hostname1,hostname2.
+	KonnectorHostAlias []string
 }
 
 type completedOptions struct {
@@ -195,6 +199,7 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&options.TestingAutoSelect, "testing-auto-select", options.TestingAutoSelect, "<resource>.<group> that is automatically selected on th bind screen for testing")
 	fs.MarkHidden("testing-auto-select") //nolint:errcheck
+	fs.StringSliceVar(&options.KonnectorHostAlias, "konnector-host-alias", options.KonnectorHostAlias, "Add host aliases to konnector pods deployed via the UI flow, in the format IP:hostname1,hostname2. Can be specified multiple times.")
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {
@@ -321,6 +326,13 @@ func (options *CompletedOptions) Validate() error {
 
 	if options.SchemaSyncInterval < 10*time.Second {
 		return fmt.Errorf("--schema-sync-interval must be at least 10s, got %v", options.SchemaSyncInterval)
+	}
+
+	for _, entry := range options.KonnectorHostAlias {
+		parts := strings.SplitN(entry, ":", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return fmt.Errorf("invalid --konnector-host-alias %q, expected format IP:hostname1,hostname2", entry)
+		}
 	}
 
 	return nil

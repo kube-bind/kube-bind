@@ -30,11 +30,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
+	crhandler "sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
+	mchandler "sigs.k8s.io/multicluster-runtime/pkg/handler"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
 	"github.com/kube-bind/kube-bind/pkg/indexers"
@@ -119,8 +121,8 @@ func NewAPIServiceNamespaceReconciler(
 }
 
 // getNamespaceMapper creates a mapping function for Namespace changes.
-func getNamespaceMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
-	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
+func getNamespaceMapper(clusterName multicluster.ClusterName, cl cluster.Cluster) crhandler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return mchandler.TypedEnqueueRequestsFromMapFuncWithClusterPreservation[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		namespace := obj.(*corev1.Namespace)
 		nsKey := namespace.Name
 
@@ -148,8 +150,8 @@ func getNamespaceMapper(clusterName string, cl cluster.Cluster) handler.TypedEve
 }
 
 // createClusterBindingMapper creates a mapping function for ClusterBinding changes.
-func getClusterBindingMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
-	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
+func getClusterBindingMapper(clusterName multicluster.ClusterName, cl cluster.Cluster) crhandler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return mchandler.TypedEnqueueRequestsFromMapFuncWithClusterPreservation[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		clusterBinding := obj.(*kubebindv1alpha2.ClusterBinding)
 		ns := clusterBinding.Namespace
 
@@ -178,8 +180,8 @@ func getClusterBindingMapper(clusterName string, cl cluster.Cluster) handler.Typ
 }
 
 // getServiceExportMapper creates a mapping function for APIServiceExport changes.
-func getServiceExportMapper(clusterName string, cl cluster.Cluster) handler.TypedEventHandler[client.Object, mcreconcile.Request] {
-	return handler.TypedEnqueueRequestsFromMapFunc[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
+func getServiceExportMapper(clusterName multicluster.ClusterName, cl cluster.Cluster) crhandler.TypedEventHandler[client.Object, mcreconcile.Request] {
+	return mchandler.TypedEnqueueRequestsFromMapFuncWithClusterPreservation[client.Object, mcreconcile.Request](func(ctx context.Context, obj client.Object) []mcreconcile.Request {
 		serviceExport := obj.(*kubebindv1alpha2.APIServiceExport)
 		ns := serviceExport.Namespace
 

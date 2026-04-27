@@ -131,7 +131,7 @@ func (r *BindableResourcesRequestReconciler) Reconcile(ctx context.Context, req 
 	original := bindableRequest.DeepCopy()
 
 	// Run the reconciliation logic
-	result, err := r.reconciler.reconcile(ctx, req.ClusterName, client, bindableRequest)
+	result, err := r.reconciler.reconcile(ctx, string(req.ClusterName), client, bindableRequest)
 	if err != nil {
 		logger.Error(err, "Failed to reconcile BindableResourcesRequest")
 		if !reflect.DeepEqual(original.Status, bindableRequest.Status) {

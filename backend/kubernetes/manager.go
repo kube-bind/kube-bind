@@ -41,6 +41,7 @@ import (
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
 	kuberesources "github.com/kube-bind/kube-bind/backend/kubernetes/resources"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -105,7 +106,7 @@ func (m *Manager) HandleResources(
 	logger := klog.FromContext(ctx).WithValues("identity", identity)
 	ctx = klog.NewContext(ctx, logger)
 
-	cl, err := m.manager.GetCluster(ctx, cluster)
+	cl, err := m.manager.GetCluster(ctx, multicluster.ClusterName(cluster))
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +190,7 @@ func (m *Manager) CreateAPIServiceExportRequest(
 ) (*kubebindv1alpha2.APIServiceExportRequest, error) {
 	logger := klog.FromContext(ctx).WithValues("namespace", namespace, "name", name)
 
-	cl, err := m.manager.GetCluster(ctx, cluster)
+	cl, err := m.manager.GetCluster(ctx, multicluster.ClusterName(cluster))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get cluster client: %w", err)
 	}
@@ -255,7 +256,7 @@ func (m *Manager) CreateAPIServiceExportRequest(
 }
 
 func (m *Manager) ListCustomResourceDefinitions(ctx context.Context, cluster string, selector labels.Selector) (*apiextensionsv1.CustomResourceDefinitionList, error) {
-	cl, err := m.manager.GetCluster(ctx, cluster)
+	cl, err := m.manager.GetCluster(ctx, multicluster.ClusterName(cluster))
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +272,7 @@ func (m *Manager) ListCustomResourceDefinitions(ctx context.Context, cluster str
 }
 
 func (m *Manager) ListCollections(ctx context.Context, cluster string) (*kubebindv1alpha2.CollectionList, error) {
-	cl, err := m.manager.GetCluster(ctx, cluster)
+	cl, err := m.manager.GetCluster(ctx, multicluster.ClusterName(cluster))
 	if err != nil {
 		return nil, err
 	}
@@ -287,7 +288,7 @@ func (m *Manager) ListCollections(ctx context.Context, cluster string) (*kubebin
 }
 
 func (m *Manager) ListTemplates(ctx context.Context, cluster string) (*kubebindv1alpha2.APIServiceExportTemplateList, error) {
-	cl, err := m.manager.GetCluster(ctx, cluster)
+	cl, err := m.manager.GetCluster(ctx, multicluster.ClusterName(cluster))
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +304,7 @@ func (m *Manager) ListTemplates(ctx context.Context, cluster string) (*kubebindv
 }
 
 func (m *Manager) GetTemplates(ctx context.Context, cluster, name string) (*kubebindv1alpha2.APIServiceExportTemplate, error) {
-	cl, err := m.manager.GetCluster(ctx, cluster)
+	cl, err := m.manager.GetCluster(ctx, multicluster.ClusterName(cluster))
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +320,7 @@ func (m *Manager) GetTemplates(ctx context.Context, cluster, name string) (*kube
 }
 
 func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk schema.GroupVersionKind, selector labels.Selector) (*unstructured.UnstructuredList, error) {
-	cl, err := m.manager.GetCluster(ctx, cluster)
+	cl, err := m.manager.GetCluster(ctx, multicluster.ClusterName(cluster))
 	if err != nil {
 		return nil, err
 	}
@@ -349,7 +350,7 @@ func (m *Manager) ListDynamicResources(ctx context.Context, cluster string, gvk 
 func (m *Manager) AuthorizeRequest(ctx context.Context, subject string, groups []string, cluster, method, path string) error {
 	logger := klog.FromContext(ctx).WithValues("subject", subject, "cluster", cluster, "method", method, "path", path, "groups", groups)
 
-	cl, err := m.manager.GetCluster(ctx, cluster)
+	cl, err := m.manager.GetCluster(ctx, multicluster.ClusterName(cluster))
 	if err != nil {
 		return err
 	}
@@ -411,7 +412,7 @@ type ConsumerStatus struct {
 func (m *Manager) GetConsumerStatus(ctx context.Context, identity, cluster string) (*ConsumerStatus, error) {
 	logger := klog.FromContext(ctx).WithValues("identity", identity)
 
-	cl, err := m.manager.GetCluster(ctx, cluster)
+	cl, err := m.manager.GetCluster(ctx, multicluster.ClusterName(cluster))
 	if err != nil {
 		return nil, err
 	}
@@ -683,7 +684,7 @@ func (m *Manager) waitForCRD(ctx context.Context, c client.Client, crdName strin
 func (m *Manager) SeedDefaultCluster(ctx context.Context) error {
 	logger := klog.FromContext(ctx)
 
-	cl, err := m.manager.GetCluster(ctx, "")
+	cl, err := m.manager.GetCluster(ctx, multicluster.ClusterName(""))
 	if err != nil {
 		return err
 	}

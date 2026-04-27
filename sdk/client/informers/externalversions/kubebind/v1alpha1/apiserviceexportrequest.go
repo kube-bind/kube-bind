@@ -57,7 +57,7 @@ func NewAPIServiceExportRequestInformer(client versioned.Interface, namespace st
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredAPIServiceExportRequestInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
@@ -82,7 +82,7 @@ func NewFilteredAPIServiceExportRequestInformer(client versioned.Interface, name
 				}
 				return client.KubeBindV1alpha1().APIServiceExportRequests(namespace).Watch(ctx, options)
 			},
-		},
+		}, client),
 		&apiskubebindv1alpha1.APIServiceExportRequest{},
 		resyncPeriod,
 		indexers,

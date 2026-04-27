@@ -154,7 +154,7 @@ install-gotestsum:
 
 .PHONY: install-boilerplate
 install-boilerplate:
-	@UGET_VERSIONED_BINARIES=false UNCOMPRESSED=true hack/uget.sh https://raw.githubusercontent.com/kubernetes/repo-infra/master/hack/verify_boilerplate.py verify_boilerplate.py $(BOILERPLATE_VERSION) verify_boilerplate.py
+	@UGET_VERSIONED_BINARIES=false UNCOMPRESSED=true hack/uget.sh https://raw.githubusercontent.com/kubernetes/repo-infra/{VERSION}/hack/verify_boilerplate.py verify_boilerplate.py $(BOILERPLATE_VERSION) verify_boilerplate.py
 
 .PHONY: install-kcp
 install-kcp:

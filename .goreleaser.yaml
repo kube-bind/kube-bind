@@ -26,12 +26,54 @@ builds:
     goarch: ppc64le
   - goos: windows
     goarch: ppc64le
+- id: "backend"
+  main: ./cmd/backend
+  binary: bin/backend
+  env:
+  - CGO_ENABLED=0
+  ldflags:
+  - "{{ .Env.LDFLAGS }}"
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm64
+  - ppc64le
+  ignore:
+  - goos: darwin
+    goarch: ppc64le
+- id: "konnector"
+  main: ./cmd/konnector
+  binary: bin/konnector
+  env:
+  - CGO_ENABLED=0
+  ldflags:
+  - "{{ .Env.LDFLAGS }}"
+  goos:
+  - linux
+  - darwin
+  goarch:
+  - amd64
+  - arm64
+  - ppc64le
+  ignore:
+  - goos: darwin
+    goarch: ppc64le
 
 archives:
 - id: kubectl-bind
   builds:
   - kubectl-bind
   name_template: "kubectl-bind_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+- id: backend
+  builds:
+  - backend
+  name_template: "backend_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+- id: konnector
+  builds:
+  - konnector
+  name_template: "konnector_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 release:
   prerelease: auto

@@ -817,56 +817,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#available-oci-charts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Available OCI Charts
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Available OCI Charts">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#backend-chart" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Backend Chart
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#finding-available-versions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Finding Available Versions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3274,12 +3224,12 @@ The backend chart is available as an OCI image for service providers, with konne
 <li><strong>Get the latest chart version:</strong></li>
 </ol>
 <p>Visit the <a href="https://github.com/kube-bind/kube-bind/releases">releases page</a> or check available versions:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># For latest tag version (recommended for production):</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nv">VERSION</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span>https://api.github.com/repos/kube-bind/kube-bind/releases/latest<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;&quot;tag_name&quot;&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d<span class="s1">&#39;&quot;&#39;</span><span class="w"> </span>-f4<span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/v//&#39;</span><span class="k">)</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Or use a specific development version:</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># VERSION=0.0.0-9fd9281e661c0d9a426a941111d3d8b08019ebc1</span>
-</code></pre></div>
+<p>```bash
+   # For latest tag version (recommended for production):
+   VERSION=$(curl -s https://api.github.com/repos/kube-bind/kube-bind/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/v//')</p>
+<p># Or use a specific development version:
+   # VERSION=0.0.0-9fd9281e661c0d9a426a941111d3d8b08019ebc1
+   ```</p>
 <ol>
 <li><strong>Configure your values:</strong></li>
 </ol>
@@ -3294,196 +3244,186 @@ The backend chart is available as an OCI image for service providers, with konne
 <p>To install production configuration, you will need to have an OIDC provider.
 For more information, just check out the <a href="../quickstart/">quickstart guide</a>.</p>
 </div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="w">   </span><span class="c1"># Using latest release version</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>helm<span class="w"> </span>upgrade<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">      </span>--install<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span>--namespace<span class="w"> </span>kube-bind<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span>--set<span class="w"> </span>certManager.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span>--set<span class="w"> </span>certManager.clusterIssuer<span class="o">=</span>letsencrypt-prod<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span>--set<span class="w"> </span>backend.oidc.issuerUrl<span class="o">=</span>https://auth.example.com<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span>--set<span class="w"> </span>backend.oidc.clientId<span class="o">=</span>platform-mesh<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">      </span>--set<span class="w"> </span>backend.oidc.clientSecret<span class="o">=</span>&lt;client-secret-from-oidc-provider&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">      </span>--set<span class="w"> </span>backend.oidc.callbackUrl<span class="o">=</span>https://kube-bind.example.com/api/callback<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.gateway.className<span class="o">=</span>nginx<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.gateway.httpsPort<span class="o">=</span><span class="m">443</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">      </span>--set<span class="w"> </span><span class="s1">&#39;gatewayApi.gateway.tls.certificateRefs[0].name=backend-tls-cert&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">      </span>--set<span class="w"> </span><span class="s1">&#39;gatewayApi.route.hostnames[0]=kube-bind.example.com&#39;</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.route.path<span class="o">=</span>/<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.route.pathType<span class="o">=</span>PathPrefix<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">      </span>--set<span class="w"> </span>image.tag<span class="o">=</span>v<span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">      </span>kube-bind<span class="w"> </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span>
-</code></pre></div>
+<p><code>bash
+   # Using latest release version
+helm upgrade \
+      --install \
+      --namespace kube-bind \
+      --create-namespace \
+      --set certManager.enabled=true \
+      --set certManager.clusterIssuer=letsencrypt-prod \
+      --set backend.oidc.issuerUrl=https://auth.example.com \
+      --set backend.oidc.clientId=platform-mesh \
+      --set backend.oidc.clientSecret=&lt;client-secret-from-oidc-provider&gt; \
+      --set backend.oidc.callbackUrl=https://kube-bind.example.com/api/callback \
+      --set gatewayApi.enabled=true \
+      --set gatewayApi.gateway.className=nginx \
+      --set gatewayApi.gateway.httpsPort=443 \
+      --set 'gatewayApi.gateway.tls.certificateRefs[0].name=backend-tls-cert' \
+      --set 'gatewayApi.route.hostnames[0]=kube-bind.example.com' \
+      --set gatewayApi.route.path=/ \
+      --set gatewayApi.route.pathType=PathPrefix \
+      --set image.tag=v${VERSION} \
+      kube-bind oci://ghcr.io/kube-bind/charts/backend --version ${VERSION}</code></p>
 <ol>
 <li><strong>Seed with example resources (optional):</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/crd-foo.yaml
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/crd-mangodb.yaml
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/template-foo.yaml
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/template-mangodb.yaml
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/collection.yaml
-</code></pre></div>
+<p><code>bash
+kubectl apply -f deploy/examples/crd-foo.yaml
+kubectl apply -f deploy/examples/crd-mangodb.yaml
+kubectl apply -f deploy/examples/template-foo.yaml
+kubectl apply -f deploy/examples/template-mangodb.yaml
+kubectl apply -f deploy/examples/collection.yaml</code></p>
 <p>That's it! Your kube-bind backend is now ready to use.</p>
 <hr />
 <h3 id="helm">Helm</h3>
 <p>Install Helm 3.x from <a href="https://helm.sh/docs/intro/install/">https://helm.sh/docs/intro/install/</a></p>
 <p><strong>Note</strong>: Helm 3.8+ is required for OCI chart support. Enable experimental OCI support if needed:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">HELM_EXPERIMENTAL_OCI</span><span class="o">=</span><span class="m">1</span>
-</code></pre></div>
+<p><code>bash
+export HELM_EXPERIMENTAL_OCI=1</code></p>
 <h3 id="gateway-api-setup">Gateway API Setup</h3>
 <p>Install gateway API CRDs and controller for advanced ingress management. Kube-bind supports Gateway API for routing traffic to the backend service.</p>
 <p>Follow the official Gateway API installation instructions:
 https://gateway-api.sigs.k8s.io/guides/</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>--server-side<span class="w"> </span>-f<span class="w"> </span>https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
-</code></pre></div>
+<p><code>bash
+kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml</code></p>
 <p>We used NGINX Gateway controller for testing. Install it as follows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>ngf<span class="w"> </span>oci://ghcr.io/nginx/charts/nginx-gateway-fabric<span class="w"> </span>--create-namespace<span class="w"> </span>-n<span class="w"> </span>nginx-gateway
-</code></pre></div>
+<p><code>bash
+helm upgrade --install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric --create-namespace -n nginx-gateway</code></p>
 <h3 id="cert-manager-setup">cert-manager Setup</h3>
 <p>Install cert-manager for automatic TLS certificate management:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>jetstack<span class="w"> </span>https://charts.jetstack.io
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>helm<span class="w"> </span>repo<span class="w"> </span>update
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>helm<span class="w"> </span>upgrade<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span>--install<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span>--namespace<span class="w"> </span>cert-manager<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span>--version<span class="w"> </span>v1.18.2<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span>--set<span class="w"> </span>crds.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span>--atomic<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span>cert-manager<span class="w"> </span>jetstack/cert-manager
-</code></pre></div>
+<p>```bash
+helm repo add jetstack https://charts.jetstack.io
+helm repo update</p>
+<p>helm upgrade \
+  --install \
+  --namespace cert-manager \
+  --create-namespace \
+  --version v1.18.2 \
+  --set crds.enabled=true \
+  --atomic \
+  cert-manager jetstack/cert-manager
+```</p>
 <h4 id="configure-lets-encrypt-optional">Configure Let's Encrypt (Optional)</h4>
 <p>Create a ClusterIssuer for automatic certificate provisioning:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="s">apiVersion: cert-manager.io/v1</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="s">kind: ClusterIssuer</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="s">metadata:</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="s">  name: letsencrypt-prod</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="s">spec:</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="s">  acme:</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="s">    # Replace with your email address</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="s">    email: admin@example.com</span>
-<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="s">    server: https://acme-v02.api.letsencrypt.org/directory</span>
-<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="s">    privateKeySecretRef:</span>
-<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="s">      name: le-issuer-account-key</span>
-<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="s">    solvers:</span>
-<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="s">    - dns01:</span>
-<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="s">        cloudflare:</span>
-<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="s">          email: admin@example.com</span>
-<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="s">          apiKeySecretRef:</span>
-<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="s">            name: cloudflare-api-key-secret</span>
-<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="s">            key: api-key</span>
-<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="s">EOF</span>
-</code></pre></div>
+<p><code>bash
+kubectl apply -f - &lt;&lt;EOF
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # Replace with your email address
+    email: admin@example.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: le-issuer-account-key
+    solvers:
+    - dns01:
+        cloudflare:
+          email: admin@example.com
+          apiKeySecretRef:
+            name: cloudflare-api-key-secret
+            key: api-key
+EOF</code></p>
 <p>Create the Cloudflare API key secret:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="s">apiVersion: v1</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="s">kind: Secret</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="s">metadata:</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="s">  name: cloudflare-api-key-secret</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="s">  namespace: cert-manager</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="s">type: Opaque</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="s">data:</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="s">  # Replace with your base64 encoded Cloudflare Global API Key</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="s">  # Get your API key from: https://dash.cloudflare.com/profile/api-tokens</span>
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="s">  # Then encode it: echo -n &quot;your-api-key&quot; | base64</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="s">  api-key: #### REPLACE ME WITH BASE64 ENCODED VALUE ####</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="s">EOF</span>
-</code></pre></div>
+<p><code>bash
+kubectl apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-key-secret
+  namespace: cert-manager
+type: Opaque
+data:
+  # Replace with your base64 encoded Cloudflare Global API Key
+  # Get your API key from: https://dash.cloudflare.com/profile/api-tokens
+  # Then encode it: echo -n "your-api-key" | base64
+  api-key: #### REPLACE ME WITH BASE64 ENCODED VALUE ####
+EOF</code></p>
 <h3 id="oidc-provider-setup">OIDC Provider Setup</h3>
 <p>kube-bind requires an OIDC provider for authentication. Here's how to set up Dex as an example:</p>
 <h4 id="install-dex-oidc-provider">Install Dex OIDC Provider</h4>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span>oidc
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># Request TLS certificate for Dex</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="s">apiVersion: cert-manager.io/v1</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="s">kind: Certificate</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="s">metadata:</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="s">  name: dex-tls-cert</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="s">  namespace: oidc</span>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="s">spec:</span>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="s">  secretName: dex-tls</span>
-<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="s">  issuerRef:</span>
-<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="s">    name: letsencrypt-prod</span>
-<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="s">    kind: ClusterIssuer</span>
-<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="s">    group: cert-manager.io</span>
-<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="s">  dnsNames:</span>
-<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="s">  - auth.example.com  # Replace with your domain</span>
-<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="s">  usages:</span>
-<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="s">  - digital signature</span>
-<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="s">  - key encipherment</span>
-<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="s">EOF</span>
-</code></pre></div>
+<p>```bash
+kubectl create namespace oidc</p>
+<h1 id="request-tls-certificate-for-dex">Request TLS certificate for Dex</h1>
+<p>kubectl apply -f - &lt;&lt;EOF
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: dex-tls-cert
+  namespace: oidc
+spec:
+  secretName: dex-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+    group: cert-manager.io
+  dnsNames:
+  - auth.example.com  # Replace with your domain
+  usages:
+  - digital signature
+  - key encipherment
+EOF
+```</p>
 <p>Wait for the certificate to be issued, then install Dex:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>dex<span class="w"> </span>https://charts.dexidp.io
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>cat<span class="w"> </span>&gt;<span class="w"> </span>/tmp/dex-values.yaml<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="s">config:</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="s">  issuer: https://auth.example.com  # Replace with your domain</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="s">  logger:</span>
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="s">    level: &quot;debug&quot;</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="s">  storage:</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="s">    type: kubernetes</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="s">    config:</span>
-<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="s">      inCluster: true</span>
-<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>
-<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="s">  web:</span>
-<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a><span class="s">    https: 0.0.0.0:5557</span>
-<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="s">    tlsCert: /etc/dex/tls/tls.crt</span>
-<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="s">    tlsKey: /etc/dex/tls/tls.key</span>
-<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a><span class="s">    http: &quot;0.0.0.0:5556&quot;</span>
-<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a>
-<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a><span class="s">  connectors:</span>
-<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="s">    - type: github</span>
-<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a><span class="s">      id: github</span>
-<a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a><span class="s">      name: GitHub</span>
-<a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a><span class="s">      config:</span>
-<a id="__codelineno-10-26" name="__codelineno-10-26" href="#__codelineno-10-26"></a><span class="s">        clientID: ### REPLACE ME ###</span>
-<a id="__codelineno-10-27" name="__codelineno-10-27" href="#__codelineno-10-27"></a><span class="s">        clientSecret: ### REPLACE ME ###</span>
-<a id="__codelineno-10-28" name="__codelineno-10-28" href="#__codelineno-10-28"></a><span class="s">        redirectURI: https://auth.example.com/callback</span>
-<a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a><span class="s">        org: your-org  # Replace with your GitHub org</span>
-<a id="__codelineno-10-30" name="__codelineno-10-30" href="#__codelineno-10-30"></a>
-<a id="__codelineno-10-31" name="__codelineno-10-31" href="#__codelineno-10-31"></a><span class="s">  staticClients:</span>
-<a id="__codelineno-10-32" name="__codelineno-10-32" href="#__codelineno-10-32"></a><span class="s">    - id: kube-bind</span>
-<a id="__codelineno-10-33" name="__codelineno-10-33" href="#__codelineno-10-33"></a><span class="s">      redirectURIs:</span>
-<a id="__codelineno-10-34" name="__codelineno-10-34" href="#__codelineno-10-34"></a><span class="s">      - https://auth.example.com/callback</span>
-<a id="__codelineno-10-35" name="__codelineno-10-35" href="#__codelineno-10-35"></a><span class="s">      - http://localhost:8000</span>
-<a id="__codelineno-10-36" name="__codelineno-10-36" href="#__codelineno-10-36"></a><span class="s">      - https://kube-bind.example.com/api/callback  # Replace with your domain</span>
-<a id="__codelineno-10-37" name="__codelineno-10-37" href="#__codelineno-10-37"></a><span class="s">      name: &#39;KubeBindApp&#39;</span>
-<a id="__codelineno-10-38" name="__codelineno-10-38" href="#__codelineno-10-38"></a><span class="s">      secret: ### REPLACE ME ###</span>
-<a id="__codelineno-10-39" name="__codelineno-10-39" href="#__codelineno-10-39"></a>
-<a id="__codelineno-10-40" name="__codelineno-10-40" href="#__codelineno-10-40"></a><span class="s">service:</span>
-<a id="__codelineno-10-41" name="__codelineno-10-41" href="#__codelineno-10-41"></a><span class="s">  type: LoadBalancer</span>
-<a id="__codelineno-10-42" name="__codelineno-10-42" href="#__codelineno-10-42"></a><span class="s">  ports:</span>
-<a id="__codelineno-10-43" name="__codelineno-10-43" href="#__codelineno-10-43"></a><span class="s">    https:</span>
-<a id="__codelineno-10-44" name="__codelineno-10-44" href="#__codelineno-10-44"></a><span class="s">      port: 443</span>
-<a id="__codelineno-10-45" name="__codelineno-10-45" href="#__codelineno-10-45"></a><span class="s">    http:</span>
-<a id="__codelineno-10-46" name="__codelineno-10-46" href="#__codelineno-10-46"></a><span class="s">      port: 5556</span>
-<a id="__codelineno-10-47" name="__codelineno-10-47" href="#__codelineno-10-47"></a>
-<a id="__codelineno-10-48" name="__codelineno-10-48" href="#__codelineno-10-48"></a><span class="s">https:</span>
-<a id="__codelineno-10-49" name="__codelineno-10-49" href="#__codelineno-10-49"></a><span class="s">  enabled: true</span>
-<a id="__codelineno-10-50" name="__codelineno-10-50" href="#__codelineno-10-50"></a>
-<a id="__codelineno-10-51" name="__codelineno-10-51" href="#__codelineno-10-51"></a><span class="s">volumes:</span>
-<a id="__codelineno-10-52" name="__codelineno-10-52" href="#__codelineno-10-52"></a><span class="s">- name: tls-cert</span>
-<a id="__codelineno-10-53" name="__codelineno-10-53" href="#__codelineno-10-53"></a><span class="s">  secret:</span>
-<a id="__codelineno-10-54" name="__codelineno-10-54" href="#__codelineno-10-54"></a><span class="s">    secretName: dex-tls</span>
-<a id="__codelineno-10-55" name="__codelineno-10-55" href="#__codelineno-10-55"></a>
-<a id="__codelineno-10-56" name="__codelineno-10-56" href="#__codelineno-10-56"></a><span class="s">volumeMounts:</span>
-<a id="__codelineno-10-57" name="__codelineno-10-57" href="#__codelineno-10-57"></a><span class="s">- name: tls-cert</span>
-<a id="__codelineno-10-58" name="__codelineno-10-58" href="#__codelineno-10-58"></a><span class="s">  mountPath: /etc/dex/tls</span>
-<a id="__codelineno-10-59" name="__codelineno-10-59" href="#__codelineno-10-59"></a><span class="s">  readOnly: true</span>
-<a id="__codelineno-10-60" name="__codelineno-10-60" href="#__codelineno-10-60"></a><span class="s">EOF</span>
-<a id="__codelineno-10-61" name="__codelineno-10-61" href="#__codelineno-10-61"></a>
-<a id="__codelineno-10-62" name="__codelineno-10-62" href="#__codelineno-10-62"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>-i<span class="w"> </span>dex<span class="w"> </span>dex/dex<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-63" name="__codelineno-10-63" href="#__codelineno-10-63"></a><span class="w">  </span>--create-namespace<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-64" name="__codelineno-10-64" href="#__codelineno-10-64"></a><span class="w">  </span>--namespace<span class="w"> </span>oidc<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-10-65" name="__codelineno-10-65" href="#__codelineno-10-65"></a><span class="w">  </span>-f<span class="w"> </span>/tmp/dex-values.yaml
-</code></pre></div>
+<p>```bash
+helm repo add dex https://charts.dexidp.io</p>
+<p>cat &gt; /tmp/dex-values.yaml &lt;&lt;EOF
+config:
+  issuer: https://auth.example.com  # Replace with your domain</p>
+<p>logger:
+    level: "debug"</p>
+<p>storage:
+    type: kubernetes
+    config:
+      inCluster: true</p>
+<p>web:
+    https: 0.0.0.0:5557
+    tlsCert: /etc/dex/tls/tls.crt
+    tlsKey: /etc/dex/tls/tls.key
+    http: "0.0.0.0:5556"</p>
+<p>connectors:
+    - type: github
+      id: github
+      name: GitHub
+      config:
+        clientID: ### REPLACE ME ###
+        clientSecret: ### REPLACE ME ###
+        redirectURI: https://auth.example.com/callback
+        org: your-org  # Replace with your GitHub org</p>
+<p>staticClients:
+    - id: kube-bind
+      redirectURIs:
+      - https://auth.example.com/callback
+      - http://localhost:8000
+      - https://kube-bind.example.com/api/callback  # Replace with your domain
+      name: 'KubeBindApp'
+      secret: ### REPLACE ME ###</p>
+<p>service:
+  type: LoadBalancer
+  ports:
+    https:
+      port: 443
+    http:
+      port: 5556</p>
+<p>https:
+  enabled: true</p>
+<p>volumes:
+- name: tls-cert
+  secret:
+    secretName: dex-tls</p>
+<p>volumeMounts:
+- name: tls-cert
+  mountPath: /etc/dex/tls
+  readOnly: true
+EOF</p>
+<p>helm upgrade -i dex dex/dex \
+  --create-namespace \
+  --namespace oidc \
+  -f /tmp/dex-values.yaml
+```</p>
 <hr />
 <h2 id="configuration">Configuration</h2>
 <p>The example values file at <code>deploy/charts/backend/examples/values-local-development.yaml</code> contains all the configuration options. Make sure to replace all <code>### REPLACE ME ###</code> placeholders with your actual values:</p>
@@ -3505,13 +3445,13 @@ https://gateway-api.sigs.k8s.io/guides/</p>
 </ul>
 <h3 id="finding-available-versions">Finding Available Versions</h3>
 <p><strong>Release versions:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># List all releases</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>curl<span class="w"> </span>-s<span class="w"> </span>https://api.github.com/repos/kube-bind/kube-bind/releases<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;&quot;tag_name&quot;&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-5
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="c1"># Get latest release version</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="nv">VERSION</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-s<span class="w"> </span>https://api.github.com/repos/kube-bind/kube-bind/releases/latest<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s1">&#39;&quot;tag_name&quot;&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d<span class="s1">&#39;&quot;&#39;</span><span class="w"> </span>-f4<span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/v//&#39;</span><span class="k">)</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Latest version: </span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="s2">&quot;</span>
-</code></pre></div>
+<p>```bash</p>
+<h1 id="list-all-releases">List all releases</h1>
+<p>curl -s https://api.github.com/repos/kube-bind/kube-bind/releases | grep '"tag_name"' | head -5</p>
+<h1 id="get-latest-release-version">Get latest release version</h1>
+<p>VERSION=$(curl -s https://api.github.com/repos/kube-bind/kube-bind/releases/latest | grep '"tag_name"' | cut -d'"' -f4 | sed 's/v//')
+echo "Latest version: ${VERSION}"
+```</p>
 
 
 

@@ -2244,6 +2244,51 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#get-the-cluster-identity-for-the-current-kubeconfig-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get the cluster identity for the current kubeconfig context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-the-cluster-identity-using-a-specific-kubeconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get the cluster identity using a specific kubeconfig
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-the-cluster-identity-using-a-specific-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get the cluster identity using a specific context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#get-the-cluster-identity-from-a-specific-namespace-default-kube-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get the cluster identity from a specific namespace (default: kube-system)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Get the cluster identity from a specific namespace (default: kube-system)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#options" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2253,8 +2298,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#options-inherited-from-parent-commands" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2264,8 +2309,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2273,6 +2318,11 @@
       
     </span>
   </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3140,8 +3190,6 @@
   
 
 
-  <h1>bind cluster-identity</h1>
-
 <h3 id="synopsis">Synopsis</h3>
 <p>Get the cluster identity for the current Kubernetes cluster.</p>
 <p>The cluster identity is derived from the UID of a namespace (by default kube-system).
@@ -3149,59 +3197,54 @@ This identity is used by kube-bind to uniquely identify consumer clusters when
 binding to service providers.</p>
 <p>This is a helper command for users who are not using the kube-bind web server
 and need to manually provide the cluster identity.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>bind cluster-identity [flags]
-</code></pre></div>
+<p><code>bind cluster-identity [flags]</code></p>
 <h3 id="examples">Examples</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># Get the cluster identity for the current kubeconfig context
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>kubectl bind cluster-identity
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a># Get the cluster identity using a specific kubeconfig
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>kubectl bind cluster-identity --kubeconfig /path/to/kubeconfig
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a># Get the cluster identity using a specific context
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>kubectl bind cluster-identity --context my-context
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a># Get the cluster identity from a specific namespace (default: kube-system)
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>kubectl bind cluster-identity --namespace my-namespace
-</code></pre></div>
+<p>```</p>
+<h1 id="get-the-cluster-identity-for-the-current-kubeconfig-context">Get the cluster identity for the current kubeconfig context</h1>
+<p>kubectl bind cluster-identity</p>
+<h1 id="get-the-cluster-identity-using-a-specific-kubeconfig">Get the cluster identity using a specific kubeconfig</h1>
+<p>kubectl bind cluster-identity --kubeconfig /path/to/kubeconfig</p>
+<h1 id="get-the-cluster-identity-using-a-specific-context">Get the cluster identity using a specific context</h1>
+<p>kubectl bind cluster-identity --context my-context</p>
+<h1 id="get-the-cluster-identity-from-a-specific-namespace-default-kube-system">Get the cluster identity from a specific namespace (default: kube-system)</h1>
+<p>kubectl bind cluster-identity --namespace my-namespace
+```</p>
 <h3 id="options">Options</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>      --as-uid string                        UID to impersonate for the operation
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>      --certificate-authority string         Path to a cert file for the certificate authority
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>      --context string                       The name of the kubeconfig context to use
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>      --disable-compression                  If true, opt-out of response compression for all requests to the server
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  -h, --help                                 help for cluster-identity
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>      --insecure-skip-tls-verify             If true, the server&#39;s certificate will not be checked for validity. This will make your HTTPS connections insecure
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>      --kubeconfig string                    Path to the kubeconfig file
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>      --log-flush-frequency duration         Maximum number of seconds between log flushes (default 5s)
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>      --log-text-info-buffer-size quantity   [Alpha] In text format with split output streams, the info messages can be buffered for a while to increase performance. The default value of zero bytes disables buffering. The size can be specified as number of bytes (512), multiples of 1000 (1K), multiples of 1024 (2Ki), or powers of those (3M, 4G, 5Mi, 6Gi). Enable the LoggingAlphaOptions feature gate to use this.
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>      --log-text-split-stream                [Alpha] In text format, write error messages to stderr and info messages to stdout. The default is to write a single stream to stdout. Enable the LoggingAlphaOptions feature gate to use this.
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>      --logging-format string                Sets the log format. Permitted formats: &quot;text&quot;. (default &quot;text&quot;)
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>  -n, --namespace string                     Namespace to use for deriving the cluster identity (default: kube-system) (default &quot;kube-system&quot;)
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>      --password string                      Password for basic authentication to the API server
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>      --proxy-url string                     If provided, this URL will be used to connect via proxy
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>      --server string                        The address and port of the Kubernetes API server
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>      --tls-server-name string               If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>      --token string                         Bearer token for authentication to the API server
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>      --user string                          The name of the kubeconfig user to use
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>      --username string                      Username for basic authentication to the API server
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>  -v, --v Level                              number for the log level verbosity
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>      --vmodule pattern=N,...                comma-separated list of pattern=N settings for file-filtered logging (only works for text log format)
-</code></pre></div>
+<p><code>--as-uid string                        UID to impersonate for the operation
+      --certificate-authority string         Path to a cert file for the certificate authority
+      --context string                       The name of the kubeconfig context to use
+      --disable-compression                  If true, opt-out of response compression for all requests to the server
+  -h, --help                                 help for cluster-identity
+      --insecure-skip-tls-verify             If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
+      --kubeconfig string                    Path to the kubeconfig file
+      --log-flush-frequency duration         Maximum number of seconds between log flushes (default 5s)
+      --log-text-info-buffer-size quantity   [Alpha] In text format with split output streams, the info messages can be buffered for a while to increase performance. The default value of zero bytes disables buffering. The size can be specified as number of bytes (512), multiples of 1000 (1K), multiples of 1024 (2Ki), or powers of those (3M, 4G, 5Mi, 6Gi). Enable the LoggingAlphaOptions feature gate to use this.
+      --log-text-split-stream                [Alpha] In text format, write error messages to stderr and info messages to stdout. The default is to write a single stream to stdout. Enable the LoggingAlphaOptions feature gate to use this.
+      --logging-format string                Sets the log format. Permitted formats: "text". (default "text")
+  -n, --namespace string                     Namespace to use for deriving the cluster identity (default: kube-system) (default "kube-system")
+      --password string                      Password for basic authentication to the API server
+      --proxy-url string                     If provided, this URL will be used to connect via proxy
+      --server string                        The address and port of the Kubernetes API server
+      --tls-server-name string               If provided, this name will be used to validate server certificate. If this is not provided, hostname used to contact the server is used.
+      --token string                         Bearer token for authentication to the API server
+      --user string                          The name of the kubeconfig user to use
+      --username string                      Username for basic authentication to the API server
+  -v, --v Level                              number for the log level verbosity
+      --vmodule pattern=N,...                comma-separated list of pattern=N settings for file-filtered logging (only works for text log format)</code></p>
 <h3 id="options-inherited-from-parent-commands">Options inherited from parent commands</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>      --add_dir_header                      If true, adds the file directory to the header of the log messages
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>      --alsologtostderr                     log to standard error as well as files (no effect when -logtostderr=true)
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>      --alsologtostderrthreshold severity   logs at or above this threshold go to stderr when -alsologtostderr=true (no effect when -logtostderr=true)
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>      --legacy_stderr_threshold_behavior    If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>      --log_backtrace_at traceLocation      when logging hits line file:N, emit a stack trace (default :0)
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>      --log_dir string                      If non-empty, write log files in this directory (no effect when -logtostderr=true)
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>      --log_file string                     If non-empty, use this log file (no effect when -logtostderr=true)
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>      --log_file_max_size uint              Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>      --logtostderr                         log to standard error instead of files (default true)
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>      --one_output                          If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>      --skip_headers                        If true, avoid header prefixes in the log messages
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>      --skip_log_headers                    If true, avoid headers when opening log files (no effect when -logtostderr=true)
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>      --stderrthreshold severity            logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true unless -legacy_stderr_threshold_behavior=false) (default 2)
-</code></pre></div>
+<p><code>--add_dir_header                      If true, adds the file directory to the header of the log messages
+      --alsologtostderr                     log to standard error as well as files (no effect when -logtostderr=true)
+      --alsologtostderrthreshold severity   logs at or above this threshold go to stderr when -alsologtostderr=true (no effect when -logtostderr=true)
+      --legacy_stderr_threshold_behavior    If true, stderrthreshold is ignored when logtostderr=true (legacy behavior). If false, stderrthreshold is honored even when logtostderr=true (default true)
+      --log_backtrace_at traceLocation      when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                      If non-empty, write log files in this directory (no effect when -logtostderr=true)
+      --log_file string                     If non-empty, use this log file (no effect when -logtostderr=true)
+      --log_file_max_size uint              Defines the maximum size a log file can grow to (no effect when -logtostderr=true). Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
+      --logtostderr                         log to standard error instead of files (default true)
+      --one_output                          If true, only write logs to their native severity level (vs also writing to each lower severity level; no effect when -logtostderr=true)
+      --skip_headers                        If true, avoid header prefixes in the log messages
+      --skip_log_headers                    If true, avoid headers when opening log files (no effect when -logtostderr=true)
+      --stderrthreshold severity            logs at or above this threshold go to stderr when writing to files and stderr (no effect when -logtostderr=true or -alsologtostderr=true unless -legacy_stderr_threshold_behavior=false) (default 2)</code></p>
 <h3 id="see-also">See Also</h3>
 <ul>
 <li><a href="../bind/">bind</a> – Open kube-bind UI or bind templates from a remote server.</li>

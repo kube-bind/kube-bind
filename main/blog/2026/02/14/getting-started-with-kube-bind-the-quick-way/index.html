@@ -3189,28 +3189,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#whats-next" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What's Next?
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cleanup" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cleanup
-      
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3280,13 +3258,13 @@
 </ul>
 <h3 id="install-kube-bind">Install kube-bind</h3>
 <p>The easiest way is via <a href="https://krew.sigs.k8s.io/">krew</a>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>index<span class="w"> </span>add<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>https://github.com/kube-bind/krew-index.git
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>bind/bind
-</code></pre></div>
+<p><code>bash
+kubectl krew index add bind https://github.com/kube-bind/krew-index.git
+kubectl krew install bind/bind</code></p>
 <h2 id="step-1-create-the-environment">Step 1: Create the Environment</h2>
 <p>Run the following command to spin up the entire demo environment:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>create
-</code></pre></div>
+<p><code>bash
+kubectl bind dev create</code></p>
 <blockquote>
 <p><strong>Note:</strong> The <code>dev create</code> command sets up a mock OIDC provider for testing purposes. This is <strong>not</strong> suitable for production. For a production-ready deployment with real OIDC integration, please refer to our <a href="../../../../../setup/helm/">Installation with Helm</a> guide.</p>
 </blockquote>
@@ -3298,99 +3276,98 @@
 <li>Configure networking and OIDC mock services.</li>
 </ol>
 <p>Once it finishes, you'll see output like this:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kube-bind Development Environment Setup
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>EXPERIMENTAL: kube-bind dev command is in preview
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Requirements: Docker must be installed and running
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>Warning: Could not automatically add host entry. Please run:
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>  echo &#39;127.0.0.1 kube-bind.dev.local&#39; | sudo tee -a /etc/hosts
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>Creating kind cluster kind-provider with network kube-bind-dev
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>Kind cluster kind-provider created
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>Helm chart installed successfully
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>Creating kind cluster kind-consumer with network kube-bind-dev
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>Kind cluster kind-consumer created
-<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>kube-bind dev environment is ready!
-<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>
-<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>Configuration:
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>• Provider cluster kubeconfig: kind-provider.kubeconfig
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>• Consumer cluster kubeconfig: kind-consumer.kubeconfig
-<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>• kube-bind server URL: http://kube-bind.dev.local:8080
-<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>
-<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>Next Steps:
-<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>
-<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>1. Add to /etc/hosts (if not already done):
-<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>echo &#39;127.0.0.1 kube-bind.dev.local&#39; | sudo tee -a /etc/hosts
-<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>
-<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>2. Login to authenticate to the provider cluster:
-<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>kubectl bind login http://kube-bind.dev.local:8080
-<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>
-<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>3. Bind an API service from provider to consumer:
-<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>PROVIDER_IP=$(docker inspect kind-provider-control-plane | jq -r &#39;.[0].NetworkSettings.Networks[&quot;kube-bind-dev&quot;].IPAddress&#39;) &amp;&amp; KUBECONFIG=kind-consumer.kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local
-</code></pre></div>
+<p>```text
+kube-bind Development Environment Setup</p>
+<p>EXPERIMENTAL: kube-bind dev command is in preview
+Requirements: Docker must be installed and running</p>
+<p>Warning: Could not automatically add host entry. Please run:
+  echo '127.0.0.1 kube-bind.dev.local' | sudo tee -a /etc/hosts</p>
+<p>Creating kind cluster kind-provider with network kube-bind-dev
+Kind cluster kind-provider created
+Helm chart installed successfully</p>
+<p>Creating kind cluster kind-consumer with network kube-bind-dev
+Kind cluster kind-consumer created
+kube-bind dev environment is ready!</p>
+<p>Configuration:
+• Provider cluster kubeconfig: kind-provider.kubeconfig
+• Consumer cluster kubeconfig: kind-consumer.kubeconfig
+• kube-bind server URL: http://kube-bind.dev.local:8080</p>
+<p>Next Steps:</p>
+<ol>
+<li>
+<p>Add to /etc/hosts (if not already done):
+echo '127.0.0.1 kube-bind.dev.local' | sudo tee -a /etc/hosts</p>
+</li>
+<li>
+<p>Login to authenticate to the provider cluster:
+kubectl bind login http://kube-bind.dev.local:8080</p>
+</li>
+<li>
+<p>Bind an API service from provider to consumer:
+PROVIDER_IP=$(docker inspect kind-provider-control-plane | jq -r '.[0].NetworkSettings.Networks["kube-bind-dev"].IPAddress') &amp;&amp; KUBECONFIG=kind-consumer.kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local
+```</p>
+</li>
+</ol>
 <h2 id="step-2-authenticate">Step 2: Authenticate</h2>
 <p>Copy and run the login command provided in the output:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>http://kube-bind.dev.local:8080
-</code></pre></div>
+<p><code>bash
+kubectl bind login http://kube-bind.dev.local:8080</code></p>
 <p>Output:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Connecting to kube-bind server http://kube-bind.dev.local:8080...
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>Started local callback server at http://127.0.0.1:56642/callback
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>Opening browser for authentication...
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>🔑 Successfully authenticated to kube-bind.dev.local:8080
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>Configuration saved to: /Users/olalekanodukoya/.kube-bind/config
-</code></pre></div>
+<p><code>text
+Connecting to kube-bind server http://kube-bind.dev.local:8080...
+Started local callback server at http://127.0.0.1:56642/callback
+Opening browser for authentication...
+🔑 Successfully authenticated to kube-bind.dev.local:8080
+Configuration saved to: /Users/olalekanodukoya/.kube-bind/config</code></p>
 <p>This will open your browser to authenticate. Since this is a dev environment, just follow the prompts.</p>
 <h2 id="step-3-bind-a-service">Step 3: Bind a Service</h2>
 <p>Now, switch to the consumer role and bind to a service. Copy the second command from the <code>dev create</code> output. It will look something like this:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nv">PROVIDER_IP</span><span class="o">=</span><span class="k">$(</span>docker<span class="w"> </span>inspect<span class="w"> </span>kind-provider-control-plane<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.[0].NetworkSettings.Networks[&quot;kube-bind-dev&quot;].IPAddress&#39;</span><span class="k">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>--konnector-host-alias<span class="w"> </span><span class="si">${</span><span class="nv">PROVIDER_IP</span><span class="si">}</span>:kube-bind.dev.local
-</code></pre></div>
+<p><code>bash
+PROVIDER_IP=$(docker inspect kind-provider-control-plane | jq -r '.[0].NetworkSettings.Networks["kube-bind-dev"].IPAddress') &amp;&amp; KUBECONFIG=kind-consumer.kubeconfig kubectl bind --konnector-host-alias ${PROVIDER_IP}:kube-bind.dev.local</code></p>
 <p>This will open a web interface where you can choose which API to bind. Select <strong>mangodb</strong> and click <strong>Bind for CLI</strong>.</p>
 <p><img alt="Binding UI" src="../../../../../images/mangodb-bind-ui.png" /></p>
 <p>Output:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>🌐 Opening kube-bind UI in your browser...
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>Browser opened successfully
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>Waiting for binding completion from UI...
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>   (Press Ctrl+C to cancel)
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>Binding completed successfully!
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>Created kube-bind namespace.
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>🔒 Created secret kube-bind/kubeconfig-tjm2k for host https://kube-bind.dev.local:6443, namespace kube-bind-3iwzhtescg5o0
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>🚀 Deploying konnector v0.7.0 to namespace kube-bind.
-<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>   Waiting for the konnector to be ready.................
-<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>✅ Created APIServiceBinding mangodb for 1 resources
-<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>Created 1 APIServiceBinding(s):
-<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>  - mangodb
-<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>Resources bound successfully!
-</code></pre></div>
+<p>```text
+🌐 Opening kube-bind UI in your browser...
+Browser opened successfully
+Waiting for binding completion from UI...
+   (Press Ctrl+C to cancel)</p>
+<p>Binding completed successfully!
+Created kube-bind namespace.
+🔒 Created secret kube-bind/kubeconfig-tjm2k for host https://kube-bind.dev.local:6443, namespace kube-bind-3iwzhtescg5o0
+🚀 Deploying konnector v0.7.0 to namespace kube-bind.
+   Waiting for the konnector to be ready.................
+✅ Created APIServiceBinding mangodb for 1 resources
+Created 1 APIServiceBinding(s):
+  - mangodb
+Resources bound successfully!
+```</p>
 <p>You can verify the new CRDs are available:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd
-</code></pre></div>
+<p><code>bash
+kubectl get crd</code></p>
 <p>Output:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>NAME                                    CREATED AT
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>apiservicebindingbundles.kube-bind.io   2026-02-17T18:50:02Z
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>apiservicebindings.kube-bind.io         2026-02-17T18:50:02Z
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>mangodbs.mangodb.com                    2026-02-17T18:50:13Z
-</code></pre></div>
+<p><code>text
+NAME                                    CREATED AT
+apiservicebindingbundles.kube-bind.io   2026-02-17T18:50:02Z
+apiservicebindings.kube-bind.io         2026-02-17T18:50:02Z
+mangodbs.mangodb.com                    2026-02-17T18:50:13Z</code></p>
 <h2 id="step-4-use-the-service">Step 4: Use the Service</h2>
 <p>Once the binding is complete, you can interact with the <code>MangoDB</code> resource directly from your consumer cluster!</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># Create a MangoDB resource</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="s">apiVersion: mangodb.com/v1alpha1</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="s">kind: MangoDB</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="s">metadata:</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="s">  name: my-first-mangodb-instance</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="s">  namespace: default</span>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="s">spec:</span>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="s">  tier: Dedicated</span>
-<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="s">EOF</span>
-<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>
-<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="c1"># Verify it exists</span>
-<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>kubectl<span class="w"> </span>get<span class="w"> </span>mangodb
-</code></pre></div>
+<p>```bash
+export KUBECONFIG=kind-consumer.kubeconfig</p>
+<h1 id="create-a-mangodb-resource">Create a MangoDB resource</h1>
+<p>kubectl apply -f - &lt;&lt;EOF
+apiVersion: mangodb.com/v1alpha1
+kind: MangoDB
+metadata:
+  name: my-first-mangodb-instance
+  namespace: default
+spec:
+  tier: Dedicated
+EOF</p>
+<h1 id="verify-it-exists">Verify it exists</h1>
+<p>kubectl get mangodb
+```</p>
 <p>You have successfully bound a remote API to your local cluster!</p>
 <h2 id="whats-next">What's Next?</h2>
 <p><code>kube-bind</code> is powerful when combined with other tools. Check out our integration guides to see how you can use it with:</p>
@@ -3402,8 +3379,8 @@
 </ul>
 <h2 id="cleanup">Cleanup</h2>
 <p>To clean up the environment:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>delete
-</code></pre></div>
+<p><code>bash
+kubectl bind dev delete</code></p>
 
 
 

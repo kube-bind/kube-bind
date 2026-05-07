@@ -16,12 +16,15 @@
 
 set -eu
 
-echo "Building Helm charts locally..."
+# Inputs (env vars):
+#   REV             short git sha (required if CHART_VERSION is unset)
+#   CHART_VERSION   chart version string; default: 0.0.0-$REV
+
+: "${CHART_VERSION:=0.0.0-${REV:?REV must be set when CHART_VERSION is unset}}"
+
+echo "Building Helm charts (version: $CHART_VERSION)..."
 
 HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"
-
-# Set chart version to semver format for local builds (0.0.0-<git-sha>)
-CHART_VERSION="0.0.0-$REV";
 
 for chart_dir in deploy/charts/*/; do
    if [ -f "${chart_dir}Chart.yaml" ]; then

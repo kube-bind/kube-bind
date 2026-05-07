@@ -16,40 +16,98 @@
 
 set -eu
 
-echo "Building images locally with tag $REV for platforms: $PLATFORMS"
+# Inputs (env vars):
+#   IMAGE_REPO          registry+namespace, e.g. ghcr.io/kube-bind or kube-bind (required)
+#   PLATFORMS           buildx platform list, default: linux/<host arch>
+#   IMAGE_TAGS          space-separated tag suffixes, default: $REV
+#   PUSH                true|false; default: true if PLATFORMS is multi-arch, else false (--load)
+#   LDFLAGS             go ldflags passed as build-arg
+#   OUTPUT_DIR          if set, write <component>.metadata.json files (used by image-sign.sh)
+#   BUILDX_CACHE_FROM   passed to --cache-from (e.g. type=gha)
+#   BUILDX_CACHE_TO     passed to --cache-to (e.g. type=gha,mode=max)
+#   IMAGE_LABELS        newline- or space-separated key=value labels (applied to both images)
+
+: "${IMAGE_REPO:?IMAGE_REPO must be set}"
+: "${PLATFORMS:=linux/$(go env GOARCH)}"
+: "${IMAGE_TAGS:=${REV:?REV must be set when IMAGE_TAGS is unset}}"
+
+if [[ -z "${PUSH:-}" ]]; then
+   if [[ "$PLATFORMS" == *","* ]]; then
+      PUSH=true
+   else
+      PUSH=false
+   fi
+fi
+
+if [[ "$PUSH" == "true" ]]; then
+   OUTPUT_FLAG="--push"
+else
+   OUTPUT_FLAG="--load"
+   if [[ "$PLATFORMS" == *","* ]]; then
+      echo "PUSH=false with multi-platform PLATFORMS=$PLATFORMS will fail (--load only supports a single platform)." >&2
+      exit 1
+   fi
+fi
 
 command -v docker >/dev/null 2>&1 || { echo "docker not found. Please install Docker"; exit 1; }
 docker buildx version >/dev/null 2>&1 || { echo "docker buildx not found. Please enable buildx in Docker"; exit 1; }
 
-# Create buildx builder if it doesn't exist
-docker buildx create --name kube-bind-builder --use 2>/dev/null || docker buildx use kube-bind-builder 2>/dev/null || true
+# Reuse an existing active builder (e.g. one set up by docker/setup-buildx-action in CI).
+# Only create our own if none is active — otherwise we'd lose the GHA cache wiring.
+if ! docker buildx inspect >/dev/null 2>&1; then
+   docker buildx create --name kube-bind-builder --use >/dev/null
+fi
 docker buildx inspect --bootstrap >/dev/null 2>&1
 
-# Check if building for multiple platforms
-if [[ "$PLATFORMS" == *","* ]]; then
-   echo "Multi-platform build detected. Images will be pushed to registry instead of loaded locally."
-   LOAD_FLAG="--push"
-else
-   echo "Single platform build. Images will be loaded to local Docker daemon."
-   LOAD_FLAG="--load"
+cache_args=()
+if [[ -n "${BUILDX_CACHE_FROM:-}" ]]; then
+   cache_args+=("--cache-from" "$BUILDX_CACHE_FROM")
+fi
+if [[ -n "${BUILDX_CACHE_TO:-}" ]]; then
+   cache_args+=("--cache-to" "$BUILDX_CACHE_TO")
 fi
 
-echo "Building konnector image..."
-docker buildx build \
-   --platform $PLATFORMS \
-   --build-arg LDFLAGS="$LDFLAGS" \
-   -t "$IMAGE_REPO/konnector:$REV" \
-   -f Dockerfile.konnector \
-   $LOAD_FLAG .
+label_args=()
+if [[ -n "${IMAGE_LABELS:-}" ]]; then
+   while IFS= read -r label; do
+      [[ -z "$label" ]] && continue
+      label_args+=("--label" "$label")
+   done <<< "$(echo "$IMAGE_LABELS" | tr ' ' '\n')"
+fi
 
-echo "Building backend image..."
-docker buildx build \
-   --platform $PLATFORMS \
-   --build-arg LDFLAGS="$LDFLAGS" \
-   -t "$IMAGE_REPO/backend:$REV" \
-   -f Dockerfile \
-   $LOAD_FLAG .
+build_image() {
+   local component="$1"
+   local dockerfile="$2"
 
-echo "Successfully built images:"
-echo "  $IMAGE_REPO/konnector:$REV ($PLATFORMS)"
-echo "  $IMAGE_REPO/backend:$REV ($PLATFORMS)"
+   local tag_args=()
+   for t in $IMAGE_TAGS; do
+      tag_args+=("-t" "${IMAGE_REPO}/${component}:${t}")
+   done
+
+   local metadata_args=()
+   if [[ -n "${OUTPUT_DIR:-}" ]]; then
+      mkdir -p "$OUTPUT_DIR"
+      metadata_args+=("--metadata-file" "${OUTPUT_DIR}/${component}.metadata.json")
+   fi
+
+   echo "Building ${component} image (platforms: $PLATFORMS, push: $PUSH)..."
+   docker buildx build \
+      --platform "$PLATFORMS" \
+      --build-arg LDFLAGS="${LDFLAGS:-}" \
+      "${tag_args[@]}" \
+      "${cache_args[@]}" \
+      "${label_args[@]}" \
+      "${metadata_args[@]}" \
+      -f "$dockerfile" \
+      $OUTPUT_FLAG .
+}
+
+build_image konnector Dockerfile.konnector
+build_image backend Dockerfile
+
+echo "Successfully built images on platforms ${PLATFORMS}"
+echo "Tags:"
+for t in $IMAGE_TAGS; do
+   echo "  ${IMAGE_REPO}/konnector:${t}"
+   echo "  ${IMAGE_REPO}/backend:${t}"
+done

@@ -16,10 +16,18 @@
 
 set -eu
 
-echo "Pushing Helm charts to registry: $IMAGE_REPO"
+# Inputs (env vars):
+#   IMAGE_REPO      registry+namespace, e.g. ghcr.io/kube-bind (required)
+#   REV             short git sha (required if CHART_VERSION is unset)
+#   CHART_VERSION   chart version string; default: 0.0.0-$REV
+#                   (must match a previously-packaged chart in ./bin/)
+
+: "${IMAGE_REPO:?IMAGE_REPO must be set}"
+: "${CHART_VERSION:=0.0.0-${REV:?REV must be set when CHART_VERSION is unset}}"
+
+echo "Pushing Helm charts to registry: $IMAGE_REPO (version: $CHART_VERSION)"
 
 HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"
-CHART_VERSION="0.0.0-$REV"
 
 export HELM_EXPERIMENTAL_OCI=1
 
@@ -33,8 +41,8 @@ for chart_file in ./bin/*-$CHART_VERSION.tgz; do
          continue
       fi
 
-      echo "Pushing $chart_name to $(IMAGE_REPO)"
-      "$HELM" push "$chart_file" "oci://$(IMAGE_REPO)/charts"
-      echo "Chart available at: oci://$(IMAGE_REPO)/charts/$chart_name:$CHART_VERSION"
+      echo "Pushing $chart_name to $IMAGE_REPO"
+      "$HELM" push "$chart_file" "oci://$IMAGE_REPO/charts"
+      echo "Chart available at: oci://$IMAGE_REPO/charts/$chart_name:$CHART_VERSION"
    fi
 done

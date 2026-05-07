@@ -26,13 +26,25 @@ import (
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
 )
 
-func CreateClusterBinding(ctx context.Context, client client.Client, ns, secretName, providerPrettyName string) error {
+func CreateClusterBinding(ctx context.Context, client client.Client, ns, secretName, providerPrettyName, identity, author, clusterPrettyName string) error {
 	logger := klog.FromContext(ctx)
+
+	annotations := map[string]string{}
+	if identity != "" {
+		annotations[IdentityAnnotationKey] = identity
+	}
+	if author != "" {
+		annotations[AuthorAnnotationKey] = author
+	}
+	if clusterPrettyName != "" {
+		annotations[PrettyNameAnnotationKey] = clusterPrettyName
+	}
 
 	clusterBinding := &kubebindv1alpha2.ClusterBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ClusterBindingName,
-			Namespace: ns,
+			Name:        ClusterBindingName,
+			Namespace:   ns,
+			Annotations: annotations,
 		},
 		Spec: kubebindv1alpha2.ClusterBindingSpec{
 			ProviderPrettyName: providerPrettyName,

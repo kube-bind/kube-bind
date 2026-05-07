@@ -433,7 +433,12 @@ func (h *handler) handleBind(w http.ResponseWriter, r *http.Request) {
 		consumerID = identity
 	}
 
-	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, consumerID, params.ClusterID)
+	clusterPrettyName := bindRequest.Spec.ClusterIdentity.PrettyName
+	if clusterPrettyName == "" {
+		clusterPrettyName = bindRequest.Name
+	}
+
+	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, consumerID, params.ClusterID, clusterPrettyName)
 	if err != nil {
 		logger.Error(err, "failed to handle resources")
 		statusCode, code, details := mapErrorToCode(err)
@@ -599,7 +604,7 @@ func (h *handler) handleApplyBinding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the provider kubeconfig for this user's namespace
-	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, identity, params.ClusterID)
+	handleResult, err := h.kubeManager.HandleResources(r.Context(), state.Token.Subject, identity, params.ClusterID, req.BindingName)
 	if err != nil {
 		logger.Error(err, "failed to handle resources for apply-binding")
 		statusCode, code, details := mapErrorToCode(err)

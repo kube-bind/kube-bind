@@ -250,8 +250,14 @@ func (r *reconciler) reconcile(ctx context.Context, clusterName string, cl clien
 		}
 	}
 
+	// Default the pretty name to the request name if not provided.
+	clusterPrettyName := req.Spec.ClusterIdentity.PrettyName
+	if clusterPrettyName == "" {
+		clusterPrettyName = req.Name
+	}
+
 	// Handle resources and get kubeconfig
-	result, err := r.kubeManager.HandleResources(ctx, req.Spec.Author, req.Spec.ClusterIdentity.Identity, clusterName)
+	result, err := r.kubeManager.HandleResources(ctx, req.Spec.Author, req.Spec.ClusterIdentity.Identity, clusterName, clusterPrettyName)
 	if err != nil {
 		meta.SetStatusCondition(&req.Status.Conditions, metav1.Condition{
 			Type:               string(kubebindv1alpha2.BindableResourcesRequestConditionReady),

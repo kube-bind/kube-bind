@@ -110,6 +110,10 @@ install: WHAT ?= ./cmd/... ./cli/cmd/...
 install: ## install binaries to GOBIN
 	go install -ldflags="$(LDFLAGS)" $(WHAT)
 
+.PHONY: install-crds
+install-crds: ## Install all CRDs into the current cluster
+	kubectl apply -f deploy/crd
+
 GOLANGCI_LINT = $(ROOT_DIR)/$(UGET_DIRECTORY)/golangci-lint-$(GOLANGCI_LINT_VERSION)
 
 .PHONY: install-golangci-lint

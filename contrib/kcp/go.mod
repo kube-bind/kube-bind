@@ -1,6 +1,6 @@
 module github.com/kube-bind/kube-bind/contrib/kcp
 
-go 1.26.0
+go 1.26.2
 
 replace (
 	github.com/kube-bind/kube-bind => ../../

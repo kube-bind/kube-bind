@@ -417,13 +417,38 @@ deploy-docs: venv ## Deploy docs
 build-web:
 	cd web && npm run build
 
+# Image / release configuration.
+# IMAGE_TAGS is the space-separated list of tag suffixes applied to each component image.
+# IMAGE_PUSH_PLATFORMS is the platform list for `image-push` (multi-arch by default).
+# CHART_VERSION is the helm chart version; defaults to 0.0.0-$REV.
+# IMAGE_METADATA_DIR holds buildx metadata files used by `image-sign`.
+export IMAGE_TAGS ?= $(REV)
+IMAGE_PUSH_PLATFORMS ?= linux/amd64,linux/arm64
+export CHART_VERSION ?= 0.0.0-$(REV)
+IMAGE_METADATA_DIR ?= $(BUILD_DIR)/image-metadata
+
 # Example: make IMAGE_REPO=ghcr.io/<username> image-local
 # Set PLATFORMS to override default architectures (e.g., make PLATFORMS=linux/amd64,linux/arm64 image-local)
 # For local builds, default to current architecture on Linux platform to support --load
 .PHONY: image-local
 image-local: export PLATFORMS ?= linux/$(shell go env GOARCH)
-image-local:
+image-local: ## Build images locally (single platform, --load) for the current commit
 	@LDFLAGS="$(LDFLAGS)" hack/build-image.sh
+
+.PHONY: image-push
+image-push: export PLATFORMS = $(IMAGE_PUSH_PLATFORMS)
+image-push: export PUSH = true
+image-push: export OUTPUT_DIR = $(IMAGE_METADATA_DIR)
+image-push: ## Build multi-arch images and push to IMAGE_REPO with all IMAGE_TAGS
+	@LDFLAGS="$(LDFLAGS)" hack/build-image.sh
+
+.PHONY: image-sign
+image-sign: export OUTPUT_DIR = $(IMAGE_METADATA_DIR)
+image-sign: ## Cosign-sign pushed images by digest (requires cosign + image-push run first)
+	@hack/image-sign.sh
+
+.PHONY: release-images
+release-images: image-push image-sign ## Build, push, and sign release images
 
 # Kind cluster configuration
 KIND_CLUSTER ?= kube-bind
@@ -451,6 +476,9 @@ goreleaser-test: install-goreleaser ## Test GoReleaser flow locally
 .PHONY: helm-push-local
 helm-push-local: ## Push Helm charts to IMAGE_REPO registry
 	@hack/helm-push.sh
+
+.PHONY: release-helm
+release-helm: helm-build-local helm-push-local ## Package and push helm charts to IMAGE_REPO
 
 .PHONY: helm-test
 helm-test: helm-build-local ## Test Helm chart installation (dry-run)

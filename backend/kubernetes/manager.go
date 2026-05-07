@@ -107,7 +107,7 @@ type HandleResourcesResult struct {
 
 func (m *Manager) HandleResources(
 	ctx context.Context,
-	author, identity, cluster string,
+	author, identity, cluster, clusterPrettyName string,
 ) (*HandleResourcesResult, error) {
 	logger := klog.FromContext(ctx).WithValues("identity", identity)
 	ctx = klog.NewContext(ctx, logger)
@@ -148,7 +148,7 @@ func (m *Manager) HandleResources(
 	err = c.Get(ctx, types.NamespacedName{Namespace: ns, Name: kuberesources.ClusterBindingName}, &cb)
 	switch {
 	case errors.IsNotFound(err):
-		if err := kuberesources.CreateClusterBinding(ctx, c, ns, "kubeconfig", m.providerPrettyName); err != nil {
+		if err := kuberesources.CreateClusterBinding(ctx, c, ns, "kubeconfig", m.providerPrettyName, identity, author, clusterPrettyName); err != nil {
 			return nil, err
 		}
 	case err != nil:

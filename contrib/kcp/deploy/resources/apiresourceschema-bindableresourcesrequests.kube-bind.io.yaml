@@ -1,7 +1,7 @@
 apiVersion: apis.kcp.io/v1alpha1
 kind: APIResourceSchema
 metadata:
-  name: v260225-974c2a97.bindableresourcesrequests.kube-bind.io
+  name: v260507-3080410e.bindableresourcesrequests.kube-bind.io
 spec:
   group: kube-bind.io
   names:
@@ -66,6 +66,11 @@ spec:
               properties:
                 identity:
                   description: Identity is the unique identifier of the cluster.
+                  type: string
+                prettyName:
+                  description: |-
+                    PrettyName is a human-readable name for the cluster, used for display
+                    purposes. If not provided, the controller defaults it to the request name.
                   type: string
               type: object
             kubeconfigSecretRef:

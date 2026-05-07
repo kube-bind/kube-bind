@@ -71,6 +71,11 @@ spec:
                   identity:
                     description: Identity is the unique identifier of the cluster.
                     type: string
+                  prettyName:
+                    description: |-
+                      PrettyName is a human-readable name for the cluster, used for display
+                      purposes. If not provided, the controller defaults it to the request name.
+                    type: string
                 type: object
               kubeconfigSecretRef:
                 description: |-

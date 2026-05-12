@@ -7,6 +7,8 @@ on:
   pull_request:
   # Pushes to branches do the full build + deployment
   push:
+    tags:
+      - 'v*'
     branches:
       - main
       - "release-*"

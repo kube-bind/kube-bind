@@ -43,6 +43,7 @@ import (
 	kube "github.com/kube-bind/kube-bind/backend/kubernetes"
 	"github.com/kube-bind/kube-bind/backend/provider/kcp/controllers/apibindingtemplate"
 	"github.com/kube-bind/kube-bind/backend/provider/kcp/controllers/apiresourceschema"
+	"github.com/kube-bind/kube-bind/backend/provider/kcp/controllers/vwrbac"
 	"github.com/kube-bind/kube-bind/backend/session/memory"
 	"github.com/kube-bind/kube-bind/backend/session/redis"
 	kubebindv1alpha2 "github.com/kube-bind/kube-bind/sdk/apis/kubebind/v1alpha2"
@@ -72,6 +73,7 @@ type Controllers struct {
 	// Provider specific controllers - only set when provider is "kcp"
 	APIBindingTemplate *apibindingtemplate.APIBindingTemplateReconciler
 	APIResourceSchema  *apiresourceschema.APIResourceSchemaReconciler
+	VWRBAC             *vwrbac.VWRBACReconciler
 }
 
 func NewServer(ctx context.Context, c *Config) (*Server, error) {
@@ -325,6 +327,15 @@ func NewServer(ctx context.Context, c *Config) (*Server, error) {
 			return nil, fmt.Errorf("error setting up APIResourceSchema controller with manager: %w", err)
 		}
 		logger.Info("APIResourceSchema controller enabled for kcp provider")
+
+		s.VWRBAC, err = vwrbac.New(ctx, s.Config.Manager, opts, c.ClientConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error setting up VWRBAC Controller: %w", err)
+		}
+		if err := s.VWRBAC.SetupWithManager(s.Config.Manager); err != nil {
+			return nil, fmt.Errorf("error setting up VWRBAC controller with manager: %w", err)
+		}
+		logger.Info("VWRBAC controller enabled (temporary; bootstraps consumer-workspace RBAC for kcp apiresourceschema VW)")
 	}
 
 	return s, nil

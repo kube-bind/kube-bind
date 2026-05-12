@@ -73,7 +73,7 @@ func New(
 		opts:           opts,
 		ignorePrefixes: ignorePrefixes,
 		scheme:         scheme,
-		vwCache:        shared.NewVWClientCache(baseConfig, scheme),
+		vwCache:        shared.NewVWClientCache(baseConfig),
 	}
 
 	return r, nil

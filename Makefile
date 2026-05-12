@@ -435,6 +435,8 @@ image-local: export PLATFORMS ?= linux/$(shell go env GOARCH)
 image-local: ## Build images locally (single platform, --load) for the current commit
 	@LDFLAGS="$(LDFLAGS)" hack/build-image.sh
 
+# Dev example:
+# make IMAGE_REPO=ghcr.io/<user> IMAGE_TAGS=v$(date -u +%Y%m%d) image-push
 .PHONY: image-push
 image-push: export PLATFORMS = $(IMAGE_PUSH_PLATFORMS)
 image-push: export PUSH = true

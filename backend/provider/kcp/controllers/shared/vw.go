@@ -25,8 +25,9 @@ import (
 	"sync"
 
 	apisv1alpha1 "github.com/kcp-dev/sdk/apis/apis/v1alpha1"
+	apisv1alpha1client "github.com/kcp-dev/sdk/client/clientset/versioned/typed/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -57,27 +58,27 @@ func ExtractClusterID(clusterConfig *rest.Config) (string, error) {
 	return pathParts[5], nil
 }
 
-// VWClientCache caches controller-runtime clients keyed by cluster ID to avoid
-// creating a new client on every schema lookup.
+// VWClientCache caches typed apis.kcp.io clients keyed by cluster ID. The
+// clients target the apiresourceschema virtual workspace and skip discovery
+// (which the VW does not fully serve), so we use the typed kcp REST client
+// rather than controller-runtime's client.Client.
 type VWClientCache struct {
 	mu         sync.RWMutex
-	clients    map[string]client.Client
+	clients    map[string]apisv1alpha1client.ApisV1alpha1Interface
 	baseConfig *rest.Config
-	scheme     *runtime.Scheme
 }
 
 // NewVWClientCache creates a new VWClientCache.
-func NewVWClientCache(baseConfig *rest.Config, scheme *runtime.Scheme) *VWClientCache {
+func NewVWClientCache(baseConfig *rest.Config) *VWClientCache {
 	return &VWClientCache{
-		clients:    make(map[string]client.Client),
+		clients:    make(map[string]apisv1alpha1client.ApisV1alpha1Interface),
 		baseConfig: baseConfig,
-		scheme:     scheme,
 	}
 }
 
 // GetClient returns a cached client for the given cluster ID, creating one if
 // necessary.
-func (c *VWClientCache) GetClient(clusterID string) (client.Client, error) {
+func (c *VWClientCache) GetClient(clusterID string) (apisv1alpha1client.ApisV1alpha1Interface, error) {
 	c.mu.RLock()
 	if cl, ok := c.clients[clusterID]; ok {
 		c.mu.RUnlock()
@@ -93,7 +94,7 @@ func (c *VWClientCache) GetClient(clusterID string) (client.Client, error) {
 		return cl, nil
 	}
 
-	cl, err := newVWClient(c.baseConfig, c.scheme, clusterID)
+	cl, err := newVWClient(c.baseConfig, clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -101,20 +102,32 @@ func (c *VWClientCache) GetClient(clusterID string) (client.Client, error) {
 	return cl, nil
 }
 
-// newVWClient creates a client pointing at the apiresourceschema virtual workspace
-// for the given cluster ID:
-// https://host:port/services/apiresourceschema/{clusterID}/clusters/*/
-func newVWClient(baseConfig *rest.Config, scheme *runtime.Scheme, clusterID string) (client.Client, error) {
+// newVWClient creates a typed apis.kcp.io client pointing at the
+// apiresourceschema virtual workspace for the given cluster ID:
+//
+//	https://host:port/services/apiresourceschema/{clusterID}/clusters/{clusterID}
+//
+// Two important details:
+//
+//  1. We replace the path on baseConfig.Host (which typically points at a
+//     workspace such as .../clusters/<provider>) rather than appending — otherwise
+//     the URL ends up with two /clusters/ segments and never matches the VW root.
+//
+//  2. The kcp VW resolver accepts either "*" or the literal consumer cluster
+//     name in the /clusters/<x>/ segment (see kcp pkg/virtual/apiresourceschema/
+//     builder/build.go digestURL). We use the literal name because client-go's
+//     REST request builder percent-encodes "*" to "%2A" when constructing the
+//     final URL, and the resolver compares the path segment against the literal
+//     string "*" — so a wildcard never matches in practice.
+func newVWClient(baseConfig *rest.Config, clusterID string) (apisv1alpha1client.ApisV1alpha1Interface, error) {
 	cfg := rest.CopyConfig(baseConfig)
-	u, err := url.Parse(cfg.Host)
+	u, err := url.Parse(baseConfig.Host)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse base config host: %w", err)
 	}
+	cfg.Host = fmt.Sprintf("%s://%s/services/apiresourceschema/%s/clusters/%s", u.Scheme, u.Host, clusterID, clusterID)
 
-	u.Path = fmt.Sprintf("/services/apiresourceschema/%s/clusters/*", clusterID)
-	cfg.Host = u.String()
-
-	return client.New(cfg, client.Options{Scheme: scheme})
+	return apisv1alpha1client.NewForConfig(cfg)
 }
 
 // SchemaGetterWithFallback returns a function that first tries to get an
@@ -151,11 +164,11 @@ func SchemaGetterWithFallback(
 			return nil, fmt.Errorf("failed to get VW client for cluster %q: %w", clusterID, err)
 		}
 
-		var vwSchema apisv1alpha1.APIResourceSchema
-		if err := vwClient.Get(ctx, client.ObjectKey{Name: name}, &vwSchema); err != nil {
+		vwSchema, err := vwClient.APIResourceSchemas().Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
 			return nil, fmt.Errorf("APIResourceSchema %q not found in workspace or VW: %w", name, err)
 		}
 
-		return &vwSchema, nil
+		return vwSchema, nil
 	}
 }

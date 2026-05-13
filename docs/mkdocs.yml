@@ -110,8 +110,9 @@ plugins:
 markdown_extensions:
   # Code block highlighting
   - pymdownx.highlight:
-      # Allows linking directly to specific lines in code blocks
       anchor_linenums: true
+      line_spans: true
+      pygments_lang_class: true
   # Inline code block highlighting
   - pymdownx.inlinehilite
   # Lets you embed content from another file
@@ -121,8 +122,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format:
-            !!python/name:pymdownx.superfences.fence_code_format # Enable note/warning/etc. callouts
+          format: !!python/name:pymdownx.superfences.fence_code_format
 
 
   - admonition

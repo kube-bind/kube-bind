@@ -124,7 +124,6 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
 
-
   - admonition
   # Enable content tabs
   - pymdownx.tabbed:

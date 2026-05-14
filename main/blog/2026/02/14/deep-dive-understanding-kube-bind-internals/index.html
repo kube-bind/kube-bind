@@ -3197,8 +3197,80 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#step-3-exporting-an-api-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Exporting an API Service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-bind-the-consumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Bind the Consumer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-verify-and-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Verify and Use
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#real-world-use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real-World Use Cases
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Real-World Use Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#see-it-in-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See It In Action
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recap
+      
+    </span>
+  </a>
   
 </li>
       
@@ -3275,74 +3347,76 @@
 </ul>
 <h3 id="install-kube-bind">Install kube-bind</h3>
 <p>The easiest way to install the <code>kube-bind</code> CLI is via <a href="https://krew.sigs.k8s.io/">krew</a>, the plugin manager for <code>kubectl</code>. Since <code>kube-bind</code> is in its own index, you need to add it first:</p>
-<p><code>bash
-kubectl krew index add bind https://github.com/kube-bind/krew-index.git
-kubectl krew install bind/bind</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>index<span class="w"> </span>add<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>https://github.com/kube-bind/krew-index.git
+</span><span id="True-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>bind/bind
+</span></code></pre></div>
 <p>You should see output similar to this:</p>
-<p>```text
-➜  kubectl krew index add bind https://github.com/kube-bind/krew-index.git
-WARNING: You have added a new index from "https://github.com/kube-bind/krew-index.git"
-The plugins in this index are not audited for security by the Krew maintainers.
-Install them at your own risk.</p>
-<p>➜  kubectl krew install bind/bind
-Updated the local copy of plugin index "bind".
-Installing plugin: bind
-Installed plugin: bind
-\
- | Use this plugin:
- |      kubectl bind
- | Documentation:
- |      https://kube-bind.io/
-/
-```</p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>➜  kubectl krew index add bind https://github.com/kube-bind/krew-index.git
+</span><span id="True-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>WARNING: You have added a new index from &quot;https://github.com/kube-bind/krew-index.git&quot;
+</span><span id="True-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>The plugins in this index are not audited for security by the Krew maintainers.
+</span><span id="True-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Install them at your own risk.
+</span><span id="True-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+</span><span id="True-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>➜  kubectl krew install bind/bind
+</span><span id="True-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>Updated the local copy of plugin index &quot;bind&quot;.
+</span><span id="True-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>Installing plugin: bind
+</span><span id="True-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>Installed plugin: bind
+</span><span id="True-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>\
+</span><span id="True-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a> | Use this plugin:
+</span><span id="True-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a> |      kubectl bind
+</span><span id="True-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a> | Documentation:
+</span><span id="True-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a> |      https://kube-bind.io/
+</span><span id="True-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>/
+</span></code></pre></div>
 <p>If you don't have krew installed, you can download the binary directly from the <a href="https://github.com/kube-bind/kube-bind/releases">releases page</a>.</p>
 <h3 id="step-1-create-the-clusters">Step 1: Create the Clusters</h3>
 <p>We need at least two clusters, but first, we'll start by creating a <strong>provider</strong> cluster.</p>
 <p><strong>Create the provider cluster with port mapping:</strong></p>
-<p><code>bash
-cat &lt;&lt;EOF | kind create cluster --name provider --config=-
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-  extraPortMappings:
-  - containerPort: 6443
-    hostPort: 6443
-EOF</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kind create cluster --name provider --config=-</span>
+</span><span id="True-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="s">kind: Cluster</span>
+</span><span id="True-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="s">apiVersion: kind.x-k8s.io/v1alpha4</span>
+</span><span id="True-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="s">nodes:</span>
+</span><span id="True-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="s">- role: control-plane</span>
+</span><span id="True-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="s">  extraPortMappings:</span>
+</span><span id="True-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="s">  - containerPort: 6443</span>
+</span><span id="True-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="s">    hostPort: 6443</span>
+</span><span id="True-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p><strong>Create the consumer cluster:</strong></p>
-<p><code>bash
-kind create cluster --name consumer</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--name<span class="w"> </span>consumer
+</span></code></pre></div>
 <p>You can verify that your clusters are ready by checking the nodes:</p>
-<p>```bash
-➜  kubectl get nodes --context kind-provider</p>
-<p>NAME                     STATUS   ROLES           AGE     VERSION
-provider-control-plane   Ready    control-plane   3m58s   v1.27.3</p>
-<p>➜  kubectl get nodes --context kind-consumer</p>
-<p>NAME                     STATUS   ROLES           AGE     VERSION
-consumer-control-plane   Ready    control-plane   3m16s   v1.27.3
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>➜<span class="w">  </span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>--context<span class="w"> </span>kind-provider
+</span><span id="True-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="True-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>NAME<span class="w">                     </span>STATUS<span class="w">   </span>ROLES<span class="w">           </span>AGE<span class="w">     </span>VERSION
+</span><span id="True-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>provider-control-plane<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>3m58s<span class="w">   </span>v1.27.3
+</span><span id="True-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="True-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>➜<span class="w">  </span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>--context<span class="w"> </span>kind-consumer
+</span><span id="True-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="True-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>NAME<span class="w">                     </span>STATUS<span class="w">   </span>ROLES<span class="w">           </span>AGE<span class="w">     </span>VERSION
+</span><span id="True-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>consumer-control-plane<span class="w">   </span>Ready<span class="w">    </span>control-plane<span class="w">   </span>3m16s<span class="w">   </span>v1.27.3
+</span></code></pre></div>
 <h3 id="step-2-set-up-the-provider">Step 2: Set Up the Provider</h3>
 <p>Switch to the provider context. We need to install the <strong>kube-bind backend</strong>.</p>
 <p>To ensure authentication works correctly and enable cross-cluster connectivity, we need to configure hostname resolution:</p>
 <p><strong>Linux/macOS</strong>:</p>
-<p><code>bash
-sudo sh -c "echo '127.0.0.1 kube-bind-backend.kube-bind.svc provider-control-plane' &gt;&gt; /etc/hosts"</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>sudo<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;echo &#39;127.0.0.1 kube-bind-backend.kube-bind.svc provider-control-plane&#39; &gt;&gt; /etc/hosts&quot;</span>
+</span></code></pre></div>
 <p><strong>Windows</strong>:
 Add <code>127.0.0.1 kube-bind-backend.kube-bind.svc</code> to <code>C:\Windows\System32\drivers\etc\hosts</code>.</p>
 <p>Now, install the backend using Helm, configuring it to use this domain:</p>
-<p>```bash
-kubectl config use-context kind-provider</p>
-<h1 id="install-the-backend-using-helm">Install the backend using Helm</h1>
-<p>helm upgrade --install \
-    --namespace kube-bind \
-    --create-namespace \
-    --set image.tag=v0.7.1 \
-    --set backend.externalAddress=https://provider-control-plane:6443 \
-    --set backend.tlsExternalServerName=kubernetes.default.svc \
-    --set backend.oidc.issuerUrl=http://kube-bind-backend.kube-bind.svc:8080/oidc \
-    --set backend.oidc.callbackUrl=http://kube-bind-backend.kube-bind.svc:8080/api/callback \
-    kube-bind oci://ghcr.io/kube-bind/charts/backend --version 0.7.1
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>config<span class="w"> </span>use-context<span class="w"> </span>kind-provider
+</span><span id="True-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="True-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># Install the backend using Helm</span>
+</span><span id="True-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span><span class="se">\</span>
+</span><span id="True-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">    </span>--namespace<span class="w"> </span>kube-bind<span class="w"> </span><span class="se">\</span>
+</span><span id="True-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span>--create-namespace<span class="w"> </span><span class="se">\</span>
+</span><span id="True-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span>--set<span class="w"> </span>image.tag<span class="o">=</span>v0.7.1<span class="w"> </span><span class="se">\</span>
+</span><span id="True-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">    </span>--set<span class="w"> </span>backend.externalAddress<span class="o">=</span>https://provider-control-plane:6443<span class="w"> </span><span class="se">\</span>
+</span><span id="True-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">    </span>--set<span class="w"> </span>backend.tlsExternalServerName<span class="o">=</span>kubernetes.default.svc<span class="w"> </span><span class="se">\</span>
+</span><span id="True-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.issuerUrl<span class="o">=</span>http://kube-bind-backend.kube-bind.svc:8080/oidc<span class="w"> </span><span class="se">\</span>
+</span><span id="True-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.callbackUrl<span class="o">=</span>http://kube-bind-backend.kube-bind.svc:8080/api/callback<span class="w"> </span><span class="se">\</span>
+</span><span id="True-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">    </span>kube-bind<span class="w"> </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="m">0</span>.7.1
+</span></code></pre></div>
 <blockquote>
 <p><strong>Note:</strong> The OIDC configuration used here (which uses the built-in mock OIDC provider of <code>kube-bind-backend</code>) is for demonstration purposes only. For a production deployment, you must integrate with a real OIDC provider. See <a href="../../../../../setup/helm/">Installation with Helm</a> for production guidelines.</p>
 <p><strong>Important Configuration Details:</strong></p>
@@ -3353,134 +3427,134 @@ kubectl config use-context kind-provider</p>
 </ul>
 </blockquote>
 <p>After installing, verify that the backend is running:</p>
-<p><code>bash
-kubectl get po -n kube-bind</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-bind
+</span></code></pre></div>
 <p>You should see something like this:</p>
-<p><code>text
-NAME                                 READY   STATUS    RESTARTS   AGE
-kube-bind-backend-6779b5b99f-vczmq   1/1     Running   0          18m</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>NAME                                 READY   STATUS    RESTARTS   AGE
+</span><span id="True-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>kube-bind-backend-6779b5b99f-vczmq   1/1     Running   0          18m
+</span></code></pre></div>
 <p>Since we are running locally in Kind without an Ingress, we need to port-forward the backend service.</p>
 <p><strong>Open a new terminal window</strong> and run:</p>
-<p><code>bash
-kubectl port-forward svc/kube-bind-backend -n kube-bind 8080:8080 --context kind-provider</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/kube-bind-backend<span class="w"> </span>-n<span class="w"> </span>kube-bind<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span>--context<span class="w"> </span>kind-provider
+</span></code></pre></div>
 <p><img alt="Kube Bind Authentication Required" src="../../../../images/auth-required.png" />
 <em>If you visit <code>http://kube-bind-backend.kube-bind.svc:8080</code> in your browser, you'll see this screen. This is normal and confirms the backend is running!</em></p>
 <h3 id="step-3-exporting-an-api-service">Step 3: Exporting an API Service</h3>
 <p>Now that the backend is running, we can export an API. We'll use the <strong>Cowboy</strong> CRD included in the <code>kube-bind</code> repository as our example.</p>
 <p>First, apply the CRD to the <strong>provider</strong> cluster:</p>
-<p><code>bash
-kubectl apply -f https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/crd-cowboys.yaml</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/crd-cowboys.yaml
+</span></code></pre></div>
 <p>Verify that the CRD is installed:</p>
-<p><code>bash
-kubectl get crd</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd
+</span></code></pre></div>
 <p>You should see <code>cowboys.wildwest.dev</code> in the list:</p>
-<p><code>text
-NAME                                     CREATED AT
-apiserviceexports.kube-bind.io           2026-02-14T13:04:56Z
-...
-cowboys.wildwest.dev                     2026-02-14T13:57:13Z</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>NAME                                     CREATED AT
+</span><span id="True-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>apiserviceexports.kube-bind.io           2026-02-14T13:04:56Z
+</span><span id="True-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>...
+</span><span id="True-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>cowboys.wildwest.dev                     2026-02-14T13:57:13Z
+</span></code></pre></div>
 <p>Now, we need to <strong>export</strong> this service so consumers can find it. We do this by creating an <code>APIServiceExportTemplate</code>. This tells the backend to list "Cowboys" in its service catalog.</p>
-<p><code>bash
-kubectl apply -f https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/template-cowboys.yaml</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/template-cowboys.yaml
+</span></code></pre></div>
 <p>Verify that the template is created:</p>
-<p><code>bash
-kubectl get apiserviceexporttemplates</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>apiserviceexporttemplates
+</span></code></pre></div>
 <p>Output:</p>
-<p><code>text
-NAME      RESOURCES      PERMISSIONCLAIMS   AGE
-cowboys   wildwest.dev   secrets            12s</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>NAME      RESOURCES      PERMISSIONCLAIMS   AGE
+</span><span id="True-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>cowboys   wildwest.dev   secrets            12s
+</span></code></pre></div>
 <p>The service is now exported!</p>
 <h3 id="step-4-bind-the-consumer">Step 4: Bind the Consumer</h3>
 <p>Switch to the <strong>consumer</strong> cluster.</p>
-<p><code>bash
-kubectl config use-context kind-consumer</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>kubectl<span class="w"> </span>config<span class="w"> </span>use-context<span class="w"> </span>kind-consumer
+</span></code></pre></div>
 <p>Run the login command to authenticate with the provider:</p>
-<p><code>bash
-kubectl bind login http://kube-bind-backend.kube-bind.svc:8080</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>http://kube-bind-backend.kube-bind.svc:8080
+</span></code></pre></div>
 <p>You should see output similar to:</p>
-<p><code>text
-Connecting to kube-bind server http://kube-bind-backend.kube-bind.svc:8080...
-Started local callback server at http://127.0.0.1:64184/callback
-Opening browser for authentication...
-🔑 Successfully authenticated to kube-bind-backend.kube-bind.svc:8080
-Configuration saved to: /Users/username/.kube-bind/config</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>Connecting to kube-bind server http://kube-bind-backend.kube-bind.svc:8080...
+</span><span id="True-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>Started local callback server at http://127.0.0.1:64184/callback
+</span><span id="True-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>Opening browser for authentication...
+</span><span id="True-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>🔑 Successfully authenticated to kube-bind-backend.kube-bind.svc:8080
+</span><span id="True-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>Configuration saved to: /Users/username/.kube-bind/config
+</span></code></pre></div>
 <p>Now run the bind command:</p>
-<p><code>bash
-kubectl bind http://kube-bind-backend.kube-bind.svc:8080</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>http://kube-bind-backend.kube-bind.svc:8080
+</span></code></pre></div>
 <p>This will open your browser showing the available services in the Provider's template catalog. Amongst them, you'll see the <strong>Cowboys</strong> template that we exported earlier.</p>
 <p><img alt="Available Resources - Cowboys Template" src="../../../../images/cowboys_template_ui.png" /></p>
 <p>Click <strong>"Bind for CLI"</strong> to proceed. After clicking, your browser will show a success message:</p>
 <p><img alt="Binding Completed Successfully" src="../../../../images/binding_success.png" /></p>
 <p>Meanwhile, back in your terminal, you'll see the CLI deploying the Konnector:</p>
-<p>```text
-🌐 Opening kube-bind UI in your browser...
-Browser opened successfully
-Waiting for binding completion from UI...
-   (Press Ctrl+C to cancel)</p>
-<p>Binding completed successfully!
-Created kube-bind namespace.
-🔒 Created secret kube-bind/kubeconfig-9lbzx for host https://provider-control-plane:6443, namespace kube-bind-enkvby5uzkct
-🚀 Deploying konnector v0.7.1 to namespace kube-bind.
-   Waiting for the konnector to be ready.................
-✅ Created APIServiceBinding cowboys for 1 resources
-Created 1 APIServiceBinding(s):
-  - cowboys
-Resources bound successfully!
-```</p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>🌐 Opening kube-bind UI in your browser...
+</span><span id="True-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>Browser opened successfully
+</span><span id="True-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>Waiting for binding completion from UI...
+</span><span id="True-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>   (Press Ctrl+C to cancel)
+</span><span id="True-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>
+</span><span id="True-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>Binding completed successfully!
+</span><span id="True-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>Created kube-bind namespace.
+</span><span id="True-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>🔒 Created secret kube-bind/kubeconfig-9lbzx for host https://provider-control-plane:6443, namespace kube-bind-enkvby5uzkct
+</span><span id="True-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>🚀 Deploying konnector v0.7.1 to namespace kube-bind.
+</span><span id="True-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>   Waiting for the konnector to be ready.................
+</span><span id="True-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>✅ Created APIServiceBinding cowboys for 1 resources
+</span><span id="True-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>Created 1 APIServiceBinding(s):
+</span><span id="True-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>  - cowboys
+</span><span id="True-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>Resources bound successfully!
+</span></code></pre></div>
 <p>Behind the scenes, the CLI created a <code>kube-bind</code> namespace, an <code>APIServiceBinding</code>, deploys the <code>konnector</code> and creates some other resource in the consumer cluster. The <code>APIServiceBinding</code> resource tells the Konnector which services to sync from the provider.</p>
 <p>Check available namespaces</p>
-<p><code>bash
-kubectl get ns</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>ns
+</span></code></pre></div>
 <p>You should see the <code>kube-bind</code> namespace:</p>
-<p><code>text
-NAME                 STATUS   AGE
-default              Active   6h6m
-kube-bind            Active   92s
-kube-node-lease      Active   6h6m
-kube-public          Active   6h6m
-kube-system          Active   6h6m
-local-path-storage   Active   6h6m</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>NAME                 STATUS   AGE
+</span><span id="True-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>default              Active   6h6m
+</span><span id="True-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>kube-bind            Active   92s
+</span><span id="True-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>kube-node-lease      Active   6h6m
+</span><span id="True-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>kube-public          Active   6h6m
+</span><span id="True-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>kube-system          Active   6h6m
+</span><span id="True-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>local-path-storage   Active   6h6m
+</span></code></pre></div>
 <p>Check the Konnector pods:</p>
-<p><code>bash
-kubectl get po -n kube-bind</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-bind
+</span></code></pre></div>
 <p>Output:
 We can see the konnector pods running in the <code>kube-bind</code> namespace.</p>
-<p><code>text
-NAME                         READY   STATUS    RESTARTS   AGE
-konnector-547ff86976-5rmh8   1/1     Running   0          98s
-konnector-547ff86976-xkcdm   1/1     Running   0          98s</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>NAME                         READY   STATUS    RESTARTS   AGE
+</span><span id="True-24-2"><a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>konnector-547ff86976-5rmh8   1/1     Running   0          98s
+</span><span id="True-24-3"><a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>konnector-547ff86976-xkcdm   1/1     Running   0          98s
+</span></code></pre></div>
 <h3 id="step-5-verify-and-use">Step 5: Verify and Use</h3>
 <p>After the binding completes, several CRDs will be installed in your consumer cluster. Let's verify:</p>
-<p><code>bash
-kubectl get crd</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd
+</span></code></pre></div>
 <p>You should see the kube-bind infrastructure CRDs along with the Cowboys CRD:</p>
-<p><code>text
-NAME                                    CREATED AT
-apiservicebindingbundles.kube-bind.io   2026-02-14T23:37:29Z
-apiservicebindings.kube-bind.io         2026-02-14T23:37:29Z
-cowboys.wildwest.dev                    2026-02-14T23:37:37Z</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>NAME                                    CREATED AT
+</span><span id="True-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>apiservicebindingbundles.kube-bind.io   2026-02-14T23:37:29Z
+</span><span id="True-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>apiservicebindings.kube-bind.io         2026-02-14T23:37:29Z
+</span><span id="True-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>cowboys.wildwest.dev                    2026-02-14T23:37:37Z
+</span></code></pre></div>
 <p>The <code>cowboys.wildwest.dev</code> CRD is now available locally! The other CRDs are part of the kube-bind infrastructure that manages the binding lifecycle.</p>
 <p>Check that the <strong>Cowboy</strong> CRD is available:</p>
-<p><code>bash
-kubectl get crd cowboys.wildwest.dev</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>cowboys.wildwest.dev
+</span></code></pre></div>
 <p>Now, you can create a <code>Cowboy</code> resource directly in your consumer cluster. The magic is that this resource will be managed by the provider!</p>
-<p><code>bash
-kubectl apply -f - &lt;&lt;EOF
-apiVersion: wildwest.dev/v1alpha1
-kind: Cowboy
-metadata:
-  name: billy-the-kid
-  namespace: default
-spec:
-  intent: "Ride the range and protect the cattle"
-EOF</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+</span><span id="True-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="s">apiVersion: wildwest.dev/v1alpha1</span>
+</span><span id="True-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a><span class="s">kind: Cowboy</span>
+</span><span id="True-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="s">metadata:</span>
+</span><span id="True-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a><span class="s">  name: billy-the-kid</span>
+</span><span id="True-28-6"><a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a><span class="s">  namespace: default</span>
+</span><span id="True-28-7"><a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a><span class="s">spec:</span>
+</span><span id="True-28-8"><a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a><span class="s">  intent: &quot;Ride the range and protect the cattle&quot;</span>
+</span><span id="True-28-9"><a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <p>Verify it exists:</p>
-<p><code>bash
-kubectl get cowboys</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cowboys
+</span></code></pre></div>
 <p>Output:</p>
-<p><code>text
-NAME            AGE
-billy-the-kid   6s</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>NAME            AGE
+</span><span id="True-30-2"><a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>billy-the-kid   6s
+</span></code></pre></div>
 <p>The resource is created locally, but managed remotely!</p>
 <h2 id="real-world-use-cases">Real-World Use Cases</h2>
 <ul>

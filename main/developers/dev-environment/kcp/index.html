@@ -1424,6 +1424,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#consumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Consumer
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Consumer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#initialization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Initialization
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#binding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Binding
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#launch-konnector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Launch Konnector
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3206,112 +3256,113 @@
 and setting up all the <code>APIResourceSchemas</code> and <code>APIExports</code>.</p>
 <p>This is not required if you are doing deeper integration, and controlling the setup with your own scripts.</p>
 <p>It's good to have the kcp CLI installed to help with workspace management:</p>
-<p><code>bash
-kubectl krew index add kcp-dev https://github.com/kcp-dev/krew-index.git
-kubectl krew install kcp-dev/kcp
-kubectl krew install kcp-dev/ws
-kubectl krew install kcp-dev/create-workspace</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>index<span class="w"> </span>add<span class="w"> </span>kcp-dev<span class="w"> </span>https://github.com/kcp-dev/krew-index.git
+</span><span id="True-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>kcp-dev/kcp
+</span><span id="True-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>kcp-dev/ws
+</span><span id="True-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>kubectl<span class="w"> </span>krew<span class="w"> </span>install<span class="w"> </span>kcp-dev/create-workspace
+</span></code></pre></div>
 <h2 id="preparation">Preparation</h2>
 <p>Start kcp:</p>
-<p><code>bash
-make run-kcp</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>make<span class="w"> </span>run-kcp
+</span></code></pre></div>
 <h2 id="backend">Backend</h2>
 <h3 id="bootstrap-kcp">Bootstrap kcp</h3>
 <p>This is a dedicated step to set up kcp with required workspaces and <code>APIExports</code> for kube-bind:</p>
-<p>```bash
-cp .kcp/admin.kubeconfig .kcp/backend.kubeconfig
-export KUBECONFIG=.kcp/backend.kubeconfig</p>
-<p>./bin/kcp-init --kcp-kubeconfig $KUBECONFIG
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>cp<span class="w"> </span>.kcp/admin.kubeconfig<span class="w"> </span>.kcp/backend.kubeconfig
+</span><span id="True-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/backend.kubeconfig
+</span><span id="True-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="True-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>./bin/kcp-init<span class="w"> </span>--kcp-kubeconfig<span class="w"> </span><span class="nv">$KUBECONFIG</span>
+</span></code></pre></div>
 <h3 id="run-the-backend">Run the Backend</h3>
-<p>```bash
-kubectl ws use :root:kube-bind</p>
-<p>go run ./cmd/backend \
-  --multicluster-runtime-provider kcp \
-  --oidc-issuer-url=http://127.0.0.1:8080/oidc \
-  --oidc-callback-url=http://127.0.0.1:8080/api/callback \
-  --oidc-type=embedded \
-  --pretty-name="BigCorp.com" \
-  --namespace-prefix="kube-bind-" \
-  --schema-source apiresourceschemas \
-  --consumer-scope=cluster
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root:kube-bind
+</span><span id="True-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="True-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>go<span class="w"> </span>run<span class="w"> </span>./cmd/backend<span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">  </span>--multicluster-runtime-provider<span class="w"> </span>kcp<span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span>--oidc-issuer-url<span class="o">=</span>http://127.0.0.1:8080/oidc<span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span>--oidc-callback-url<span class="o">=</span>http://127.0.0.1:8080/api/callback<span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span>--oidc-type<span class="o">=</span>embedded<span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">  </span>--pretty-name<span class="o">=</span><span class="s2">&quot;BigCorp.com&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span>--namespace-prefix<span class="o">=</span><span class="s2">&quot;kube-bind-&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span>--schema-source<span class="w"> </span>apiresourceschemas<span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span>--consumer-scope<span class="o">=</span>cluster
+</span></code></pre></div>
 <p>Optionally add <code>--fronend=http://localhost:3000</code> to point to local frontend (must be running
 separately).</p>
 <p>This process will keep running, so open a new terminal.</p>
 <h2 id="provider">Provider</h2>
 <h3 id="kubeconfig-setup">Kubeconfig Setup</h3>
 <p>Copy the kubeconfig to the provider and create provider workspace:</p>
-<p><code>bash
-cp .kcp/admin.kubeconfig .kcp/provider.kubeconfig
-export KUBECONFIG=.kcp/provider.kubeconfig
-kubectl ws use :root
-kubectl create-workspace provider --enter</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>cp<span class="w"> </span>.kcp/admin.kubeconfig<span class="w"> </span>.kcp/provider.kubeconfig
+</span><span id="True-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/provider.kubeconfig
+</span><span id="True-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root
+</span><span id="True-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>kubectl<span class="w"> </span>create-workspace<span class="w"> </span>provider<span class="w"> </span>--enter
+</span></code></pre></div>
 <h3 id="apiexport">APIExport</h3>
 <p>Bind the APIExport to the provider workspace:</p>
-<p><code>bash
-kubectl kcp bind apiexport root:kube-bind:kube-bind.io \
-  --accept-permission-claim clusterrolebindings.rbac.authorization.k8s.io \
-  --accept-permission-claim clusterroles.rbac.authorization.k8s.io \
-  --accept-permission-claim customresourcedefinitions.apiextensions.k8s.io \
-  --accept-permission-claim serviceaccounts.core \
-  --accept-permission-claim configmaps.core \
-  --accept-permission-claim secrets.core \
-  --accept-permission-claim subjectaccessreviews.authorization.k8s.io \
-  --accept-permission-claim namespaces.core \
-  --accept-permission-claim roles.rbac.authorization.k8s.io \
-  --accept-permission-claim rolebindings.rbac.authorization.k8s.io \
-  --accept-permission-claim apiresourceschemas.apis.kcp.io</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>kcp<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>apiexport<span class="w"> </span>root:kube-bind:kube-bind.io<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>clusterrolebindings.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>clusterroles.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>customresourcedefinitions.apiextensions.k8s.io<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>serviceaccounts.core<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>configmaps.core<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>secrets.core<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>subjectaccessreviews.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>namespaces.core<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>roles.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>rolebindings.rbac.authorization.k8s.io<span class="w"> </span><span class="se">\</span>
+</span><span id="True-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">  </span>--accept-permission-claim<span class="w"> </span>apiresourceschemas.apis.kcp.io
+</span></code></pre></div>
 <h3 id="create-crd-in-provider">Create CRD in provider</h3>
-<p>```bash
-kubectl apply -f contrib/kcp/deploy/examples/apiexport.yaml
-kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
-kubectl apply -f contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
-kubectl kcp bind apiexport root:provider:cowboys-stable</p>
-<p>kubectl apply -f deploy/examples/template-cowboys.yaml
-kubectl apply -f deploy/examples/template-sheriffs.yaml
-kubectl apply -f deploy/examples/collection.yaml
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/apiexport.yaml
+</span><span id="True-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/apiresourceschema-cowboys.yaml
+</span><span id="True-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>contrib/kcp/deploy/examples/apiresourceschema-sheriffs.yaml
+</span><span id="True-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>kubectl<span class="w"> </span>kcp<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>apiexport<span class="w"> </span>root:provider:cowboys-stable
+</span><span id="True-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="True-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/template-cowboys.yaml
+</span><span id="True-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/template-sheriffs.yaml
+</span><span id="True-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/collection.yaml
+</span></code></pre></div>
 <h3 id="retrieve-the-logicalcluster">Retrieve the LogicalCluster</h3>
-<p>```bash
-kubectl get logicalcluster</p>
-<h1 id="name-phase-url">NAME      PHASE   URL</h1>
-<h1 id="cluster-ready-https19216821666443clusters2myqz7lt9i0u5kzb">cluster   Ready   https://192.168.2.166:6443/clusters/2myqz7lt9i0u5kzb</h1>
-<p>```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>logicalcluster
+</span><span id="True-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="c1"># NAME      PHASE   URL</span>
+</span><span id="True-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># cluster   Ready   https://192.168.2.166:6443/clusters/2myqz7lt9i0u5kzb</span>
+</span></code></pre></div>
 <h2 id="consumer">Consumer</h2>
 <h3 id="initialization">Initialization</h3>
 <p>Now we gonna initiate consumer:</p>
-<p>```bash
-cp .kcp/admin.kubeconfig .kcp/consumer.kubeconfig
-export KUBECONFIG=.kcp/consumer.kubeconfig</p>
-<p>kubectl ws use :root
-kubectl ws create consumer --enter
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>cp<span class="w"> </span>.kcp/admin.kubeconfig<span class="w"> </span>.kcp/consumer.kubeconfig
+</span><span id="True-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>.kcp/consumer.kubeconfig
+</span><span id="True-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+</span><span id="True-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>use<span class="w"> </span>:root
+</span><span id="True-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>kubectl<span class="w"> </span>ws<span class="w"> </span>create<span class="w"> </span>consumer<span class="w"> </span>--enter
+</span></code></pre></div>
 <h3 id="binding">Binding</h3>
 <p>Bind the thing:</p>
-<p>```bash
-./bin/kubectl-bind login http://127.0.0.1:8080 --cluster 1nso4d2rvleempdp
-./bin/kubectl-bind --dry-run --cluster-identity-namespace default -o yaml &gt; apiserviceexport.yaml</p>
-<h1 id="extract-secret-for-binding-process-note-that-secret-name-is-not-the-same-as-output-from-command-above-check-secret">Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret</h1>
-<h1 id="name-by-running-kubectl-get-secret-n-kube-bind">name by running <code>kubectl get secret -n kube-bind</code></h1>
-<p>kubectl get secrets -n kube-bind -o jsonpath='{.items[0].data.kubeconfig}' | base64 -d &gt; remote.kubeconfig</p>
-<p>namespace=$(yq '.contexts[0].context.namespace' remote.kubeconfig)</p>
-<p>./bin/kubectl-bind apiservice \
-  --remote-kubeconfig remote.kubeconfig \
-  --remote-namespace "$namespace" \
-  --skip-konnector \
-  -f apiserviceexport.yaml \
-  -v 6
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>./bin/kubectl-bind<span class="w"> </span>login<span class="w"> </span>http://127.0.0.1:8080<span class="w"> </span>--cluster<span class="w"> </span>1nso4d2rvleempdp
+</span><span id="True-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>./bin/kubectl-bind<span class="w"> </span>--dry-run<span class="w"> </span>--cluster-identity-namespace<span class="w"> </span>default<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span>&gt;<span class="w"> </span>apiserviceexport.yaml
+</span><span id="True-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+</span><span id="True-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Extract secret for binding process. Note that secret name is not the same as output from command above. Check secret</span>
+</span><span id="True-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># name by running `kubectl get secret -n kube-bind`</span>
+</span><span id="True-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>kubectl<span class="w"> </span>get<span class="w"> </span>secrets<span class="w"> </span>-n<span class="w"> </span>kube-bind<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.items[0].data.kubeconfig}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span>&gt;<span class="w"> </span>remote.kubeconfig
+</span><span id="True-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+</span><span id="True-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="nv">namespace</span><span class="o">=</span><span class="k">$(</span>yq<span class="w"> </span><span class="s1">&#39;.contexts[0].context.namespace&#39;</span><span class="w"> </span>remote.kubeconfig<span class="k">)</span>
+</span><span id="True-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
+</span><span id="True-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>./bin/kubectl-bind<span class="w"> </span>apiservice<span class="w"> </span><span class="se">\</span>
+</span><span id="True-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">  </span>--remote-kubeconfig<span class="w"> </span>remote.kubeconfig<span class="w"> </span><span class="se">\</span>
+</span><span id="True-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">  </span>--remote-namespace<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$namespace</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">  </span>--skip-konnector<span class="w"> </span><span class="se">\</span>
+</span><span id="True-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">  </span>-f<span class="w"> </span>apiserviceexport.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="True-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">  </span>-v<span class="w"> </span><span class="m">6</span>
+</span></code></pre></div>
 <p>This will keep running, so switch to a new terminal.</p>
 <h3 id="launch-konnector">Launch Konnector</h3>
 <p>Start konnector:</p>
-<p><code>bash
-./bin/konnector --lease-namespace default --kubeconfig .kcp/consumer.kubeconfig --server-address ":9090"</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>./bin/konnector<span class="w"> </span>--lease-namespace<span class="w"> </span>default<span class="w"> </span>--kubeconfig<span class="w"> </span>.kcp/consumer.kubeconfig<span class="w"> </span>--server-address<span class="w"> </span><span class="s2">&quot;:9090&quot;</span>
+</span></code></pre></div>
 <p>Create example resources in consumer:</p>
-<p><code>bash
-kubectl apply -f deploy/examples/cr-cowboy.yaml
-kubectl apply -f deploy/examples/cr-sheriff.yaml</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/cr-cowboy.yaml
+</span><span id="True-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>deploy/examples/cr-sheriff.yaml
+</span></code></pre></div>
 
 
 

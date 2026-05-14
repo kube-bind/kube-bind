@@ -3174,9 +3174,9 @@ extract it, and place the <code>kubectl-bind</code> executable in your system's 
 <p class="admonition-title">Note</p>
 <p><strong>Tip:</strong> In case of encountering <code>Too many open files</code> error when deploying the Kind clusters,
 run following commands:</p>
-<p><code>sh
-sudo sysctl fs.inotify.max_user_watches=524288
-sudo sysctl fs.inotify.max_user_instances=512</code></p>
+<div class="language-sh highlight"><pre><span></span><code><span id="True-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>fs.inotify.max_user_watches<span class="o">=</span><span class="m">524288</span>
+</span><span id="True-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>sudo<span class="w"> </span>sysctl<span class="w"> </span>fs.inotify.max_user_instances<span class="o">=</span><span class="m">512</span>
+</span></code></pre></div>
 <p>See the <a href="https://kind.sigs.k8s.io/docs/user/known-issues/#pod-errors-due-to-too-many-open-files">kind documentation</a>
 for more details.</p>
 </div>
@@ -3187,62 +3187,61 @@ cluster to the provider.</p>
 <p>This command will create two Kind clusters named <code>kind-provider</code> and <code>kind-consumer</code>, set up a
 Docker network for them to communicate, and install kube-bind backend in the provider cluster and
 establish right <code>hostAlias</code> entries for communication between clusters.</p>
-<p><code>sh
-kubectl bind dev create</code></p>
+<div class="language-sh highlight"><pre><span></span><code><span id="True-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>create
+</span></code></pre></div>
 <p>You should see output similar to this:</p>
-<p>```sh
-kubectl bind dev create
-🧪 EXPERIMENTAL: kube-bind dev command is in preview
-📦 Requirements: Docker must be installed and running
-Warning: Could not automatically add host entry. Please run:
-echo '127.0.0.1 kube-bind.dev.local' | sudo tee -a /etc/hosts
-Kind cluster kind-provider already exists, skipping creation
-Wrote kubeconfig kind-provider.kubeconfig
-Helm chart installed successfully
-Provider cluster IP address: 192.168.155.2
-Creating kind cluster kind-consumer with network kube-bind-dev
-Kind cluster kind-consumer created
-Wrote kubeconfig kind-consumer.kubeconfig
-🚀 kube-bind dev environment is ready!</p>
-<ul>
-<li>Provider cluster kubeconfig: kind-provider.kubeconfig</li>
-<li>Consumer cluster kubeconfig: kind-consumer.kubeconfig</li>
-<li>kube-bind server URL: http://kube-bind.dev.local:8080</li>
-<li>Next steps:</li>
-<li>Run login to authenticate to the provider cluster:</li>
-</ul>
-<p>kubectl bind login http://kube-bind.dev.local:8080</p>
-<ol>
-<li>Run bind to bind an API service from the provider to the consumer cluster:</li>
-</ol>
-<p>KUBECONFIG=kind-consumer.kubeconfig kubectl bind --konnector-host-alias 192.168.155.2:kube-bind.dev.local
-```</p>
+<div class="language-sh highlight"><pre><span></span><code><span id="True-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>create
+</span><span id="True-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>🧪<span class="w"> </span>EXPERIMENTAL:<span class="w"> </span>kube-bind<span class="w"> </span>dev<span class="w"> </span><span class="nb">command</span><span class="w"> </span>is<span class="w"> </span><span class="k">in</span><span class="w"> </span>preview
+</span><span id="True-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>📦<span class="w"> </span>Requirements:<span class="w"> </span>Docker<span class="w"> </span>must<span class="w"> </span>be<span class="w"> </span>installed<span class="w"> </span>and<span class="w"> </span>running
+</span><span id="True-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Warning:<span class="w"> </span>Could<span class="w"> </span>not<span class="w"> </span>automatically<span class="w"> </span>add<span class="w"> </span>host<span class="w"> </span>entry.<span class="w"> </span>Please<span class="w"> </span>run:
+</span><span id="True-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;127.0.0.1 kube-bind.dev.local&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>-a<span class="w"> </span>/etc/hosts
+</span><span id="True-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>Kind<span class="w"> </span>cluster<span class="w"> </span>kind-provider<span class="w"> </span>already<span class="w"> </span>exists,<span class="w"> </span>skipping<span class="w"> </span>creation
+</span><span id="True-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>Wrote<span class="w"> </span>kubeconfig<span class="w"> </span>kind-provider.kubeconfig
+</span><span id="True-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>Helm<span class="w"> </span>chart<span class="w"> </span>installed<span class="w"> </span>successfully
+</span><span id="True-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>Provider<span class="w"> </span>cluster<span class="w"> </span>IP<span class="w"> </span>address:<span class="w"> </span><span class="m">192</span>.168.155.2
+</span><span id="True-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>Creating<span class="w"> </span>kind<span class="w"> </span>cluster<span class="w"> </span>kind-consumer<span class="w"> </span>with<span class="w"> </span>network<span class="w"> </span>kube-bind-dev
+</span><span id="True-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>Kind<span class="w"> </span>cluster<span class="w"> </span>kind-consumer<span class="w"> </span>created
+</span><span id="True-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>Wrote<span class="w"> </span>kubeconfig<span class="w"> </span>kind-consumer.kubeconfig
+</span><span id="True-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>🚀<span class="w"> </span>kube-bind<span class="w"> </span>dev<span class="w"> </span>environment<span class="w"> </span>is<span class="w"> </span>ready!
+</span><span id="True-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+</span><span id="True-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>-<span class="w"> </span>Provider<span class="w"> </span>cluster<span class="w"> </span>kubeconfig:<span class="w"> </span>kind-provider.kubeconfig
+</span><span id="True-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>-<span class="w"> </span>Consumer<span class="w"> </span>cluster<span class="w"> </span>kubeconfig:<span class="w"> </span>kind-consumer.kubeconfig
+</span><span id="True-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>-<span class="w"> </span>kube-bind<span class="w"> </span>server<span class="w"> </span>URL:<span class="w"> </span>http://kube-bind.dev.local:8080
+</span><span id="True-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>-<span class="w"> </span>Next<span class="w"> </span>steps:
+</span><span id="True-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="m">1</span>.<span class="w"> </span>Run<span class="w"> </span>login<span class="w"> </span>to<span class="w"> </span>authenticate<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>provider<span class="w"> </span>cluster:
+</span><span id="True-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>
+</span><span id="True-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>http://kube-bind.dev.local:8080
+</span><span id="True-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>
+</span><span id="True-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="m">2</span>.<span class="w"> </span>Run<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>to<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>an<span class="w"> </span>API<span class="w"> </span>service<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>provider<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>consumer<span class="w"> </span>cluster:
+</span><span id="True-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>
+</span><span id="True-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>--konnector-host-alias<span class="w"> </span><span class="m">192</span>.168.155.2:kube-bind.dev.local
+</span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Note <code>/etc/hosts</code> modification and 2 commands to run to bind the consumer cluster.</p>
 </div>
 <h2 id="login-to-provider-cluster">Login to Provider Cluster</h2>
 <p>This should give you UI authorization screen.</p>
-<p><code>bash
-kubectl bind login http://kube-bind.dev.local:8080</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>http://kube-bind.dev.local:8080
+</span></code></pre></div>
 <h2 id="bind-first-provider-api-service">Bind First Provider API Service</h2>
-<p><code>bash
-export KUBECONFIG=kind-consumer.kubeconfig
-kubectl bind --konnector-host-alias 192.168.155.2:kube-bind.dev.local</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig
+</span><span id="True-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>--konnector-host-alias<span class="w"> </span><span class="m">192</span>.168.155.2:kube-bind.dev.local
+</span></code></pre></div>
 <p>Now in the consumer cluster you should see these CRDs:</p>
-<p><code>bash
-kubectl get crd
-NAME                              CREATED AT
-apiservicebindings.kube-bind.io   2025-11-12T08:10:48Z
-mangodbs.mangodb.com              2025-11-12T08:10:56Z</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd
+</span><span id="True-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>NAME<span class="w">                              </span>CREATED<span class="w"> </span>AT
+</span><span id="True-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>apiservicebindings.kube-bind.io<span class="w">   </span><span class="m">2025</span>-11-12T08:10:48Z
+</span><span id="True-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>mangodbs.mangodb.com<span class="w">              </span><span class="m">2025</span>-11-12T08:10:56Z
+</span></code></pre></div>
 <p>Try creating an example MangoDB resource and observe it being synced to provider clusters:</p>
-<p><code>bash
-kubectl bind dev example | kubectl create -f -
-KUBECONFIG=kind-consumer.kubeconfig kubectl get mangodbs.mangodb.com
-KUBECONFIG=kind-provider.kubeconfig kubectl get mangodbs.mangodb.com</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>example<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>-
+</span><span id="True-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-consumer.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>mangodbs.mangodb.com
+</span><span id="True-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nv">KUBECONFIG</span><span class="o">=</span>kind-provider.kubeconfig<span class="w"> </span>kubectl<span class="w"> </span>get<span class="w"> </span>mangodbs.mangodb.com
+</span></code></pre></div>
 <h2 id="cleanup">Cleanup</h2>
-<p><code>sh
-kind bind dev delete</code></p>
+<div class="language-sh highlight"><pre><span></span><code><span id="True-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kind<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>dev<span class="w"> </span>delete
+</span></code></pre></div>
 
 
 

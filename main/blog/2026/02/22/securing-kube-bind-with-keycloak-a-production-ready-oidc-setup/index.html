@@ -3289,6 +3289,50 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#step-5-export-an-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Export an API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-bind-from-the-consumer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Bind from the Consumer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-verify-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Verify It Works
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conclusion
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3353,100 +3397,101 @@
 <hr />
 <h2 id="step-1-create-the-provider-cluster">Step 1: Create the Provider Cluster</h2>
 <p>We need a Kind cluster with port mappings so we can reach both Keycloak and the kube-bind backend from our machine:</p>
-<p><code>bash
-cat &lt;&lt;EOF | kind create cluster --name provider --config=-
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-  kubeadmConfigPatches:
-  - |
-    kind: ClusterConfiguration
-    apiServer:
-        certSANs:
-        - "provider-control-plane"
-        - "127.0.0.1"
-  extraPortMappings:
-  - containerPort: 8080
-    hostPort: 8080
-  - containerPort: 8443
-    hostPort: 8443
-  - containerPort: 6443
-    hostPort: 6443
-EOF</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF | kind create cluster --name provider --config=-</span>
+</span><span id="True-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="s">kind: Cluster</span>
+</span><span id="True-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="s">apiVersion: kind.x-k8s.io/v1alpha4</span>
+</span><span id="True-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="s">nodes:</span>
+</span><span id="True-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="s">- role: control-plane</span>
+</span><span id="True-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="s">  kubeadmConfigPatches:</span>
+</span><span id="True-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="s">  - |</span>
+</span><span id="True-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="s">    kind: ClusterConfiguration</span>
+</span><span id="True-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="s">    apiServer:</span>
+</span><span id="True-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="s">        certSANs:</span>
+</span><span id="True-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="s">        - &quot;provider-control-plane&quot;</span>
+</span><span id="True-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="s">        - &quot;127.0.0.1&quot;</span>
+</span><span id="True-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="s">  extraPortMappings:</span>
+</span><span id="True-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="s">  - containerPort: 8080</span>
+</span><span id="True-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="s">    hostPort: 8080</span>
+</span><span id="True-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="s">  - containerPort: 8443</span>
+</span><span id="True-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="s">    hostPort: 8443</span>
+</span><span id="True-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="s">  - containerPort: 6443</span>
+</span><span id="True-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="s">    hostPort: 6443</span>
+</span><span id="True-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="s">EOF</span>
+</span></code></pre></div>
 <blockquote>
 <p><strong>Why the certSANs?</strong> Since we are exposing the API server on port <code>6443</code> and using custom hostnames like <code>provider-control-plane</code>, we need to tell Kind to include these in its TLS certificates. Without this, both <strong>kubectl</strong> and the <strong>kube-bind CLI</strong> would reject the connection with a certificate validation error.</p>
 </blockquote>
 <p>Then add some hostname aliases so we can refer to our services by name:</p>
-<p><code>bash
-sudo sh -c "echo '127.0.0.1 kube-bind.local keycloak.local provider-control-plane' &gt;&gt; /etc/hosts"</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>sudo<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;echo &#39;127.0.0.1 kube-bind.local keycloak.local provider-control-plane&#39; &gt;&gt; /etc/hosts&quot;</span>
+</span></code></pre></div>
 <blockquote>
 <p>[!TIP]
 <strong>Fixing "Certificate is valid for..." Errors:</strong> If you see an error like <code>x509: certificate is valid for ..., not 0.0.0.0</code>, it's because <code>kubectl</code> is trying to connect via an IP that is not in the certificate. You can fix your current context instantly by running:</p>
-<p><code>bash
-kubectl config set-cluster kind-provider --server=https://127.0.0.1:6443</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>config<span class="w"> </span>set-cluster<span class="w"> </span>kind-provider<span class="w"> </span>--server<span class="o">=</span>https://127.0.0.1:6443
+</span></code></pre></div>
 </blockquote>
 <hr />
 <h2 id="step-2-deploy-keycloak">Step 2: Deploy Keycloak</h2>
 <p>We'll use the <strong>KeycloakX</strong> Helm chart from <a href="https://github.com/codecentric/helm-charts">codecentric</a>. This is a great community-maintained chart that uses the official Keycloak images.</p>
 <p>Because we need to set some environment variables for the admin user, we'll create a small <code>values-keycloak.yaml</code> file. This is much cleaner than trying to pass complex strings via the CLI.</p>
-<p>```bash
-cat &lt;<EOF > values-keycloak.yaml
-fullnameOverride: keycloak
-command:
-  - "/opt/keycloak/bin/kc.sh"
-  - "start-dev"
-extraEnv: |
-  - name: KEYCLOAK_ADMIN
-    value: admin
-  - name: KEYCLOAK_ADMIN_PASSWORD
-    value: admin123
-  - name: KC_HTTP_RELATIVE_PATH
-    value: /auth
-EOF</p>
-<p>helm repo add codecentric https://codecentric.github.io/helm-charts
-helm repo update</p>
-<p>helm upgrade --install keycloak codecentric/keycloakx \
-  --namespace keycloak \
-  --create-namespace \
-  -f values-keycloak.yaml
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;EOF &gt; values-keycloak.yaml</span>
+</span><span id="True-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="s">fullnameOverride: keycloak</span>
+</span><span id="True-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="s">command:</span>
+</span><span id="True-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="s">  - &quot;/opt/keycloak/bin/kc.sh&quot;</span>
+</span><span id="True-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="s">  - &quot;start-dev&quot;</span>
+</span><span id="True-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="s">extraEnv: |</span>
+</span><span id="True-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="s">  - name: KEYCLOAK_ADMIN</span>
+</span><span id="True-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="s">    value: admin</span>
+</span><span id="True-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="s">  - name: KEYCLOAK_ADMIN_PASSWORD</span>
+</span><span id="True-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="s">    value: admin123</span>
+</span><span id="True-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="s">  - name: KC_HTTP_RELATIVE_PATH</span>
+</span><span id="True-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="s">    value: /auth</span>
+</span><span id="True-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="s">EOF</span>
+</span><span id="True-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
+</span><span id="True-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>helm<span class="w"> </span>repo<span class="w"> </span>add<span class="w"> </span>codecentric<span class="w"> </span>https://codecentric.github.io/helm-charts
+</span><span id="True-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>helm<span class="w"> </span>repo<span class="w"> </span>update
+</span><span id="True-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>
+</span><span id="True-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>keycloak<span class="w"> </span>codecentric/keycloakx<span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak<span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a><span class="w">  </span>--create-namespace<span class="w"> </span><span class="se">\</span>
+</span><span id="True-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a><span class="w">  </span>-f<span class="w"> </span>values-keycloak.yaml
+</span></code></pre></div>
 <p>You should see the following output:</p>
-<p>```text
-Release "keycloak" does not exist. Installing it now.
-NAME: keycloak
-LAST DEPLOYED: Sun Feb 22 21:52:49 2026
-NAMESPACE: keycloak
-STATUS: deployed
-REVISION: 1
-TEST SUITE: None
-NOTES:</p>
-<hr />
-<ul>
-<li>*</li>
-<li>Keycloak.X Helm Chart by codecentric AG              *</li>
-<li>*</li>
-</ul>
-<hr />
-<p>Keycloak was installed with a Service of type ClusterIP</p>
-<p>Create a port-forwarding with the following commands:</p>
-<p>export POD_NAME=$(kubectl get pods --namespace keycloak -l "app.kubernetes.io/name=keycloakx,app.kubernetes.io/instance=keycloak" -o name)
-echo "Visit http://127.0.0.1:8080 to use your application"
-kubectl --namespace keycloak port-forward "$POD_NAME" 8080
-```</p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Release &quot;keycloak&quot; does not exist. Installing it now.
+</span><span id="True-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>NAME: keycloak
+</span><span id="True-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>LAST DEPLOYED: Sun Feb 22 21:52:49 2026
+</span><span id="True-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>NAMESPACE: keycloak
+</span><span id="True-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>STATUS: deployed
+</span><span id="True-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>REVISION: 1
+</span><span id="True-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>TEST SUITE: None
+</span><span id="True-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>NOTES:
+</span><span id="True-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>***********************************************************************
+</span><span id="True-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>*                                                                     *
+</span><span id="True-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>*                Keycloak.X Helm Chart by codecentric AG              *
+</span><span id="True-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>*                                                                     *
+</span><span id="True-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>***********************************************************************
+</span><span id="True-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+</span><span id="True-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>Keycloak was installed with a Service of type ClusterIP
+</span><span id="True-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>
+</span><span id="True-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>Create a port-forwarding with the following commands:
+</span><span id="True-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
+</span><span id="True-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>export POD_NAME=$(kubectl get pods --namespace keycloak -l &quot;app.kubernetes.io/name=keycloakx,app.kubernetes.io/instance=keycloak&quot; -o name)
+</span><span id="True-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>echo &quot;Visit http://127.0.0.1:8080 to use your application&quot;
+</span><span id="True-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>kubectl --namespace keycloak port-forward &quot;$POD_NAME&quot; 8080
+</span></code></pre></div>
 <p>Wait for it to come up (Heads up: this chart deploys a <strong>StatefulSet</strong>, not a Deployment):</p>
-<p><code>bash
-kubectl rollout status statefulset/keycloak -n keycloak --timeout=120s</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>statefulset/keycloak<span class="w"> </span>-n<span class="w"> </span>keycloak<span class="w"> </span>--timeout<span class="o">=</span>120s
+</span></code></pre></div>
 <p>Patch the service to expose port 8443 for OIDC compatibility since we're
 technically running the cluster in our local machine.</p>
-<p><code>bash
-kubectl patch service keycloak-http -n keycloak --type='json' -p='[
-  {"op": "replace", "path": "/spec/ports/2/port", "value": 8444},
-  {"op": "add", "path": "/spec/ports/-", "value": {"name": "oidc-compat", "port": 8443, "targetPort": "http", "protocol": "TCP"}}
-]'</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>service<span class="w"> </span>keycloak-http<span class="w"> </span>-n<span class="w"> </span>keycloak<span class="w"> </span>--type<span class="o">=</span><span class="s1">&#39;json&#39;</span><span class="w"> </span>-p<span class="o">=</span><span class="s1">&#39;[</span>
+</span><span id="True-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="s1">  {&quot;op&quot;: &quot;replace&quot;, &quot;path&quot;: &quot;/spec/ports/2/port&quot;, &quot;value&quot;: 8444},</span>
+</span><span id="True-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="s1">  {&quot;op&quot;: &quot;add&quot;, &quot;path&quot;: &quot;/spec/ports/-&quot;, &quot;value&quot;: {&quot;name&quot;: &quot;oidc-compat&quot;, &quot;port&quot;: 8443, &quot;targetPort&quot;: &quot;http&quot;, &quot;protocol&quot;: &quot;TCP&quot;}}</span>
+</span><span id="True-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="s1">]&#39;</span>
+</span></code></pre></div>
 <p>Port-forward so we can access the admin console:</p>
-<p><code>bash
-kubectl port-forward svc/keycloak-http -n keycloak 8443:80 &amp;</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/keycloak-http<span class="w"> </span>-n<span class="w"> </span>keycloak<span class="w"> </span><span class="m">8443</span>:80<span class="w"> </span><span class="p">&amp;</span>
+</span></code></pre></div>
 <p>Head over to <a href="http://keycloak.local:8443">http://keycloak.local:8443</a>. You'll be redirected to the Keycloak login page:</p>
 <p><img alt="Keycloak Login" src="../../../../images/keycloak-login.png" /></p>
 <p>Log in with <code>admin</code> / <code>admin123</code>. You should see the Keycloak admin console.</p>
@@ -3536,22 +3581,22 @@ kubectl port-forward svc/keycloak-http -n keycloak 8443:80 &amp;</code></p>
 <hr />
 <h2 id="step-4-deploy-kube-bind">Step 4: Deploy kube-bind</h2>
 <p>Keycloak's OIDC issuer URL follows this pattern: <code>http://&lt;host&gt;/auth/realms/&lt;realm&gt;</code>. For us, that's <code>http://keycloak.local:8443/auth/realms/kube-bind</code>.</p>
-<p>```bash hl_lines="4 15"
-kubectl config use-context kind-provider</p>
-<p>helm upgrade --install kube-bind \
-    --namespace kube-bind \
-    --create-namespace \
-    --set image.tag=v0.7.1 \
-    --set backend.externalAddress=https://provider-control-plane:6443 \
-    --set backend.tlsExternalServerName=kubernetes.default.svc \
-    --set backend.oidc.type=external \
-    --set backend.oidc.issuerUrl=http://keycloak.local:8443/auth/realms/kube-bind \
-    --set backend.oidc.clientId=kube-bind \
-    --set backend.oidc.clientSecret=cSmfhB3RNuetE8pgz1hDVjDHsDpc2r2v\
-    --set backend.oidc.callbackUrl=http://kube-bind.local:8080/api/callback \
-    --set backend.oidc.allowedGroups={kube-bind-users} \
-    oci://ghcr.io/kube-bind/charts/backend --version 0.7.1
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>kubectl<span class="w"> </span>config<span class="w"> </span>use-context<span class="w"> </span>kind-provider
+</span><span id="True-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="True-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>kube-bind<span class="w"> </span><span class="se">\</span>
+</span><span id="True-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="hll"><span class="w">    </span>--namespace<span class="w"> </span>kube-bind<span class="w"> </span><span class="se">\</span>
+</span></span><span id="True-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span>--create-namespace<span class="w"> </span><span class="se">\</span>
+</span><span id="True-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">    </span>--set<span class="w"> </span>image.tag<span class="o">=</span>v0.7.1<span class="w"> </span><span class="se">\</span>
+</span><span id="True-8-7"><a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span>--set<span class="w"> </span>backend.externalAddress<span class="o">=</span>https://provider-control-plane:6443<span class="w"> </span><span class="se">\</span>
+</span><span id="True-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">    </span>--set<span class="w"> </span>backend.tlsExternalServerName<span class="o">=</span>kubernetes.default.svc<span class="w"> </span><span class="se">\</span>
+</span><span id="True-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.type<span class="o">=</span>external<span class="w"> </span><span class="se">\</span>
+</span><span id="True-8-10"><a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.issuerUrl<span class="o">=</span>http://keycloak.local:8443/auth/realms/kube-bind<span class="w"> </span><span class="se">\</span>
+</span><span id="True-8-11"><a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.clientId<span class="o">=</span>kube-bind<span class="w"> </span><span class="se">\</span>
+</span><span id="True-8-12"><a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.clientSecret<span class="o">=</span>cSmfhB3RNuetE8pgz1hDVjDHsDpc2r2v<span class="se">\</span>
+</span><span id="True-8-13"><a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.callbackUrl<span class="o">=</span>http://kube-bind.local:8080/api/callback<span class="w"> </span><span class="se">\</span>
+</span><span id="True-8-14"><a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="w">    </span>--set<span class="w"> </span>backend.oidc.allowedGroups<span class="o">={</span>kube-bind-users<span class="o">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-8-15"><a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="hll"><span class="w">    </span>oci://ghcr.io/kube-bind/charts/backend<span class="w"> </span>--version<span class="w"> </span><span class="m">0</span>.7.1
+</span></span></code></pre></div>
 <p>Replace <code>&lt;YOUR-CLIENT-SECRET&gt;</code> with what you copied from the Keycloak credentials tab.</p>
 <blockquote>
 <p><strong>Heads up:</strong> Never paste secrets directly into shell history in production. Use a Kubernetes Secret or an environment variable via <code>--set backend.oidc.clientSecret=$OIDC_CLIENT_SECRET</code>.</p>
@@ -3559,46 +3604,46 @@ kubectl config use-context kind-provider</p>
 <h3 id="networking-adjustment-kind-specific">Networking Adjustment (Kind Specific)</h3>
 <p>Since we are running in Kind, the <code>kube-bind</code> pod doesn't know about the <code>keycloak.local</code> entry on your host's <code>/etc/hosts</code> file. Without this next step, the backend will try to reach itself on <code>127.0.0.1:8443</code> and fail.</p>
 <p>We need to tell the pod that <code>keycloak.local</code> is actually the IP of our Keycloak Service.</p>
-<p>```bash</p>
-<h1 id="1-get-the-clusterip-of-the-keycloak-service">1. Get the ClusterIP of the Keycloak service</h1>
-<p>KEYCLOAK_IP=$(kubectl get svc keycloak-http -n keycloak -o jsonpath='{.spec.clusterIP}')</p>
-<h1 id="2-patch-the-backend-to-add-a-hostalias">2. Patch the backend to add a hostAlias</h1>
-<p>kubectl patch deployment kube-bind-backend -n kube-bind --type='json' -p="[
-  {\"op\": \"add\", \"path\": \"/spec/template/spec/hostAliases\", \"value\": [
-    {\"ip\": \"$KEYCLOAK_IP\", \"hostnames\": [\"keycloak.local\"]}
-  ]}
-]"
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># 1. Get the ClusterIP of the Keycloak service</span>
+</span><span id="True-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nv">KEYCLOAK_IP</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>svc<span class="w"> </span>keycloak-http<span class="w"> </span>-n<span class="w"> </span>keycloak<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clusterIP}&#39;</span><span class="k">)</span>
+</span><span id="True-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+</span><span id="True-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># 2. Patch the backend to add a hostAlias</span>
+</span><span id="True-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>deployment<span class="w"> </span>kube-bind-backend<span class="w"> </span>-n<span class="w"> </span>kube-bind<span class="w"> </span>--type<span class="o">=</span><span class="s1">&#39;json&#39;</span><span class="w"> </span>-p<span class="o">=</span><span class="s2">&quot;[</span>
+</span><span id="True-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="s2">  {\&quot;op\&quot;: \&quot;add\&quot;, \&quot;path\&quot;: \&quot;/spec/template/spec/hostAliases\&quot;, \&quot;value\&quot;: [</span>
+</span><span id="True-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="s2">    {\&quot;ip\&quot;: \&quot;</span><span class="nv">$KEYCLOAK_IP</span><span class="s2">\&quot;, \&quot;hostnames\&quot;: [\&quot;keycloak.local\&quot;]}</span>
+</span><span id="True-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="s2">  ]}</span>
+</span><span id="True-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="s2">]&quot;</span>
+</span></code></pre></div>
 <p>Verify everything is running:</p>
-<p><code>bash
-kubectl get po -n kube-bind</code></p>
-<p><code>text
-NAME                                 READY   STATUS    RESTARTS   AGE
-kube-bind-backend-67b5bc9768-l9vr4  1/1     Running   0          45s</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>po<span class="w"> </span>-n<span class="w"> </span>kube-bind
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="True-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>NAME                                 READY   STATUS    RESTARTS   AGE
+</span><span id="True-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>kube-bind-backend-67b5bc9768-l9vr4  1/1     Running   0          45s
+</span></code></pre></div>
 <p>Port-forward the backend:</p>
-<p><code>bash
-kubectl port-forward svc/kube-bind-backend -n kube-bind 8080:8080 &amp;</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>kubectl<span class="w"> </span>port-forward<span class="w"> </span>svc/kube-bind-backend<span class="w"> </span>-n<span class="w"> </span>kube-bind<span class="w"> </span><span class="m">8080</span>:8080<span class="w"> </span><span class="p">&amp;</span>
+</span></code></pre></div>
 <hr />
 <h2 id="step-5-export-an-api">Step 5: Export an API</h2>
 <p>Now let's give the consumer something to bind to. We'll use the <strong>Cowboys</strong> example CRD that ships with <code>kube-bind</code>:</p>
-<p><code>bash
-kubectl apply -f https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/crd-cowboys.yaml
-kubectl apply -f https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/template-cowboys.yaml</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/crd-cowboys.yaml
+</span><span id="True-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>https://raw.githubusercontent.com/kube-bind/kube-bind/main/deploy/examples/template-cowboys.yaml
+</span></code></pre></div>
 <p>Verify it's exported:</p>
-<p><code>bash
-kubectl get apiserviceexporttemplates</code></p>
-<p><code>text
-NAME      RESOURCES      PERMISSIONCLAIMS   AGE
-cowboys   wildwest.dev   secrets            8s</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>apiserviceexporttemplates
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="True-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>NAME      RESOURCES      PERMISSIONCLAIMS   AGE
+</span><span id="True-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>cowboys   wildwest.dev   secrets            8s
+</span></code></pre></div>
 <hr />
 <h2 id="step-6-bind-from-the-consumer">Step 6: Bind from the Consumer</h2>
 <p>Create the consumer cluster:</p>
-<p><code>bash
-kind create cluster --name consumer
-kubectl config use-context kind-consumer</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>kind<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--name<span class="w"> </span>consumer
+</span><span id="True-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>kubectl<span class="w"> </span>config<span class="w"> </span>use-context<span class="w"> </span>kind-consumer
+</span></code></pre></div>
 <p>Run the login command:</p>
-<p><code>bash
-kubectl bind login http://kube-bind.local:8080</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>login<span class="w"> </span>http://kube-bind.local:8080
+</span></code></pre></div>
 <p>Your browser will open — and instead of the mock login page, you'll see <strong>Keycloak's real login form</strong>. Log in with <code>platform-operator</code> and the password you set earlier.</p>
 <p><img alt="Keycloak Login Form" src="../../../../images/keycloak-login-form.png" /></p>
 <blockquote>
@@ -3607,55 +3652,56 @@ kubectl bind login http://kube-bind.local:8080</code></p>
 <p>Once you submit your information, you'll see the classic <code>kube-bind</code> success page:</p>
 <p><img alt="Authentication Successful" src="../../../../images/kube-bind-auth-success.png" /></p>
 </blockquote>
-<p><code>text
-Connecting to kube-bind server http://kube-bind.local:8080...
-Started local callback server at http://127.0.0.1:59371/callback
-Opening browser for authentication...
-🔑 Successfully authenticated to kube-bind.local:8080
-Configuration saved to: /Users/olalekanodukoya/.kube-bind/config</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>Connecting to kube-bind server http://kube-bind.local:8080...
+</span><span id="True-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>Started local callback server at http://127.0.0.1:59371/callback
+</span><span id="True-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>Opening browser for authentication...
+</span><span id="True-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>🔑 Successfully authenticated to kube-bind.local:8080
+</span><span id="True-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>Configuration saved to: /Users/olalekanodukoya/.kube-bind/config
+</span></code></pre></div>
 <p>Now bind the API:</p>
-<p><code>bash
-kubectl bind http://kube-bind.local:8080</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>kubectl<span class="w"> </span><span class="nb">bind</span><span class="w"> </span>http://kube-bind.local:8080
+</span></code></pre></div>
 <p>The CLI will once again open your browser to confirm the binding. Since you just logged in, Keycloak's SSO will likely skip the username/password prompt and take you straight to the resource selection screen.</p>
 <p>Select <strong>Cowboys</strong> in the browser UI and click <strong>Bind for CLI</strong>.</p>
 <p><img alt="Available Resources" src="../../../../images/kube-bind-available-resources.png" /></p>
-<p>```text
-🌐 Opening kube-bind UI in your browser...
-    http://kube-bind.local:8080?consumer_id=ef0dc4ce-c867-48eb-ba6d-94178eefeca5&amp;redirect_url=http%3A%2F%2F127.0.0.1%3A53613%2Fcallback&amp;session_id=OV4RLFOX2V7HXSTY5FFJFGF4BX</p>
-<p>Browser opened successfully
-Waiting for binding completion from UI...
-   (Press Ctrl+C to cancel)</p>
-<p>Binding completed successfully!
-Created kube-bind namespace.
-🔒 Created secret kube-bind/kubeconfig-2gf2s for host https://provider-control-plane:6443, namespace kube-bind-4fx0okhmvche
-🚀 Deploying konnector v0.7.1 to namespace kube-bind.
-   Waiting for the konnector to be ready.............
-✅ Created APIServiceBinding cowboys for 1 resources
-Created 1 APIServiceBinding(s):
-  - cowboys
-Resources bound successfully!</p>
-<p>```</p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>🌐 Opening kube-bind UI in your browser...
+</span><span id="True-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    http://kube-bind.local:8080?consumer_id=ef0dc4ce-c867-48eb-ba6d-94178eefeca5&amp;redirect_url=http%3A%2F%2F127.0.0.1%3A53613%2Fcallback&amp;session_id=OV4RLFOX2V7HXSTY5FFJFGF4BX
+</span><span id="True-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>
+</span><span id="True-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>Browser opened successfully
+</span><span id="True-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>Waiting for binding completion from UI...
+</span><span id="True-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>   (Press Ctrl+C to cancel)
+</span><span id="True-20-7"><a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>
+</span><span id="True-20-8"><a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>Binding completed successfully!
+</span><span id="True-20-9"><a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>Created kube-bind namespace.
+</span><span id="True-20-10"><a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>🔒 Created secret kube-bind/kubeconfig-2gf2s for host https://provider-control-plane:6443, namespace kube-bind-4fx0okhmvche
+</span><span id="True-20-11"><a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>🚀 Deploying konnector v0.7.1 to namespace kube-bind.
+</span><span id="True-20-12"><a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>   Waiting for the konnector to be ready.............
+</span><span id="True-20-13"><a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>✅ Created APIServiceBinding cowboys for 1 resources
+</span><span id="True-20-14"><a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>Created 1 APIServiceBinding(s):
+</span><span id="True-20-15"><a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>  - cowboys
+</span><span id="True-20-16"><a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>Resources bound successfully!
+</span></code></pre></div>
 <hr />
 <h2 id="step-7-verify-it-works">Step 7: Verify It Works</h2>
 <p>Check that the CRD is now available in the consumer:</p>
-<p><code>bash
-kubectl get crd cowboys.wildwest.dev</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>crd<span class="w"> </span>cowboys.wildwest.dev
+</span></code></pre></div>
 <p>Create a resource:</p>
-<p>```bash
-kubectl apply -f - &lt;&lt;EOF
-apiVersion: wildwest.dev/v1alpha1
-kind: Cowboy
-metadata:
-  name: wyatt-earp
-  namespace: default
-spec:
-  intent: "Keep the peace"
-EOF</p>
-<p>kubectl get cowboys
-```</p>
-<p><code>text
-NAME         AGE
-wyatt-earp   4s</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
+</span><span id="True-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="s">apiVersion: wildwest.dev/v1alpha1</span>
+</span><span id="True-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="s">kind: Cowboy</span>
+</span><span id="True-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="s">metadata:</span>
+</span><span id="True-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="s">  name: wyatt-earp</span>
+</span><span id="True-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="s">  namespace: default</span>
+</span><span id="True-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="s">spec:</span>
+</span><span id="True-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="s">  intent: &quot;Keep the peace&quot;</span>
+</span><span id="True-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="s">EOF</span>
+</span><span id="True-22-10"><a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>
+</span><span id="True-22-11"><a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>kubectl<span class="w"> </span>get<span class="w"> </span>cowboys
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="True-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>NAME         AGE
+</span><span id="True-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>wyatt-earp   4s
+</span></code></pre></div>
 <p>The resource is created in the consumer cluster and synced to the provider — all authenticated through Keycloak.</p>
 <hr />
 <h2 id="conclusion">Conclusion</h2>

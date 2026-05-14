@@ -3061,57 +3061,54 @@ kcp allows you to simulate multiple clusters using logical clusters.</p>
 To test changes related to TLS or OIDC, you need to enable them explicitly by setting the appropriate Helm values.</p>
 <p>To test basic Helm-install flow you will need GatewayAPI enabled kubernetes cluster with cert-manager installed.
 By default it will use TLS termination at the Gateway level.</p>
-<p>```bash</p>
-<h1 id="use-a-specific-development-version">Use a specific development version:</h1>
-<h1 id="version000-9fd9281e661c0d9a426a941111d3d8b08019ebc1">VERSION=0.0.0-9fd9281e661c0d9a426a941111d3d8b08019ebc1</h1>
-<p>```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Use a specific development version:</span>
+</span><span id="True-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="c1"># VERSION=0.0.0-9fd9281e661c0d9a426a941111d3d8b08019ebc1</span>
+</span></code></pre></div>
 <p>And run full helm install command with additional parameters:
-<code>bash
-helm upgrade \
-      --install \
-      --namespace kube-bind \
-      --create-namespace \
-      --set certManager.enabled=true \
-      --set certManager.clusterIssuer=letsencrypt-prod \
-      --set backend.oidc.issuerUrl=https://auth.genericcontrolplane.io \
-      --set backend.oidc.clientId=platform-mesh \
-      --set backend.oidc.clientSecret=Z2Fyc2lha2FsYmlzdmFuZGVuekWplCg== \
-      --set backend.oidc.callbackUrl=https://kube-bind.genericcontrolplane.io/api/callback \
-      --set gatewayApi.enabled=true \
-      --set gatewayApi.gateway.className=nginx \
-      --set gatewayApi.gateway.httpPort=80 \
-      --set gatewayApi.gateway.httpsPort=443 \
-      --set 'gatewayApi.gateway.tls.certificateRefs[0].name=backend-tls-cert' \
-      --set 'gatewayApi.route.hostnames[0]=kube-bind.genericcontrolplane.io' \
-      --set gatewayApi.route.path=/ \
-      --set gatewayApi.route.pathType=PathPrefix \
-      --set image.tag=${VERSION} \
-      kube-bind \
-      ./deploy/charts/backend</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>helm<span class="w"> </span>upgrade<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">      </span>--install<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">      </span>--namespace<span class="w"> </span>kube-bind<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span>--create-namespace<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span>--set<span class="w"> </span>certManager.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span>--set<span class="w"> </span>certManager.clusterIssuer<span class="o">=</span>letsencrypt-prod<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span>--set<span class="w"> </span>backend.oidc.issuerUrl<span class="o">=</span>https://auth.genericcontrolplane.io<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">      </span>--set<span class="w"> </span>backend.oidc.clientId<span class="o">=</span>platform-mesh<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">      </span>--set<span class="w"> </span>backend.oidc.clientSecret<span class="o">=</span><span class="nv">Z2Fyc2lha2FsYmlzdmFuZGVuekWplCg</span><span class="o">==</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">      </span>--set<span class="w"> </span>backend.oidc.callbackUrl<span class="o">=</span>https://kube-bind.genericcontrolplane.io/api/callback<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.enabled<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.gateway.className<span class="o">=</span>nginx<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.gateway.httpPort<span class="o">=</span><span class="m">80</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.gateway.httpsPort<span class="o">=</span><span class="m">443</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">      </span>--set<span class="w"> </span><span class="s1">&#39;gatewayApi.gateway.tls.certificateRefs[0].name=backend-tls-cert&#39;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">      </span>--set<span class="w"> </span><span class="s1">&#39;gatewayApi.route.hostnames[0]=kube-bind.genericcontrolplane.io&#39;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.route.path<span class="o">=</span>/<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">      </span>--set<span class="w"> </span>gatewayApi.route.pathType<span class="o">=</span>PathPrefix<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">      </span>--set<span class="w"> </span>image.tag<span class="o">=</span><span class="si">${</span><span class="nv">VERSION</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">      </span>kube-bind<span class="w"> </span><span class="se">\</span>
+</span><span id="True-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">      </span>./deploy/charts/backend
+</span></code></pre></div></p>
 <p>After the deployment at minimum url should be accessible:</p>
-<p>```bash
- curl https://kube-bind.genericcontrolplane.io</p>
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kube Bind</title>
-    <script type="module" crossorigin src="./assets/index.41dda553.js"></script>
-    <link rel="stylesheet" href="./assets/index.952308d6.css">
-  </head>
-  <body>
-    <div id="app"></div>
-
-  </body>
-</html>
-<p>%                                                         <br />
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="w"> </span>curl<span class="w"> </span>https://kube-bind.genericcontrolplane.io
+</span><span id="True-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>&lt;!DOCTYPE<span class="w"> </span>html&gt;
+</span><span id="True-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>&lt;html<span class="w"> </span><span class="nv">lang</span><span class="o">=</span><span class="s2">&quot;en&quot;</span>&gt;
+</span><span id="True-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>&lt;head&gt;
+</span><span id="True-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">    </span>&lt;meta<span class="w"> </span><span class="nv">charset</span><span class="o">=</span><span class="s2">&quot;UTF-8&quot;</span><span class="w"> </span>/&gt;
+</span><span id="True-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span>&lt;link<span class="w"> </span><span class="nv">rel</span><span class="o">=</span><span class="s2">&quot;icon&quot;</span><span class="w"> </span><span class="nv">type</span><span class="o">=</span><span class="s2">&quot;image/svg+xml&quot;</span><span class="w"> </span><span class="nv">href</span><span class="o">=</span><span class="s2">&quot;/vite.svg&quot;</span><span class="w"> </span>/&gt;
+</span><span id="True-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span>&lt;meta<span class="w"> </span><span class="nv">name</span><span class="o">=</span><span class="s2">&quot;viewport&quot;</span><span class="w"> </span><span class="nv">content</span><span class="o">=</span><span class="s2">&quot;width=device-width, initial-scale=1.0&quot;</span><span class="w"> </span>/&gt;
+</span><span id="True-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">    </span>&lt;title&gt;Kube<span class="w"> </span>Bind&lt;/title&gt;
+</span><span id="True-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span>&lt;script<span class="w"> </span><span class="nv">type</span><span class="o">=</span><span class="s2">&quot;module&quot;</span><span class="w"> </span>crossorigin<span class="w"> </span><span class="nv">src</span><span class="o">=</span><span class="s2">&quot;./assets/index.41dda553.js&quot;</span>&gt;&lt;/script&gt;
+</span><span id="True-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span>&lt;link<span class="w"> </span><span class="nv">rel</span><span class="o">=</span><span class="s2">&quot;stylesheet&quot;</span><span class="w"> </span><span class="nv">href</span><span class="o">=</span><span class="s2">&quot;./assets/index.952308d6.css&quot;</span>&gt;
+</span><span id="True-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">  </span>&lt;/head&gt;
+</span><span id="True-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="w">  </span>&lt;body&gt;
+</span><span id="True-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="w">    </span>&lt;div<span class="w"> </span><span class="nv">id</span><span class="o">=</span><span class="s2">&quot;app&quot;</span>&gt;&lt;/div&gt;
+</span><span id="True-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>
+</span><span id="True-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="w">  </span>&lt;/body&gt;
+</span><span id="True-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>&lt;/html&gt;%<span class="w">                                                           </span>
+</span></code></pre></div>
 <h1 id="local-dev-environment-testing">Local dev environment testing</h1>
 <p>If you changed helm charts and neet to test them in local development environment you can do the following:</p>
-<p><code>bash
- ./bin/kubectl-bind dev create --chart-path ./deploy/charts/backend</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="w"> </span>./bin/kubectl-bind<span class="w"> </span>dev<span class="w"> </span>create<span class="w"> </span>--chart-path<span class="w"> </span>./deploy/charts/backend<span class="w">       </span>
+</span></code></pre></div>
 
 
 

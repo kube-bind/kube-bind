@@ -3051,16 +3051,16 @@
 - Any OIDC-compliant provider</p>
 <h3 id="configuration">Configuration</h3>
 <p>Configure the backend to use an external OIDC provider with these flags:</p>
-<p><code>bash
---oidc-type=external
---oidc-issuer-url=https://your-oidc-provider.com
---oidc-issuer-client-id=your-client-id
---oidc-issuer-client-secret=your-client-secret
---oidc-callback-url=https://your-backend.com/callback
---oidc-authorize-url=https://your-oidc-provider.com/auth
---oidc-ca-file=/path/to/ca-bundle.pem  # Optional: for custom CA certificates
---oidc-allowed-groups=group1,group2,group3  # Optional: restrict access to specific groups
---oidc-allowed-users=user1,user2,user3      # Optional: restrict access to specific users</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>--oidc-type<span class="o">=</span>external
+</span><span id="True-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>--oidc-issuer-url<span class="o">=</span>https://your-oidc-provider.com
+</span><span id="True-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>--oidc-issuer-client-id<span class="o">=</span>your-client-id
+</span><span id="True-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>--oidc-issuer-client-secret<span class="o">=</span>your-client-secret
+</span><span id="True-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>--oidc-callback-url<span class="o">=</span>https://your-backend.com/callback
+</span><span id="True-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>--oidc-authorize-url<span class="o">=</span>https://your-oidc-provider.com/auth
+</span><span id="True-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>--oidc-ca-file<span class="o">=</span>/path/to/ca-bundle.pem<span class="w">  </span><span class="c1"># Optional: for custom CA certificates</span>
+</span><span id="True-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>--oidc-allowed-groups<span class="o">=</span>group1,group2,group3<span class="w">  </span><span class="c1"># Optional: restrict access to specific groups</span>
+</span><span id="True-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>--oidc-allowed-users<span class="o">=</span>user1,user2,user3<span class="w">      </span><span class="c1"># Optional: restrict access to specific users</span>
+</span></code></pre></div>
 <p><strong>Note</strong>: When using external OIDC providers, at least one of <code>--oidc-allowed-groups</code> or <code>--oidc-allowed-users</code> must be specified for security reasons.</p>
 <h3 id="external-oidc-flow">External OIDC Flow</h3>
 <ol>
@@ -3076,12 +3076,12 @@
 <p>For development and testing purposes, kube-bind includes an embedded OIDC provider that eliminates the need to set up an external authentication service.</p>
 <h3 id="configuration_1">Configuration</h3>
 <p>Configure the backend to use the embedded OIDC provider:</p>
-<p><code>bash
---oidc-type=embedded
---oidc-callback-url=https://your-backend.com/callback
---oidc-issuer-url=https://your-backend.com  # The backend serves as the OIDC provider
---oidc-allowed-groups=group1,group2,group3  # Optional: restrict access to specific groups
---oidc-allowed-users=user1,user2,user3      # Optional: restrict access to specific users</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>--oidc-type<span class="o">=</span>embedded
+</span><span id="True-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>--oidc-callback-url<span class="o">=</span>https://your-backend.com/callback
+</span><span id="True-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>--oidc-issuer-url<span class="o">=</span>https://your-backend.com<span class="w">  </span><span class="c1"># The backend serves as the OIDC provider</span>
+</span><span id="True-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>--oidc-allowed-groups<span class="o">=</span>group1,group2,group3<span class="w">  </span><span class="c1"># Optional: restrict access to specific groups</span>
+</span><span id="True-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>--oidc-allowed-users<span class="o">=</span>user1,user2,user3<span class="w">      </span><span class="c1"># Optional: restrict access to specific users</span>
+</span></code></pre></div>
 <h3 id="embedded-oidc-flow">Embedded OIDC Flow</h3>
 <ol>
 <li>Backend starts up and initializes the embedded OIDC server using mockoidc</li>
@@ -3140,11 +3140,10 @@
 </li>
 </ol>
 <h3 id="example-configuration">Example Configuration</h3>
-<p>```bash</p>
-<h1 id="restrict-access-to-specific-groups-and-users">Restrict access to specific groups and users</h1>
-<p>--oidc-allowed-groups=kube-bind-admins,platform-team
---oidc-allowed-users=admin@example.com,operator@example.com
-```</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Restrict access to specific groups and users</span>
+</span><span id="True-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>--oidc-allowed-groups<span class="o">=</span>kube-bind-admins,platform-team
+</span><span id="True-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>--oidc-allowed-users<span class="o">=</span>admin@example.com,operator@example.com
+</span></code></pre></div>
 <p>This configuration would create RBAC bindings allowing:
 - All members of the <code>kube-bind-admins</code> group
 - All members of the <code>platform-team</code> group<br />
@@ -3160,8 +3159,8 @@
 </ol>
 <h3 id="debug-logging">Debug Logging</h3>
 <p>Enable debug logging to troubleshoot OIDC issues:</p>
-<p><code>bash
---v=2  # Increase verbosity for more detailed logs</code></p>
+<div class="language-bash highlight"><pre><span></span><code><span id="True-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>--v<span class="o">=</span><span class="m">2</span><span class="w">  </span><span class="c1"># Increase verbosity for more detailed logs</span>
+</span></code></pre></div>
 
 
 

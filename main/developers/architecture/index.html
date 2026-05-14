@@ -3410,37 +3410,38 @@ If you are looking for user-focused documentation, please refer to the <a href="
 <h2 id="cluster-scoped-resources">Cluster-Scoped Resources</h2>
 <p>Cluster-scoped resources (like Sheriffs in our examples) can use different isolation strategies to control how they are placed on the provider cluster and how their associated secrets are isolated.</p>
 <h3 id="architecture-flow">Architecture Flow</h3>
-<p>```
-CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
-================                            ==========================</p>
-<p>┌─────────────────────────────┐           ┌────────────────────────────────────────────┐
-│ Namespace: wild-west        │           │ Contract Namespace (per consumer):         │
-│  - Secret: sheriff-badge-   │──────────▶│   kube-bind-<consumer-id-hash>             │
-│    credentials (ref)        │   Sync    │                                            │
-│  - Secret: sheriff-juris-   │           │   APIServiceNamespace CR:                  │
-│    diction-config (label)   │           │     metadata.name: wild-west               │
-└─────────────────────────────┘           │     status.namespace: (varies by isolation)│
-                                          └────────────────────────────────────────────┘
-┌─────────────────────────────┐
-│ Sheriff: wyatt-earp         │──────────▶ PROVIDER CLUSTER (varies by isolation)
-│  (cluster-scoped)           │   Sync    See isolation strategies below ↓
-│  spec.intent                │
-│  spec.secretRefs: [...]     │
-└─────────────────────────────┘
-         ▲
-         │ Status updates
-         └────────────────────────────────
-```</p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
+</span><span id="True-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>================                            ==========================
+</span><span id="True-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="True-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>┌─────────────────────────────┐           ┌────────────────────────────────────────────┐
+</span><span id="True-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ Namespace: wild-west        │           │ Contract Namespace (per consumer):         │
+</span><span id="True-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│  - Secret: sheriff-badge-   │──────────▶│   kube-bind-&lt;consumer-id-hash&gt;             │
+</span><span id="True-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│    credentials (ref)        │   Sync    │                                            │
+</span><span id="True-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│  - Secret: sheriff-juris-   │           │   APIServiceNamespace CR:                  │
+</span><span id="True-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│    diction-config (label)   │           │     metadata.name: wild-west               │
+</span><span id="True-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>└─────────────────────────────┘           │     status.namespace: (varies by isolation)│
+</span><span id="True-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                                          └────────────────────────────────────────────┘
+</span><span id="True-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>┌─────────────────────────────┐
+</span><span id="True-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│ Sheriff: wyatt-earp         │──────────▶ PROVIDER CLUSTER (varies by isolation)
+</span><span id="True-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│  (cluster-scoped)           │   Sync    See isolation strategies below ↓
+</span><span id="True-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│  spec.intent                │
+</span><span id="True-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│  spec.secretRefs: [...]     │
+</span><span id="True-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>└─────────────────────────────┘
+</span><span id="True-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>         ▲
+</span><span id="True-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>         │ Status updates
+</span><span id="True-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>         └────────────────────────────────
+</span></code></pre></div>
 <h3 id="isolation-strategies-for-cluster-scoped-resources">Isolation Strategies for Cluster-Scoped Resources</h3>
 <h4 id="1-isolationprefixed">1. IsolationPrefixed</h4>
-<p><code>┌────────────────────────────────────────────┐
-│ [cc-prefixed] IsolationPrefixed:           │
-│   Sheriff: &lt;consumer-id&gt;-wyatt-earp        │
-│   (cluster-scoped, prefixed name)          │
-│   Secrets in namespace:                    │
-│     kube-bind-&lt;consumer-id&gt;-wild-west      │
-│   (APIServiceNamespace mapping)            │
-└────────────────────────────────────────────┘</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>┌────────────────────────────────────────────┐
+</span><span id="True-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>│ [cc-prefixed] IsolationPrefixed:           │
+</span><span id="True-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│   Sheriff: &lt;consumer-id&gt;-wyatt-earp        │
+</span><span id="True-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│   (cluster-scoped, prefixed name)          │
+</span><span id="True-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│   Secrets in namespace:                    │
+</span><span id="True-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│     kube-bind-&lt;consumer-id&gt;-wild-west      │
+</span><span id="True-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│   (APIServiceNamespace mapping)            │
+</span><span id="True-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>└────────────────────────────────────────────┘
+</span></code></pre></div>
 <p><strong>How it works:</strong>
 - Sheriff resource name is prefixed with consumer ID: <code>&lt;consumer-id&gt;-wyatt-earp</code>
 - Sheriff remains cluster-scoped on provider
@@ -3448,14 +3449,15 @@ CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
 - Multiple consumers can safely coexist with different prefixed resources</p>
 <p><strong>Use case:</strong> When you want cluster-scoped resources on the provider but need to support multiple consumers safely.</p>
 <h4 id="2-isolationnone">2. IsolationNone</h4>
-<p><code>┌────────────────────────────────────────────┐
-│ [cc-none] IsolationNone:                   │
-│   Sheriff: wyatt-earp                      │
-│   (cluster-scoped, same name on both!)     │
-│   ⚠ Last write wins between consumers      │
-│   Secrets in namespace: wild-west          │
-│   (Same namespace name on both sides!)     │
-└────────────────────────────────────────────┘</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>┌────────────────────────────────────────────┐
+</span><span id="True-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>│ [cc-none] IsolationNone:                   │
+</span><span id="True-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│   Sheriff: wyatt-earp                      │
+</span><span id="True-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>│   (cluster-scoped, same name on both!)     │
+</span><span id="True-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>│   ⚠ Last write wins between consumers      │
+</span><span id="True-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>│   Secrets in namespace: wild-west          │
+</span><span id="True-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>│   (Same namespace name on both sides!)     │
+</span><span id="True-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>└────────────────────────────────────────────┘
+</span></code></pre></div>
 <p><strong>How it works:</strong>
 - Sheriff resource keeps the same name on both sides: <code>wyatt-earp</code>
 - Sheriff remains cluster-scoped on provider
@@ -3464,14 +3466,15 @@ CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
 - Last write wins if multiple consumers create the same resource</p>
 <p><strong>Use case:</strong> Single consumer scenarios or when you explicitly want shared resources. <strong>Not recommended for multi-consumer environments.</strong></p>
 <h4 id="3-isolationnamespaced">3. IsolationNamespaced</h4>
-<p><code>┌────────────────────────────────────────────┐
-│ [cc-namespaced] IsolationNamespaced:       │
-│   Sheriff: wyatt-earp                      │
-│   (CRD toggled to NamespaceScoped)         │
-│   in namespace:                            │
-│     kube-bind-&lt;consumer-id&gt;-wild-west      │
-│   Secrets in same namespace (isolated)     │
-└────────────────────────────────────────────┘</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>┌────────────────────────────────────────────┐
+</span><span id="True-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>│ [cc-namespaced] IsolationNamespaced:       │
+</span><span id="True-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>│   Sheriff: wyatt-earp                      │
+</span><span id="True-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>│   (CRD toggled to NamespaceScoped)         │
+</span><span id="True-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>│   in namespace:                            │
+</span><span id="True-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>│     kube-bind-&lt;consumer-id&gt;-wild-west      │
+</span><span id="True-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>│   Secrets in same namespace (isolated)     │
+</span><span id="True-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>└────────────────────────────────────────────┘
+</span></code></pre></div>
 <p><strong>How it works:</strong>
 - Sheriff CRD is toggled from ClusterScoped to NamespaceScoped on the provider
 - Sheriff is placed in consumer-specific namespace: <code>kube-bind-&lt;consumer-id&gt;-wild-west</code>
@@ -3499,44 +3502,45 @@ CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
 <h2 id="namespaced-resources">Namespaced Resources</h2>
 <p>Namespaced resources (like Cowboys in our examples) always use the ServiceNamespaced isolation strategy, regardless of the isolation parameter.</p>
 <h3 id="architecture-flow_1">Architecture Flow</h3>
-<p>```
-CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
-================                            ==========================</p>
-<p>┌─────────────────────────────┐           ┌────────────────────────────────────────────┐
-│ Namespace: wild-west        │           │ Contract Namespace (per consumer):         │
-│                             │──────────▶│   kube-bind-<consumer-id-hash>             │
-│  Cowboy: billy-the-kid      │   Sync    │                                            │
-│   (namespaced)              │           │   APIServiceNamespace CR:                  │
-│   spec.intent               │           │     metadata.name: wild-west               │
-│   spec.secretRefs: [...]    │           │     status.namespace: ─────────────────┐   │
-│                             │           │       kube-bind-<consumer-id>-wild-west│   │
-│  - Secret: colt-45-permit   │           └────────────────────────────────────────┼───┘
-│    (ref)                    │                                                    │
-│  - Secret: cowboy-gang-     │           ACTUAL PROVIDER NAMESPACE: ◀─────────────┘
-│    affiliation (label)      │           ┌────────────────────────────────────────────┐
-└─────────────────────────────┘           │ Namespace: kube-bind-<consumer-id>-wild-   │
-         ▲                                │            west                            │
-         │ Status updates                 │                                            │
-         └────────────────────────────────│  Cowboy: billy-the-kid (namespaced)        │
-                                          │  - Secret: colt-45-permit                  │
-                                          │  - Secret: cowboy-gang-affiliation         │
-                                          │                                            │
-                                          │ RBAC (for secret access):                  │
-                                          │  - Role: kube-binder-export-wild-west-     │
-                                          │    cowboys (in this namespace)             │
-                                          │  - RoleBinding: ... (in this namespace)    │
-                                          └────────────────────────────────────────────┘
-```</p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
+</span><span id="True-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>================                            ==========================
+</span><span id="True-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+</span><span id="True-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>┌─────────────────────────────┐           ┌────────────────────────────────────────────┐
+</span><span id="True-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>│ Namespace: wild-west        │           │ Contract Namespace (per consumer):         │
+</span><span id="True-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>│                             │──────────▶│   kube-bind-&lt;consumer-id-hash&gt;             │
+</span><span id="True-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>│  Cowboy: billy-the-kid      │   Sync    │                                            │
+</span><span id="True-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>│   (namespaced)              │           │   APIServiceNamespace CR:                  │
+</span><span id="True-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>│   spec.intent               │           │     metadata.name: wild-west               │
+</span><span id="True-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>│   spec.secretRefs: [...]    │           │     status.namespace: ─────────────────┐   │
+</span><span id="True-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>│                             │           │       kube-bind-&lt;consumer-id&gt;-wild-west│   │
+</span><span id="True-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>│  - Secret: colt-45-permit   │           └────────────────────────────────────────┼───┘
+</span><span id="True-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>│    (ref)                    │                                                    │
+</span><span id="True-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>│  - Secret: cowboy-gang-     │           ACTUAL PROVIDER NAMESPACE: ◀─────────────┘
+</span><span id="True-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>│    affiliation (label)      │           ┌────────────────────────────────────────────┐
+</span><span id="True-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>└─────────────────────────────┘           │ Namespace: kube-bind-&lt;consumer-id&gt;-wild-   │
+</span><span id="True-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>         ▲                                │            west                            │
+</span><span id="True-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>         │ Status updates                 │                                            │
+</span><span id="True-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>         └────────────────────────────────│  Cowboy: billy-the-kid (namespaced)        │
+</span><span id="True-4-20"><a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>                                          │  - Secret: colt-45-permit                  │
+</span><span id="True-4-21"><a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>                                          │  - Secret: cowboy-gang-affiliation         │
+</span><span id="True-4-22"><a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>                                          │                                            │
+</span><span id="True-4-23"><a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>                                          │ RBAC (for secret access):                  │
+</span><span id="True-4-24"><a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>                                          │  - Role: kube-binder-export-wild-west-     │
+</span><span id="True-4-25"><a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a>                                          │    cowboys (in this namespace)             │
+</span><span id="True-4-26"><a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a>                                          │  - RoleBinding: ... (in this namespace)    │
+</span><span id="True-4-27"><a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>                                          └────────────────────────────────────────────┘
+</span></code></pre></div>
 <h3 id="informerscope-variations">InformerScope Variations</h3>
 <p>Namespaced resources support two informer scope configurations:</p>
 <h4 id="1-namespacedscope-nn">1. NamespacedScope (nn)</h4>
-<p><code>┌────────────────────────────────────────────────────────────────────┐
-│ [nn] Namespaced → Namespaced (informerScope=NamespacedScope):     │
-│   - Consumer: Cowboy in namespace wild-west                       │
-│   - Provider: Cowboy in namespace kube-bind-&lt;id&gt;-wild-west        │
-│   - Konnector watches only its own namespace on provider side     │
-│   - Natural isolation via namespaces                              │
-└────────────────────────────────────────────────────────────────────┘</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>┌────────────────────────────────────────────────────────────────────┐
+</span><span id="True-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>│ [nn] Namespaced → Namespaced (informerScope=NamespacedScope):     │
+</span><span id="True-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>│   - Consumer: Cowboy in namespace wild-west                       │
+</span><span id="True-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>│   - Provider: Cowboy in namespace kube-bind-&lt;id&gt;-wild-west        │
+</span><span id="True-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>│   - Konnector watches only its own namespace on provider side     │
+</span><span id="True-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>│   - Natural isolation via namespaces                              │
+</span><span id="True-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>└────────────────────────────────────────────────────────────────────┘
+</span></code></pre></div>
 <p><strong>How it works:</strong>
 - Consumer resource is namespaced: <code>wild-west/billy-the-kid</code>
 - Provider resource is namespaced: <code>kube-bind-&lt;consumer-id&gt;-wild-west/billy-the-kid</code>
@@ -3544,13 +3548,14 @@ CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
 - RBAC uses namespace-scoped Roles and RoleBindings</p>
 <p><strong>Use case:</strong> Most efficient for namespaced resources, minimizes RBAC and watch scope.</p>
 <h4 id="2-clusterscope-nc">2. ClusterScope (nc)</h4>
-<p><code>┌────────────────────────────────────────────────────────────────────┐
-│ [nc] Namespaced → Cluster (informerScope=ClusterScope):           │
-│   - Consumer: Cowboy in namespace wild-west                       │
-│   - Provider: Cowboy in namespace kube-bind-&lt;id&gt;-wild-west        │
-│   - Konnector watches cluster-wide on provider side               │
-│   - Still isolated via namespaces, but different RBAC model       │
-└────────────────────────────────────────────────────────────────────┘</code></p>
+<div class="language-text highlight"><pre><span></span><code><span id="True-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>┌────────────────────────────────────────────────────────────────────┐
+</span><span id="True-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>│ [nc] Namespaced → Cluster (informerScope=ClusterScope):           │
+</span><span id="True-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>│   - Consumer: Cowboy in namespace wild-west                       │
+</span><span id="True-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>│   - Provider: Cowboy in namespace kube-bind-&lt;id&gt;-wild-west        │
+</span><span id="True-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>│   - Konnector watches cluster-wide on provider side               │
+</span><span id="True-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>│   - Still isolated via namespaces, but different RBAC model       │
+</span><span id="True-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>└────────────────────────────────────────────────────────────────────┘
+</span></code></pre></div>
 <p><strong>How it works:</strong>
 - Consumer resource is namespaced: <code>wild-west/billy-the-kid</code>
 - Provider resource is namespaced: <code>kube-bind-&lt;consumer-id&gt;-wild-west/billy-the-kid</code>
@@ -3745,19 +3750,21 @@ CONSUMER CLUSTER                            PROVIDER CLUSTER (Backend)
 <li>Lines 247-284: Strategy selection logic</li>
 </ul>
 <h3 id="strategy-selection-logic">Strategy Selection Logic</h3>
-<p>```go
-switch {
-case schema.Spec.Scope == apiextensionsv1.NamespaceScoped:
-    // ALWAYS use ServiceNamespaced for namespaced resources
-    isolationStrategy = isolation.NewServiceNamespaced(...)</p>
-<p>case export.Spec.Isolation == kubebindv1alpha2.IsolationNone:
-    isolationStrategy = isolation.NewNone(...)</p>
-<p>case export.Spec.Isolation == kubebindv1alpha2.IsolationPrefixed:
-    isolationStrategy = isolation.NewPrefixed(...)</p>
-<p>case export.Spec.Isolation == kubebindv1alpha2.IsolationNamespaced:
-    isolationStrategy = isolation.NewNamespaced(...)
-}
-```</p>
+<div class="language-go highlight"><pre><span></span><code><span id="True-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">switch</span><span class="w"> </span><span class="p">{</span>
+</span><span id="True-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">case</span><span class="w"> </span><span class="nx">schema</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Scope</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">apiextensionsv1</span><span class="p">.</span><span class="nx">NamespaceScoped</span><span class="p">:</span>
+</span><span id="True-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="c1">// ALWAYS use ServiceNamespaced for namespaced resources</span>
+</span><span id="True-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">    </span><span class="nx">isolationStrategy</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">isolation</span><span class="p">.</span><span class="nx">NewServiceNamespaced</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="True-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+</span><span id="True-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="k">case</span><span class="w"> </span><span class="nx">export</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Isolation</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">kubebindv1alpha2</span><span class="p">.</span><span class="nx">IsolationNone</span><span class="p">:</span>
+</span><span id="True-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="nx">isolationStrategy</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">isolation</span><span class="p">.</span><span class="nx">NewNone</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="True-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
+</span><span id="True-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="k">case</span><span class="w"> </span><span class="nx">export</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Isolation</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">kubebindv1alpha2</span><span class="p">.</span><span class="nx">IsolationPrefixed</span><span class="p">:</span>
+</span><span id="True-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="nx">isolationStrategy</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">isolation</span><span class="p">.</span><span class="nx">NewPrefixed</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="True-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
+</span><span id="True-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="k">case</span><span class="w"> </span><span class="nx">export</span><span class="p">.</span><span class="nx">Spec</span><span class="p">.</span><span class="nx">Isolation</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nx">kubebindv1alpha2</span><span class="p">.</span><span class="nx">IsolationNamespaced</span><span class="p">:</span>
+</span><span id="True-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span><span class="nx">isolationStrategy</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">isolation</span><span class="p">.</span><span class="nx">NewNamespaced</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="True-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="p">}</span>
+</span></code></pre></div>
 <h2 id="references">References</h2>
 <ul>
 <li>Test implementation: <code>test/e2e/bind/happy-case_test.go</code></li>

@@ -203,13 +203,15 @@ func (options *Options) AddFlags(fs *pflag.FlagSet) {
 }
 
 func (options *Options) Complete() (*CompletedOptions, error) {
-	if !options.FrontendDisabled {
-		// Serve must complete first as OIDC may depend on it
-		// to reuse the listener.
-		if err := options.Serve.Complete(); err != nil {
-			return nil, err
-		}
+	// Serve must complete first as OIDC may depend on it
+	// to reuse the listener. The web server is always started
+	// (at minimum for the healthz endpoint), so the listener
+	// is required even when the frontend is disabled.
+	if err := options.Serve.Complete(); err != nil {
+		return nil, err
+	}
 
+	if !options.FrontendDisabled {
 		if err := options.OIDC.Complete(options.Serve.Listener); err != nil {
 			return nil, err
 		}

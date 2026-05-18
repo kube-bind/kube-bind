@@ -33,6 +33,7 @@ import (
 const (
 	IdentityAnnotationKey       = "backend.kube-bind.io/identity"
 	AuthorAnnotationKey         = "backend.kube-bind.io/author"
+	PrettyNameAnnotationKey     = "backend.kube-bind.io/cluster-pretty-name"
 	legacyIdentityAnnotationKey = "example-backend.kube-bind.io/identity"
 )
 

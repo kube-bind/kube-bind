@@ -78,6 +78,11 @@ type ClusterStatus struct {
 type ClusterIdentity struct {
 	// Identity is the unique identifier of the cluster.
 	Identity string `json:"identity,omitempty"`
+
+	// PrettyName is a human-readable name for the cluster, used for display
+	// purposes. If not provided, the controller defaults it to the request name.
+	// +optional
+	PrettyName string `json:"prettyName,omitempty"`
 }
 
 // ClusterList is the objects list that represents the Cluster.

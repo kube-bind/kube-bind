@@ -63,7 +63,7 @@ func New(
 		manager: mgr,
 		opts:    opts,
 		scheme:  scheme,
-		vwCache: shared.NewVWClientCache(baseConfig, scheme),
+		vwCache: shared.NewVWClientCache(baseConfig),
 	}, nil
 }
 

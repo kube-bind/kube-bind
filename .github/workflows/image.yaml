@@ -83,7 +83,21 @@ jobs:
 
     - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
       with:
-        package-name: '${{ github.event.repository.name }}'
+        package-name: 'konnector'
+        package-type: 'container'
+        min-versions-to-keep: 10
+        delete-only-pre-release-versions: "true"
+
+    - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
+      with:
+        package-name: 'backend'
+        package-type: 'container'
+        min-versions-to-keep: 10
+        delete-only-pre-release-versions: "true"
+
+    - uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
+      with:
+        package-name: 'charts/backend'
         package-type: 'container'
         min-versions-to-keep: 10
         delete-only-pre-release-versions: "true"

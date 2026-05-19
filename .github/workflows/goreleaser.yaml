@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
-    - uses: actions/setup-go@v5
+    - uses: actions/setup-go@v6
       with:
         go-version: v1.26.2
     - name: Delete non-semver tags
@@ -29,7 +29,7 @@ jobs:
       run: echo LDFLAGS="$(make ldflags)" >> $GITHUB_ENV
     - name: Run GoReleaser on tag
       if: github.event_name != 'pull_request'
-      uses: goreleaser/goreleaser-action@v3
+      uses: goreleaser/goreleaser-action@v7
       with:
         distribution: goreleaser
         version: latest
@@ -39,7 +39,7 @@ jobs:
         KREW_GITHUB_TOKEN: ${{ secrets.KREW_GITHUB_TOKEN }}
     - name: Run GoReleaser on pull request
       if: github.event_name == 'pull_request'
-      uses: goreleaser/goreleaser-action@v3
+      uses: goreleaser/goreleaser-action@v7
       with:
         distribution: goreleaser
         version: latest
@@ -47,7 +47,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         KREW_GITHUB_TOKEN: ${{ secrets.KREW_GITHUB_TOKEN }}
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       if: ${{ always() }}
       with:
         name: binaries

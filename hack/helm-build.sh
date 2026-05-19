@@ -33,7 +33,7 @@ for chart_dir in deploy/charts/*/; do
 
       cp "${chart_dir}Chart.yaml" "${chart_dir}Chart.yaml.bak"
       sed -i.tmp "s/^version:.*/version: $CHART_VERSION/" "${chart_dir}Chart.yaml"
-      sed -i.tmp "s/^appVersion:.*/appVersion: $CHART_VERSION/" "${chart_dir}Chart.yaml"
+      sed -i.tmp "s/^appVersion:.*/appVersion: v$CHART_VERSION/" "${chart_dir}Chart.yaml"
       rm -f "${chart_dir}Chart.yaml.tmp"
 
       "$HELM" package "$chart_dir" --version "$CHART_VERSION" --destination ./bin/

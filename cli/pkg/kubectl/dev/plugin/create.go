@@ -31,8 +31,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	"github.com/spf13/cobra"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
@@ -334,7 +333,7 @@ func (o *DevOptions) createCluster(ctx context.Context, clusterName, clusterConf
 }
 
 func (o *DevOptions) getClusterIPAddress(ctx context.Context, clusterName, networkName string) (string, error) {
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	dockerClient, err := client.New(client.FromEnv)
 	if err != nil {
 		return "", fmt.Errorf("failed to create docker client: %w", err)
 	}
@@ -343,23 +342,23 @@ func (o *DevOptions) getClusterIPAddress(ctx context.Context, clusterName, netwo
 	// Get the container name for the kind cluster control plane
 	containerName := fmt.Sprintf("%s-control-plane", clusterName)
 
-	containers, err := dockerClient.ContainerList(ctx, container.ListOptions{})
+	containers, err := dockerClient.ContainerList(ctx, client.ContainerListOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to list containers: %w", err)
 	}
 
-	for _, c := range containers {
+	for _, c := range containers.Items {
 		for _, name := range c.Names {
 			if strings.Contains(name, containerName) {
-				containerDetails, err := dockerClient.ContainerInspect(ctx, c.ID)
+				containerDetails, err := dockerClient.ContainerInspect(ctx, c.ID, client.ContainerInspectOptions{})
 				if err != nil {
 					return "", fmt.Errorf("failed to inspect container %s: %w", c.ID, err)
 				}
 
-				if networks := containerDetails.NetworkSettings.Networks; networks != nil {
+				if networks := containerDetails.Container.NetworkSettings.Networks; networks != nil {
 					if network, exists := networks[networkName]; exists {
-						if network.IPAddress != "" {
-							return network.IPAddress, nil
+						if network.IPAddress.IsValid() {
+							return network.IPAddress.String(), nil
 						}
 					}
 				}

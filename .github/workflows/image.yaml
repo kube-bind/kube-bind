@@ -55,12 +55,11 @@ jobs:
           echo "org.opencontainers.image.version=${{ github.ref_name }}"
           echo 'EOF'
         } >> "$GITHUB_ENV"
-        # Helm chart version: semver from tag, otherwise 0.0.0-<sha>
+        # App version: full tag (e.g. v0.8.1) for releases, otherwise 0.0.0-<sha>
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          chart_version="${{ github.ref_name }}"
-          echo "CHART_VERSION=${chart_version#v}" >> "$GITHUB_ENV"
+          echo "APP_VERSION=${{ github.ref_name }}" >> "$GITHUB_ENV"
         else
-          echo "CHART_VERSION=0.0.0-${{ github.sha }}" >> "$GITHUB_ENV"
+          echo "APP_VERSION=0.0.0-${{ github.sha }}" >> "$GITHUB_ENV"
         fi
 
     - name: Login to GitHub Container Registry

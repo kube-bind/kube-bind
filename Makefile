@@ -420,11 +420,12 @@ build-web:
 # Image / release configuration.
 # IMAGE_TAGS is the space-separated list of tag suffixes applied to each component image.
 # IMAGE_PUSH_PLATFORMS is the platform list for `image-push` (multi-arch by default).
-# CHART_VERSION is the helm chart version; defaults to 0.0.0-$REV.
+# APP_VERSION is the application version passed to helm-build.sh; defaults to 0.0.0-$REV.
+# helm-build.sh strips the leading "v" to derive a valid Helm chart semver.
 # IMAGE_METADATA_DIR holds buildx metadata files used by `image-sign`.
 export IMAGE_TAGS ?= $(REV)
 IMAGE_PUSH_PLATFORMS ?= linux/amd64,linux/arm64
-export CHART_VERSION ?= 0.0.0-$(REV)
+export APP_VERSION ?= 0.0.0-$(REV)
 IMAGE_METADATA_DIR ?= $(BUILD_DIR)/image-metadata
 
 # Example: make IMAGE_REPO=ghcr.io/<username> image-local

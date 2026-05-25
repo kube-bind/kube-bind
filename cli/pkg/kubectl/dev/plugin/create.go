@@ -70,7 +70,7 @@ type DevOptions struct {
 }
 
 // fallbackAssetVersion is used when unable to fetch the latest version
-const fallbackAssetVersion = "0.7.1"
+const fallbackAssetVersion = "0.8.1"
 
 // gitHubRelease represents a GitHub release response
 type gitHubRelease struct {

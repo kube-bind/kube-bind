@@ -16,13 +16,13 @@
 
 set -eu
 
-# Inputs (env vars):
-#   REV             short git sha (required if CHART_VERSION is unset)
-#   CHART_VERSION   chart version string; default: 0.0.0-$REV
+APP_VERSION="${APP_VERSION:-0.0.0-${REV:-}}"
+if [[ -z "$APP_VERSION" || "$APP_VERSION" == "0.0.0-" ]]; then
+  echo "ERROR: APP_VERSION or REV must be set" >&2; exit 1
+fi
+CHART_VERSION="${APP_VERSION#v}"
 
-: "${CHART_VERSION:=0.0.0-${REV:?REV must be set when CHART_VERSION is unset}}"
-
-echo "Building Helm charts (version: $CHART_VERSION)..."
+echo "Building Helm charts (appVersion: $APP_VERSION, chartVersion: $CHART_VERSION)..."
 
 HELM="$(UGET_PRINT_PATH=absolute make --no-print-directory install-helm)"
 
@@ -33,7 +33,7 @@ for chart_dir in deploy/charts/*/; do
 
       cp "${chart_dir}Chart.yaml" "${chart_dir}Chart.yaml.bak"
       sed -i.tmp "s/^version:.*/version: $CHART_VERSION/" "${chart_dir}Chart.yaml"
-      sed -i.tmp "s/^appVersion:.*/appVersion: $CHART_VERSION/" "${chart_dir}Chart.yaml"
+      sed -i.tmp "s/^appVersion:.*/appVersion: \"$APP_VERSION\"/" "${chart_dir}Chart.yaml"
       rm -f "${chart_dir}Chart.yaml.tmp"
 
       "$HELM" package "$chart_dir" --version "$CHART_VERSION" --destination ./bin/

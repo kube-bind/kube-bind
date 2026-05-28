@@ -32,4 +32,10 @@ There are several ways to communicate with us:
 - The [`#kube-bind` channel](https://kubernetes.slack.com/archives/C046PRXNJ4W) in the [Kubernetes Slack workspace](https://slack.k8s.io).
 - Our mailing lists:
     - [kube-bind-dev](https://groups.google.com/g/kube-bind-dev) for development discussions.
-- By joining the kube-bind-dev mailing list, you should receive an invite to our bi-weekly community meetings.
+- Our bi-weekly community meetings — every second Thursday at 11am EST (5pm CET).
+    - By joining the [kube-bind-dev mailing list](https://groups.google.com/g/kube-bind-dev), you should receive an invite.
+    - See our [community meeting notes document](https://docs.google.com/document/d/1qztpKOmdZu5iWq_4N9n3AZpcAPuPhBiGNbje5GPg0iM) for upcoming and past agendas.
+    <!-- TODO(community-call-advertise): once the CNCF community page is registered, add a sub-bullet linking to https://community.cncf.io/kube-bind/ -->
+    <!-- TODO(community-call-advertise): once a YouTube channel is set up, add a sub-bullet linking to recordings. -->
+
+See the [community page](./community/index.md) for more details.

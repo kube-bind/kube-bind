@@ -417,6 +417,19 @@ deploy-docs: venv ## Deploy docs
 build-web:
 	cd web && npm run build
 
+LOGO_SOURCE = docs/images/logo.svg
+
+.PHONY: generate-logo-assets
+generate-logo-assets: require-magick ## Generate logo and favicon assets from SVG
+	mkdir -p docs/overrides web/src/assets
+	cp $(LOGO_SOURCE) docs/overrides/logo.svg
+	magick $(LOGO_SOURCE) -resize 256x256 -strip -define png:compression-level=9 docs/images/logo.png
+	magick $(LOGO_SOURCE) -resize 256x256 -strip -define png:compression-level=9 docs/overrides/logo.png
+	magick $(LOGO_SOURCE) -resize 64x64 -strip -define png:compression-level=9 docs/overrides/favicon.png
+	magick $(LOGO_SOURCE) -resize 128x128 -strip -define png:compression-level=9 web/src/assets/logo.png
+	magick $(LOGO_SOURCE) -resize 64x64 -strip -define png:compression-level=9 web/src/assets/favicon.png
+	$(MAKE) build-web
+
 # Image / release configuration.
 # IMAGE_TAGS is the space-separated list of tag suffixes applied to each component image.
 # IMAGE_PUSH_PLATFORMS is the platform list for `image-push` (multi-arch by default).

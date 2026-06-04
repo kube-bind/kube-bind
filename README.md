@@ -1,4 +1,4 @@
-<img alt="Logo" width="196px" style="margin-right: 30px;" align="left" src="./docs/images/logo.svg"></img>
+<img alt="Logo" width="196px" style="margin-right: 30px;" align="left" src="./docs/images/logo.png"></img>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/kube-bind/kube-bind)](https://goreportcard.com/report/github.com/kube-bind/kube-bind)
 [![GitHub](https://img.shields.io/github/license/kube-bind/kube-bind)](https://github.com/kube-bind/kube-bind/blob/main/LICENSE)

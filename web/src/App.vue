@@ -4,32 +4,7 @@
       <div class="header-content">
         <div class="brand">
           <div class="logo">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12 2L2 7L12 12L22 7L12 2Z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M2 17L12 22L22 17"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M2 12L12 17L22 12"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              />
-            </svg>
+            <img src="@/assets/logo.png" alt="Kube Bind" />
           </div>
           <h1>Kube Bind</h1>
         </div>
@@ -224,10 +199,15 @@ onMounted(() => {
 }
 
 .logo {
-  color: rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.logo img {
+  width: 32px;
+  height: 32px;
+  display: block;
 }
 
 .header h1 {

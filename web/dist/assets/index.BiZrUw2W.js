@@ -43,7 +43,7 @@ var __exportAll = (all, no_symbols) => {
 //#endregion
 //#region node_modules/@vue/shared/dist/shared.esm-bundler.js
 /**
-* @vue/shared v3.5.32
+* @vue/shared v3.5.34
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
@@ -219,7 +219,7 @@ var stringifySymbol = (v, i = "") => {
 //#endregion
 //#region node_modules/@vue/reactivity/dist/reactivity.esm-bundler.js
 /**
-* @vue/reactivity v3.5.32
+* @vue/reactivity v3.5.34
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
@@ -244,9 +244,15 @@ var EffectScope = class {
 		*/
 		this.cleanups = [];
 		this._isPaused = false;
+		this._warnOnRun = true;
 		this.__v_skip = true;
-		this.parent = activeEffectScope;
-		if (!detached && activeEffectScope) this.index = (activeEffectScope.scopes || (activeEffectScope.scopes = [])).push(this) - 1;
+		if (!detached && activeEffectScope) if (activeEffectScope.active) {
+			this.parent = activeEffectScope;
+			this.index = (activeEffectScope.scopes || (activeEffectScope.scopes = [])).push(this) - 1;
+		} else {
+			this._active = false;
+			this._warnOnRun = false;
+		}
 	}
 	get active() {
 		return this._active;
@@ -299,7 +305,17 @@ var EffectScope = class {
 	*/
 	off() {
 		if (this._on > 0 && --this._on === 0) {
-			activeEffectScope = this.prevScope;
+			if (activeEffectScope === this) activeEffectScope = this.prevScope;
+			else {
+				let current = activeEffectScope;
+				while (current) {
+					if (current.prevScope === this) {
+						current.prevScope = this.prevScope;
+						break;
+					}
+					current = current.prevScope;
+				}
+			}
 			this.prevScope = void 0;
 		}
 	}
@@ -355,7 +371,8 @@ var ReactiveEffect = class {
 		*/
 		this.cleanup = void 0;
 		this.scheduler = void 0;
-		if (activeEffectScope && activeEffectScope.active) activeEffectScope.effects.push(this);
+		if (activeEffectScope) if (activeEffectScope.active) activeEffectScope.effects.push(this);
+		else this.flags &= -2;
 	}
 	pause() {
 		this.flags |= 64;
@@ -1484,7 +1501,7 @@ function traverse(value, depth = Infinity, seen) {
 //#endregion
 //#region node_modules/@vue/runtime-core/dist/runtime-core.esm-bundler.js
 /**
-* @vue/runtime-core v3.5.32
+* @vue/runtime-core v3.5.34
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
@@ -2823,13 +2840,11 @@ var updateSlots = (instance, children, optimized) => {
 		for (const key in slots) if (!isInternalKey(key) && deletionComparisonTarget[key] == null) delete slots[key];
 	}
 };
-function initFeatureFlags() {}
 var queuePostRenderEffect = queueEffectWithSuspense;
 function createRenderer(options) {
 	return baseCreateRenderer(options);
 }
 function baseCreateRenderer(options, createHydrationFns) {
-	initFeatureFlags();
 	const target = getGlobalThis();
 	target.__VUE__ = true;
 	const { insert: hostInsert, remove: hostRemove, patchProp: hostPatchProp, createElement: hostCreateElement, createText: hostCreateText, createComment: hostCreateComment, setText: hostSetText, setElementText: hostSetElementText, parentNode: hostParentNode, nextSibling: hostNextSibling, setScopeId: hostSetScopeId = NOOP, insertStaticContent: hostInsertStaticContent } = options;
@@ -3687,11 +3702,6 @@ function cloneVNode(vnode, extraProps, mergeRef = false, cloneTransition = false
 function createTextVNode(text = " ", flag = 0) {
 	return createVNode(Text, null, text, flag);
 }
-function createStaticVNode(content, numberOfNodes) {
-	const vnode = createVNode(Static, null, content);
-	vnode.staticCount = numberOfNodes;
-	return vnode;
-}
 function createCommentVNode(text = "", asBlock = false) {
 	return asBlock ? (openBlock(), createBlock(Comment, null, text)) : createVNode(Comment, null, text);
 }
@@ -3996,11 +4006,11 @@ function h(type, propsOrChildren, children) {
 		setBlockTracking(1);
 	}
 }
-var version = "3.5.32";
+var version = "3.5.34";
 //#endregion
 //#region node_modules/@vue/runtime-dom/dist/runtime-dom.esm-bundler.js
 /**
-* @vue/runtime-dom v3.5.32
+* @vue/runtime-dom v3.5.34
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
@@ -4085,7 +4095,10 @@ function patchStyle(el, prev, next) {
 		}
 		for (const key in next) {
 			if (key === "display") hasControlledDisplay = true;
-			setStyle(style, key, next[key]);
+			const value = next[key];
+			if (value != null) {
+				if (!shouldPreserveTextareaResizeStyle(el, key, !isString$1(prev) && prev ? prev[key] : void 0, value)) setStyle(style, key, value);
+			} else setStyle(style, key, "");
 		}
 	} else if (isCssString) {
 		if (prev !== next) {
@@ -4130,6 +4143,9 @@ function autoPrefix(style, rawName) {
 		if (prefixed in style) return prefixCache[rawName] = prefixed;
 	}
 	return rawName;
+}
+function shouldPreserveTextareaResizeStyle(el, key, prev, next) {
+	return el.tagName === "TEXTAREA" && (key === "width" || key === "height") && isString$1(next) && prev === next;
 }
 var xlinkNS = "http://www.w3.org/1999/xlink";
 function patchAttr(el, key, value, isSVG, instance, isBoolean = isSpecialBooleanAttr(key)) {
@@ -4401,9 +4417,9 @@ function normalizeContainer(container) {
 	return container;
 }
 //#endregion
-//#region node_modules/vue-router/dist/useApi-C8XBqGtv.js
+//#region node_modules/vue-router/dist/useApi-DtucMc-S.js
 /*!
-* vue-router v5.0.4
+* vue-router v5.0.6
 * (c) 2026 Eduardo San Martin Morote
 * @license MIT
 */
@@ -4517,7 +4533,7 @@ function useRoute(_name) {
 	return inject(routeLocationKey);
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/typeof.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/typeof.js
 function _typeof(o) {
 	"@babel/helpers - typeof";
 	return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function(o) {
@@ -4527,7 +4543,7 @@ function _typeof(o) {
 	}, _typeof(o);
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/toPrimitive.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/toPrimitive.js
 function toPrimitive(t, r) {
 	if ("object" != _typeof(t) || !t) return t;
 	var e = t[Symbol.toPrimitive];
@@ -4539,13 +4555,13 @@ function toPrimitive(t, r) {
 	return ("string" === r ? String : Number)(t);
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/toPropertyKey.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/toPropertyKey.js
 function toPropertyKey(t) {
 	var i = toPrimitive(t, "string");
 	return "symbol" == _typeof(i) ? i : i + "";
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/defineProperty.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/defineProperty.js
 function _defineProperty(e, r, t) {
 	return (r = toPropertyKey(r)) in e ? Object.defineProperty(e, r, {
 		value: t,
@@ -4555,7 +4571,7 @@ function _defineProperty(e, r, t) {
 	}) : e[r] = t, e;
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/objectSpread2.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/objectSpread2.js
 function ownKeys(e, r) {
 	var t = Object.keys(e);
 	if (Object.getOwnPropertySymbols) {
@@ -4578,7 +4594,7 @@ function _objectSpread2(e) {
 	return e;
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/asyncToGenerator.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/asyncToGenerator.js
 function asyncGeneratorStep(n, t, e, r, o, a, c) {
 	try {
 		var i = n[a](c), u = i.value;
@@ -4604,9 +4620,9 @@ function _asyncToGenerator(n) {
 	};
 }
 //#endregion
-//#region node_modules/vue-router/dist/devtools-DUDsFuj9.js
+//#region node_modules/vue-router/dist/devtools-BPov6AZY.js
 /*!
-* vue-router v5.0.4
+* vue-router v5.0.6
 * (c) 2026 Eduardo San Martin Morote
 * @license MIT
 */
@@ -4718,7 +4734,7 @@ function decode(text) {
 	if (text == null) return null;
 	try {
 		return decodeURIComponent("" + text);
-	} catch (err) {}
+	} catch (_unused) {}
 	return "" + text;
 }
 var TRAILING_SLASH_RE = /\/$/;
@@ -4888,7 +4904,7 @@ function normalizeBase(base) {
 	if (!base) if (isBrowser) {
 		const baseEl = document.querySelector("base");
 		base = baseEl && baseEl.getAttribute("href") || "/";
-		base = base.replace(/^\w+:\/\/[^\/]+/, "");
+		base = base.replace(/^\w+:\/\/[^/]+/, "");
 	} else base = "/";
 	if (base[0] !== "/" && base[0] !== "#") base = "/" + base;
 	return removeTrailingSlash(base);
@@ -5110,7 +5126,7 @@ function extractChangingRecords(to, from) {
 //#endregion
 //#region node_modules/vue-router/dist/vue-router.js
 /*!
-* vue-router v5.0.4
+* vue-router v5.0.6
 * (c) 2026 Eduardo San Martin Morote
 * @license MIT
 */
@@ -5980,7 +5996,7 @@ var RouterViewImpl = /* @__PURE__ */ defineComponent({
 			viewRef.value,
 			matchedRouteRef.value,
 			props.name
-		], ([instance, to, name], [oldInstance, from, oldName]) => {
+		], ([instance, to, name], [oldInstance, from, _oldName]) => {
 			if (to) {
 				to.instances[name] = instance;
 				if (from && from !== to && instance && instance === oldInstance) {
@@ -6070,7 +6086,6 @@ function createRouter(options) {
 			const href = routerHistory.createHref(locationNormalized.fullPath);
 			return assign(locationNormalized, matchedRoute, {
 				params: decodeParams(matchedRoute.params),
-				hash: decode(locationNormalized.hash),
 				redirectedFrom: void 0,
 				href
 			});
@@ -6375,6 +6390,7 @@ function createRouter(options) {
 	}
 	return router;
 }
+"" + new URL("logo.C5F5sMSf.png", import.meta.url).href;
 //#endregion
 //#region node_modules/axios/lib/helpers/bind.js
 /**
@@ -8003,6 +8019,10 @@ var defaults = {
 		}
 		return data;
 	}],
+	/**
+	* A timeout in milliseconds to abort a request. If set to 0 (default) a
+	* timeout is not created.
+	*/
 	timeout: 0,
 	xsrfCookieName: "XSRF-TOKEN",
 	xsrfHeaderName: "X-XSRF-TOKEN",
@@ -8551,7 +8571,7 @@ var composeSignals = (signals, timeout) => {
 	}
 };
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/asyncIterator.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/asyncIterator.js
 function _asyncIterator(r) {
 	var n, t, o, e = 2;
 	for ("undefined" != typeof Symbol && (t = Symbol.asyncIterator, o = Symbol.iterator); e--;) {
@@ -8594,17 +8614,17 @@ function AsyncFromSyncIterator(r) {
 	}, new AsyncFromSyncIterator(r);
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/OverloadYield.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/OverloadYield.js
 function _OverloadYield(e, d) {
 	this.v = e, this.k = d;
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/awaitAsyncGenerator.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/awaitAsyncGenerator.js
 function _awaitAsyncGenerator(e) {
 	return new _OverloadYield(e, 0);
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/asyncGeneratorDelegate.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/asyncGeneratorDelegate.js
 function _asyncGeneratorDelegate(t) {
 	var e = {}, n = !1;
 	function pump(e, r) {
@@ -8627,7 +8647,7 @@ function _asyncGeneratorDelegate(t) {
 	}), e;
 }
 //#endregion
-//#region \0@oxc-project+runtime@0.123.0/helpers/wrapAsyncGenerator.js
+//#region \0@oxc-project+runtime@0.128.0/helpers/wrapAsyncGenerator.js
 function _wrapAsyncGenerator(e) {
 	return function() {
 		return new AsyncGenerator(e.apply(this, arguments));
@@ -9163,7 +9183,15 @@ function getAdapter(adapters, config) {
 * Exports Axios adapters and utility to resolve an adapter
 */
 var adapters_default = {
+	/**
+	* Resolve an adapter from a list of adapter names or functions.
+	* @type {Function}
+	*/
 	getAdapter,
+	/**
+	* Exposes all known adapters
+	* @type {Object<string, Function|Object>}
+	*/
 	adapters: knownAdapters
 };
 //#endregion
@@ -10054,7 +10082,10 @@ var App_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComp
 		});
 		return (_ctx, _cache) => {
 			const _component_router_view = resolveComponent("router-view");
-			return openBlock(), createElementBlock("div", _hoisted_1$5, [createBaseVNode("header", _hoisted_2$5, [createBaseVNode("div", _hoisted_3$5, [_cache[2] || (_cache[2] = createStaticVNode("<div class=\"brand\" data-v-0b535f4a><div class=\"logo\" data-v-0b535f4a><svg width=\"32\" height=\"32\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\" data-v-0b535f4a><path d=\"M12 2L2 7L12 12L22 7L12 2Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" data-v-0b535f4a></path><path d=\"M2 17L12 22L22 17\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" data-v-0b535f4a></path><path d=\"M2 12L12 17L22 12\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" data-v-0b535f4a></path></svg></div><h1 data-v-0b535f4a>Kube Bind</h1></div>", 1)), authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_4$5, [_cache[1] || (_cache[1] = createBaseVNode("div", { class: "user-info" }, [createBaseVNode("div", { class: "status-indicator" }), createBaseVNode("span", { class: "welcome-text" }, "Connected")], -1)), createBaseVNode("button", {
+			return openBlock(), createElementBlock("div", _hoisted_1$5, [createBaseVNode("header", _hoisted_2$5, [createBaseVNode("div", _hoisted_3$5, [_cache[2] || (_cache[2] = createBaseVNode("div", { class: "brand" }, [createBaseVNode("div", { class: "logo" }, [createBaseVNode("img", {
+				src: "" + new URL("logo.C5F5sMSf.png", import.meta.url).href,
+				alt: "Kube Bind"
+			})]), createBaseVNode("h1", null, "Kube Bind")], -1)), authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_4$5, [_cache[1] || (_cache[1] = createBaseVNode("div", { class: "user-info" }, [createBaseVNode("div", { class: "status-indicator" }), createBaseVNode("span", { class: "welcome-text" }, "Connected")], -1)), createBaseVNode("button", {
 				onClick: logout,
 				class: "logout-btn"
 			}, [..._cache[0] || (_cache[0] = [createBaseVNode("svg", {
@@ -10109,7 +10140,7 @@ var _plugin_vue_export_helper_default = (sfc, props) => {
 };
 //#endregion
 //#region src/App.vue
-var App_default = /* @__PURE__ */ _plugin_vue_export_helper_default(App_vue_vue_type_script_setup_true_lang_default, [["__scopeId", "data-v-0b535f4a"]]);
+var App_default = /* @__PURE__ */ _plugin_vue_export_helper_default(App_vue_vue_type_script_setup_true_lang_default, [["__scopeId", "data-v-eb0cbf2e"]]);
 //#endregion
 //#region src/components/BindingResult.vue?vue&type=script&setup=true&lang.ts
 var _hoisted_1$4 = { class: "binding-header" };

@@ -420,14 +420,15 @@ build-web:
 LOGO_SOURCE = docs/images/logo.svg
 
 .PHONY: generate-logo-assets
-generate-logo-assets: require-magick ## Generate logo and favicon assets from SVG
+generate-logo-assets: ## Generate logo and favicon assets from SVG
+	@command -v rsvg-convert >/dev/null 2>&1 || { echo "rsvg-convert not found; install librsvg (e.g. 'brew install librsvg')"; exit 1; }
 	mkdir -p docs/overrides web/src/assets
 	cp $(LOGO_SOURCE) docs/overrides/logo.svg
-	magick $(LOGO_SOURCE) -resize 256x256 -strip -define png:compression-level=9 docs/images/logo.png
-	magick $(LOGO_SOURCE) -resize 256x256 -strip -define png:compression-level=9 docs/overrides/logo.png
-	magick $(LOGO_SOURCE) -resize 64x64 -strip -define png:compression-level=9 docs/overrides/favicon.png
-	magick $(LOGO_SOURCE) -resize 128x128 -strip -define png:compression-level=9 web/src/assets/logo.png
-	magick $(LOGO_SOURCE) -resize 64x64 -strip -define png:compression-level=9 web/src/assets/favicon.png
+	rsvg-convert -w 256 -h 256 $(LOGO_SOURCE) -o docs/images/logo.png
+	rsvg-convert -w 256 -h 256 $(LOGO_SOURCE) -o docs/overrides/logo.png
+	rsvg-convert -w 64 -h 64 $(LOGO_SOURCE) -o docs/overrides/favicon.png
+	rsvg-convert -w 128 -h 128 $(LOGO_SOURCE) -o web/src/assets/logo.png
+	rsvg-convert -w 64 -h 64 $(LOGO_SOURCE) -o web/src/assets/favicon.png
 	$(MAKE) build-web
 
 # Image / release configuration.

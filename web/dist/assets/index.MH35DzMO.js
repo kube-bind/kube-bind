@@ -6390,7 +6390,7 @@ function createRouter(options) {
 	}
 	return router;
 }
-"" + new URL("logo.sTuJw5Xu.png", import.meta.url).href;
+"" + new URL("logo.C_e3UAcl.png", import.meta.url).href;
 //#endregion
 //#region node_modules/axios/lib/helpers/bind.js
 /**
@@ -10083,7 +10083,7 @@ var App_vue_vue_type_script_setup_true_lang_default = /* @__PURE__ */ defineComp
 		return (_ctx, _cache) => {
 			const _component_router_view = resolveComponent("router-view");
 			return openBlock(), createElementBlock("div", _hoisted_1$5, [createBaseVNode("header", _hoisted_2$5, [createBaseVNode("div", _hoisted_3$5, [_cache[2] || (_cache[2] = createBaseVNode("div", { class: "brand" }, [createBaseVNode("div", { class: "logo" }, [createBaseVNode("img", {
-				src: "" + new URL("logo.sTuJw5Xu.png", import.meta.url).href,
+				src: "" + new URL("logo.C_e3UAcl.png", import.meta.url).href,
 				alt: "Kube Bind"
 			})]), createBaseVNode("h1", null, "Kube Bind")], -1)), authStatus.value.isAuthenticated ? (openBlock(), createElementBlock("div", _hoisted_4$5, [_cache[1] || (_cache[1] = createBaseVNode("div", { class: "user-info" }, [createBaseVNode("div", { class: "status-indicator" }), createBaseVNode("span", { class: "welcome-text" }, "Connected")], -1)), createBaseVNode("button", {
 				onClick: logout,

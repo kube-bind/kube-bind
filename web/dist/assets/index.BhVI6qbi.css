@@ -1,10 +1,10 @@
 
-#app[data-v-0b535f4a] {
+#app[data-v-eb0cbf2e] {
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu",
     "Cantarell", sans-serif;
 }
-.header[data-v-0b535f4a] {
+.header[data-v-eb0cbf2e] {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -12,7 +12,7 @@
   top: 0;
   z-index: 100;
 }
-.header-content[data-v-0b535f4a] {
+.header-content[data-v-eb0cbf2e] {
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
@@ -20,30 +20,34 @@
   align-items: center;
   padding: 1rem 2rem;
 }
-.brand[data-v-0b535f4a] {
+.brand[data-v-eb0cbf2e] {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
-.logo[data-v-0b535f4a] {
-  color: rgba(255, 255, 255, 0.9);
+.logo[data-v-eb0cbf2e] {
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.header h1[data-v-0b535f4a] {
+.logo img[data-v-eb0cbf2e] {
+  width: 32px;
+  height: 32px;
+  display: block;
+}
+.header h1[data-v-eb0cbf2e] {
   margin: 0;
   color: white;
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.025em;
 }
-.user-section[data-v-0b535f4a] {
+.user-section[data-v-eb0cbf2e] {
   display: flex;
   align-items: center;
   gap: 1.5rem;
 }
-.user-info[data-v-0b535f4a] {
+.user-info[data-v-eb0cbf2e] {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -51,15 +55,15 @@
   font-size: 0.875rem;
   font-weight: 500;
 }
-.status-indicator[data-v-0b535f4a] {
+.status-indicator[data-v-eb0cbf2e] {
   width: 8px;
   height: 8px;
   background: #10b981;
   border-radius: 50%;
   box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
-  animation: pulse-0b535f4a 2s infinite;
+  animation: pulse-eb0cbf2e 2s infinite;
 }
-@keyframes pulse-0b535f4a {
+@keyframes pulse-eb0cbf2e {
 0%,
   100% {
     opacity: 1;
@@ -68,10 +72,10 @@
     opacity: 0.5;
 }
 }
-.welcome-text[data-v-0b535f4a] {
+.welcome-text[data-v-eb0cbf2e] {
   color: rgba(255, 255, 255, 0.8);
 }
-.logout-btn[data-v-0b535f4a] {
+.logout-btn[data-v-eb0cbf2e] {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -86,18 +90,18 @@
   transition: all 0.2s ease;
   backdrop-filter: blur(10px);
 }
-.logout-btn[data-v-0b535f4a]:hover {
+.logout-btn[data-v-eb0cbf2e]:hover {
   background: rgba(255, 255, 255, 0.2);
   color: white;
   border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
 }
-.main[data-v-0b535f4a] {
+.main[data-v-eb0cbf2e] {
   min-height: calc(100vh - 80px);
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   padding: 0;
 }
-.auth-placeholder[data-v-0b535f4a] {
+.auth-placeholder[data-v-eb0cbf2e] {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -106,7 +110,7 @@
   padding: 4rem 2rem;
   min-height: calc(100vh - 200px);
 }
-.auth-placeholder h2[data-v-0b535f4a] {
+.auth-placeholder h2[data-v-eb0cbf2e] {
   color: #1f2937;
   margin-bottom: 1rem;
   font-size: 2rem;
@@ -116,14 +120,14 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-.auth-placeholder p[data-v-0b535f4a] {
+.auth-placeholder p[data-v-eb0cbf2e] {
   color: #6b7280;
   margin-bottom: 2rem;
   font-size: 1.125rem;
   max-width: 500px;
   line-height: 1.6;
 }
-.auth-btn[data-v-0b535f4a] {
+.auth-btn[data-v-eb0cbf2e] {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -138,12 +142,12 @@
   transition: all 0.2s ease;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
-.auth-btn[data-v-0b535f4a]:hover {
+.auth-btn[data-v-eb0cbf2e]:hover {
   background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
 }
-.auth-error[data-v-0b535f4a] {
+.auth-error[data-v-eb0cbf2e] {
   display: flex;
   align-items: flex-start;
   gap: 1rem;
@@ -156,18 +160,18 @@
   text-align: left;
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.1);
 }
-.error-icon[data-v-0b535f4a] {
+.error-icon[data-v-eb0cbf2e] {
   font-size: 1.5rem;
   line-height: 1;
   margin-top: 0.125rem;
 }
-.error-content h3[data-v-0b535f4a] {
+.error-content h3[data-v-eb0cbf2e] {
   margin: 0 0 0.5rem 0;
   color: #dc2626;
   font-size: 1rem;
   font-weight: 600;
 }
-.error-content p[data-v-0b535f4a] {
+.error-content p[data-v-eb0cbf2e] {
   margin: 0;
   color: #991b1b;
   font-size: 0.875rem;

@@ -28,8 +28,8 @@ theme:
     - content.code.annotate
     # Integrate TOC into navigation sidebar
     - toc.integrate
-  logo: logo.svg
-  favicon: logo.svg
+  logo: logo.png
+  favicon: favicon.png
   palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"

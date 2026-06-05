@@ -417,6 +417,20 @@ deploy-docs: venv ## Deploy docs
 build-web:
 	cd web && npm run build
 
+LOGO_SOURCE = docs/images/logo.svg
+
+.PHONY: generate-logo-assets
+generate-logo-assets: ## Generate logo and favicon assets from SVG
+	@command -v rsvg-convert >/dev/null 2>&1 || { echo "rsvg-convert not found; install librsvg (e.g. 'brew install librsvg')"; exit 1; }
+	mkdir -p docs/overrides web/src/assets
+	cp $(LOGO_SOURCE) docs/overrides/logo.svg
+	rsvg-convert -w 256 -h 256 $(LOGO_SOURCE) -o docs/images/logo.png
+	rsvg-convert -w 256 -h 256 $(LOGO_SOURCE) -o docs/overrides/logo.png
+	rsvg-convert -w 64 -h 64 $(LOGO_SOURCE) -o docs/overrides/favicon.png
+	rsvg-convert -w 128 -h 128 $(LOGO_SOURCE) -o web/src/assets/logo.png
+	rsvg-convert -w 64 -h 64 $(LOGO_SOURCE) -o web/src/assets/favicon.png
+	$(MAKE) build-web
+
 # Image / release configuration.
 # IMAGE_TAGS is the space-separated list of tag suffixes applied to each component image.
 # IMAGE_PUSH_PLATFORMS is the platform list for `image-push` (multi-arch by default).

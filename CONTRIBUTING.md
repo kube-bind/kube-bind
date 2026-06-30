@@ -1,9 +1,9 @@
-# Contributing to kube-bind
+# Contributing to kbind
 
-kube-bind is [Apache 2.0 licensed](LICENSE) and we accept contributions via
+kbind is [Apache 2.0 licensed](LICENSE) and we accept contributions via
 GitHub pull requests.
 
-Please read the following guide if you're interested in contributing to kube-bind.
+Please read the following guide if you're interested in contributing to kbind.
 
 ## Certificate of Origin
 
@@ -31,14 +31,14 @@ bin/kubectl-bind
 
 Starting to participate in a new project can sometimes be overwhelming, and you may not know where to begin. Fortunately, we are here to help! We track all of our tasks here in GitHub, and we label our issues to categorize them. Here are a couple of handy links to check out:
 
-* [Good first issue](https://github.com/kube-bind/kube-bind/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) issues
-* [Help wanted](https://github.com/kube-bind/kube-bind/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22) issues
+* [Good first issue](https://github.com/kbind-dev/kbind/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) issues
+* [Help wanted](https://github.com/kbind-dev/kbind/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22) issues
 
 You're certainly not limited to only these kinds of issues, though! If you're comfortable, please feel free to try working on anything that is open.
 
 We do use the assignee feature in GitHub for issues. If you find an unassigned issue, comment asking if you can be assigned, and ideally wait for a maintainer to respond. If you find an assigned issue and you want to work on it or help out, please reach out to the assignee first.
 
-Sometimes you might get an amazing idea and start working on a huge amount of code. We love and encourage excitement like this, but we do ask that before you embarking on a giant pull request, please reach out to the community first for an initial discussion. You could [file an issue](https://github.com/kube-bind/kube-bind/issues/new/choose).
+Sometimes you might get an amazing idea and start working on a huge amount of code. We love and encourage excitement like this, but we do ask that before you embarking on a giant pull request, please reach out to the community first for an initial discussion. You could [file an issue](https://github.com/kbind-dev/kbind/issues/new/choose).
 
 Finally, we welcome and value all types of contributions, beyond "just code"! Other types include triaging bugs, tracking down and fixing flaky tests, improving our documentation, helping answer community questions, proposing and reviewing designs, etc.
 
@@ -76,7 +76,7 @@ Finally, we welcome and value all types of contributions, beyond "just code"! Ot
 
 ### Using Kubebuilder CRD Validation Annotations
 
-All of the API resources for `kube-bind` are `CustomResourceDefinitions`, and we generate YAML spec for them from our Go types using [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder).
+All of the API resources for `kbind` are `CustomResourceDefinitions`, and we generate YAML spec for them from our Go types using [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder).
 
 When adding a field that requires validation, custom annotations are used to translate this logic into the generated OpenAPI spec. [This doc](https://book.kubebuilder.io/reference/markers/crd-validation.html) gives an overview of possible validations. These annotations map directly to concepts in the [OpenAPI Spec](https://swagger.io/specification/#data-type-format) so, for instance, the `format` of strings is defined there, not in kubebuilder. Furthermore, Kubernetes has forked the OpenAPI project [here](https://github.com/kubernetes/kube-openapi/tree/master/pkg/validation) and extends more formats in the extensions-apiserver [here](https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1/types_jsonschema.go#L27).
 

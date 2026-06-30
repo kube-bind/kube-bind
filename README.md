@@ -1,16 +1,16 @@
 <img alt="Logo" width="196px" style="margin-right: 30px;" align="left" src="./docs/images/logo.png"></img>
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/kube-bind/kube-bind)](https://goreportcard.com/report/github.com/kube-bind/kube-bind)
-[![GitHub](https://img.shields.io/github/license/kube-bind/kube-bind)](https://github.com/kube-bind/kube-bind/blob/main/LICENSE)
-[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kube-bind/kube-bind?sort=semver)](https://github.com/kube-bind/kube-bind/releases/latest)
+[![Go Report Card](https://goreportcard.com/badge/github.com/kbind-dev/kbind)](https://goreportcard.com/report/github.com/kbind-dev/kbind)
+[![GitHub](https://img.shields.io/github/license/kbind-dev/kbind)](https://github.com/kbind-dev/kbind/blob/main/LICENSE)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kbind-dev/kbind?sort=semver)](https://github.com/kbind-dev/kbind/releases/latest)
 
-# kube-bind
+# kbind
 
 You are invited to [contribute](#contributing)!
 
 ## What is it?
 
-kube-bind provides better support for service providers and consumers that reside in distinct Kubernetes clusters.
+kbind (formerly known as kube-bind) provides better support for service providers and consumers that reside in distinct Kubernetes clusters.
 
 - A service provider defines its API in terms of CRDs and associated permission claims/limitations, and exports it for use from other clusters.
 - Service consumers identify the services they want to consume.
@@ -36,17 +36,17 @@ $ kubectl get mangodbs
 
 ## For more information
 
-For more information go to https://kube-bind.io or watch the [ContainerDays talk](https://www.youtube.com/watch?v=dg0g15Qv5Fo&t=1s)
+For more information go to https://kbind.dev or watch the [ContainerDays talk](https://www.youtube.com/watch?v=dg0g15Qv5Fo&t=1s)
 or the [KubeCon talk](https://www.youtube.com/watch?v=Uv0ivz5xej4).
 
-kube-bind is following this manifesto from the linked talk:
+kbind is following this manifesto from the linked talk:
 
-![kube-bind manifesto](docs/images/manifesto.png)
+![kbind manifesto](docs/images/manifesto.png)
 
 ## Contributing
 
 We ❤️ our contributors! If you're interested in helping us out, please check out
-[Contributing to kube-bind](./CONTRIBUTING.md) and [kube-bind Project Governance](./GOVERNANCE.md).
+[Contributing to kbind](./CONTRIBUTING.md) and [kbind Project Governance](./GOVERNANCE.md).
 
 ## Getting in touch
 
@@ -62,7 +62,7 @@ There are several ways to communicate with us:
     <!-- TODO(community-call-advertise): once a YouTube channel is set up, add: -->
     <!--   - See recordings of past community meetings on [YouTube](TODO-youtube-url). -->
 
-See the [community page](https://docs.kube-bind.io/main/community) for more details.
+See the [community page](https://docs.kbind.dev/main/community) for more details.
 
 ## Technical Overview
 
@@ -72,7 +72,7 @@ All the actions shown between the clusters are done by the konnector, except: th
 
 ## Usage
 
-To get familiar with setting up the environment, please check out docs at [kube-bind.io](https://docs.kube-bind.io/main/setup).
+To get familiar with setting up the environment, please check out docs at [kbind.dev](https://docs.kbind.dev/main/setup).
 
 ### Limitations
 

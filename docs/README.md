@@ -1,4 +1,4 @@
-# kube-bind.io Documentation Setup
+# kbind.dev Documentation Setup
 
 ## Overview
 

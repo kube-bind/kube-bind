@@ -22,11 +22,11 @@ Major improvements to `PermissionClaims` in APIServiceExportSpec:
 ### Provider-side Namespace Management
 Enhanced namespace management on the provider side:
 - **APIServiceNamespace Controller**: Automatically creates Roles and RoleBindings
-- **Namespace Isolation**: Each consumer gets isolated provider-side namespaces  
+- **Namespace Isolation**: Each consumer gets isolated provider-side namespaces
 - **RBAC Automation**: Proper permissions created based on scope (namespaced vs cluster-scoped)
 - **Namespace Pre-provisioning**: Providers can pre-create namespaces for better UX
 
-**Important**: When `ClusterScope` mode is used, cluster-wide permissions are created instead of namespaced ones. 
+**Important**: When `ClusterScope` mode is used, cluster-wide permissions are created instead of namespaced ones.
 
 ## API Changes in v0.5.0 release
 

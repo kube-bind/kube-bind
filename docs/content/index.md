@@ -1,8 +1,8 @@
-# kube-bind Documentation
+# kbind Documentation
 
-## Overview 
+## Overview
 
-kube-bind is a project that aims to provide better support for service providers and consumers that reside in distinct Kubernetes clusters.
+kbind (formerly known as kube-bind) is a project that aims to provide better support for service providers and consumers that reside in distinct Kubernetes clusters.
 We are actively working towards a stable release, and welcome feedback from the community.
 
 ![High-level architecture diagram](high-level.png)
@@ -16,7 +16,7 @@ We are actively working towards a stable release, and welcome feedback from the 
 
 ## Getting Started
 
-- **[Quickstart](./setup/quickstart.md)** - Get up and running with kube-bind quickly
+- **[Quickstart](./setup/quickstart.md)** - Get up and running with kbind quickly
 - **[Setup Guide](./setup/index.md)** - Complete installation and deployment options
 - **[Usage Guide](./usage/index.md)** - Learn the core concepts and APIs
 

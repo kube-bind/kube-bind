@@ -1,6 +1,6 @@
 # Community
 
-kube-bind is built and maintained by an open community. We welcome new contributors, users, and curious onlookers.
+kbind is built and maintained by an open community. We welcome new contributors, users, and curious onlookers.
 
 ## Communication channels
 
@@ -25,5 +25,5 @@ We hold bi-weekly community meetings — every second Thursday at 11am EST (5pm 
 ## Governance and contributing
 
 - [Contributing guide](../contributing/index.md)
-- [Project governance](https://github.com/kube-bind/kube-bind/blob/main/GOVERNANCE.md)
-- [Code of conduct](https://github.com/kube-bind/kube-bind/blob/main/code-of-conduct.md)
+- [Project governance](https://github.com/kbind-dev/kbind/blob/main/GOVERNANCE.md)
+- [Code of conduct](https://github.com/kbind-dev/kbind/blob/main/code-of-conduct.md)

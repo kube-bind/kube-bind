@@ -1,7 +1,7 @@
-site_name: kube-bind
-repo_url: https://github.com/kube-bind/kube-bind
-repo_name: kube-bind/kube-bind
-site_url: https://docs.kube-bind.io/
+site_name: kbind
+repo_url: https://github.com/kbind-dev/kbind
+repo_name: kbind-dev/kbind
+site_url: https://docs.kbind.dev/
 
 # Site content
 docs_dir: "content"
@@ -60,12 +60,12 @@ extra:
 
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/kube-bind
+      link: https://github.com/kbind-dev
     - icon: fontawesome/brands/slack
       link: https://kubernetes.slack.com/archives/C021U8WSAFK
 
   image: high-level.png
-  title: kube-bind
+  title: kbind
   description: "Bind APIs from other clusters."
 
 plugins:

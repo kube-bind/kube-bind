@@ -39,6 +39,24 @@ import (
 //go:embed examples/*.yaml
 var Examples embed.FS
 
+// acceptedPermissionClaims are the resources whose permission claims are accepted, with
+// all verbs on all objects, when binding the kube-bind.io APIExport.
+var acceptedPermissionClaims = []apisv1alpha2.GroupResource{
+	{Group: "rbac.authorization.k8s.io", Resource: "clusterrolebindings"},
+	{Group: "rbac.authorization.k8s.io", Resource: "clusterroles"},
+	{Group: "rbac.authorization.k8s.io", Resource: "roles"},
+	{Group: "rbac.authorization.k8s.io", Resource: "rolebindings"},
+	{Group: "", Resource: "serviceaccounts"},
+	{Group: "", Resource: "configmaps"},
+	{Group: "", Resource: "secrets"},
+	{Group: apisv1alpha2.SchemeGroupVersion.Group, Resource: "apiexports"},
+	{Group: "apiextensions.k8s.io", Resource: "customresourcedefinitions"},
+	{Group: "", Resource: "namespaces"},
+	{Group: "apis.kcp.io", Resource: "apiresourceschemas"},
+	{Group: "apis.kcp.io", Resource: "apibindings"},
+	{Group: "authorization.k8s.io", Resource: "subjectaccessreviews"},
+}
+
 // Bootstrap creates resources in this package by continuously retrying the list.
 // This is blocking, i.e. it only returns (with error) when the context is closed or with nil when
 // the bootstrapping is successfully completed.
@@ -83,202 +101,19 @@ func bindAPIExport(ctx context.Context, kcpClient kcpclient.Interface, exportNam
 		},
 	}
 
-	binding.Spec.PermissionClaims = []apisv1alpha2.AcceptablePermissionClaim{
-		{
+	for _, gr := range acceptedPermissionClaims {
+		binding.Spec.PermissionClaims = append(binding.Spec.PermissionClaims, apisv1alpha2.AcceptablePermissionClaim{
 			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
 				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "rbac.authorization.k8s.io",
-						Resource: "clusterrolebindings",
-					},
-					Verbs: []string{"*"},
+					GroupResource: gr,
+					Verbs:         []string{"*"},
 				},
 				Selector: apisv1alpha2.PermissionClaimSelector{
 					MatchAll: true,
 				},
 			},
 			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "rbac.authorization.k8s.io",
-						Resource: "clusterroles",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "rbac.authorization.k8s.io",
-						Resource: "roles",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "rbac.authorization.k8s.io",
-						Resource: "rolebindings",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "",
-						Resource: "serviceaccounts",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "",
-						Resource: "configmaps",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "",
-						Resource: "secrets",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    apisv1alpha2.SchemeGroupVersion.Group,
-						Resource: "apiexports",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "apiextensions.k8s.io",
-						Resource: "customresourcedefinitions",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "",
-						Resource: "namespaces",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "apis.kcp.io",
-						Resource: "apiresourceschemas",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "apis.kcp.io",
-						Resource: "apibindings",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
-		{
-			ScopedPermissionClaim: apisv1alpha2.ScopedPermissionClaim{
-				PermissionClaim: apisv1alpha2.PermissionClaim{
-					GroupResource: apisv1alpha2.GroupResource{
-						Group:    "authorization.k8s.io",
-						Resource: "subjectaccessreviews",
-					},
-					Verbs: []string{"*"},
-				},
-				Selector: apisv1alpha2.PermissionClaimSelector{
-					MatchAll: true,
-				},
-			},
-			State: apisv1alpha2.ClaimAccepted,
-		},
+		})
 	}
 
 	_, err := kcpClient.ApisV1alpha2().APIBindings().Create(ctx, binding, metav1.CreateOptions{})
